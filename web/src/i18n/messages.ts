@@ -3,10 +3,10 @@ import type { LocaleCode } from '../lib/types'
 export const messages: Record<LocaleCode, Record<string, string>> = {
   en: {
     heroEyebrow: 'community event 2026',
-    heroTitle: 'Draft a World Cup squad without giving veterans a free ride.',
+    heroTitle: 'Build a hidden World Cup squad worth revealing.',
     heroBody:
-      'Build a hidden 15-player squad under the Soccerverse wage cap, reveal it on your terms, and compete in rookie, veteran, and nation tables.',
-    heroPrimary: 'Open builder',
+      'Pick your 15 under the Soccerverse wage cap, lock one free entry, and compete across rookie, veteran, and nation tables once kickoff arrives.',
+    heroPrimary: 'Start building your squad',
     heroSecondary: 'View public tables',
     scoringTitle: 'Tournament rules',
     builderTitle: 'Player search',

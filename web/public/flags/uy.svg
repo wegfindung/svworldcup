@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" role="img" aria-label="Uruguay flag">
+  <rect width="60" height="60" fill="#ffffff" />
+  <rect y="7" width="60" height="4" fill="#4a90e2" />
+  <rect y="19" width="60" height="4" fill="#4a90e2" />
+  <rect y="31" width="60" height="4" fill="#4a90e2" />
+  <rect y="43" width="60" height="4" fill="#4a90e2" />
+  <rect y="55" width="60" height="5" fill="#4a90e2" />
+  <circle cx="14" cy="14" r="7" fill="#f6b40e" />
+</svg>
