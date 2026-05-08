@@ -1,16 +1,17 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { env } from '../config/env.js'
-import { defaultLocale, fixtures, supportedLocales, teams } from '../data/worldCupSeed.js'
+import { STARTING_BUDGET } from '../data/formation.js'
+import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
+import { defaultLocale, fixtures, isKnownTeamCode, supportedLocales, teams } from '../data/worldCupSeed.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { RegistrationRepository } from '../repositories/registrationRepository.js'
+import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import { searchCommunityPlayerIds } from '../services/communityPack.js'
+import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
 const playerSearchSchema = z.object({
-  name: z.string().trim().optional(),
-  nationality: z.string().trim().toUpperCase().optional(),
-  position: z.string().trim().toUpperCase().optional(),
-  ratingMin: z.coerce.number().int().min(0).max(99).optional(),
-  ratingMax: z.coerce.number().int().min(0).max(99).optional(),
+  name: z.string().trim().min(1).optional(),
+  teamCode: z.string().trim().toUpperCase().length(3).optional(),
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(20).default(12),
 })
@@ -18,9 +19,10 @@ const playerSearchSchema = z.object({
 interface Dependencies {
   configRepository: ConfigRepository
   registrationRepository: RegistrationRepository
+  teamPoolRepository: TeamPoolRepository
 }
 
-export function createPublicRouter({ configRepository, registrationRepository }: Dependencies) {
+export function createPublicRouter({ configRepository, registrationRepository, teamPoolRepository }: Dependencies) {
   const router = Router()
 
   router.get('/health', async (_req, res) => {
@@ -31,6 +33,7 @@ export function createPublicRouter({ configRepository, registrationRepository }:
       storage: {
         registrations: registrationRepository.storageKind,
         config: configRepository.storageKind,
+        teamPool: teamPoolRepository.storageKind,
       },
       counts,
     })
@@ -42,6 +45,7 @@ export function createPublicRouter({ configRepository, registrationRepository }:
       supportedLocales,
       defaultLocale,
       scoring,
+      budgetLimit: STARTING_BUDGET,
       teams,
       fixtures,
       leagues: {
@@ -59,54 +63,41 @@ export function createPublicRouter({ configRepository, registrationRepository }:
     res.json({ items: fixtures })
   })
 
+  router.get('/team-players/:teamCode', async (req, res) => {
+    const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()
+    if (!isKnownTeamCode(teamCode)) {
+      return res.status(404).json({ error: 'Unknown team.' })
+    }
+
+    const items = await teamPoolRepository.listByTeam(teamCode)
+    res.json({ items })
+  })
+
   router.get('/player-search', async (req, res) => {
     const parsed = playerSearchSchema.parse({
       name: req.query.name,
-      nationality: req.query.nationality,
-      position: req.query.position,
-      ratingMin: req.query.ratingMin,
-      ratingMax: req.query.ratingMax,
+      teamCode: req.query.teamCode,
       page: req.query.page,
       perPage: req.query.perPage,
     })
 
-    const searchParams = new URLSearchParams({
-      page: String(parsed.page),
-      per_page: String(parsed.perPage),
-    })
-
-    if (parsed.name) searchParams.set('name', parsed.name)
-    if (parsed.nationality) searchParams.set('nationality', parsed.nationality)
-    if (parsed.position) searchParams.set('positions', parsed.position)
-    if (parsed.ratingMin !== undefined) searchParams.set('rating_min', String(parsed.ratingMin))
-    if (parsed.ratingMax !== undefined) searchParams.set('rating_max', String(parsed.ratingMax))
-
-    const response = await fetch(`${env.SV_SERVICES_API_URL}/players/detailed?${searchParams.toString()}`)
-    if (!response.ok) {
-      return res.status(502).json({ error: 'Soccerverse player search failed.' })
+    if (!parsed.name) {
+      return res.json({ items: [], total: 0, page: parsed.page, totalPages: 0 })
     }
 
-    const data = (await response.json()) as {
-      items?: Array<Record<string, unknown>>
-      total?: number
-      total_pages?: number
-      page?: number
-    }
+    const matchingIds = await searchCommunityPlayerIds(parsed.name, 80)
+    const countryId = parsed.teamCode ? getSoccerverseCountryId(parsed.teamCode) : undefined
+    const players = (await fetchPlayersByIds(matchingIds, countryId)).map(withImageUrl)
+    const startIndex = (parsed.page - 1) * parsed.perPage
+    const pageItems = players
+      .sort((left, right) => right.rating - left.rating || left.displayName.localeCompare(right.displayName))
+      .slice(startIndex, startIndex + parsed.perPage)
 
     res.json({
-      items: (data.items ?? []).map((item) => ({
-        playerId: item.player_id,
-        name: item.name,
-        clubId: item.club_id,
-        nationality: item.nationality,
-        rating: item.rating,
-        imageUrl: `https://elrincondeldt.com/sv/photos/players/${item.player_id}.png`,
-        positions: Array.isArray(item.positions) ? item.positions : [],
-        positionMain: item.position_main,
-      })),
-      total: data.total ?? 0,
-      page: data.page ?? parsed.page,
-      totalPages: data.total_pages ?? 1,
+      items: pageItems,
+      total: players.length,
+      page: parsed.page,
+      totalPages: Math.max(1, Math.ceil(players.length / parsed.perPage)),
     })
   })
 

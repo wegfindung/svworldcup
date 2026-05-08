@@ -3,16 +3,26 @@ import { Pool } from 'pg'
 import { hashToken } from '../lib/tokens.js'
 import type {
   LeagueType,
+  ParticipantProfile,
   RegistrationCreationResult,
   RegistrationInput,
   RegistrationRecord,
 } from '../domain/types.js'
 
+export class ActiveRegistrationExistsError extends Error {
+  constructor(message = 'Registration is already active for this email address.') {
+    super(message)
+    this.name = 'ActiveRegistrationExistsError'
+  }
+}
+
 export interface RegistrationRepository {
   storageKind: 'memory' | 'postgres'
   createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult>
-  verifyByPlainToken(plainToken: string): Promise<RegistrationRecord | null>
+  verifyByPlainToken(plainToken: string): Promise<ParticipantProfile | null>
   resendVerification(email: string, plainToken: string): Promise<RegistrationCreationResult | null>
+  getByParticipantId(participantId: string): Promise<ParticipantProfile | null>
+  getByEmail(email: string): Promise<ParticipantProfile | null>
   getCounts(): Promise<{ pending: number; active: number }>
 }
 
@@ -24,18 +34,40 @@ function expiryIso(hoursFromNow: number): string {
   return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString()
 }
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
+  return {
+    participantId: record.participantId,
+    email: record.email,
+    displayName: record.displayName,
+    soccerverseUsername: record.soccerverseUsername,
+    leagueType: record.leagueType,
+    primaryTeamCode: record.primaryTeamCode,
+    secondaryTeamCode: record.secondaryTeamCode,
+    status: record.status,
+    verifiedAt: record.verifiedAt,
+  }
+}
+
 export class MemoryRegistrationRepository implements RegistrationRepository {
   storageKind: 'memory' = 'memory'
   private readonly byEmail = new Map<string, RegistrationRecord>()
   private readonly byTokenHash = new Map<string, string>()
 
   async createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult> {
-    const email = input.email.trim().toLowerCase()
+    const email = normalizeEmail(input.email)
     const tokenHash = hashToken(plainToken)
     const leagueType = deriveLeagueType(input.soccerverseUsername)
     const existing = this.byEmail.get(email)
-    const participantId = existing?.participantId ?? randomUUID()
 
+    if (existing?.status === 'active') {
+      throw new ActiveRegistrationExistsError()
+    }
+
+    const participantId = existing?.participantId ?? randomUUID()
     const record: RegistrationRecord = {
       participantId,
       email,
@@ -52,11 +84,10 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
 
     this.byEmail.set(email, record)
     this.byTokenHash.set(tokenHash, email)
-
     return { record, plainToken }
   }
 
-  async verifyByPlainToken(plainToken: string): Promise<RegistrationRecord | null> {
+  async verifyByPlainToken(plainToken: string): Promise<ParticipantProfile | null> {
     const tokenHash = hashToken(plainToken)
     const email = this.byTokenHash.get(tokenHash)
     if (!email) {
@@ -68,31 +99,46 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       return null
     }
 
+    if (new Date(record.verificationTokenExpiresAt).getTime() < Date.now()) {
+      return null
+    }
+
     const nextRecord: RegistrationRecord = {
       ...record,
-      status: 'active',
-      verifiedAt: new Date().toISOString(),
+      status: record.status === 'pending_verification' ? 'active' : record.status,
+      verifiedAt: record.verifiedAt ?? new Date().toISOString(),
     }
     this.byEmail.set(email, nextRecord)
-    return nextRecord
+    return toParticipantProfile(nextRecord)
   }
 
   async resendVerification(email: string, plainToken: string): Promise<RegistrationCreationResult | null> {
-    const existing = this.byEmail.get(email.trim().toLowerCase())
+    const normalizedEmail = normalizeEmail(email)
+    const existing = this.byEmail.get(normalizedEmail)
     if (!existing) {
       return null
     }
 
-    return this.createPending(
-      {
-        email: existing.email,
-        displayName: existing.displayName,
-        soccerverseUsername: existing.soccerverseUsername,
-        primaryTeamCode: existing.primaryTeamCode,
-        secondaryTeamCode: existing.secondaryTeamCode,
-      },
-      plainToken,
-    )
+    const tokenHash = hashToken(plainToken)
+    const nextRecord: RegistrationRecord = {
+      ...existing,
+      verificationTokenHash: tokenHash,
+      verificationTokenExpiresAt: expiryIso(48),
+    }
+
+    this.byEmail.set(normalizedEmail, nextRecord)
+    this.byTokenHash.set(tokenHash, normalizedEmail)
+    return { record: nextRecord, plainToken }
+  }
+
+  async getByParticipantId(participantId: string) {
+    const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
+    return record ? toParticipantProfile(record) : null
+  }
+
+  async getByEmail(email: string) {
+    const record = this.byEmail.get(normalizeEmail(email))
+    return record ? toParticipantProfile(record) : null
   }
 
   async getCounts() {
@@ -116,7 +162,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
   constructor(private readonly pool: Pool) {}
 
   async createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult> {
-    const email = input.email.trim().toLowerCase()
+    const email = normalizeEmail(input.email)
     const tokenHash = hashToken(plainToken)
     const leagueType = deriveLeagueType(input.soccerverseUsername)
     const expiresAt = expiryIso(48)
@@ -124,6 +170,25 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
 
     try {
       await client.query('BEGIN')
+      const existingResult = await client.query<{
+        participant_id: string
+        status: RegistrationRecord['status']
+        verified_at: string | null
+      }>(
+        `
+          SELECT participant_id, status, verified_at
+          FROM participants
+          WHERE email = $1
+          FOR UPDATE
+        `,
+        [email],
+      )
+
+      const existing = existingResult.rows[0]
+      if (existing?.status === 'active') {
+        throw new ActiveRegistrationExistsError()
+      }
+
       const participantResult = await client.query<{
         participant_id: string
         email: string
@@ -133,6 +198,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         primary_team_code: string
         secondary_team_code: string | null
         status: RegistrationRecord['status']
+        verified_at: string | null
       }>(
         `
           INSERT INTO participants (
@@ -149,7 +215,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             status = 'pending_verification',
             verification_sent_at = NOW(),
             updated_at = NOW()
-          RETURNING participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status
+          RETURNING participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
         `,
         [
           email,
@@ -187,6 +253,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           status: participant.status,
           verificationTokenHash: tokenHash,
           verificationTokenExpiresAt: expiresAt,
+          verifiedAt: participant.verified_at ?? undefined,
         },
       }
     } catch (error) {
@@ -197,7 +264,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     }
   }
 
-  async verifyByPlainToken(plainToken: string): Promise<RegistrationRecord | null> {
+  async verifyByPlainToken(plainToken: string): Promise<ParticipantProfile | null> {
     const tokenHash = hashToken(plainToken)
     const client = await this.pool.connect()
 
@@ -213,6 +280,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         secondary_team_code: string | null
         status: RegistrationRecord['status']
         expires_at: string
+        verified_at: string | null
       }>(
         `
           SELECT
@@ -224,11 +292,13 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.primary_team_code,
             p.secondary_team_code,
             p.status,
+            p.verified_at,
             vt.expires_at
           FROM verification_tokens vt
           JOIN participants p ON p.participant_id = vt.participant_id
           WHERE vt.token_hash = $1
             AND vt.consumed_at IS NULL
+          FOR UPDATE
         `,
         [tokenHash],
       )
@@ -244,9 +314,19 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       }
 
       await client.query('UPDATE verification_tokens SET consumed_at = NOW() WHERE token_hash = $1', [tokenHash])
-      await client.query("UPDATE participants SET status = 'active', verified_at = NOW(), updated_at = NOW() WHERE participant_id = $1", [
-        tokenRow.participant_id,
-      ])
+
+      let status = tokenRow.status
+      let verifiedAt = tokenRow.verified_at ?? undefined
+
+      if (tokenRow.status === 'pending_verification') {
+        const updated = await client.query<{ verified_at: string }>(
+          "UPDATE participants SET status = 'active', verified_at = NOW(), updated_at = NOW() WHERE participant_id = $1 RETURNING verified_at",
+          [tokenRow.participant_id],
+        )
+        status = 'active'
+        verifiedAt = updated.rows[0]?.verified_at ?? new Date().toISOString()
+      }
+
       await client.query('COMMIT')
 
       return {
@@ -257,10 +337,8 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         leagueType: tokenRow.league_type,
         primaryTeamCode: tokenRow.primary_team_code,
         secondaryTeamCode: tokenRow.secondary_team_code ?? undefined,
-        status: 'active',
-        verificationTokenHash: tokenHash,
-        verificationTokenExpiresAt: tokenRow.expires_at,
-        verifiedAt: new Date().toISOString(),
+        status,
+        verifiedAt,
       }
     } catch (error) {
       await client.query('ROLLBACK')
@@ -271,36 +349,150 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
   }
 
   async resendVerification(email: string, plainToken: string): Promise<RegistrationCreationResult | null> {
-    const existing = await this.pool.query<{
+    const normalizedEmail = normalizeEmail(email)
+    const tokenHash = hashToken(plainToken)
+    const expiresAt = expiryIso(48)
+    const client = await this.pool.connect()
+
+    try {
+      await client.query('BEGIN')
+      const existing = await client.query<{
+        participant_id: string
+        email: string
+        display_name: string
+        soccerverse_username: string | null
+        league_type: LeagueType
+        primary_team_code: string
+        secondary_team_code: string | null
+        status: RegistrationRecord['status']
+        verified_at: string | null
+      }>(
+        `
+          SELECT participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
+          FROM participants
+          WHERE email = $1
+          FOR UPDATE
+        `,
+        [normalizedEmail],
+      )
+
+      const participant = existing.rows[0]
+      if (!participant) {
+        await client.query('ROLLBACK')
+        return null
+      }
+
+      await client.query('UPDATE verification_tokens SET consumed_at = NOW() WHERE participant_id = $1 AND consumed_at IS NULL', [
+        participant.participant_id,
+      ])
+      await client.query('UPDATE participants SET verification_sent_at = NOW(), updated_at = NOW() WHERE participant_id = $1', [
+        participant.participant_id,
+      ])
+      await client.query(
+        `
+          INSERT INTO verification_tokens (participant_id, token_hash, expires_at)
+          VALUES ($1, $2, $3)
+        `,
+        [participant.participant_id, tokenHash, expiresAt],
+      )
+      await client.query('COMMIT')
+
+      return {
+        plainToken,
+        record: {
+          participantId: participant.participant_id,
+          email: participant.email,
+          displayName: participant.display_name,
+          soccerverseUsername: participant.soccerverse_username ?? undefined,
+          leagueType: participant.league_type,
+          primaryTeamCode: participant.primary_team_code,
+          secondaryTeamCode: participant.secondary_team_code ?? undefined,
+          status: participant.status,
+          verificationTokenHash: tokenHash,
+          verificationTokenExpiresAt: expiresAt,
+          verifiedAt: participant.verified_at ?? undefined,
+        },
+      }
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async getByParticipantId(participantId: string) {
+    const result = await this.pool.query<{
+      participant_id: string
       email: string
       display_name: string
       soccerverse_username: string | null
+      league_type: LeagueType
       primary_team_code: string
       secondary_team_code: string | null
+      status: RegistrationRecord['status']
+      verified_at: string | null
     }>(
       `
-        SELECT email, display_name, soccerverse_username, primary_team_code, secondary_team_code
+        SELECT participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
         FROM participants
-        WHERE email = $1
+        WHERE participant_id = $1
       `,
-      [email.trim().toLowerCase()],
+      [participantId],
     )
-
-    const participant = existing.rows[0]
-    if (!participant) {
+    const row = result.rows[0]
+    if (!row) {
       return null
     }
 
-    return this.createPending(
-      {
-        email: participant.email,
-        displayName: participant.display_name,
-        soccerverseUsername: participant.soccerverse_username ?? undefined,
-        primaryTeamCode: participant.primary_team_code,
-        secondaryTeamCode: participant.secondary_team_code ?? undefined,
-      },
-      plainToken,
+    return {
+      participantId: row.participant_id,
+      email: row.email,
+      displayName: row.display_name,
+      soccerverseUsername: row.soccerverse_username ?? undefined,
+      leagueType: row.league_type,
+      primaryTeamCode: row.primary_team_code,
+      secondaryTeamCode: row.secondary_team_code ?? undefined,
+      status: row.status,
+      verifiedAt: row.verified_at ?? undefined,
+    }
+  }
+
+  async getByEmail(email: string) {
+    const result = await this.pool.query<{
+      participant_id: string
+      email: string
+      display_name: string
+      soccerverse_username: string | null
+      league_type: LeagueType
+      primary_team_code: string
+      secondary_team_code: string | null
+      status: RegistrationRecord['status']
+      verified_at: string | null
+    }>(
+      `
+        SELECT participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
+        FROM participants
+        WHERE email = $1
+      `,
+      [normalizeEmail(email)],
     )
+    const row = result.rows[0]
+    if (!row) {
+      return null
+    }
+
+    return {
+      participantId: row.participant_id,
+      email: row.email,
+      displayName: row.display_name,
+      soccerverseUsername: row.soccerverse_username ?? undefined,
+      leagueType: row.league_type,
+      primaryTeamCode: row.primary_team_code,
+      secondaryTeamCode: row.secondary_team_code ?? undefined,
+      status: row.status,
+      verifiedAt: row.verified_at ?? undefined,
+    }
   }
 
   async getCounts() {

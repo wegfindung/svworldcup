@@ -1,5 +1,11 @@
 export type LocaleCode = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'zh'
 
+export type LeagueType = 'rookie' | 'veteran'
+
+export type SlotClass = 'GK' | 'DEF' | 'MID' | 'FWD'
+
+export type SlotGroup = 'starter' | 'sub'
+
 export interface TeamSeed {
   code: string
   slug: string
@@ -30,6 +36,7 @@ export interface BootstrapPayload {
   supportedLocales: LocaleCode[]
   defaultLocale: LocaleCode
   scoring: ScoringConfig
+  budgetLimit: number
   teams: TeamSeed[]
   fixtures: FixtureSeed[]
   leagues: {
@@ -40,11 +47,61 @@ export interface BootstrapPayload {
 
 export interface SoccerversePlayer {
   playerId: number
-  name: string
+  displayName: string
   clubId: number
-  nationality: string
+  nationalityCode: string
   rating: number
-  imageUrl?: string
+  imageUrl: string
   positions: string[]
   positionMain?: string
+}
+
+export interface ParticipantProfile {
+  participantId: string
+  email: string
+  displayName: string
+  soccerverseUsername?: string
+  leagueType: LeagueType
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  status: 'pending_verification' | 'active' | 'locked' | 'withdrawn'
+  verifiedAt?: string
+}
+
+export interface TeamPoolPlayer {
+  teamCode: string
+  playerId: number
+  displayName: string
+  nationalityCode: string
+  rating: number
+  capCost: number
+  positions: string[]
+  positionMain?: string
+  positionClasses: SlotClass[]
+  imageUrl: string
+}
+
+export interface SquadSlotState {
+  key: string
+  slotGroup: SlotGroup
+  slotClass: SlotClass
+  order: number
+  label: string
+  player: TeamPoolPlayer | null
+}
+
+export interface ParticipantSquad {
+  squadId: string
+  participantId: string
+  budgetLimit: number
+  budgetUsed: number
+  budgetRemaining: number
+  isLocked: boolean
+  slots: SquadSlotState[]
+}
+
+export interface AdminProfile {
+  adminId: string
+  email: string
+  isActive: boolean
 }

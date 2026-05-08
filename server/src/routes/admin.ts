@@ -1,12 +1,19 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { adminSessionCookieName, adminSessionTtlSeconds, shouldUseSecureCookies } from '../config/auth.js'
 import { env } from '../config/env.js'
-import { scoringDefaults } from '../data/scoringDefaults.js'
-import { requireAdmin } from '../middleware/adminAuth.js'
+import { isKnownTeamCode, teams } from '../data/worldCupSeed.js'
+import { clearCookie, createCookie } from '../lib/cookies.js'
 import { sendVerificationMail } from '../lib/mailer.js'
 import { generatePlainToken } from '../lib/tokens.js'
+import { createRequireAdmin } from '../middleware/adminAuth.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { RegistrationRepository } from '../repositories/registrationRepository.js'
+import type { AdminRepository } from '../repositories/adminRepository.js'
+import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import { scoringDefaults } from '../data/scoringDefaults.js'
+import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
+import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerverse.js'
 
 const scoringSchema = z.object({
   goal: z.coerce.number().min(0).max(20),
@@ -22,6 +29,25 @@ const resendSchema = z.object({
   email: z.string().trim().email(),
 })
 
+const loginSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(200),
+})
+
+const teamPlayersSchema = z.object({
+  players: z.array(
+    z.object({
+      playerId: z.coerce.number().int().positive(),
+      displayName: z.string().trim().min(1).max(120),
+      nationalityCode: z.string().trim().min(3).max(3),
+      rating: z.coerce.number().int().min(0).max(99),
+      clubId: z.coerce.number().int().min(0).default(0),
+      positions: z.array(z.string().trim().min(1).max(8)).default([]),
+      positionMain: z.string().trim().max(8).optional(),
+    }),
+  ),
+})
+
 function isScoringLocked(): boolean {
   if (!env.TOURNAMENT_KICKOFF_AT) {
     return false
@@ -31,22 +57,131 @@ function isScoringLocked(): boolean {
 }
 
 export function createAdminRouter(
+  adminRepository: AdminRepository,
   registrationRepository: RegistrationRepository,
   configRepository: ConfigRepository,
+  teamPoolRepository: TeamPoolRepository,
 ) {
   const router = Router()
+  const requireAdmin = createRequireAdmin(adminRepository)
+
+  router.post('/login', async (req, res) => {
+    const parsed = loginSchema.parse(req.body)
+    const admin = await adminRepository.authenticate(parsed.email, parsed.password)
+    if (!admin) {
+      return res.status(401).json({ error: 'Invalid admin credentials.' })
+    }
+
+    const sessionToken = generatePlainToken()
+    await adminRepository.createSession(admin.adminId, sessionToken, adminSessionTtlSeconds)
+    res.setHeader(
+      'Set-Cookie',
+      createCookie(adminSessionCookieName, sessionToken, {
+        httpOnly: true,
+        secure: shouldUseSecureCookies(),
+        sameSite: 'Lax',
+        maxAge: adminSessionTtlSeconds,
+      }),
+    )
+
+    res.json({
+      admin: {
+        adminId: admin.adminId,
+        email: admin.email,
+      },
+    })
+  })
+
+  router.get('/session', requireAdmin, async (_req, res) => {
+    res.json({ admin: res.locals.admin })
+  })
+
+  router.post('/logout', requireAdmin, async (req, res) => {
+    const cookie = req.header('cookie') ?? ''
+    const match = cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${adminSessionCookieName}=`))
+    const token = match ? decodeURIComponent(match.slice(`${adminSessionCookieName}=`.length)) : ''
+    if (token) {
+      await adminRepository.revokeSession(token)
+    }
+
+    res.setHeader(
+      'Set-Cookie',
+      clearCookie(adminSessionCookieName, {
+        httpOnly: true,
+        secure: shouldUseSecureCookies(),
+        sameSite: 'Lax',
+      }),
+    )
+    res.status(204).end()
+  })
 
   router.use(requireAdmin)
 
   router.get('/overview', async (_req, res) => {
     const counts = await registrationRepository.getCounts()
     const scoring = await configRepository.getScoringConfig()
+    const selectionCounts = await teamPoolRepository.getTeamSelectionCounts()
     res.json({
       counts,
       scoring,
       scoringLocked: isScoringLocked(),
       defaults: scoringDefaults,
+      teamSelectionCounts: selectionCounts,
     })
+  })
+
+  router.get('/teams', async (_req, res) => {
+    const selectionCounts = await teamPoolRepository.getTeamSelectionCounts()
+    res.json({
+      items: teams.map((team) => ({
+        ...team,
+        selectedCount: selectionCounts[team.code] ?? 0,
+      })),
+    })
+  })
+
+  router.get('/teams/:teamCode/selections', async (req, res) => {
+    const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()
+    if (!isKnownTeamCode(teamCode)) {
+      return res.status(404).json({ error: 'Unknown team.' })
+    }
+
+    const items = await teamPoolRepository.listByTeam(teamCode)
+    res.json({ items })
+  })
+
+  router.put('/teams/:teamCode/selections', async (req, res) => {
+    const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()
+    if (!isKnownTeamCode(teamCode)) {
+      return res.status(404).json({ error: 'Unknown team.' })
+    }
+
+    const parsed = teamPlayersSchema.parse(req.body)
+    const items = await teamPoolRepository.replaceTeamPlayers(teamCode, parsed.players)
+    res.json({ items })
+  })
+
+  router.get('/teams/:teamCode/candidates', async (req, res) => {
+    const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()
+    const query = String(req.query.query ?? '').trim()
+
+    if (!isKnownTeamCode(teamCode)) {
+      return res.status(404).json({ error: 'Unknown team.' })
+    }
+    if (query.length < 2 && !/^\d+$/.test(query)) {
+      return res.json({ items: [] })
+    }
+
+    const countryId = getSoccerverseCountryId(teamCode)
+    if (!countryId) {
+      return res.status(422).json({ error: 'No Soccerverse country mapping exists for this team.' })
+    }
+
+    const items = (await searchPlayersByCountryAndName(countryId, query)).map(withImageUrl)
+    res.json({ items })
   })
 
   router.put('/scoring', async (req, res) => {

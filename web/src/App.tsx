@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
 import type { LocaleCode } from './lib/types'
+import { AdminPage } from './pages/AdminPage'
 import { BuilderPage } from './pages/BuilderPage'
 import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { TablesPage } from './pages/TablesPage'
+import { VerifyPage } from './pages/VerifyPage'
 
 const navigation = [
   { to: '/', label: 'Overview' },
   { to: '/builder', label: 'Builder' },
   { to: '/tables', label: 'Tables' },
+  { to: '/admin', label: 'Admin' },
   { to: '/profiles/demo-veteran', label: 'Profile demo' },
 ]
 
@@ -79,8 +82,10 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage locale={locale} />} />
-            <Route path="/builder" element={<BuilderPage />} />
+            <Route path="/builder" element={<BuilderPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage />} />
+            <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/admin" element={<AdminPage locale={locale} />} />
             <Route path="/profiles/:slug" element={<ProfilePage />} />
           </Routes>
         </main>

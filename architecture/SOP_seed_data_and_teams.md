@@ -30,6 +30,8 @@ Each team record should include:
 
 - Admin can preselect World Cup squads by Soccerverse `playerId`.
 - Admin can maintain the eligible player pool.
+- Builder team dropdowns must read from this preselected team pool instead of a free-form nationality search.
+- Player identity in the team pool should be enriched with community datapack names and portraits when Soccerverse API records omit names.
 - Admin changes to seeded teams/fixtures must be auditable.
 
 ## Data Quality Rules

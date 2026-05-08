@@ -29,9 +29,10 @@ The frontend proxies `/api` to `http://localhost:3000` in development.
 ## Current backend status
 
 - Teams and first-matchday fixtures are seeded in English.
-- Registration and verification flow works with in-memory fallback when `DATABASE_URL` is missing.
-- Admin scoring updates are protected by bearer token plus allowlisted admin email.
-- Soccerverse player search is proxied through the backend.
+- Registration now runs as a registration-first flow with email verification and participant sessions.
+- Admin backend access supports email + password login plus secure admin sessions.
+- The public builder drafts from admin-curated World Cup team pools, not arbitrary public search.
+- Germany is included as the first bootstrap team pool seed through the backend startup bootstrap.
 
 ## Deployment
 
@@ -43,7 +44,9 @@ Expected production env highlights:
 
 - `PUBLIC_WEB_URL`
 - `ADMIN_BOOTSTRAP_EMAILS`
+- `ADMIN_BOOTSTRAP_PASSWORD`
 - `ADMIN_API_TOKEN`
+- `COMMUNITY_PACK_URL`
 - SMTP variables
 - either `DATABASE_URL` or the discrete `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASS`
 
@@ -51,6 +54,7 @@ Database initialization:
 
 - `db/init/01-schema.sql` creates the schema
 - `db/init/02-seed-tournament.sql` seeds scoring config, 48 teams, and 24 opening fixtures
+- `db/migrations/2026-05-08-session-and-team-pools.sql` upgrades an existing database with admin sessions, participant sessions, and team-pool tables
 - `tools/check-deploy-readiness.ts` validates the production env key set without printing secrets
 
 ## Runtime checks

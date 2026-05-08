@@ -1,17 +1,31 @@
 import { Pool } from 'pg'
 import { env } from '../config/env.js'
+import { MemoryAdminRepository, PostgresAdminRepository, type AdminRepository } from '../repositories/adminRepository.js'
 import {
   MemoryRegistrationRepository,
   PostgresRegistrationRepository,
   type RegistrationRepository,
 } from '../repositories/registrationRepository.js'
 import {
+  MemoryParticipantSessionRepository,
+  PostgresParticipantSessionRepository,
+  type ParticipantSessionRepository,
+} from '../repositories/participantSessionRepository.js'
+import {
   MemoryConfigRepository,
   PostgresConfigRepository,
   type ConfigRepository,
 } from '../repositories/configRepository.js'
+import { MemorySquadRepository, PostgresSquadRepository, type SquadRepository } from '../repositories/squadRepository.js'
+import { MemoryTeamPoolRepository, PostgresTeamPoolRepository, type TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 
 let pool: Pool | null = null
+let registrationRepository: RegistrationRepository | null = null
+let configRepository: ConfigRepository | null = null
+let adminRepository: AdminRepository | null = null
+let participantSessionRepository: ParticipantSessionRepository | null = null
+let teamPoolRepository: TeamPoolRepository | null = null
+let squadRepository: SquadRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -41,11 +55,53 @@ function getPool(): Pool | null {
 }
 
 export function createRegistrationRepository(): RegistrationRepository {
-  const existingPool = getPool()
-  return existingPool ? new PostgresRegistrationRepository(existingPool) : new MemoryRegistrationRepository()
+  if (!registrationRepository) {
+    const existingPool = getPool()
+    registrationRepository = existingPool ? new PostgresRegistrationRepository(existingPool) : new MemoryRegistrationRepository()
+  }
+  return registrationRepository
 }
 
 export function createConfigRepository(): ConfigRepository {
-  const existingPool = getPool()
-  return existingPool ? new PostgresConfigRepository(existingPool) : new MemoryConfigRepository()
+  if (!configRepository) {
+    const existingPool = getPool()
+    configRepository = existingPool ? new PostgresConfigRepository(existingPool) : new MemoryConfigRepository()
+  }
+  return configRepository
+}
+
+export function createAdminRepository(): AdminRepository {
+  if (!adminRepository) {
+    const existingPool = getPool()
+    adminRepository = existingPool ? new PostgresAdminRepository(existingPool) : new MemoryAdminRepository()
+  }
+  return adminRepository
+}
+
+export function createParticipantSessionRepository(): ParticipantSessionRepository {
+  if (!participantSessionRepository) {
+    const existingPool = getPool()
+    participantSessionRepository = existingPool
+      ? new PostgresParticipantSessionRepository(existingPool)
+      : new MemoryParticipantSessionRepository(createRegistrationRepository())
+  }
+  return participantSessionRepository
+}
+
+export function createTeamPoolRepository(): TeamPoolRepository {
+  if (!teamPoolRepository) {
+    const existingPool = getPool()
+    teamPoolRepository = existingPool ? new PostgresTeamPoolRepository(existingPool) : new MemoryTeamPoolRepository()
+  }
+  return teamPoolRepository
+}
+
+export function createSquadRepository(): SquadRepository {
+  if (!squadRepository) {
+    const existingPool = getPool()
+    squadRepository = existingPool
+      ? new PostgresSquadRepository(existingPool, createTeamPoolRepository())
+      : new MemorySquadRepository(createTeamPoolRepository())
+  }
+  return squadRepository
 }

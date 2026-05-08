@@ -10,7 +10,7 @@ $serverIP = "46.224.220.87"
 $remotePath = "/opt/svworldcup"
 $zipFile = Join-Path $env:TEMP "svworldcup_deploy.zip"
 
-Write-Host "[1/7] Loading SSH passphrase..." -ForegroundColor Cyan
+Write-Host "[1/8] Loading SSH passphrase..." -ForegroundColor Cyan
 $line = Get-Content $envFile | Where-Object { $_ -match '^SSH_PASSPHRASE\s*=' } | Select-Object -First 1
 $pass = ($line -split '=', 2)[1].Trim().Trim('"').Trim("'")
 
@@ -19,7 +19,7 @@ $env:SSH_ASKPASS = $askpass
 $env:SSH_ASKPASS_REQUIRE = "force"
 $env:DISPLAY = "1"
 
-Write-Host "[2/7] Creating deploy archive..." -ForegroundColor Cyan
+Write-Host "[2/8] Creating deploy archive..." -ForegroundColor Cyan
 if (Test-Path $zipFile) { Remove-Item $zipFile -Force }
 
 $staging = Join-Path $env:TEMP "svworldcup_staging"
@@ -50,19 +50,22 @@ Remove-Item $staging -Recurse -Force
 $zipSize = (Get-Item $zipFile).Length / 1KB
 Write-Host "   Archive: $zipFile ($([math]::Round($zipSize))KB)" -ForegroundColor Gray
 
-Write-Host "[3/7] Creating remote directory..." -ForegroundColor Cyan
+Write-Host "[3/8] Creating remote directory..." -ForegroundColor Cyan
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "sudo mkdir -p ${remotePath} && sudo chown ${serverUser}:${serverUser} ${remotePath}"
 
-Write-Host "[4/7] Uploading archive..." -ForegroundColor Cyan
+Write-Host "[4/8] Uploading archive..." -ForegroundColor Cyan
 scp -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL $zipFile "${serverUser}@${serverIP}:/tmp/svworldcup_deploy.zip"
 
-Write-Host "[5/7] Extracting on server..." -ForegroundColor Cyan
+Write-Host "[5/8] Extracting on server..." -ForegroundColor Cyan
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && unzip -o /tmp/svworldcup_deploy.zip && rm /tmp/svworldcup_deploy.zip && sudo mkdir -p /var/lib/svworldcup/db"
 
-Write-Host "[6/7] Building and starting Docker stack..." -ForegroundColor Cyan
+Write-Host "[6/8] Building and starting Docker stack..." -ForegroundColor Cyan
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && docker compose build --no-cache && docker compose up -d"
 
-Write-Host "[7/7] Verifying..." -ForegroundColor Cyan
+Write-Host "[7/8] Applying database migrations..." -ForegroundColor Cyan
+ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && cat db/migrations/2026-05-08-session-and-team-pools.sql | docker exec -i svworldcup-db sh -lc 'psql -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\"'"
+
+Write-Host "[8/8] Verifying..." -ForegroundColor Cyan
 Start-Sleep -Seconds 10
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "docker ps --filter name=svworldcup --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
 

@@ -117,6 +117,17 @@ Fixed formation rule:
 - Primary country table
 - Secondary country table
 
+### Registration and access
+
+- The primary CTA must start the registration flow.
+- The registration flow must show `No multi-accounting allowed.` before submission.
+- Users explicitly choose rookie or veteran path through account possession:
+- no Soccerverse account => `Rookie`
+- at least one Soccerverse account => `Veteran`
+- Veteran registrations require a main Soccerverse account name.
+- Email verification also establishes the participant session for squad building.
+- Admin backend access must use email and password.
+
 ### Evaluation operations
 
 - Match result evaluation is admin-only.
@@ -369,6 +380,65 @@ Validation draft:
 - `leagueType` enum `rookie | veteran`
 - `status` enum `pending_verification | active | locked | withdrawn`
 
+### ParticipantSession
+
+```json
+{
+  "participantId": "uuid",
+  "email": "user@example.com",
+  "displayName": "manager-name",
+  "leagueType": "rookie",
+  "budgetLimit": 3000000,
+  "status": "active"
+}
+```
+
+Validation draft:
+
+- created only after successful email verification
+- bound to one server-issued httpOnly session token
+- must never expose token hashes to the client
+- revoked sessions must immediately lose builder mutation access
+
+### AdminSession
+
+```json
+{
+  "adminId": "uuid",
+  "email": "admin@example.com",
+  "role": "admin",
+  "status": "active"
+}
+```
+
+Validation draft:
+
+- requires allowed admin email plus valid password
+- password stored as server-side hash only
+- session token stored and validated server-side
+
+### TeamPlayerPoolEntry
+
+```json
+{
+  "teamCode": "BRA",
+  "playerId": 762,
+  "displayName": "Vinicius Paixao",
+  "rating": 93,
+  "capCost": 615279,
+  "positionCodes": ["AML", "FL", "FC"],
+  "positionClasses": ["MID", "FWD"],
+  "imageUrl": "https://elrincondeldt.com/sv/photos/players/762.png"
+}
+```
+
+Validation draft:
+
+- player must exist in Soccerverse API by `playerId`
+- player identity may be enriched from the community datapack when the API omits names
+- `teamCode` must be one of the 48 seeded World Cup teams
+- only admin-authenticated routes may mutate the team player pool
+
 ### AdminResultInput
 
 ```json
@@ -427,7 +497,7 @@ Validation draft:
 - Soccerverse API ingests eligible player catalogue
 - Admin preselects all World Cup squads by `playerId`
 - Public users register with email and double opt-in
-- Verified users choose rookie or veteran mode and build one hidden squad under salary cap
+- Verified users enter a participant session and build one hidden squad under salary cap
 - Admin enters official match performance data
 - Server recalculates participant, league, and nation scoreboards
 - Public share pages expose selected squad views only after reveal rules are satisfied
@@ -460,6 +530,7 @@ Validation draft:
 - all translatable copy must be separated from business logic
 - verified email is required for participant sessions
 - admins must be able to resend verification mail
+- admin access must support email and password login before production rollout
 
 ## 9. Blueprint Approval Gate
 
@@ -527,6 +598,7 @@ Verified on 2026-05-08 via `npm view`:
 | 2026-05-08 | Phase 1 | Schema approved by user |
 | 2026-05-08 | Phase 3 | Architecture layer created |
 | 2026-05-08 | Phase 3 | Frontend and backend scaffolded, verified build clean |
+| 2026-05-08 | Phase 3 | Registration-first builder workflow and email/password admin access approved for implementation |
 | 2026-05-08 | Phase 5 | Docker, Compose, SQL seeds, and Hetzner deploy script added |
 | 2026-05-08 | Phase 5 | Integrated production-style smoke test passed locally |
 | 2026-05-08 | Phase 5 | Compose DB override hardened and deploy-readiness check added |
