@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { EmptyState } from '../components/EmptyState'
+import { groupStageMatchPlan } from '../data/worldCupMatchPlan'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { t } from '../i18n/messages'
-import type { LocaleCode, TeamSeed } from '../lib/types'
+import type { LocaleCode } from '../lib/types'
 
 const superstarBaseImageUrl = 'https://elrincondeldt.com/sv/photos/players_webp/'
 
@@ -38,21 +38,51 @@ function DiscordIcon() {
   )
 }
 
-function TeamStack({ teams }: { teams: TeamSeed[] }) {
+function MatchPlanCard() {
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {teams.map((team, index) => (
-        <div
-          key={team.code}
-          className="glass-panel rounded-[1.6rem] px-4 py-3"
-          style={{ animationDelay: `${index * 80}ms` }}
-        >
-          <p className="mono text-[11px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
-            group {team.groupKey}
-          </p>
-          <p className="mt-2 text-lg font-medium text-white">{team.nameEn}</p>
+    <div className="glass-panel rounded-[2.2rem] p-6 sm:p-8">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">group stage match plan</p>
+          <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">All 72 World Cup group games</h3>
         </div>
-      ))}
+        <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">BST schedule</span>
+      </div>
+
+      <div className="mt-6 max-h-[34rem] space-y-5 overflow-y-auto pr-2">
+        {groupStageMatchPlan.map((day) => (
+          <section key={day.day} className="space-y-3">
+            <div className="sticky top-0 z-10 -mx-1 rounded-full border border-white/8 bg-[rgba(11,17,16,0.92)] px-4 py-2 backdrop-blur">
+              <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)]">{day.day}</p>
+            </div>
+
+            <div className="space-y-2">
+              {day.matches.map((match, index) => (
+                <div
+                  key={`${day.day}-${match.group}-${match.home}-${match.away}-${index}`}
+                  className="rounded-[1.5rem] border border-white/8 bg-black/15 px-4 py-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                        Group {match.group}
+                      </span>
+                      <p className="text-sm font-medium text-white sm:text-base">
+                        {match.home} <span className="text-[var(--color-muted)]">vs</span> {match.away}
+                      </p>
+                    </div>
+                    <span className="mono text-xs uppercase tracking-[0.16em] text-[var(--color-muted)]">{match.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <p className="mt-5 text-sm leading-relaxed text-[var(--color-muted)]">
+        Times shown in BST from the published day-by-day 2026 World Cup schedule.
+      </p>
     </div>
   )
 }
@@ -341,30 +371,7 @@ export function HomePage({ locale }: HomePageProps) {
           </div>
         </div>
 
-        <div className="glass-panel rounded-[2.2rem] p-6 sm:p-8">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="eyebrow">seeded teams</p>
-              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Backend-ready opening field</h3>
-            </div>
-            <Link to="/builder" className="mono text-xs uppercase tracking-[0.24em] text-[var(--color-accent)]">
-              search players
-            </Link>
-          </div>
-          <div className="mt-6">
-            {isLoading ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="skeleton h-20 rounded-[1.4rem]" />
-                ))}
-              </div>
-            ) : error ? (
-              <EmptyState title="Seed preview unavailable" body={t(locale, 'backendOffline')} />
-            ) : (
-              <TeamStack teams={data?.teams.slice(0, 8) ?? []} />
-            )}
-          </div>
-        </div>
+        <MatchPlanCard />
       </section>
     </div>
   )
