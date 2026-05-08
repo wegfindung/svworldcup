@@ -1,0 +1,13 @@
+{
+  "name": "svworldcup",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/dev.mjs",
+    "dev:web": "npm --prefix web run dev",
+    "dev:server": "npm --prefix server run dev",
+    "build": "npm --prefix server run build && npm --prefix web run build",
+    "lint": "npm --prefix web run lint"
+  }
+}
