@@ -1,0 +1,57 @@
+services:
+  app:
+    build: .
+    container_name: svworldcup-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-svworldcup}
+      DB_USER: ${DB_USER:-svworldcup}
+      DB_PASS: ${DB_PASS:-svworldcup-change-me}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - proxy
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.svworldcup.rule=Host(`worldcup.svtool.info`)"
+      - "traefik.http.routers.svworldcup.entrypoints=websecure"
+      - "traefik.http.routers.svworldcup.tls.certresolver=letsencrypt"
+      - "traefik.http.services.svworldcup.loadbalancer.server.port=3000"
+      - "traefik.docker.network=proxy"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/public/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    container_name: svworldcup-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-svworldcup}
+      POSTGRES_USER: ${DB_USER:-svworldcup}
+      POSTGRES_PASSWORD: ${DB_PASS:-svworldcup-change-me}
+    volumes:
+      - /var/lib/svworldcup/db:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-svworldcup} -d ${DB_NAME:-svworldcup}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge

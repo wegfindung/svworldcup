@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.local
+.tmp
+node_modules
+web/node_modules
+server/node_modules
+web/dist
+server/dist
+coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+**/.DS_Store
