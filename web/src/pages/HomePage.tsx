@@ -91,9 +91,6 @@ function SuperstarCard() {
   return (
     <div className="glass-panel overflow-hidden rounded-[1.9rem] p-5">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Add a superstar</p>
-      <p className="mt-3 max-w-[28ch] text-sm leading-relaxed text-[var(--color-muted)]">
-        Build around icons from the community datapack and show your squad taste before kickoff.
-      </p>
       <div className="mt-5 grid grid-cols-4 gap-2">
         {superstarPlayers.map((player, index) => (
           <div
@@ -175,61 +172,6 @@ function DiscordCard() {
   )
 }
 
-function HeroBlueprintCard() {
-  return (
-    <div className="glass-panel relative overflow-hidden rounded-[2.1rem] p-6 sm:p-7">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(24,180,133,0.16),transparent)]" />
-      <div className="relative">
-        <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Squad blueprint</p>
-        <div className="mt-5 grid gap-3">
-          <div className="rounded-[1.4rem] border border-white/8 bg-black/15 p-4">
-            <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">format</p>
-            <p className="mt-2 text-lg font-semibold text-white">4-3-3 starters + 4 locked subs</p>
-          </div>
-          <div className="rounded-[1.4rem] border border-white/8 bg-black/15 p-4">
-            <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">cap</p>
-            <p className="mt-2 text-lg font-semibold text-[var(--color-accent)]">3,000,000 SVC</p>
-          </div>
-          <div className="rounded-[1.4rem] border border-white/8 bg-black/15 p-4">
-            <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">reveal flow</p>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-paper)]">
-              Hidden squads, public tables, and share-ready profiles once the reveal starts.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 rounded-[1.5rem] border border-white/8 bg-black/20 p-4">
-          <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">formation board</p>
-          <div className="mt-4 grid gap-2 text-center text-xs font-semibold uppercase tracking-[0.16em] text-white">
-            <div className="mx-auto rounded-full border border-white/8 bg-white/5 px-3 py-2">GK</div>
-            <div className="grid grid-cols-4 gap-2">
-              {['DEF', 'DEF', 'DEF', 'DEF'].map((slot, index) => (
-                <div key={`${slot}-${index}`} className="rounded-full border border-white/8 bg-white/5 px-3 py-2">
-                  {slot}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {['MID', 'MID', 'MID'].map((slot, index) => (
-                <div key={`${slot}-${index}`} className="rounded-full border border-white/8 bg-white/5 px-3 py-2">
-                  {slot}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {['FWD', 'FWD', 'FWD'].map((slot, index) => (
-                <div key={`${slot}-${index}`} className="rounded-full border border-white/8 bg-white/5 px-3 py-2">
-                  {slot}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 interface HomePageProps {
   locale: LocaleCode
 }
@@ -253,8 +195,8 @@ export function HomePage({ locale }: HomePageProps) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="eyebrow">{t(locale, 'heroEyebrow')}</p>
           </div>
-          <div className="mt-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
+          <div className="mt-10">
+            <div className="max-w-[56rem]">
               <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
                 Hidden squads. Shared reveals. One locked draft.
               </p>
@@ -269,27 +211,8 @@ export function HomePage({ locale }: HomePageProps) {
                 >
                   {t(locale, 'heroPrimary')}
                 </Link>
-                <Link
-                  to="/tables"
-                  className="rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                >
-                  {t(locale, 'heroSecondary')}
-                </Link>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                {['15 players', '4-3-3 + 4 subs', '3,000,000 SVC cap'].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/10 bg-white/4 px-3.5 py-2 text-xs font-medium uppercase tracking-[0.16em] text-[var(--color-paper)]"
-                  >
-                    {item}
-                  </span>
-                ))}
               </div>
             </div>
-
-            <HeroBlueprintCard />
           </div>
         </div>
 
