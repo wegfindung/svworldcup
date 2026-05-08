@@ -7,6 +7,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      DATABASE_URL: postgresql://${DB_USER:-svworldcup}:${DB_PASS:-svworldcup-change-me}@db:5432/${DB_NAME:-svworldcup}
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-svworldcup}

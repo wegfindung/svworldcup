@@ -51,11 +51,13 @@ Database initialization:
 
 - `db/init/01-schema.sql` creates the schema
 - `db/init/02-seed-tournament.sql` seeds scoring config, 48 teams, and 24 opening fixtures
+- `tools/check-deploy-readiness.ts` validates the production env key set without printing secrets
 
 ## Runtime checks
 
 - `cd server && npx tsx ../tools/check-env.ts`
 - `cd server && npx tsx ../tools/check-soccerverse.ts`
+- `npx --prefix server tsx tools/check-deploy-readiness.ts`
 
 ## Validation completed
 

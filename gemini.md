@@ -529,3 +529,4 @@ Verified on 2026-05-08 via `npm view`:
 | 2026-05-08 | Phase 3 | Frontend and backend scaffolded, verified build clean |
 | 2026-05-08 | Phase 5 | Docker, Compose, SQL seeds, and Hetzner deploy script added |
 | 2026-05-08 | Phase 5 | Integrated production-style smoke test passed locally |
+| 2026-05-08 | Phase 5 | Compose DB override hardened and deploy-readiness check added |
