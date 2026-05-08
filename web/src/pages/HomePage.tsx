@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
-import { LocaleRail } from '../components/LocaleRail'
 import { StatTile } from '../components/StatTile'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { t } from '../i18n/messages'
-import type { TeamSeed } from '../lib/types'
+import type { LocaleCode, TeamSeed } from '../lib/types'
 
 function TeamStack({ teams }: { teams: TeamSeed[] }) {
   return (
@@ -25,8 +24,11 @@ function TeamStack({ teams }: { teams: TeamSeed[] }) {
   )
 }
 
-export function HomePage() {
-  const locale = 'en'
+interface HomePageProps {
+  locale: LocaleCode
+}
+
+export function HomePage({ locale }: HomePageProps) {
   const { data, error, isLoading } = useBootstrap()
 
   return (
@@ -35,7 +37,6 @@ export function HomePage() {
         <div className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="eyebrow">{t(locale, 'heroEyebrow')}</p>
-            <LocaleRail activeLocale={locale} locales={data?.supportedLocales ?? ['en', 'es', 'de', 'fr', 'pt', 'ru', 'zh']} />
           </div>
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
