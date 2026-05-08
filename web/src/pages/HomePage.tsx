@@ -4,7 +4,7 @@ import { useBootstrap } from '../hooks/useBootstrap'
 import { t } from '../i18n/messages'
 import type { LocaleCode } from '../lib/types'
 
-const superstarBaseImageUrl = 'https://elrincondeldt.com/sv/photos/players_webp/'
+const superstarBaseImageUrl = 'https://elrincondeldt.com/sv/photos/players/'
 
 const superstarPlayers = [
   { playerId: 133609, name: 'Pedri' },
@@ -102,7 +102,7 @@ function SuperstarCard() {
             style={{ animationDelay: `${index * 70}ms` }}
           >
             <img
-              src={`${superstarBaseImageUrl}${player.playerId}.webp`}
+              src={`${superstarBaseImageUrl}${player.playerId}.png`}
               alt={player.name}
               loading="lazy"
               width={120}

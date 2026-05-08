@@ -100,6 +100,7 @@ export function createPublicRouter({ configRepository, registrationRepository }:
         clubId: item.club_id,
         nationality: item.nationality,
         rating: item.rating,
+        imageUrl: `https://elrincondeldt.com/sv/photos/players/${item.player_id}.png`,
         positions: Array.isArray(item.positions) ? item.positions : [],
         positionMain: item.position_main,
       })),

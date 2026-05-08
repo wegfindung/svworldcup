@@ -43,7 +43,7 @@ function App() {
               src="/brand/logo-200.webp"
               alt="Soccerverse World Cup Community Event"
               width={200}
-              height={80}
+              height={133}
               className="h-auto w-[200px] max-w-full"
             />
           </NavLink>

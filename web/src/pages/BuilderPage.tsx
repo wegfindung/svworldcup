@@ -114,9 +114,19 @@ export function BuilderPage() {
             {results.map((player) => (
               <article key={player.playerId} className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-lg font-medium text-white">{player.name}</p>
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">{player.nationality}</p>
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={player.imageUrl}
+                      alt={player.name}
+                      loading="lazy"
+                      width={64}
+                      height={64}
+                      className="h-16 w-16 rounded-[1.2rem] border border-white/10 object-cover"
+                    />
+                    <div>
+                      <p className="text-lg font-medium text-white">{player.name}</p>
+                      <p className="mt-2 text-sm text-[var(--color-muted)]">{player.nationality}</p>
+                    </div>
                   </div>
                   <div className="rounded-full border border-white/10 px-3 py-1">
                     <span className="mono text-sm text-[var(--color-accent)]">{player.rating}</span>

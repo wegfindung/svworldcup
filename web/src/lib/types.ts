@@ -44,6 +44,7 @@ export interface SoccerversePlayer {
   clubId: number
   nationality: string
   rating: number
+  imageUrl?: string
   positions: string[]
   positionMain?: string
 }
