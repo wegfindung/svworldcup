@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { env } from '../server/src/config/env.js'
 import { teams } from '../server/src/data/worldCupSeed.js'
 import type { SoccerversePlayerRecord } from '../server/src/domain/types.js'
 import { createTeamPoolRepository } from '../server/src/services/repos.js'
@@ -23,8 +24,10 @@ type SourcePayload = Record<string, SourceTeamPayload>
 
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
+const viaAdminApi = args.includes('--via-admin-api')
 const sourcePath =
-  args.find((value) => value !== '--dry-run') ?? path.resolve(process.cwd(), '.tmp', 'updated_world_cup_squads.json')
+  args.find((value) => value !== '--dry-run' && value !== '--via-admin-api') ??
+  path.resolve(process.cwd(), '.tmp', 'updated_world_cup_squads.json')
 
 const explicitAliases = new Map<string, string>([
   ['turkiye', 'TUR'],
@@ -94,7 +97,7 @@ async function main() {
   const raw = fs.readFileSync(sourcePath, 'utf8')
   const payload = JSON.parse(raw) as SourcePayload
   const teamCodeByName = buildTeamCodeByName()
-  const repository = dryRun ? null : createTeamPoolRepository()
+  const repository = dryRun || viaAdminApi ? null : createTeamPoolRepository()
 
   if (!dryRun && repository?.storageKind !== 'postgres') {
     throw new Error('Team pool repository is not using PostgreSQL. Check DATABASE_URL / DB_* env configuration first.')
@@ -131,6 +134,65 @@ async function main() {
       teamName,
       count: players.length,
     })
+  }
+
+  if (viaAdminApi) {
+    const adminEmail = env.ADMIN_BOOTSTRAP_EMAILS[0]
+    const adminPassword = env.ADMIN_BOOTSTRAP_PASSWORD
+    if (!adminEmail || !adminPassword) {
+      throw new Error('ADMIN_BOOTSTRAP_EMAILS / ADMIN_BOOTSTRAP_PASSWORD are required for --via-admin-api.')
+    }
+
+    const loginResponse = await fetch(`${env.PUBLIC_WEB_URL}/api/admin/login`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: adminEmail,
+        password: adminPassword,
+      }),
+    })
+
+    if (!loginResponse.ok) {
+      throw new Error(`Admin login failed with status ${loginResponse.status}.`)
+    }
+
+    const setCookieHeader = loginResponse.headers.get('set-cookie')
+    if (!setCookieHeader) {
+      throw new Error('Admin login did not return a session cookie.')
+    }
+    const sessionCookie = setCookieHeader.split(';', 1)[0]
+
+    for (const item of imported) {
+      const teamPayload = payload[item.teamName]
+      const dedupedPlayers = new Map<number, SoccerversePlayerRecord>()
+      for (const sourcePlayer of teamPayload.players ?? []) {
+        const mapped = mapPlayer(sourcePlayer, item.teamCode)
+        if (!Number.isInteger(mapped.playerId) || mapped.playerId <= 0 || !mapped.displayName) {
+          continue
+        }
+        if (!dedupedPlayers.has(mapped.playerId)) {
+          dedupedPlayers.set(mapped.playerId, mapped)
+        }
+      }
+
+      const response = await fetch(`${env.PUBLIC_WEB_URL}/api/admin/teams/${item.teamCode}/selections`, {
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          cookie: sessionCookie,
+        },
+        body: JSON.stringify({
+          players: [...dedupedPlayers.values()],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Import failed for ${item.teamCode} with status ${response.status}: ${errorText}`)
+      }
+    }
   }
 
   imported.sort((left, right) => left.teamCode.localeCompare(right.teamCode))

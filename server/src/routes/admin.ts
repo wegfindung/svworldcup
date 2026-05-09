@@ -44,6 +44,7 @@ const teamPlayersSchema = z.object({
       clubId: z.coerce.number().int().min(0).default(0),
       positions: z.array(z.string().trim().min(1).max(8)).default([]),
       positionMain: z.string().trim().max(8).optional(),
+      imageUrl: z.string().trim().url().optional(),
     }),
   ),
 })
