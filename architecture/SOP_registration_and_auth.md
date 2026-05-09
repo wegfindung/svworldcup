@@ -28,6 +28,7 @@ Allow participants to register securely with verified email, enter the squad bui
 9. User confirms via emailed link.
 10. Verification activates the participant account and creates a participant session.
 11. The verified participant enters the squad builder with the starting wage budget.
+12. Frontend verification must be confirmed by an explicit user action on the verification screen, not by an automatic request on page load.
 
 ## Participant Session Rules
 
@@ -35,6 +36,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - One active registration per normalized email address.
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
 - Verification link consumption must also establish the participant session.
+- Session recovery from the frontend must start from an explicit user action such as `Open my squad`.
 - Squad mutations are blocked after tournament lock.
 - Hidden squads remain private until self-reveal or global kickoff reveal.
 - A participant may request a fresh email link if they are pending verification or need to re-enter on another device.
@@ -58,6 +60,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - reset the full squad after an explicit warning
 - live remaining budget display
 - slot-by-slot formation state
+ - explicit `load team pool` action before player data is requested
 7. The builder must never rely on client-only validation for cap or slot legality.
 
 ## Admin Auth Rules
@@ -69,6 +72,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - Admins can resend verification mail.
 - Admins can change scoring parameters only before World Cup kickoff.
 - Admins must be able to maintain the preselected player pool for all 48 World Cup teams before public drafting opens.
+- Admin team-pool reads must start from explicit operator actions, not automatic page-load fetches.
 
 ## Protected Routes
 

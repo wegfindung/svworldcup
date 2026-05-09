@@ -55,6 +55,9 @@ Provide a secure Soccerverse World Cup event platform with:
 - All admin routes require authenticated admin role.
 - Participant mutations require an authenticated participant session.
 - Public APIs must be rate limited.
+- Frontend API requests must be user-triggered.
+- The UI must not make bootstrap, session, team-pool, or verification requests automatically on page mount.
+- Static assets must not be blocked by API rate limiting or SPA fallback routing.
 - Audit log entries are required for:
 - admin login
 - admin logout

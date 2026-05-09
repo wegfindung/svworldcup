@@ -1,20 +1,19 @@
 import { Link } from 'react-router-dom'
+import { PlayerPortrait } from '../components/PlayerPortrait'
 import { groupStageMatchPlan } from '../data/worldCupMatchPlan'
-import { useBootstrap } from '../hooks/useBootstrap'
 import { t } from '../i18n/messages'
+import { defaultScoring } from '../data/eventConfig'
 import type { LocaleCode } from '../lib/types'
 
-const superstarBaseImageUrl = 'https://elrincondeldt.com/sv/photos/players/'
-
 const superstarPlayers = [
-  { playerId: 133609, name: 'Pedri' },
-  { playerId: 278, name: 'Kylian Mbappe' },
-  { playerId: 181812, name: 'Jamal Musiala' },
-  { playerId: 9, name: 'Achraf Hakimi' },
-  { playerId: 927, name: 'Kang-In Lee' },
-  { playerId: 129718, name: 'Jude Bellingham' },
-  { playerId: 762, name: 'Vinicius Paixao' },
-  { playerId: 162511, name: 'Senne Lammens' },
+  { playerId: 133609, name: 'Pedri', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png' },
+  { playerId: 278, name: 'Kylian Mbappe', imageUrl: 'https://elrincondeldt.com/sv/photos/players/278.png' },
+  { playerId: 181812, name: 'Jamal Musiala', imageUrl: 'https://elrincondeldt.com/sv/photos/players/181812.png' },
+  { playerId: 9, name: 'Achraf Hakimi', imageUrl: 'https://elrincondeldt.com/sv/photos/players/9.png' },
+  { playerId: 927, name: 'Kang-In Lee', imageUrl: 'https://elrincondeldt.com/sv/photos/players/927.png' },
+  { playerId: 129718, name: 'Jude Bellingham', imageUrl: 'https://elrincondeldt.com/sv/photos/players/129718.png' },
+  { playerId: 762, name: 'Vinicius Paixao', imageUrl: 'https://elrincondeldt.com/sv/photos/players/762.png' },
+  { playerId: 162511, name: 'Senne Lammens', imageUrl: 'https://elrincondeldt.com/sv/photos/players/162511.png' },
 ] as const
 
 const footballNations = [
@@ -98,10 +97,9 @@ function SuperstarCard() {
             className="group overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/20"
             style={{ animationDelay: `${index * 70}ms` }}
           >
-            <img
-              src={`${superstarBaseImageUrl}${player.playerId}.png`}
+            <PlayerPortrait
+              src={player.imageUrl}
               alt={player.name}
-              loading="lazy"
               width={120}
               height={120}
               className="aspect-square w-full object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
@@ -177,16 +175,7 @@ interface HomePageProps {
 }
 
 export function HomePage({ locale }: HomePageProps) {
-  const { data, error, isLoading } = useBootstrap()
-  const scoring = data?.scoring ?? {
-    goal: 2,
-    assist: 2,
-    cleanSheet: 3,
-    appearance: 0,
-    minutes: 0,
-    performancePointsMin: 0,
-    performancePointsMax: 1,
-  }
+  const scoring = defaultScoring
 
   return (
     <div className="space-y-8 pb-12">
@@ -278,19 +267,13 @@ export function HomePage({ locale }: HomePageProps) {
               </p>
             </div>
 
-            {error ? (
-              <div className="rounded-[1.5rem] border border-amber-300/20 bg-amber-300/8 p-4">
-                <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-sand)]">backend status</p>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--color-paper)]">{t(locale, 'backendOffline')}</p>
-              </div>
-            ) : null}
-
-            {isLoading ? (
-              <div className="grid gap-3">
-                <div className="skeleton h-20 rounded-[1.5rem]" />
-                <div className="skeleton h-20 rounded-[1.5rem]" />
-              </div>
-            ) : null}
+            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+              <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">request policy</p>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-paper)]">
+                No API data is requested from the landing page. Registration, verification, builder loading, and backend tools only talk
+                to the server after an explicit button action.
+              </p>
+            </div>
           </div>
         </div>
 

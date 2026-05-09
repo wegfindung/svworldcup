@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { EmptyState } from '../components/EmptyState'
+import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
+import { eventTeams } from '../data/eventConfig'
 import {
-  fetchAdminSession,
   fetchAdminTeams,
   fetchTeamSelections,
   loginAdmin,
@@ -18,14 +19,21 @@ interface AdminPageProps {
 
 export function AdminPage({ locale: _locale }: AdminPageProps) {
   void _locale
-  const [authState, setAuthState] = useState<'loading' | 'guest' | 'active'>('loading')
+  const [authState, setAuthState] = useState<'guest' | 'active'>('guest')
   const [admin, setAdmin] = useState<AdminProfile | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loginBusy, setLoginBusy] = useState(false)
-  const [teams, setTeams] = useState<Array<TeamSeed & { selectedCount: number }>>([])
+  const [teams, setTeams] = useState<Array<TeamSeed & { selectedCount: number }>>(() =>
+    eventTeams.map((team) => ({
+      ...team,
+      selectedCount: 0,
+    })),
+  )
+  const [teamsBusy, setTeamsBusy] = useState(false)
   const [selectedTeamCode, setSelectedTeamCode] = useState<string>('GER')
+  const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [selections, setSelections] = useState<TeamPoolPlayer[]>([])
   const [candidates, setCandidates] = useState<SoccerversePlayer[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -33,107 +41,53 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
   const [saveBusy, setSaveBusy] = useState(false)
   const [panelError, setPanelError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let active = true
-
-    async function load() {
-      try {
-        const session = await fetchAdminSession()
-        if (!active) {
-          return
-        }
-        setAdmin(session.admin)
-        setAuthState('active')
-      } catch {
-        if (!active) {
-          return
-        }
-        setAuthState('guest')
-      }
-    }
-
-    void load()
-    return () => {
-      active = false
-    }
-  }, [])
-
-  useEffect(() => {
-    if (authState !== 'active') {
-      return
-    }
-
-    let active = true
-    void fetchAdminTeams()
-      .then((response) => {
-        if (!active) {
-          return
-        }
-        setTeams(response.items)
-        if (!response.items.some((team) => team.code === selectedTeamCode)) {
-          setSelectedTeamCode(response.items[0]?.code ?? 'GER')
-        }
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-        setPanelError(error instanceof Error ? error.message : 'Could not load the admin teams.')
-      })
-
-    return () => {
-      active = false
-    }
-  }, [authState, selectedTeamCode])
-
-  useEffect(() => {
-    if (authState !== 'active' || !selectedTeamCode) {
-      return
-    }
-
-    let active = true
-
-    async function loadTeamSelections() {
-      setPanelError(null)
-      try {
-        const response = await fetchTeamSelections(selectedTeamCode)
-        if (!active) {
-          return
-        }
-        setSelections(response.items)
-      } catch (error) {
-        if (!active) {
-          return
-        }
-        setPanelError(error instanceof Error ? error.message : 'Could not load team selections.')
-      }
-    }
-
-    void loadTeamSelections()
-
-    return () => {
-      active = false
-    }
-  }, [authState, selectedTeamCode])
-
   const selectedTeam = useMemo(
     () => teams.find((team) => team.code === selectedTeamCode) ?? null,
     [teams, selectedTeamCode],
   )
 
+  async function handleLoadTeamSelections(teamCode: string) {
+    setSelectedTeamCode(teamCode)
+    setLoadedTeamCode(null)
+    setSelections([])
+    setCandidates([])
+    setSearchQuery('')
+    setPanelError(null)
+
+    try {
+      const response = await fetchTeamSelections(teamCode)
+      setSelections(response.items)
+      setLoadedTeamCode(teamCode)
+    } catch (error) {
+      setPanelError(error instanceof Error ? error.message : 'Could not load team selections.')
+      setLoadedTeamCode(null)
+    }
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoginBusy(true)
     setLoginError(null)
+    setPanelError(null)
 
     try {
       const response = await loginAdmin(loginEmail, loginPassword)
+      setTeamsBusy(true)
+      const teamResponse = await fetchAdminTeams()
       setAdmin(response.admin)
+      setTeams(teamResponse.items)
+      if (!teamResponse.items.some((team) => team.code === selectedTeamCode)) {
+        setSelectedTeamCode(teamResponse.items[0]?.code ?? 'GER')
+      }
+      setSelections([])
+      setCandidates([])
+      setLoadedTeamCode(null)
       setAuthState('active')
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : 'Login failed.')
     } finally {
       setLoginBusy(false)
+      setTeamsBusy(false)
     }
   }
 
@@ -207,19 +161,6 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
     }
   }
 
-  if (authState === 'loading') {
-    return (
-      <div className="space-y-6 pb-12">
-        <section className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
-          <div className="grid gap-3">
-            <div className="skeleton h-24 rounded-[1.8rem]" />
-            <div className="skeleton h-56 rounded-[1.8rem]" />
-          </div>
-        </section>
-      </div>
-    )
-  }
-
   if (authState === 'guest') {
     return (
       <div className="mx-auto max-w-3xl pb-12">
@@ -282,6 +223,9 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
               Logged in as <span className="font-medium text-white">{admin?.email}</span>. Search by name or player ID, add candidates,
               then save the player pool for each nation.
             </p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+              Team and player requests only start after button presses. Switching the highlighted nation alone does not hit the API.
+            </p>
           </div>
 
           <button
@@ -289,6 +233,10 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
             onClick={async () => {
               await logoutAdmin()
               setAdmin(null)
+              setSelections([])
+              setCandidates([])
+              setLoadedTeamCode(null)
+              setPanelError(null)
               setAuthState('guest')
             }}
             className="rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
@@ -301,16 +249,19 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="glass-panel rounded-[2rem] p-5 sm:p-6">
           <p className="eyebrow">teams</p>
+          {teamsBusy ? (
+            <div className="mt-5 grid gap-3">
+              <div className="skeleton h-20 rounded-[1.4rem]" />
+              <div className="skeleton h-20 rounded-[1.4rem]" />
+              <div className="skeleton h-20 rounded-[1.4rem]" />
+            </div>
+          ) : null}
           <div className="mt-5 grid gap-2">
             {teams.map((team) => (
               <button
                 key={team.code}
                 type="button"
-                onClick={() => {
-                  setSelectedTeamCode(team.code)
-                  setCandidates([])
-                  setSearchQuery('')
-                }}
+                onClick={() => void handleLoadTeamSelections(team.code)}
                 className={[
                   'flex w-full items-center justify-between gap-3 rounded-[1.4rem] border px-4 py-3 text-left transition duration-300 ease-out active:scale-[0.99]',
                   team.code === selectedTeamCode
@@ -352,7 +303,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
               <button
                 type="button"
                 onClick={() => void handleSave()}
-                disabled={saveBusy || !selectedTeamCode}
+                disabled={saveBusy || !selectedTeamCode || loadedTeamCode !== selectedTeamCode}
                 className="rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
                 {saveBusy ? 'Saving…' : 'Save team pool'}
@@ -390,10 +341,9 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
                   candidates.map((player) => (
                     <article key={player.playerId} className="rounded-[1.4rem] border border-white/8 bg-black/15 p-4">
                       <div className="flex items-start gap-4">
-                        <img
+                        <PlayerPortrait
                           src={player.imageUrl}
                           alt={player.displayName}
-                          loading="lazy"
                           width={68}
                           height={68}
                           className="h-16 w-16 rounded-[1rem] border border-white/10 object-cover"
@@ -434,16 +384,20 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
 
               <div className="space-y-3">
                 <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">selected players</p>
-                {selections.length === 0 ? (
+                {loadedTeamCode !== selectedTeamCode ? (
+                  <EmptyState
+                    title="Saved pool not loaded yet"
+                    body="Choose a nation from the left and press that team button to load the current saved player pool."
+                  />
+                ) : selections.length === 0 ? (
                   <EmptyState title="This team is still empty" body="Germany will already contain your first seed list once the backend seed is active." />
                 ) : (
                   selections.map((player) => (
                     <article key={player.playerId} className="rounded-[1.4rem] border border-white/8 bg-black/15 p-4">
                       <div className="flex items-start gap-4">
-                        <img
+                        <PlayerPortrait
                           src={player.imageUrl}
                           alt={player.displayName}
-                          loading="lazy"
                           width={68}
                           height={68}
                           className="h-16 w-16 rounded-[1rem] border border-white/10 object-cover"

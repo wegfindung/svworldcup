@@ -44,6 +44,22 @@ foreach ($d in $dirs) {
     Copy-Item $src $dst -Recurse -Force
 }
 
+$pathsToPrune = @(
+    (Join-Path $staging "web\node_modules"),
+    (Join-Path $staging "server\node_modules"),
+    (Join-Path $staging "node_modules"),
+    (Join-Path $staging "web\dist"),
+    (Join-Path $staging "server\dist"),
+    (Join-Path $staging ".tmp"),
+    (Join-Path $staging "coverage")
+)
+
+foreach ($pathToPrune in $pathsToPrune) {
+    if (Test-Path $pathToPrune) {
+        Remove-Item $pathToPrune -Recurse -Force
+    }
+}
+
 Compress-Archive -Path "$staging\*" -DestinationPath $zipFile -Force
 Remove-Item $staging -Recurse -Force
 

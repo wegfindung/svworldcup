@@ -1,9 +1,7 @@
 import { EmptyState } from '../components/EmptyState'
-import { useBootstrap } from '../hooks/useBootstrap'
+import { defaultScoring } from '../data/eventConfig'
 
 export function TablesPage() {
-  const { data, error, isLoading } = useBootstrap()
-
   return (
     <div className="space-y-6 pb-12">
       <section className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
@@ -30,29 +28,21 @@ export function TablesPage() {
       <section className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
         <div className="glass-panel rounded-[2.2rem] p-6 sm:p-8">
           <p className="eyebrow">status</p>
-          {isLoading ? (
-            <div className="mt-6 grid gap-3">
-              <div className="skeleton h-24 rounded-[1.5rem]" />
-              <div className="skeleton h-24 rounded-[1.5rem]" />
+          <div className="mt-6 space-y-4">
+            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+              <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">scoring profile</p>
+              <p className="mt-4 text-sm leading-relaxed text-[var(--color-paper)]">
+                Goal {defaultScoring.goal}, assist {defaultScoring.assist}, clean sheet {defaultScoring.cleanSheet}, performance{' '}
+                {defaultScoring.performancePointsMin}–{defaultScoring.performancePointsMax}.
+              </p>
             </div>
-          ) : error ? (
-            <EmptyState title="Standings unavailable" body="The backend needs to be running before public standings can load." />
-          ) : (
-            <div className="mt-6 space-y-4">
-              <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
-                <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">scoring profile</p>
-                <p className="mt-4 text-sm leading-relaxed text-[var(--color-paper)]">
-                  Goal {data?.scoring.goal}, assist {data?.scoring.assist}, clean sheet {data?.scoring.cleanSheet}, performance {data?.scoring.performancePointsMin}–{data?.scoring.performancePointsMax}.
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
-                <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">first matchday</p>
-                <p className="mt-4 text-sm leading-relaxed text-[var(--color-paper)]">
-                  {data?.fixtures.length ?? 0} fixtures are already seeded in the backend with English team names.
-                </p>
-              </div>
+            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+              <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">request policy</p>
+              <p className="mt-4 text-sm leading-relaxed text-[var(--color-paper)]">
+                Public tables will only request live standings after the user explicitly asks to load them.
+              </p>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="glass-panel rounded-[2.2rem] p-6 sm:p-8">

@@ -1,8 +1,9 @@
-import { startTransition, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { startTransition, useMemo, useState, type FormEvent } from 'react'
 import { EmptyState } from '../components/EmptyState'
+import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
-import { useBootstrap } from '../hooks/useBootstrap'
+import { budgetLimit as defaultBudgetLimit, eventTeams, leagueCopy } from '../data/eventConfig'
 import {
   assignSquadPlayer,
   fetchParticipantSession,
@@ -37,7 +38,7 @@ const initialRegistrationForm: RegistrationFormState = {
 }
 
 function leagueLabel(mode: LeagueType) {
-  return mode === 'veteran' ? 'Veteran league' : 'Rookie league'
+  return leagueCopy[mode]
 }
 
 function formatBudget(value: number) {
@@ -46,12 +47,12 @@ function formatBudget(value: number) {
 
 export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   void _locale
-  const { data } = useBootstrap()
-  const [accessState, setAccessState] = useState<'loading' | 'guest' | 'pending' | 'active'>('loading')
+  const [accessState, setAccessState] = useState<'guest' | 'pending' | 'active'>('guest')
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
-  const [budgetLimit, setBudgetLimit] = useState(3_000_000)
+  const [budgetLimit, setBudgetLimit] = useState(defaultBudgetLimit)
   const [squad, setSquad] = useState<ParticipantSquad | null>(null)
   const [selectedTeamCode, setSelectedTeamCode] = useState<string | undefined>()
+  const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
   const [teamPlayersLoading, setTeamPlayersLoading] = useState(false)
   const [builderError, setBuilderError] = useState<string | null>(null)
@@ -60,84 +61,12 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   const [registrationError, setRegistrationError] = useState<string | null>(null)
   const [submittedEmail, setSubmittedEmail] = useState('')
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle')
-
-  useEffect(() => {
-    let active = true
-
-    async function loadSession() {
-      try {
-        const session = await fetchParticipantSession()
-        if (!active) {
-          return
-        }
-
-        const squadResponse = await fetchParticipantSquad()
-        if (!active) {
-          return
-        }
-
-        setParticipant(session.participant)
-        setBudgetLimit(session.budgetLimit)
-        setSquad(squadResponse.squad)
-        setSelectedTeamCode((current) => current ?? session.participant.primaryTeamCode)
-        setAccessState('active')
-      } catch {
-        if (!active) {
-          return
-        }
-        setAccessState('guest')
-      }
-    }
-
-    void loadSession()
-    return () => {
-      active = false
-    }
-  }, [])
-
-  useEffect(() => {
-    if (accessState !== 'active' || !selectedTeamCode) {
-      return
-    }
-
-    let active = true
-    const teamCode = selectedTeamCode
-
-    async function loadTeamPlayers() {
-      setTeamPlayersLoading(true)
-      setBuilderError(null)
-
-      try {
-        const response = await fetchTeamPlayers(teamCode)
-        if (!active) {
-          return
-        }
-        startTransition(() => {
-          setTeamPlayers(response.items)
-        })
-      } catch (error) {
-        if (!active) {
-          return
-        }
-        setBuilderError(error instanceof Error ? error.message : 'Could not load the team pool.')
-        setTeamPlayers([])
-      } finally {
-        if (active) {
-          setTeamPlayersLoading(false)
-        }
-      }
-    }
-
-    void loadTeamPlayers()
-
-    return () => {
-      active = false
-    }
-  }, [accessState, selectedTeamCode])
+  const [sessionBusy, setSessionBusy] = useState(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
 
   const selectedTeam = useMemo(
-    () => data?.teams.find((team) => team.code === selectedTeamCode) ?? null,
-    [data?.teams, selectedTeamCode],
+    () => eventTeams.find((team) => team.code === selectedTeamCode) ?? null,
+    [selectedTeamCode],
   )
 
   const groupedSquadSlots = useMemo(() => {
@@ -152,11 +81,58 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     return (squad?.slots ?? []).filter((slot) => !slot.player && player.positionClasses.includes(slot.slotClass))
   }
 
+  async function handleResumeParticipant() {
+    setSessionBusy(true)
+    setSessionError(null)
+    setRegistrationError(null)
+
+    try {
+      const session = await fetchParticipantSession()
+      const squadResponse = await fetchParticipantSquad()
+      setParticipant(session.participant)
+      setBudgetLimit(session.budgetLimit)
+      setSquad(squadResponse.squad)
+      setSelectedTeamCode(session.participant.primaryTeamCode)
+      setLoadedTeamCode(null)
+      setTeamPlayers([])
+      setBuilderError(null)
+      setAccessState('active')
+    } catch (error) {
+      setSessionError(error instanceof Error ? error.message : 'Could not open the verified participant session.')
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
+  async function handleLoadTeamPlayers() {
+    if (!selectedTeamCode) {
+      return
+    }
+
+    setTeamPlayersLoading(true)
+    setBuilderError(null)
+
+    try {
+      const response = await fetchTeamPlayers(selectedTeamCode)
+      startTransition(() => {
+        setTeamPlayers(response.items)
+      })
+      setLoadedTeamCode(selectedTeamCode)
+    } catch (error) {
+      setBuilderError(error instanceof Error ? error.message : 'Could not load the team pool.')
+      setTeamPlayers([])
+      setLoadedTeamCode(null)
+    } finally {
+      setTeamPlayersLoading(false)
+    }
+  }
+
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setRegistrationBusy(true)
     setRegistrationError(null)
     setResendState('idle')
+    setSessionError(null)
 
     try {
       if (!registrationForm.primaryTeamCode) {
@@ -234,21 +210,6 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
     }
-  }
-
-  if (accessState === 'loading') {
-    return (
-      <div className="space-y-6 pb-12">
-        <section className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
-          <p className="eyebrow">builder workflow</p>
-          <div className="mt-8 grid gap-3">
-            <div className="skeleton h-28 rounded-[1.8rem]" />
-            <div className="skeleton h-28 rounded-[1.8rem]" />
-            <div className="skeleton h-48 rounded-[1.8rem]" />
-          </div>
-        </section>
-      </div>
-    )
   }
 
   return (
@@ -351,7 +312,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TeamSelect
                     label="Registration country"
-                    teams={data?.teams ?? []}
+                    teams={eventTeams}
                     value={registrationForm.primaryTeamCode}
                     placeholder="Choose your main country"
                     onChange={(teamCode) =>
@@ -364,7 +325,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   />
                   <TeamSelect
                     label="Secondary country"
-                    teams={data?.teams ?? []}
+                    teams={eventTeams}
                     value={registrationForm.secondaryTeamCode}
                     placeholder="Optional second country"
                     excludeTeamCode={registrationForm.primaryTeamCode}
@@ -382,6 +343,11 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                     {registrationError}
                   </div>
                 ) : null}
+                {sessionError ? (
+                  <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+                    {sessionError}
+                  </div>
+                ) : null}
 
                 <button
                   type="submit"
@@ -389,6 +355,15 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-8 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                 >
                   {registrationBusy ? 'Submitting registration…' : 'Register and send confirmation email'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void handleResumeParticipant()}
+                  disabled={sessionBusy}
+                  className="inline-flex w-fit items-center rounded-full border border-white/12 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  {sessionBusy ? 'Opening verified entry…' : 'I already verified my email'}
                 </button>
               </form>
             ) : null}
@@ -410,10 +385,23 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   >
                     {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Email sent again' : 'Resend email'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleResumeParticipant()}
+                    disabled={sessionBusy}
+                    className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  >
+                    {sessionBusy ? 'Opening verified entry…' : 'I already verified. Open my squad'}
+                  </button>
                 </div>
                 {registrationError ? (
                   <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
                     {registrationError}
+                  </div>
+                ) : null}
+                {sessionError ? (
+                  <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+                    {sessionError}
                   </div>
                 ) : null}
               </div>
@@ -489,9 +477,11 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                     setParticipant(null)
                     setSquad(null)
                     setTeamPlayers([])
+                    setLoadedTeamCode(null)
                     setSelectedTeamCode(undefined)
                     setAccessState('guest')
                     setRegistrationForm(initialRegistrationForm)
+                    setSessionError(null)
                   }}
                   className="mt-5 rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                 >
@@ -520,11 +510,28 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                 <div className="mt-6 max-w-xl">
                   <TeamSelect
                     label="World Cup team"
-                    teams={data?.teams ?? []}
+                    teams={eventTeams}
                     value={selectedTeamCode}
                     placeholder="Select a World Cup team"
-                    onChange={setSelectedTeamCode}
+                    onChange={(teamCode) => {
+                      setSelectedTeamCode(teamCode)
+                      setLoadedTeamCode(null)
+                      setTeamPlayers([])
+                      setBuilderError(null)
+                    }}
                   />
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadTeamPlayers()}
+                    disabled={teamPlayersLoading || !selectedTeamCode}
+                    className="rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  >
+                    {teamPlayersLoading ? 'Loading team pool…' : 'Load selected team pool'}
+                  </button>
+                  <p className="self-center text-sm text-[var(--color-muted)]">No team request is sent until you press this button.</p>
                 </div>
 
                 {builderError ? (
@@ -547,7 +554,13 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   </div>
                 ) : null}
 
-                {!teamPlayersLoading && selectedTeamCode && teamPlayers.length === 0 ? (
+                {!teamPlayersLoading && selectedTeamCode && loadedTeamCode !== selectedTeamCode ? (
+                  <div className="mt-6">
+                    <EmptyState title="Team pool is waiting" body="Choose a nation, then press load to fetch its preselected World Cup squad." />
+                  </div>
+                ) : null}
+
+                {!teamPlayersLoading && selectedTeamCode && loadedTeamCode === selectedTeamCode && teamPlayers.length === 0 ? (
                   <div className="mt-6">
                     <EmptyState
                       title="This team pool is still empty"
@@ -563,10 +576,9 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                       return (
                         <article key={player.playerId} className="rounded-[1.6rem] border border-white/8 bg-black/15 p-4">
                           <div className="flex items-start gap-4">
-                            <img
+                            <PlayerPortrait
                               src={player.imageUrl}
                               alt={player.displayName}
-                              loading="lazy"
                               width={84}
                               height={84}
                               className="h-20 w-20 rounded-[1.2rem] border border-white/10 object-cover"
@@ -678,10 +690,9 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                         </div>
                         {slot.player ? (
                           <div className="mt-3 flex items-center gap-3">
-                            <img
+                            <PlayerPortrait
                               src={slot.player.imageUrl}
                               alt={slot.player.displayName}
-                              loading="lazy"
                               width={52}
                               height={52}
                               className="h-12 w-12 rounded-xl border border-white/10 object-cover"
@@ -719,10 +730,9 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                         </div>
                         {slot.player ? (
                           <div className="mt-3 flex items-center gap-3">
-                            <img
+                            <PlayerPortrait
                               src={slot.player.imageUrl}
                               alt={slot.player.displayName}
-                              loading="lazy"
                               width={52}
                               height={52}
                               className="h-12 w-12 rounded-xl border border-white/10 object-cover"

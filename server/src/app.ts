@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { extname, resolve } from 'node:path'
 import cors from 'cors'
 import express from 'express'
 import rateLimit from 'express-rate-limit'
@@ -30,43 +30,74 @@ export function createApp() {
   const squadRepository = createSquadRepository()
   const publicDirCandidates = [resolve(process.cwd(), 'public'), resolve(process.cwd(), 'web', 'dist')]
   const publicDir = publicDirCandidates.find((candidate) => existsSync(candidate))
+  const cspDirectives = helmet.contentSecurityPolicy.getDefaultDirectives()
+  cspDirectives['img-src'] = ["'self'", 'data:', 'https://elrincondeldt.com']
+  const publicApiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+  const authApiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+  const participantApiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+  const adminApiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
 
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
     console.error('Failed to bootstrap initial team pools', error)
   })
 
   app.set('trust proxy', env.RATE_LIMIT_TRUST_PROXY)
-  app.use(helmet())
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: cspDirectives,
+      },
+    }),
+  )
   app.use(
     cors({
       origin: true,
       credentials: true,
     }),
   )
-  app.use(
-    rateLimit({
-      windowMs: 60 * 1000,
-      limit: 60,
-      standardHeaders: true,
-      legacyHeaders: false,
-    }),
-  )
   app.use(express.json({ limit: '1mb' }))
 
-  app.use('/api/public', createPublicRouter({ registrationRepository, configRepository, teamPoolRepository }))
-  app.use('/api/auth', createAuthRouter(registrationRepository, participantSessionRepository))
-  app.use('/api/participant', createParticipantRouter(participantSessionRepository, squadRepository))
-  app.use('/api/admin', createAdminRouter(adminRepository, registrationRepository, configRepository, teamPoolRepository))
-
   if (publicDir) {
-    app.use(express.static(publicDir))
+    app.use(
+      express.static(publicDir, {
+        index: false,
+      }),
+    )
     app.use((req, res, next) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) {
         return next()
       }
+      if (extname(req.path)) {
+        return res.status(404).end()
+      }
       res.sendFile(resolve(publicDir, 'index.html'))
     })
   }
+
+  app.use('/api/public', publicApiLimiter, createPublicRouter({ registrationRepository, configRepository, teamPoolRepository }))
+  app.use('/api/auth', authApiLimiter, createAuthRouter(registrationRepository, participantSessionRepository))
+  app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository))
+  app.use('/api/admin', adminApiLimiter, createAdminRouter(adminRepository, registrationRepository, configRepository, teamPoolRepository))
 
   app.use(errorHandler)
 

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { verifyRegistration } from '../lib/api'
 
 type VerifyState =
+  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'success'; displayName: string; leagueType: string; budgetLimit: number }
   | { status: 'error'; message: string }
@@ -11,46 +12,52 @@ export function VerifyPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
   const [state, setState] = useState<VerifyState>(() =>
-    token ? { status: 'loading' } : { status: 'error', message: 'Verification token missing.' },
+    token ? { status: 'idle' } : { status: 'error', message: 'Verification token missing.' },
   )
 
-  useEffect(() => {
+  async function handleVerify() {
     if (!token) {
+      setState({ status: 'error', message: 'Verification token missing.' })
       return
     }
 
-    let active = true
-    void verifyRegistration(token)
-      .then((response) => {
-        if (!active) {
-          return
-        }
-        setState({
-          status: 'success',
-          displayName: response.displayName,
-          leagueType: response.leagueType,
-          budgetLimit: response.budgetLimit,
-        })
+    setState({ status: 'loading' })
+    try {
+      const response = await verifyRegistration(token)
+      setState({
+        status: 'success',
+        displayName: response.displayName,
+        leagueType: response.leagueType,
+        budgetLimit: response.budgetLimit,
       })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-        setState({
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Verification failed.',
-        })
+    } catch (error) {
+      setState({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Verification failed.',
       })
-
-    return () => {
-      active = false
     }
-  }, [token])
+  }
 
   return (
     <div className="mx-auto max-w-3xl pb-12">
       <section className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
         <p className="eyebrow">email confirmation</p>
+
+        {state.status === 'idle' ? (
+          <div className="mt-8 space-y-6">
+            <h2 className="section-title max-w-[12ch]">Confirm the email and unlock your budget.</h2>
+            <p className="max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
+              The verification token is ready. Confirm it with the button below so the participant session is created intentionally.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleVerify()}
+              className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-7 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+            >
+              Confirm email and unlock builder
+            </button>
+          </div>
+        ) : null}
 
         {state.status === 'loading' ? (
           <div className="mt-8 space-y-4">

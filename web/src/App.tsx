@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
+import { supportedLocales } from './data/eventConfig'
 import type { LocaleCode } from './lib/types'
 import { AdminPage } from './pages/AdminPage'
 import { BuilderPage } from './pages/BuilderPage'
@@ -20,15 +21,15 @@ const navigation = [
 function App() {
   const [locale, setLocale] = useState<LocaleCode>(() => {
     if (typeof window === 'undefined') {
-      return 'en'
+      return supportedLocales[0]
     }
 
     const storedLocale = window.localStorage.getItem('svworldcup-locale')
-    if (storedLocale && ['en', 'es', 'de', 'fr', 'pt', 'ru', 'zh'].includes(storedLocale)) {
+    if (storedLocale && supportedLocales.includes(storedLocale as LocaleCode)) {
       return storedLocale as LocaleCode
     }
 
-    return 'en'
+    return supportedLocales[0]
   })
 
   useEffect(() => {
@@ -73,7 +74,7 @@ function App() {
 
             <LocaleRail
               activeLocale={locale}
-              locales={['en', 'es', 'de', 'fr', 'pt', 'ru', 'zh']}
+              locales={supportedLocales}
               onChange={setLocale}
             />
           </div>
