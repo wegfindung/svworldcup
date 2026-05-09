@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
+import { verifyPassword } from '../lib/passwords.js'
 import { hashToken } from '../lib/tokens.js'
 import type {
   LeagueType,
@@ -21,9 +22,32 @@ export interface RegistrationRepository {
   createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult>
   verifyByPlainToken(plainToken: string): Promise<ParticipantProfile | null>
   resendVerification(email: string, plainToken: string): Promise<RegistrationCreationResult | null>
+  authenticateWithPassword(email: string, password: string): Promise<ParticipantProfile | null>
+  setPassword(participantId: string, passwordHash: string): Promise<ParticipantProfile | null>
+  createPasswordReset(email: string, plainToken: string): Promise<ParticipantProfile | null>
+  resetPasswordByPlainToken(plainToken: string, passwordHash: string): Promise<ParticipantProfile | null>
   getByParticipantId(participantId: string): Promise<ParticipantProfile | null>
   getByEmail(email: string): Promise<ParticipantProfile | null>
   getCounts(): Promise<{ pending: number; active: number }>
+}
+
+interface ParticipantRow {
+  participant_id: string
+  email: string
+  display_name: string
+  soccerverse_username: string | null
+  league_type: LeagueType
+  primary_team_code: string
+  secondary_team_code: string | null
+  status: RegistrationRecord['status']
+  verified_at: string | null
+  has_password: boolean
+}
+
+interface MemoryPasswordResetRecord {
+  participantId: string
+  tokenHash: string
+  expiresAt: string
 }
 
 function deriveLeagueType(soccerverseUsername?: string): LeagueType {
@@ -49,6 +73,22 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     secondaryTeamCode: record.secondaryTeamCode,
     status: record.status,
     verifiedAt: record.verifiedAt,
+    hasPassword: record.hasPassword,
+  }
+}
+
+function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
+  return {
+    participantId: row.participant_id,
+    email: row.email,
+    displayName: row.display_name,
+    soccerverseUsername: row.soccerverse_username ?? undefined,
+    leagueType: row.league_type,
+    primaryTeamCode: row.primary_team_code,
+    secondaryTeamCode: row.secondary_team_code ?? undefined,
+    status: row.status,
+    verifiedAt: row.verified_at ?? undefined,
+    hasPassword: row.has_password,
   }
 }
 
@@ -56,6 +96,15 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
   storageKind: 'memory' = 'memory'
   private readonly byEmail = new Map<string, RegistrationRecord>()
   private readonly byTokenHash = new Map<string, string>()
+  private readonly passwordHashes = new Map<string, string>()
+  private readonly passwordResetByTokenHash = new Map<string, MemoryPasswordResetRecord>()
+
+  private attachPasswordState(record: RegistrationRecord): RegistrationRecord {
+    return {
+      ...record,
+      hasPassword: this.passwordHashes.has(record.participantId),
+    }
+  }
 
   async createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult> {
     const email = normalizeEmail(input.email)
@@ -68,7 +117,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
     }
 
     const participantId = existing?.participantId ?? randomUUID()
-    const record: RegistrationRecord = {
+    const record = this.attachPasswordState({
       participantId,
       email,
       displayName: input.displayName.trim(),
@@ -80,7 +129,8 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       verificationTokenHash: tokenHash,
       verificationTokenExpiresAt: expiryIso(48),
       verifiedAt: existing?.verifiedAt,
-    }
+      hasPassword: false,
+    })
 
     this.byEmail.set(email, record)
     this.byTokenHash.set(tokenHash, email)
@@ -103,11 +153,11 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       return null
     }
 
-    const nextRecord: RegistrationRecord = {
+    const nextRecord = this.attachPasswordState({
       ...record,
       status: record.status === 'pending_verification' ? 'active' : record.status,
       verifiedAt: record.verifiedAt ?? new Date().toISOString(),
-    }
+    })
     this.byEmail.set(email, nextRecord)
     return toParticipantProfile(nextRecord)
   }
@@ -120,25 +170,86 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
     }
 
     const tokenHash = hashToken(plainToken)
-    const nextRecord: RegistrationRecord = {
+    const nextRecord = this.attachPasswordState({
       ...existing,
       verificationTokenHash: tokenHash,
       verificationTokenExpiresAt: expiryIso(48),
-    }
+    })
 
     this.byEmail.set(normalizedEmail, nextRecord)
     this.byTokenHash.set(tokenHash, normalizedEmail)
     return { record: nextRecord, plainToken }
   }
 
+  async authenticateWithPassword(email: string, password: string) {
+    const record = this.byEmail.get(normalizeEmail(email))
+    if (!record || record.status !== 'active') {
+      return null
+    }
+
+    const passwordHash = this.passwordHashes.get(record.participantId)
+    if (!verifyPassword(password, passwordHash)) {
+      return null
+    }
+
+    return toParticipantProfile(this.attachPasswordState(record))
+  }
+
+  async setPassword(participantId: string, passwordHash: string) {
+    const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
+    if (!record) {
+      return null
+    }
+
+    this.passwordHashes.set(participantId, passwordHash)
+    const nextRecord = this.attachPasswordState(record)
+    this.byEmail.set(nextRecord.email, nextRecord)
+    return toParticipantProfile(nextRecord)
+  }
+
+  async createPasswordReset(email: string, plainToken: string) {
+    const record = this.byEmail.get(normalizeEmail(email))
+    if (!record || record.status !== 'active') {
+      return null
+    }
+
+    const tokenHash = hashToken(plainToken)
+    this.passwordResetByTokenHash.set(tokenHash, {
+      participantId: record.participantId,
+      tokenHash,
+      expiresAt: expiryIso(2),
+    })
+
+    return toParticipantProfile(this.attachPasswordState(record))
+  }
+
+  async resetPasswordByPlainToken(plainToken: string, passwordHash: string) {
+    const tokenHash = hashToken(plainToken)
+    const tokenRecord = this.passwordResetByTokenHash.get(tokenHash)
+    if (!tokenRecord || new Date(tokenRecord.expiresAt).getTime() < Date.now()) {
+      return null
+    }
+
+    const record = [...this.byEmail.values()].find((item) => item.participantId === tokenRecord.participantId)
+    if (!record) {
+      return null
+    }
+
+    this.passwordHashes.set(record.participantId, passwordHash)
+    this.passwordResetByTokenHash.delete(tokenHash)
+    const nextRecord = this.attachPasswordState(record)
+    this.byEmail.set(nextRecord.email, nextRecord)
+    return toParticipantProfile(nextRecord)
+  }
+
   async getByParticipantId(participantId: string) {
     const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
-    return record ? toParticipantProfile(record) : null
+    return record ? toParticipantProfile(this.attachPasswordState(record)) : null
   }
 
   async getByEmail(email: string) {
     const record = this.byEmail.get(normalizeEmail(email))
-    return record ? toParticipantProfile(record) : null
+    return record ? toParticipantProfile(this.attachPasswordState(record)) : null
   }
 
   async getCounts() {
@@ -173,10 +284,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       const existingResult = await client.query<{
         participant_id: string
         status: RegistrationRecord['status']
-        verified_at: string | null
       }>(
         `
-          SELECT participant_id, status, verified_at
+          SELECT participant_id, status
           FROM participants
           WHERE email = $1
           FOR UPDATE
@@ -189,17 +299,12 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         throw new ActiveRegistrationExistsError()
       }
 
-      const participantResult = await client.query<{
-        participant_id: string
-        email: string
-        display_name: string
-        soccerverse_username: string | null
-        league_type: LeagueType
-        primary_team_code: string
-        secondary_team_code: string | null
-        status: RegistrationRecord['status']
-        verified_at: string | null
-      }>(
+      const participantResult = await client.query<
+        ParticipantRow & {
+          verification_token_hash: string
+          verification_token_expires_at: string
+        }
+      >(
         `
           INSERT INTO participants (
             email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verification_sent_at
@@ -215,7 +320,17 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             status = 'pending_verification',
             verification_sent_at = NOW(),
             updated_at = NOW()
-          RETURNING participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
+          RETURNING
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            (password_hash IS NOT NULL) AS has_password
         `,
         [
           email,
@@ -254,6 +369,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           verificationTokenHash: tokenHash,
           verificationTokenExpiresAt: expiresAt,
           verifiedAt: participant.verified_at ?? undefined,
+          hasPassword: participant.has_password,
         },
       }
     } catch (error) {
@@ -270,18 +386,11 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
 
     try {
       await client.query('BEGIN')
-      const tokenResult = await client.query<{
-        participant_id: string
-        email: string
-        display_name: string
-        soccerverse_username: string | null
-        league_type: LeagueType
-        primary_team_code: string
-        secondary_team_code: string | null
-        status: RegistrationRecord['status']
-        expires_at: string
-        verified_at: string | null
-      }>(
+      const tokenResult = await client.query<
+        ParticipantRow & {
+          expires_at: string
+        }
+      >(
         `
           SELECT
             p.participant_id,
@@ -293,6 +402,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.secondary_team_code,
             p.status,
             p.verified_at,
+            (p.password_hash IS NOT NULL) AS has_password,
             vt.expires_at
           FROM verification_tokens vt
           JOIN participants p ON p.participant_id = vt.participant_id
@@ -315,31 +425,32 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
 
       await client.query('UPDATE verification_tokens SET consumed_at = NOW() WHERE token_hash = $1', [tokenHash])
 
-      let status = tokenRow.status
-      let verifiedAt = tokenRow.verified_at ?? undefined
-
+      let profile = mapParticipantRow(tokenRow)
       if (tokenRow.status === 'pending_verification') {
-        const updated = await client.query<{ verified_at: string }>(
-          "UPDATE participants SET status = 'active', verified_at = NOW(), updated_at = NOW() WHERE participant_id = $1 RETURNING verified_at",
+        const updated = await client.query<ParticipantRow>(
+          `
+            UPDATE participants
+            SET status = 'active', verified_at = NOW(), updated_at = NOW()
+            WHERE participant_id = $1
+            RETURNING
+              participant_id,
+              email,
+              display_name,
+              soccerverse_username,
+              league_type,
+              primary_team_code,
+              secondary_team_code,
+              status,
+              verified_at,
+              (password_hash IS NOT NULL) AS has_password
+          `,
           [tokenRow.participant_id],
         )
-        status = 'active'
-        verifiedAt = updated.rows[0]?.verified_at ?? new Date().toISOString()
+        profile = mapParticipantRow(updated.rows[0])
       }
 
       await client.query('COMMIT')
-
-      return {
-        participantId: tokenRow.participant_id,
-        email: tokenRow.email,
-        displayName: tokenRow.display_name,
-        soccerverseUsername: tokenRow.soccerverse_username ?? undefined,
-        leagueType: tokenRow.league_type,
-        primaryTeamCode: tokenRow.primary_team_code,
-        secondaryTeamCode: tokenRow.secondary_team_code ?? undefined,
-        status,
-        verifiedAt,
-      }
+      return profile
     } catch (error) {
       await client.query('ROLLBACK')
       throw error
@@ -356,19 +467,19 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
 
     try {
       await client.query('BEGIN')
-      const existing = await client.query<{
-        participant_id: string
-        email: string
-        display_name: string
-        soccerverse_username: string | null
-        league_type: LeagueType
-        primary_team_code: string
-        secondary_team_code: string | null
-        status: RegistrationRecord['status']
-        verified_at: string | null
-      }>(
+      const existing = await client.query<ParticipantRow>(
         `
-          SELECT participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
+          SELECT
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            (password_hash IS NOT NULL) AS has_password
           FROM participants
           WHERE email = $1
           FOR UPDATE
@@ -411,6 +522,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           verificationTokenHash: tokenHash,
           verificationTokenExpiresAt: expiresAt,
           verifiedAt: participant.verified_at ?? undefined,
+          hasPassword: participant.has_password,
         },
       }
     } catch (error) {
@@ -421,78 +533,237 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     }
   }
 
-  async getByParticipantId(participantId: string) {
-    const result = await this.pool.query<{
-      participant_id: string
-      email: string
-      display_name: string
-      soccerverse_username: string | null
-      league_type: LeagueType
-      primary_team_code: string
-      secondary_team_code: string | null
-      status: RegistrationRecord['status']
-      verified_at: string | null
-    }>(
+  async authenticateWithPassword(email: string, password: string) {
+    const result = await this.pool.query<
+      ParticipantRow & {
+        password_hash: string | null
+      }
+    >(
       `
-        SELECT participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
+        SELECT
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          password_hash,
+          (password_hash IS NOT NULL) AS has_password
+        FROM participants
+        WHERE email = $1
+          AND status = 'active'
+        LIMIT 1
+      `,
+      [normalizeEmail(email)],
+    )
+    const row = result.rows[0]
+    if (!row || !verifyPassword(password, row.password_hash)) {
+      return null
+    }
+
+    return mapParticipantRow(row)
+  }
+
+  async setPassword(participantId: string, passwordHash: string) {
+    const result = await this.pool.query<ParticipantRow>(
+      `
+        UPDATE participants
+        SET password_hash = $2, password_set_at = NOW(), updated_at = NOW()
+        WHERE participant_id = $1
+        RETURNING
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          (password_hash IS NOT NULL) AS has_password
+      `,
+      [participantId, passwordHash],
+    )
+    const row = result.rows[0]
+    return row ? mapParticipantRow(row) : null
+  }
+
+  async createPasswordReset(email: string, plainToken: string) {
+    const normalizedEmail = normalizeEmail(email)
+    const tokenHash = hashToken(plainToken)
+    const expiresAt = expiryIso(2)
+    const client = await this.pool.connect()
+
+    try {
+      await client.query('BEGIN')
+      const existing = await client.query<ParticipantRow>(
+        `
+          SELECT
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            (password_hash IS NOT NULL) AS has_password
+          FROM participants
+          WHERE email = $1
+            AND status = 'active'
+          FOR UPDATE
+        `,
+        [normalizedEmail],
+      )
+
+      const participant = existing.rows[0]
+      if (!participant) {
+        await client.query('ROLLBACK')
+        return null
+      }
+
+      await client.query(
+        'UPDATE participant_password_reset_tokens SET consumed_at = NOW() WHERE participant_id = $1 AND consumed_at IS NULL',
+        [participant.participant_id],
+      )
+      await client.query(
+        `
+          INSERT INTO participant_password_reset_tokens (participant_id, token_hash, expires_at)
+          VALUES ($1, $2, $3)
+        `,
+        [participant.participant_id, tokenHash, expiresAt],
+      )
+      await client.query('COMMIT')
+
+      return mapParticipantRow(participant)
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async resetPasswordByPlainToken(plainToken: string, passwordHash: string) {
+    const tokenHash = hashToken(plainToken)
+    const client = await this.pool.connect()
+
+    try {
+      await client.query('BEGIN')
+      const tokenResult = await client.query<
+        ParticipantRow & {
+          expires_at: string
+        }
+      >(
+        `
+          SELECT
+            p.participant_id,
+            p.email,
+            p.display_name,
+            p.soccerverse_username,
+            p.league_type,
+            p.primary_team_code,
+            p.secondary_team_code,
+            p.status,
+            p.verified_at,
+            (p.password_hash IS NOT NULL) AS has_password,
+            prt.expires_at
+          FROM participant_password_reset_tokens prt
+          JOIN participants p ON p.participant_id = prt.participant_id
+          WHERE prt.token_hash = $1
+            AND prt.consumed_at IS NULL
+          FOR UPDATE
+        `,
+        [tokenHash],
+      )
+
+      const tokenRow = tokenResult.rows[0]
+      if (!tokenRow || new Date(tokenRow.expires_at).getTime() < Date.now()) {
+        await client.query('ROLLBACK')
+        return null
+      }
+
+      await client.query(
+        'UPDATE participant_password_reset_tokens SET consumed_at = NOW() WHERE token_hash = $1 AND consumed_at IS NULL',
+        [tokenHash],
+      )
+      const updated = await client.query<ParticipantRow>(
+        `
+          UPDATE participants
+          SET password_hash = $2, password_set_at = NOW(), updated_at = NOW()
+          WHERE participant_id = $1
+          RETURNING
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            (password_hash IS NOT NULL) AS has_password
+        `,
+        [tokenRow.participant_id, passwordHash],
+      )
+      await client.query('COMMIT')
+      return mapParticipantRow(updated.rows[0])
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async getByParticipantId(participantId: string) {
+    const result = await this.pool.query<ParticipantRow>(
+      `
+        SELECT
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          (password_hash IS NOT NULL) AS has_password
         FROM participants
         WHERE participant_id = $1
       `,
       [participantId],
     )
     const row = result.rows[0]
-    if (!row) {
-      return null
-    }
-
-    return {
-      participantId: row.participant_id,
-      email: row.email,
-      displayName: row.display_name,
-      soccerverseUsername: row.soccerverse_username ?? undefined,
-      leagueType: row.league_type,
-      primaryTeamCode: row.primary_team_code,
-      secondaryTeamCode: row.secondary_team_code ?? undefined,
-      status: row.status,
-      verifiedAt: row.verified_at ?? undefined,
-    }
+    return row ? mapParticipantRow(row) : null
   }
 
   async getByEmail(email: string) {
-    const result = await this.pool.query<{
-      participant_id: string
-      email: string
-      display_name: string
-      soccerverse_username: string | null
-      league_type: LeagueType
-      primary_team_code: string
-      secondary_team_code: string | null
-      status: RegistrationRecord['status']
-      verified_at: string | null
-    }>(
+    const result = await this.pool.query<ParticipantRow>(
       `
-        SELECT participant_id, email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verified_at
+        SELECT
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          (password_hash IS NOT NULL) AS has_password
         FROM participants
         WHERE email = $1
       `,
       [normalizeEmail(email)],
     )
     const row = result.rows[0]
-    if (!row) {
-      return null
-    }
-
-    return {
-      participantId: row.participant_id,
-      email: row.email,
-      displayName: row.display_name,
-      soccerverseUsername: row.soccerverse_username ?? undefined,
-      leagueType: row.league_type,
-      primaryTeamCode: row.primary_team_code,
-      secondaryTeamCode: row.secondary_team_code ?? undefined,
-      status: row.status,
-      verifiedAt: row.verified_at ?? undefined,
-    }
+    return row ? mapParticipantRow(row) : null
   }
 
   async getCounts() {

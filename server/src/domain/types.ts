@@ -42,6 +42,7 @@ export interface ParticipantProfile {
   secondaryTeamCode?: string
   status: ParticipantStatus
   verifiedAt?: string
+  hasPassword: boolean
 }
 
 export interface RegistrationRecord extends ParticipantProfile {

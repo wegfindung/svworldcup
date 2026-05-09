@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS participants (
     primary_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     secondary_team_code CHAR(3) REFERENCES teams(code),
     status TEXT NOT NULL CHECK (status IN ('pending_verification', 'active', 'locked', 'withdrawn')),
+    password_hash TEXT,
+    password_set_at TIMESTAMPTZ,
     reveal_profile BOOLEAN NOT NULL DEFAULT FALSE,
     reveal_squad BOOLEAN NOT NULL DEFAULT FALSE,
     verification_sent_at TIMESTAMPTZ,
@@ -98,6 +100,15 @@ CREATE TABLE IF NOT EXISTS world_cup_players (
 ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS rating INTEGER;
 ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS position_main TEXT;
 ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+CREATE TABLE IF NOT EXISTS participant_password_reset_tokens (
+    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    participant_id UUID NOT NULL REFERENCES participants(participant_id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS world_cup_team_selections (
     selection_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

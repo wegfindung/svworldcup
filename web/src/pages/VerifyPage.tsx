@@ -6,7 +6,7 @@ import { writeParticipantReady } from '../lib/participantReady'
 type VerifyState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; displayName: string; email: string; leagueType: string; budgetLimit: number }
+  | { status: 'success'; displayName: string; email: string; leagueType: string; budgetLimit: number; hasPassword: boolean }
   | { status: 'error'; message: string }
 
 export function VerifyPage() {
@@ -30,6 +30,7 @@ export function VerifyPage() {
         email: response.email,
         leagueType: response.leagueType,
         budgetLimit: response.budgetLimit,
+        hasPassword: response.hasPassword,
       })
       setState({
         status: 'success',
@@ -37,6 +38,7 @@ export function VerifyPage() {
         email: response.email,
         leagueType: response.leagueType,
         budgetLimit: response.budgetLimit,
+        hasPassword: response.hasPassword,
       })
     } catch (error) {
       setState({

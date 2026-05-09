@@ -32,3 +32,15 @@ export async function sendVerificationMail(recipient: string, verificationUrl: s
 
   return result
 }
+
+export async function sendPasswordResetMail(recipient: string, resetUrl: string) {
+  const result = await transport.sendMail({
+    from: env.SMTP_FROM,
+    to: recipient,
+    subject: 'Reset your Soccerverse World Cup password',
+    text: `Set a new password for your Soccerverse World Cup account: ${resetUrl}`,
+    html: `<p>Set a new password for your Soccerverse World Cup account:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+  })
+
+  return result
+}

@@ -38,7 +38,7 @@ export function TeamSelect({ label, teams, value, placeholder, excludeTeamCode, 
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
-          className="flex min-h-14 w-full items-center justify-between gap-4 rounded-[1.3rem] border border-white/10 bg-black/15 px-4 py-3 text-left text-white transition duration-300 ease-out hover:border-white/20 hover:bg-white/5 active:scale-[0.99]"
+          className="flex min-h-14 w-full items-center justify-between gap-4 rounded-[1.3rem] border border-white/10 bg-[rgba(8,13,12,0.78)] px-4 py-3 text-left text-white transition duration-300 ease-out hover:border-white/18 hover:bg-[rgba(14,20,18,0.92)] active:scale-[0.99]"
         >
           <span className="flex min-w-0 items-center gap-3">
             {selectedTeam ? <TeamFlag teamCode={selectedTeam.code} label={selectedTeam.nameEn} size="md" /> : null}
@@ -59,14 +59,14 @@ export function TeamSelect({ label, teams, value, placeholder, excludeTeamCode, 
         </button>
 
         {open ? (
-          <div className="glass-panel absolute left-0 top-[calc(100%+0.75rem)] z-30 max-h-96 w-full overflow-y-auto rounded-[1.6rem] p-2">
+          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-30 max-h-96 w-full overflow-y-auto rounded-[1.6rem] border border-white/10 bg-[rgba(8,13,12,0.98)] p-2 shadow-[0_28px_60px_-30px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
             <button
               type="button"
               onClick={() => {
                 onChange(undefined)
                 setOpen(false)
               }}
-              className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-2.5 text-left text-sm text-[var(--color-muted)] transition hover:bg-white/8 hover:text-white"
+              className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-2.5 text-left text-sm text-[var(--color-muted)] transition hover:bg-white/6 hover:text-white"
             >
               Clear selection
             </button>
@@ -83,8 +83,8 @@ export function TeamSelect({ label, teams, value, placeholder, excludeTeamCode, 
                   }}
                   className={[
                     'flex w-full items-center gap-3 rounded-[1rem] px-3 py-2.5 text-left transition duration-300 ease-out active:scale-[0.99]',
-                    disabled ? 'cursor-not-allowed opacity-40' : 'hover:bg-white/8',
-                    value === team.code ? 'bg-[var(--color-accent)]/10' : '',
+                    disabled ? 'cursor-not-allowed opacity-40' : 'hover:bg-white/6',
+                    value === team.code ? 'bg-[var(--color-accent)]/12' : '',
                   ].join(' ')}
                 >
                   <TeamFlag teamCode={team.code} label={team.nameEn} size="md" />

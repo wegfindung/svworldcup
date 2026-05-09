@@ -9,7 +9,8 @@ import { env } from '../config/env.js'
 import { STARTING_BUDGET } from '../data/formation.js'
 import { isKnownTeamCode } from '../data/worldCupSeed.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
-import { sendVerificationMail } from '../lib/mailer.js'
+import { sendPasswordResetMail, sendVerificationMail } from '../lib/mailer.js'
+import { hashPassword } from '../lib/passwords.js'
 import { generatePlainToken } from '../lib/tokens.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
 import {
@@ -47,14 +48,40 @@ const registrationSchema = z
         message: 'Secondary team must be different from primary team.',
       })
     }
-    if (!value.soccerverseUsername?.trim()) {
-      return
-    }
   })
 
 const resendSchema = z.object({
   email: z.string().trim().email(),
 })
+
+const loginSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(120),
+})
+
+const passwordSchema = z.object({
+  password: z.string().min(8).max(120),
+})
+
+const passwordResetSchema = z.object({
+  token: z.string().trim().min(12),
+  password: z.string().min(8).max(120),
+})
+
+function buildSessionCookie(plainToken: string) {
+  return createCookie(participantSessionCookieName, plainToken, {
+    httpOnly: true,
+    secure: shouldUseSecureCookies(),
+    sameSite: 'Lax',
+    maxAge: participantSessionTtlSeconds,
+  })
+}
+
+async function issueParticipantSession(participantId: string, participantSessionRepository: ParticipantSessionRepository) {
+  const sessionToken = generatePlainToken()
+  await participantSessionRepository.createSession(participantId, sessionToken, participantSessionTtlSeconds)
+  return buildSessionCookie(sessionToken)
+}
 
 export function createAuthRouter(
   registrationRepository: RegistrationRepository,
@@ -91,6 +118,21 @@ export function createAuthRouter(
     }
   })
 
+  router.post('/login', async (req, res) => {
+    const parsed = loginSchema.parse(req.body)
+    const participant = await registrationRepository.authenticateWithPassword(parsed.email, parsed.password)
+
+    if (!participant) {
+      return res.status(401).json({ error: 'Email or password is invalid.' })
+    }
+
+    res.setHeader('Set-Cookie', await issueParticipantSession(participant.participantId, participantSessionRepository))
+    res.json({
+      participant,
+      budgetLimit: STARTING_BUDGET,
+    })
+  })
+
   router.get('/verify', async (req, res) => {
     const token = String(req.query.token ?? '')
     if (!token) {
@@ -102,18 +144,7 @@ export function createAuthRouter(
       return res.status(404).json({ error: 'Verification token is invalid or expired.' })
     }
 
-    const sessionToken = generatePlainToken()
-    await participantSessionRepository.createSession(verified.participantId, sessionToken, participantSessionTtlSeconds)
-    res.setHeader(
-      'Set-Cookie',
-      createCookie(participantSessionCookieName, sessionToken, {
-        httpOnly: true,
-        secure: shouldUseSecureCookies(),
-        sameSite: 'Lax',
-        maxAge: participantSessionTtlSeconds,
-      }),
-    )
-
+    res.setHeader('Set-Cookie', await issueParticipantSession(verified.participantId, participantSessionRepository))
     res.json({
       participantId: verified.participantId,
       email: verified.email,
@@ -122,6 +153,7 @@ export function createAuthRouter(
       status: verified.status,
       verifiedAt: verified.verifiedAt,
       budgetLimit: STARTING_BUDGET,
+      hasPassword: verified.hasPassword,
     })
   })
 
@@ -140,6 +172,31 @@ export function createAuthRouter(
 
     res.json({
       participant,
+      budgetLimit: STARTING_BUDGET,
+    })
+  })
+
+  router.post('/set-password', async (req, res) => {
+    const parsed = passwordSchema.parse(req.body)
+    const cookies = parseCookies(req.header('cookie'))
+    const sessionToken = cookies[participantSessionCookieName]
+
+    if (!sessionToken) {
+      return res.status(401).json({ error: 'Participant session is required.' })
+    }
+
+    const participant = await participantSessionRepository.getParticipantBySessionToken(sessionToken)
+    if (!participant) {
+      return res.status(401).json({ error: 'Participant session is invalid or expired.' })
+    }
+
+    const updated = await registrationRepository.setPassword(participant.participantId, hashPassword(parsed.password))
+    if (!updated) {
+      return res.status(404).json({ error: 'Participant not found.' })
+    }
+
+    res.json({
+      participant: updated,
       budgetLimit: STARTING_BUDGET,
     })
   })
@@ -182,6 +239,36 @@ export function createAuthRouter(
         rejected: delivery.rejected,
       },
       verificationPreviewUrl: verificationUrl,
+    })
+  })
+
+  router.post('/request-password-reset', async (req, res) => {
+    const parsed = resendSchema.parse(req.body)
+    const plainToken = generatePlainToken()
+    const participant = await registrationRepository.createPasswordReset(parsed.email, plainToken)
+
+    if (participant) {
+      const resetUrl = `${env.PUBLIC_WEB_URL}/reset-password?token=${plainToken}`
+      await sendPasswordResetMail(parsed.email, resetUrl)
+    }
+
+    res.json({
+      status: 'accepted',
+    })
+  })
+
+  router.post('/reset-password', async (req, res) => {
+    const parsed = passwordResetSchema.parse(req.body)
+    const participant = await registrationRepository.resetPasswordByPlainToken(parsed.token, hashPassword(parsed.password))
+
+    if (!participant) {
+      return res.status(404).json({ error: 'Reset token is invalid or expired.' })
+    }
+
+    res.setHeader('Set-Cookie', await issueParticipantSession(participant.participantId, participantSessionRepository))
+    res.json({
+      participant,
+      budgetLimit: STARTING_BUDGET,
     })
   })
 

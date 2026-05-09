@@ -73,9 +73,17 @@ export function verifyRegistration(token: string) {
     status: string
     verifiedAt?: string
     budgetLimit: number
+    hasPassword: boolean
   }>(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
     method: 'GET',
     headers: {},
+  })
+}
+
+export function loginParticipant(email: string, password: string) {
+  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
   })
 }
 
@@ -83,6 +91,27 @@ export function fetchParticipantSession() {
   return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/me', {
     method: 'GET',
     headers: {},
+  })
+}
+
+export function setParticipantPassword(password: string) {
+  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/set-password', {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  })
+}
+
+export function requestParticipantPasswordReset(email: string) {
+  return getJson<{ status: string }>('/api/auth/request-password-reset', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export function resetParticipantPassword(token: string, password: string) {
+  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
   })
 }
 

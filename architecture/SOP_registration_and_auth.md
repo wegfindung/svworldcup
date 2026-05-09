@@ -31,6 +31,9 @@ Allow participants to register securely with verified email, enter the squad bui
 12. The dashboard must expose an explicit primary CTA such as `Start building my squad`.
 13. The protected squad/session payload is only requested after that CTA is pressed.
 14. Frontend verification must be confirmed by an explicit user action on the verification screen, not by an automatic request on page load.
+15. After verification, participants must be able to set a password for future sign-in.
+16. Returning participants must be able to log in with `email + password` from an explicit submit action.
+17. Password recovery must send a reset link only after an explicit button press.
 
 ## Participant Session Rules
 
@@ -39,6 +42,8 @@ Allow participants to register securely with verified email, enter the squad bui
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
 - Verification link consumption must also establish the participant session.
 - Post-verification builder recovery from the frontend must start from an explicit user action such as `Start building my squad`.
+- Password login is optional at first verification and can be added from the verified dashboard.
+- Password reset tokens must be one-time, expiring, and not reusable after consumption.
 - Squad mutations are blocked after tournament lock.
 - Hidden squads remain private until self-reveal or global kickoff reveal.
 - A participant may request a fresh email link if they are pending verification or need to re-enter on another device.
@@ -82,6 +87,10 @@ Allow participants to register securely with verified email, enter the squad bui
 - `POST /api/auth/resend-verification`
 - `GET /api/auth/verify`
 - `GET /api/auth/me`
+- `POST /api/auth/login`
+- `POST /api/auth/set-password`
+- `POST /api/auth/request-password-reset`
+- `POST /api/auth/reset-password`
 - `POST /api/auth/logout`
 - `GET /api/participant/squad`
 - `POST /api/participant/squad/assign`

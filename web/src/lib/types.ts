@@ -66,6 +66,7 @@ export interface ParticipantProfile {
   secondaryTeamCode?: string
   status: 'pending_verification' | 'active' | 'locked' | 'withdrawn'
   verifiedAt?: string
+  hasPassword: boolean
 }
 
 export interface TeamPoolPlayer {

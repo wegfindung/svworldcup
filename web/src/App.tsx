@@ -7,6 +7,7 @@ import { AdminPage } from './pages/AdminPage'
 import { BuilderPage } from './pages/BuilderPage'
 import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { TablesPage } from './pages/TablesPage'
 import { VerifyPage } from './pages/VerifyPage'
 
@@ -85,6 +86,7 @@ function App() {
             <Route path="/builder" element={<BuilderPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage />} />
             <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin" element={<AdminPage locale={locale} />} />
             <Route path="/profiles/:slug" element={<ProfilePage />} />
           </Routes>

@@ -79,7 +79,7 @@ Write-Host "[6/8] Building and starting Docker stack..." -ForegroundColor Cyan
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && docker compose build --no-cache && docker compose up -d"
 
 Write-Host "[7/8] Applying database migrations..." -ForegroundColor Cyan
-ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && cat db/migrations/2026-05-08-session-and-team-pools.sql | docker exec -i svworldcup-db sh -lc 'psql -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\"'"
+ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && sh tools/apply-migrations.sh"
 
 Write-Host "[8/8] Verifying..." -ForegroundColor Cyan
 Start-Sleep -Seconds 10
