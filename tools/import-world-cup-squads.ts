@@ -99,7 +99,7 @@ async function main() {
   const teamCodeByName = buildTeamCodeByName()
   const repository = dryRun || viaAdminApi ? null : createTeamPoolRepository()
 
-  if (!dryRun && repository?.storageKind !== 'postgres') {
+  if (!dryRun && !viaAdminApi && repository?.storageKind !== 'postgres') {
     throw new Error('Team pool repository is not using PostgreSQL. Check DATABASE_URL / DB_* env configuration first.')
   }
 
