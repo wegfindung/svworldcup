@@ -118,13 +118,14 @@ function NationFlagsCard() {
   return (
     <div className="glass-panel rounded-[1.9rem] p-5">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Top football nations</p>
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-5 grid grid-cols-5 justify-items-center gap-x-2 gap-y-4 sm:gap-x-3">
         {footballNations.map((nation) => (
-          <div
-            key={nation.code}
-            className="group flex flex-col items-center gap-2 text-center text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]"
-          >
-            <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-full border border-white/12 bg-white/6 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition duration-300 ease-out group-hover:-translate-y-[1px]">
+          <div key={nation.code} className="group flex items-center justify-center">
+            <span
+              title={nation.label}
+              aria-label={nation.label}
+              className="grid h-12 w-12 place-items-center overflow-hidden rounded-full border border-white/12 bg-white/6 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition duration-300 ease-out group-hover:-translate-y-[1px] sm:h-13 sm:w-13"
+            >
               <img
                 src={`/flags/${nation.code}.svg`}
                 alt={nation.label}
@@ -134,7 +135,6 @@ function NationFlagsCard() {
                 className="h-10 w-10 rounded-full object-cover"
               />
             </span>
-            <span>{nation.label}</span>
           </div>
         ))}
       </div>

@@ -15,7 +15,6 @@ const navigation = [
   { to: '/builder', label: 'Builder' },
   { to: '/tables', label: 'Tables' },
   { to: '/admin', label: 'Admin' },
-  { to: '/profiles/demo-veteran', label: 'Profile demo' },
 ]
 
 function App() {
