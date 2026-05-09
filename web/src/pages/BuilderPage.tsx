@@ -357,14 +357,6 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   {registrationBusy ? 'Submitting registration…' : 'Register and send confirmation email'}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => void handleResumeParticipant()}
-                  disabled={sessionBusy}
-                  className="inline-flex w-fit items-center rounded-full border border-white/12 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                >
-                  {sessionBusy ? 'Opening verified entry…' : 'I already verified my email'}
-                </button>
               </form>
             ) : null}
 
