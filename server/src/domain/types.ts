@@ -148,4 +148,5 @@ export interface SoccerversePlayerRecord {
   clubId: number
   positions: string[]
   positionMain?: string
+  imageUrl?: string
 }

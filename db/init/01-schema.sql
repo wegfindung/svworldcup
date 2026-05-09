@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS world_cup_players (
     position_codes TEXT[] NOT NULL DEFAULT '{}',
     rating INTEGER,
     position_main TEXT,
+    image_url TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     source TEXT NOT NULL DEFAULT 'soccerverse',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -99,6 +100,7 @@ CREATE TABLE IF NOT EXISTS world_cup_players (
 
 ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS rating INTEGER;
 ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS position_main TEXT;
+ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE world_cup_players ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
 CREATE TABLE IF NOT EXISTS participant_password_reset_tokens (

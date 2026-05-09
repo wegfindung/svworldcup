@@ -32,6 +32,8 @@ Each team record should include:
 - Admin can maintain the eligible player pool.
 - Builder team dropdowns must read from this preselected team pool instead of a free-form nationality search.
 - Player identity in the team pool should be enriched with community datapack names and portraits when Soccerverse API records omit names.
+- The backend must also support curated external World Cup squad JSON imports when the user provides a reviewed source file.
+- Imported players must preserve any provided portrait URL instead of forcing the community portrait host.
 - Admin changes to seeded teams/fixtures must be auditable.
 
 ## Data Quality Rules
@@ -40,3 +42,4 @@ Each team record should include:
 - No duplicate fixture ids.
 - Team names in English remain the canonical internal reference.
 - Translations are layered on top of canonical English values.
+- External squad imports must use an explicit alias map when source country names differ from canonical team names, such as `Türkiye` -> `Turkey` and `DR Congo` -> `Democratic Republic of the Congo`.

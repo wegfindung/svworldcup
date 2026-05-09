@@ -3,6 +3,10 @@ import { getPositionClasses } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
 import type { SoccerversePlayerRecord, TeamPoolPlayer } from '../domain/types.js'
 
+function defaultPlayerImageUrl(playerId: number) {
+  return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
+}
+
 function toTeamPoolPlayer(teamCode: string, player: SoccerversePlayerRecord): TeamPoolPlayer {
   return {
     teamCode,
@@ -14,7 +18,7 @@ function toTeamPoolPlayer(teamCode: string, player: SoccerversePlayerRecord): Te
     positions: player.positions,
     positionMain: player.positionMain,
     positionClasses: getPositionClasses(player.positions),
-    imageUrl: `https://elrincondeldt.com/sv/photos/players/${player.playerId}.png`,
+    imageUrl: player.imageUrl ?? defaultPlayerImageUrl(player.playerId),
   }
 }
 
@@ -79,9 +83,10 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
       rating: number | null
       position_codes: string[] | null
       position_main: string | null
+      image_url: string | null
     }>(
       `
-        SELECT s.team_code, p.player_id, p.display_name, p.nationality_code, p.rating, p.position_codes, p.position_main
+        SELECT s.team_code, p.player_id, p.display_name, p.nationality_code, p.rating, p.position_codes, p.position_main, p.image_url
         FROM world_cup_team_selections s
         JOIN world_cup_players p ON p.player_id = s.player_id
         WHERE s.team_code = $1
@@ -99,6 +104,7 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
         clubId: 0,
         positions: row.position_codes ?? [],
         positionMain: row.position_main ?? undefined,
+        imageUrl: row.image_url ?? undefined,
       }),
     )
   }
@@ -112,9 +118,10 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
       rating: number | null
       position_codes: string[] | null
       position_main: string | null
+      image_url: string | null
     }>(
       `
-        SELECT s.team_code, p.player_id, p.display_name, p.nationality_code, p.rating, p.position_codes, p.position_main
+        SELECT s.team_code, p.player_id, p.display_name, p.nationality_code, p.rating, p.position_codes, p.position_main, p.image_url
         FROM world_cup_team_selections s
         JOIN world_cup_players p ON p.player_id = s.player_id
         WHERE s.player_id = $1
@@ -135,6 +142,7 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
       clubId: 0,
       positions: row.position_codes ?? [],
       positionMain: row.position_main ?? undefined,
+      imageUrl: row.image_url ?? undefined,
     })
   }
 
@@ -157,8 +165,8 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
       for (const player of players) {
         await client.query(
           `
-            INSERT INTO world_cup_players (player_id, display_name, nationality_code, position_codes, rating, position_main, source, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, 'soccerverse', NOW())
+            INSERT INTO world_cup_players (player_id, display_name, nationality_code, position_codes, rating, position_main, image_url, source, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'soccerverse', NOW())
             ON CONFLICT (player_id)
             DO UPDATE SET
               display_name = EXCLUDED.display_name,
@@ -166,9 +174,18 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
               position_codes = EXCLUDED.position_codes,
               rating = EXCLUDED.rating,
               position_main = EXCLUDED.position_main,
+              image_url = COALESCE(EXCLUDED.image_url, world_cup_players.image_url),
               updated_at = NOW()
           `,
-          [player.playerId, player.displayName, player.nationalityCode, player.positions, player.rating, player.positionMain ?? null],
+          [
+            player.playerId,
+            player.displayName,
+            player.nationalityCode,
+            player.positions,
+            player.rating,
+            player.positionMain ?? null,
+            player.imageUrl ?? null,
+          ],
         )
       }
 

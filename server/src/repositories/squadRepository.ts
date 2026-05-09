@@ -6,6 +6,10 @@ import { getCapCostForRating } from '../data/salaryTable.js'
 import type { AssignPlayerInput, ParticipantSquad, TeamPoolPlayer } from '../domain/types.js'
 import type { TeamPoolRepository } from './teamPoolRepository.js'
 
+function defaultPlayerImageUrl(playerId: number) {
+  return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
+}
+
 export class SquadValidationError extends Error {
   constructor(message: string) {
     super(message)
@@ -172,9 +176,10 @@ export class PostgresSquadRepository implements SquadRepository {
       rating: number | null
       position_codes: string[] | null
       position_main: string | null
+      image_url: string | null
     }>(
       `
-        SELECT s.slot_key, s.slot_group, s.slot_class, p.player_id, p.display_name, p.nationality_code, p.rating, p.position_codes, p.position_main
+        SELECT s.slot_key, s.slot_group, s.slot_class, p.player_id, p.display_name, p.nationality_code, p.rating, p.position_codes, p.position_main, p.image_url
         FROM squad_slots s
         JOIN world_cup_players p ON p.player_id = s.player_id
         WHERE s.squad_id = $1
@@ -198,7 +203,7 @@ export class PostgresSquadRepository implements SquadRepository {
         positions: row.position_codes ?? [],
         positionMain: row.position_main ?? undefined,
         positionClasses: getPositionClasses(row.position_codes ?? []),
-        imageUrl: `https://elrincondeldt.com/sv/photos/players/${row.player_id}.png`,
+        imageUrl: row.image_url ?? defaultPlayerImageUrl(Number(row.player_id)),
       })
     }
 

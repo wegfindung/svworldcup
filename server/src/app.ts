@@ -31,7 +31,7 @@ export function createApp() {
   const publicDirCandidates = [resolve(process.cwd(), 'public'), resolve(process.cwd(), 'web', 'dist')]
   const publicDir = publicDirCandidates.find((candidate) => existsSync(candidate))
   const cspDirectives = helmet.contentSecurityPolicy.getDefaultDirectives()
-  cspDirectives['img-src'] = ["'self'", 'data:', 'https://elrincondeldt.com']
+  cspDirectives['img-src'] = ["'self'", 'data:', 'https://elrincondeldt.com', 'https://media.api-sports.io']
   const publicApiLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 180,
