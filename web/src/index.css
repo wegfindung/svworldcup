@@ -71,9 +71,9 @@ select {
 }
 
 .section-title {
-  font-size: clamp(2.5rem, 3vw + 1.2rem, 5.5rem);
-  line-height: 0.92;
-  letter-spacing: -0.06em;
+  font-size: clamp(2.35rem, 2.3vw + 1rem, 4.35rem);
+  line-height: 0.94;
+  letter-spacing: -0.045em;
   font-weight: 700;
 }
 
@@ -94,7 +94,7 @@ select {
 
 @media (min-width: 900px) {
   .table-grid {
-    grid-template-columns: 1.8fr 1fr;
+    grid-template-columns: 1.55fr 1fr;
   }
 }
 

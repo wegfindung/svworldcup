@@ -42,14 +42,14 @@ export function LocaleRail({ activeLocale, locales, onChange }: LocaleRailProps)
         aria-label="Select language"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-10 items-center gap-3 rounded-full border border-white/10 bg-white/4 px-3 py-2 text-sm text-white transition duration-300 ease-out hover:-translate-y-[1px] hover:bg-white/8 active:scale-[0.98]"
+        className="inline-flex h-9 items-center gap-2.5 rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-sm text-white transition duration-300 ease-out hover:-translate-y-[1px] hover:bg-white/8 active:scale-[0.98]"
       >
         <img
           src={activeMeta.flag}
           alt={activeMeta.label}
           width={28}
           height={20}
-          className="h-5 w-7 rounded-[3px] object-cover shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
+          className="h-4.5 w-6 rounded-[3px] object-cover shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
         />
         <span className="mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{activeLocale}</span>
         <svg

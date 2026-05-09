@@ -157,6 +157,13 @@ export function resetSquad() {
   })
 }
 
+export function lockSquad() {
+  return getJson<{ squad: ParticipantSquad }>('/api/participant/squad/lock', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
 export function fetchAdminSession() {
   return getJson<{ admin: AdminProfile }>('/api/admin/session', {
     method: 'GET',

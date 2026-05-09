@@ -12,6 +12,7 @@ import {
   fetchTeamPlayers,
   loginParticipant,
   logoutParticipant,
+  lockSquad,
   registerParticipant,
   removeSquadPlayer,
   requestParticipantPasswordReset,
@@ -395,6 +396,21 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
+    }
+  }
+
+  async function handleLockSquad() {
+    const approved = window.confirm('Final submit this squad? You will not be able to edit it afterwards.')
+    if (!approved) {
+      return
+    }
+
+    setBuilderError(null)
+    try {
+      const response = await lockSquad()
+      setSquad(response.squad)
+    } catch (error) {
+      setBuilderError(error instanceof Error ? error.message : 'Squad could not be locked.')
     }
   }
 
@@ -916,6 +932,11 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
                     {draftedCount}/15 locked in
                   </span>
+                  {squad.isLocked ? (
+                    <span className="rounded-full border border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
+                      Final submitted
+                    </span>
+                  ) : null}
                 </div>
 
                 <p className="eyebrow mt-7">step 3 · squad builder</p>
@@ -925,6 +946,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                 <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
                   Verified as <span className="font-medium text-white">{participant.displayName}</span>. Load one team pool at a time,
                   draft only if the slot qualifies, and stay under the fixed {formatBudget(squad.budgetLimit)} cap.
+                  {squad.isLocked ? ' This squad is now locked and cannot be edited.' : ''}
                 </p>
               </div>
 
@@ -1088,7 +1110,11 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                           </div>
 
                           <div className="mt-4 flex flex-wrap gap-2">
-                            {openSlots.length === 0 ? (
+                            {squad.isLocked ? (
+                              <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2 text-xs text-[var(--color-sand)]">
+                                Squad locked
+                              </span>
+                            ) : openSlots.length === 0 ? (
                               <span className="rounded-full border border-white/10 px-3 py-2 text-xs text-[var(--color-muted)]">
                                 No open eligible slot
                               </span>
@@ -1142,10 +1168,34 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   <button
                     type="button"
                     onClick={() => void handleReset()}
+                    disabled={squad.isLocked}
                     className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                   >
                     Reset
                   </button>
+                </div>
+
+                <div className="mt-5 rounded-[1.4rem] border border-[var(--color-accent)]/18 bg-[var(--color-accent)]/8 px-4 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {squad.isLocked ? 'Squad submitted' : 'Ready for final submission?'}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
+                        {squad.isLocked
+                          ? 'This squad is immutable unless an admin unlock flow is added later.'
+                          : 'Fill all 15 slots, then lock the squad as your one official entry.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleLockSquad()}
+                      disabled={squad.isLocked || draftedCount !== 15}
+                      className="rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                    >
+                      {squad.isLocked ? 'Locked' : 'Final submit'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-5 space-y-4">
@@ -1158,7 +1208,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                             <p className="text-sm font-semibold text-white">{slot.label}</p>
                             <p className="mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
                           </div>
-                          {slot.player ? (
+                          {slot.player && !squad.isLocked ? (
                             <button
                               type="button"
                               onClick={() => void handleRemove(slot.key)}
@@ -1198,7 +1248,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                             <p className="text-sm font-semibold text-white">{slot.label}</p>
                             <p className="mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
                           </div>
-                          {slot.player ? (
+                          {slot.player && !squad.isLocked ? (
                             <button
                               type="button"
                               onClick={() => void handleRemove(slot.key)}
