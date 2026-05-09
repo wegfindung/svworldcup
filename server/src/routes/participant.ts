@@ -65,5 +65,18 @@ export function createParticipantRouter(
     }
   })
 
+  router.post('/squad/lock', async (_req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    try {
+      const squad = await squadRepository.lockSquad(participantId)
+      res.json({ squad })
+    } catch (error) {
+      if (error instanceof SquadValidationError) {
+        return res.status(422).json({ error: error.message })
+      }
+      throw error
+    }
+  })
+
   return router
 }

@@ -43,6 +43,7 @@ export interface SquadRepository {
   assignPlayer(participantId: string, input: AssignPlayerInput): Promise<ParticipantSquad>
   removePlayer(participantId: string, slotKey: string): Promise<ParticipantSquad>
   resetSquad(participantId: string): Promise<ParticipantSquad>
+  lockSquad(participantId: string): Promise<ParticipantSquad>
 }
 
 export class MemorySquadRepository implements SquadRepository {
@@ -64,6 +65,10 @@ export class MemorySquadRepository implements SquadRepository {
 
   async assignPlayer(participantId: string, input: AssignPlayerInput) {
     const squad = await this.getOrCreate(participantId)
+    if (squad.isLocked) {
+      throw new SquadValidationError('Squad is locked.')
+    }
+
     const slot = getSlotDefinition(input.slotKey)
     if (!slot) {
       throw new SquadValidationError('Unknown squad slot.')
@@ -106,6 +111,10 @@ export class MemorySquadRepository implements SquadRepository {
 
   async removePlayer(participantId: string, slotKey: string) {
     const squad = await this.getOrCreate(participantId)
+    if (squad.isLocked) {
+      throw new SquadValidationError('Squad is locked.')
+    }
+
     const slot = squad.slots.find((slotState) => slotState.key === slotKey)
     if (!slot?.player) {
       return squad
@@ -124,6 +133,9 @@ export class MemorySquadRepository implements SquadRepository {
 
   async resetSquad(participantId: string) {
     const squad = await this.getOrCreate(participantId)
+    if (squad.isLocked) {
+      throw new SquadValidationError('Squad is locked.')
+    }
     const resetSquad: ParticipantSquad = {
       ...squad,
       budgetUsed: 0,
@@ -132,6 +144,25 @@ export class MemorySquadRepository implements SquadRepository {
     }
     this.squads.set(participantId, resetSquad)
     return resetSquad
+  }
+
+  async lockSquad(participantId: string) {
+    const squad = await this.getOrCreate(participantId)
+    if (squad.isLocked) {
+      return squad
+    }
+
+    const missingSlot = squad.slots.find((slot) => !slot.player)
+    if (missingSlot) {
+      throw new SquadValidationError('Squad must contain all 15 players before final submission.')
+    }
+
+    const lockedSquad: ParticipantSquad = {
+      ...squad,
+      isLocked: true,
+    }
+    this.squads.set(participantId, lockedSquad)
+    return lockedSquad
   }
 }
 
@@ -349,6 +380,48 @@ export class PostgresSquadRepository implements SquadRepository {
 
       await client.query('DELETE FROM squad_slots WHERE squad_id = $1', [squad.squad_id])
       await client.query('UPDATE squads SET budget_used = 0, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
+      await client.query('COMMIT')
+      return this.getOrCreate(participantId)
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async lockSquad(participantId: string) {
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `
+          INSERT INTO squads (participant_id, budget_limit, budget_used, updated_at)
+          VALUES ($1, $2, 0, NOW())
+          ON CONFLICT (participant_id)
+          DO NOTHING
+        `,
+        [participantId, STARTING_BUDGET],
+      )
+
+      const squadResult = await client.query<{ squad_id: string; is_locked: boolean }>(
+        'SELECT squad_id, is_locked FROM squads WHERE participant_id = $1 FOR UPDATE',
+        [participantId],
+      )
+      const squad = squadResult.rows[0]
+      if (squad.is_locked) {
+        await client.query('COMMIT')
+        return this.getOrCreate(participantId)
+      }
+
+      const slotCount = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM squad_slots WHERE squad_id = $1', [
+        squad.squad_id,
+      ])
+      if (Number(slotCount.rows[0]?.count ?? 0) !== formationSlots.length) {
+        throw new SquadValidationError('Squad must contain all 15 players before final submission.')
+      }
+
+      await client.query('UPDATE squads SET is_locked = TRUE, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
       await client.query('COMMIT')
       return this.getOrCreate(participantId)
     } catch (error) {

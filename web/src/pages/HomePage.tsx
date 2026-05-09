@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { TeamFlag } from '../components/TeamFlag'
 import { groupStageMatchPlan } from '../data/worldCupMatchPlan'
 import { t } from '../i18n/messages'
 import { defaultScoring } from '../data/eventConfig'
@@ -29,6 +30,61 @@ const footballNations = [
   { code: 'uy', label: 'Uruguay' },
 ] as const
 
+const matchTeamCodes: Record<string, string> = {
+  Algeria: 'ALG',
+  Argentina: 'ARG',
+  Australia: 'AUS',
+  Austria: 'AUT',
+  Belgium: 'BEL',
+  'Bosnia and Herzegovina': 'BIH',
+  Brazil: 'BRA',
+  Canada: 'CAN',
+  'Cape Verde': 'CPV',
+  Colombia: 'COL',
+  Croatia: 'CRO',
+  Curacao: 'CUW',
+  Czechia: 'CZE',
+  'DR Congo': 'COD',
+  Ecuador: 'ECU',
+  Egypt: 'EGY',
+  England: 'ENG',
+  France: 'FRA',
+  Germany: 'GER',
+  Ghana: 'GHA',
+  Haiti: 'HAI',
+  Iran: 'IRN',
+  Iraq: 'IRQ',
+  'Ivory Coast': 'CIV',
+  Japan: 'JPN',
+  Jordan: 'JOR',
+  Mexico: 'MEX',
+  Morocco: 'MAR',
+  Netherlands: 'NED',
+  'New Zealand': 'NZL',
+  Norway: 'NOR',
+  Panama: 'PAN',
+  Paraguay: 'PAR',
+  Portugal: 'POR',
+  Qatar: 'QAT',
+  'Saudi Arabia': 'KSA',
+  Scotland: 'SCO',
+  Senegal: 'SEN',
+  'South Africa': 'RSA',
+  'South Korea': 'KOR',
+  Spain: 'ESP',
+  Sweden: 'SWE',
+  Switzerland: 'SUI',
+  Tunisia: 'TUN',
+  Turkiye: 'TUR',
+  Uruguay: 'URU',
+  USA: 'USA',
+  Uzbekistan: 'UZB',
+}
+
+function getMatchTeamCode(teamName: string) {
+  return matchTeamCodes[teamName] ?? teamName.slice(0, 3).toUpperCase()
+}
+
 function DiscordIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 fill-current">
@@ -39,16 +95,16 @@ function DiscordIcon() {
 
 function MatchPlanCard() {
   return (
-    <div className="glass-panel rounded-[2.2rem] p-6 sm:p-8">
+    <div className="glass-panel rounded-[1.5rem] p-5 sm:p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">group stage match plan</p>
-          <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">All 72 World Cup group games</h3>
+          <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">All 72 World Cup group games</h3>
         </div>
         <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">BST schedule</span>
       </div>
 
-      <div className="mt-6 max-h-[34rem] space-y-5 overflow-y-auto pr-2">
+      <div className="mt-5 max-h-[30rem] space-y-4 overflow-y-auto pr-2">
         {groupStageMatchPlan.map((day) => (
           <section key={day.day} className="space-y-3">
             <div className="sticky top-0 z-10 -mx-1 rounded-full border border-white/8 bg-[rgba(11,17,16,0.92)] px-4 py-2 backdrop-blur">
@@ -59,16 +115,22 @@ function MatchPlanCard() {
               {day.matches.map((match, index) => (
                 <div
                   key={`${day.day}-${match.group}-${match.home}-${match.away}-${index}`}
-                  className="rounded-[1.5rem] border border-white/8 bg-black/15 px-4 py-3"
+                  className="rounded-[1.05rem] border border-white/8 bg-black/15 px-3.5 py-2.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
                         Group {match.group}
                       </span>
-                      <p className="text-sm font-medium text-white sm:text-base">
-                        {match.home} <span className="text-[var(--color-muted)]">vs</span> {match.away}
-                      </p>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <TeamFlag teamCode={getMatchTeamCode(match.home)} label={match.home} size="sm" />
+                        <p className="min-w-0 text-sm font-medium text-white sm:text-base">
+                          <span className="whitespace-nowrap">{match.home}</span>{' '}
+                          <span className="text-[var(--color-muted)]">vs</span>{' '}
+                          <span className="whitespace-nowrap">{match.away}</span>
+                        </p>
+                        <TeamFlag teamCode={getMatchTeamCode(match.away)} label={match.away} size="sm" />
+                      </div>
                     </div>
                     <span className="mono text-xs uppercase tracking-[0.16em] text-[var(--color-muted)]">{match.time}</span>
                   </div>
@@ -88,13 +150,13 @@ function MatchPlanCard() {
 
 function SuperstarCard() {
   return (
-    <div className="glass-panel overflow-hidden rounded-[1.9rem] p-5">
+    <div className="glass-panel overflow-hidden rounded-[1.35rem] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Add a superstar</p>
-      <div className="mt-5 grid grid-cols-4 gap-2">
+      <div className="mt-4 grid grid-cols-4 gap-2">
         {superstarPlayers.map((player, index) => (
           <div
             key={player.playerId}
-            className="group overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/20"
+            className="group overflow-hidden rounded-[0.95rem] border border-white/10 bg-black/20"
             style={{ animationDelay: `${index * 70}ms` }}
           >
             <PlayerPortrait
@@ -104,7 +166,7 @@ function SuperstarCard() {
               height={120}
               className="aspect-square w-full object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
             />
-            <p className="px-2 py-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-paper)]">
+            <p className="px-2 py-1.5 text-[9px] font-medium uppercase tracking-[0.1em] text-[var(--color-paper)]">
               {player.name}
             </p>
           </div>
@@ -116,15 +178,15 @@ function SuperstarCard() {
 
 function NationFlagsCard() {
   return (
-    <div className="glass-panel rounded-[1.9rem] p-5">
+    <div className="glass-panel rounded-[1.35rem] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Top football nations</p>
-      <div className="mt-5 grid grid-cols-5 justify-items-center gap-x-2 gap-y-4 sm:gap-x-3">
+      <div className="mt-4 grid grid-cols-5 justify-items-center gap-x-2 gap-y-3 sm:gap-x-3">
         {footballNations.map((nation) => (
           <div key={nation.code} className="group flex items-center justify-center">
             <span
               title={nation.label}
               aria-label={nation.label}
-              className="grid h-12 w-12 place-items-center overflow-hidden rounded-full border border-white/12 bg-white/6 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition duration-300 ease-out group-hover:-translate-y-[1px] sm:h-13 sm:w-13"
+              className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-white/12 bg-white/6 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition duration-300 ease-out group-hover:-translate-y-[1px] sm:h-11 sm:w-11"
             >
               <img
                 src={`/flags/${nation.code}.svg`}
@@ -132,7 +194,7 @@ function NationFlagsCard() {
                 width={40}
                 height={40}
                 loading="lazy"
-                className="h-10 w-10 rounded-full object-cover"
+                className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
               />
             </span>
           </div>
@@ -144,7 +206,7 @@ function NationFlagsCard() {
 
 function DiscordCard() {
   return (
-    <div className="glass-panel rounded-[1.9rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-5">
+    <div className="glass-panel rounded-[1.35rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Join Discord</p>
       <div className="mt-4 flex items-start gap-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/12 bg-black/20 text-[var(--color-paper)]">
@@ -178,25 +240,25 @@ export function HomePage({ locale }: HomePageProps) {
   const scoring = defaultScoring
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-10">
       <section className="table-grid gap-6">
-        <div className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <div className="hero-card rounded-[1.55rem] px-5 py-7 sm:px-7 sm:py-8 lg:px-8 lg:py-9">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="eyebrow">{t(locale, 'heroEyebrow')}</p>
           </div>
-          <div className="mt-10">
+          <div className="mt-8">
             <div className="max-w-[56rem]">
               <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
                 Hidden squads. Shared reveals. One locked draft.
               </p>
-              <h2 className="section-title max-w-[10ch]">{t(locale, 'heroTitle')}</h2>
-              <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
+              <h2 className="section-title mt-3 max-w-[12ch]">{t(locale, 'heroTitle')}</h2>
+              <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">
                 {t(locale, 'heroBody')}
               </p>
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-7 flex flex-wrap gap-4">
                 <Link
                   to="/builder"
-                  className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-7 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] active:scale-[0.98] sm:px-9 sm:py-4.5 sm:text-lg"
+                  className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-6 py-3.5 text-base font-semibold text-[var(--color-ink)] shadow-[0_18px_28px_-22px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] active:scale-[0.98] sm:px-7"
                 >
                   {t(locale, 'heroPrimary')}
                 </Link>
@@ -205,7 +267,7 @@ export function HomePage({ locale }: HomePageProps) {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-3.5">
           <SuperstarCard />
           <NationFlagsCard />
           <DiscordCard />
@@ -213,17 +275,17 @@ export function HomePage({ locale }: HomePageProps) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="glass-panel rounded-[2.2rem] p-6 sm:p-8">
+        <div className="glass-panel rounded-[1.5rem] p-5 sm:p-6">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="eyebrow">{t(locale, 'scoringTitle')}</p>
-              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Lock the event logic before kickoff</h3>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">Lock the event logic before kickoff</h3>
             </div>
             <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">scroll</span>
           </div>
 
-          <div className="mt-6 max-h-[29rem] space-y-4 overflow-y-auto pr-2">
-            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+          <div className="mt-5 max-h-[27rem] space-y-3 overflow-y-auto pr-2">
+            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">eligibility</p>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--color-paper)]">
                 <li>No multi-accounts.</li>
@@ -232,15 +294,15 @@ export function HomePage({ locale }: HomePageProps) {
               </ul>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">salary budget</p>
-              <p className="mt-4 text-3xl font-semibold tracking-tight text-[var(--color-accent)]">3,000,000 SVC</p>
+              <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">3,000,000 SVC</p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
                 Every participant drafts under the same cap using Soccerverse wage logic.
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">points</p>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
@@ -267,7 +329,7 @@ export function HomePage({ locale }: HomePageProps) {
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/8 bg-black/15 p-4">
+            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">request policy</p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-paper)]">
                 No API data is requested from the landing page. Registration, verification, builder loading, and backend tools only talk
