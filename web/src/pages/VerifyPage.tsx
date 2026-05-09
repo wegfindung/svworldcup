@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { verifyRegistration } from '../lib/api'
+import { writeParticipantReady } from '../lib/participantReady'
 
 type VerifyState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; displayName: string; leagueType: string; budgetLimit: number }
+  | { status: 'success'; displayName: string; email: string; leagueType: string; budgetLimit: number }
   | { status: 'error'; message: string }
 
 export function VerifyPage() {
@@ -24,9 +25,16 @@ export function VerifyPage() {
     setState({ status: 'loading' })
     try {
       const response = await verifyRegistration(token)
+      writeParticipantReady({
+        displayName: response.displayName,
+        email: response.email,
+        leagueType: response.leagueType,
+        budgetLimit: response.budgetLimit,
+      })
       setState({
         status: 'success',
         displayName: response.displayName,
+        email: response.email,
         leagueType: response.leagueType,
         budgetLimit: response.budgetLimit,
       })
@@ -80,7 +88,7 @@ export function VerifyPage() {
               to="/builder"
               className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-7 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] active:scale-[0.98]"
             >
-              Continue to squad builder
+              Open participant dashboard
             </Link>
           </div>
         ) : null}

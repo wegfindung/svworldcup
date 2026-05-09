@@ -1,4 +1,5 @@
 import { startTransition, useMemo, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
@@ -15,6 +16,7 @@ import {
   resendVerificationEmail,
   resetSquad,
 } from '../lib/api'
+import { clearParticipantReady, readParticipantReady, writeParticipantReady, type ParticipantReadyState } from '../lib/participantReady'
 import type { LeagueType, LocaleCode, ParticipantProfile, ParticipantSquad, TeamPoolPlayer } from '../lib/types'
 
 interface BuilderPageProps {
@@ -47,7 +49,10 @@ function formatBudget(value: number) {
 
 export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   void _locale
-  const [accessState, setAccessState] = useState<'guest' | 'pending' | 'active'>('guest')
+  const [dashboardSeed, setDashboardSeed] = useState<ParticipantReadyState | null>(() => readParticipantReady())
+  const [accessState, setAccessState] = useState<'guest' | 'pending' | 'ready' | 'active'>(() =>
+    readParticipantReady() ? 'ready' : 'guest',
+  )
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
   const [budgetLimit, setBudgetLimit] = useState(defaultBudgetLimit)
   const [squad, setSquad] = useState<ParticipantSquad | null>(null)
@@ -92,6 +97,14 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       setParticipant(session.participant)
       setBudgetLimit(session.budgetLimit)
       setSquad(squadResponse.squad)
+      const nextDashboardSeed = {
+        displayName: session.participant.displayName,
+        email: session.participant.email,
+        leagueType: session.participant.leagueType,
+        budgetLimit: session.budgetLimit,
+      } satisfies ParticipantReadyState
+      writeParticipantReady(nextDashboardSeed)
+      setDashboardSeed(nextDashboardSeed)
       setSelectedTeamCode(session.participant.primaryTeamCode)
       setLoadedTeamCode(null)
       setTeamPlayers([])
@@ -148,6 +161,8 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       })
 
       setSubmittedEmail(response.email)
+      setDashboardSeed(null)
+      clearParticipantReady()
       setAccessState('pending')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed.'
@@ -214,7 +229,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
 
   return (
     <div className="space-y-6 pb-12">
-      {accessState !== 'active' ? (
+      {(accessState === 'guest' || accessState === 'pending') ? (
         <section className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr]">
           <div className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
             <p className="eyebrow">registration workflow</p>
@@ -377,14 +392,6 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   >
                     {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Email sent again' : 'Resend email'}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleResumeParticipant()}
-                    disabled={sessionBusy}
-                    className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                  >
-                    {sessionBusy ? 'Opening verified entry…' : 'I already verified. Open my squad'}
-                  </button>
                 </div>
                 {registrationError ? (
                   <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
@@ -441,6 +448,109 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
         </section>
       ) : null}
 
+      {accessState === 'ready' && dashboardSeed ? (
+        <section className="space-y-6">
+          <section className="grid gap-6 xl:grid-cols-[1.24fr_0.76fr]">
+            <div className="hero-card overflow-hidden rounded-[2.5rem] px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="eyebrow">participant dashboard</p>
+                <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                  verified
+                </span>
+              </div>
+
+              <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+                <div>
+                  <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
+                    one hidden squad. one locked entry.
+                  </p>
+                  <h2 className="section-title mt-4 max-w-[11ch]">Welcome back, {dashboardSeed.displayName}.</h2>
+                  <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
+                    Your email is verified and the participant session is ready. Open the protected builder when you want to start drafting
+                    your 15-player World Cup squad.
+                  </p>
+
+                  <div className="mt-8 flex flex-wrap gap-4">
+                    <button
+                      type="button"
+                      onClick={() => void handleResumeParticipant()}
+                      disabled={sessionBusy}
+                      className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-8 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] sm:px-10 sm:text-lg"
+                    >
+                      {sessionBusy ? 'Opening your squad…' : 'Start building my squad'}
+                    </button>
+                    <Link
+                      to="/"
+                      className="inline-flex items-center rounded-full border border-white/12 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                    >
+                      Back to event overview
+                    </Link>
+                  </div>
+
+                  {sessionError ? (
+                    <div className="mt-6 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+                      {sessionError}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-4">
+                  <div className="glass-panel rounded-[2rem] p-5">
+                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">account snapshot</p>
+                    <div className="mt-5 space-y-4">
+                      <div className="rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-4">
+                        <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">nickname</p>
+                        <p className="mt-2 text-xl font-semibold text-white">{dashboardSeed.displayName}</p>
+                      </div>
+                      <div className="rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-4">
+                        <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">league</p>
+                        <p className="mt-2 text-xl font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
+                      </div>
+                      <div className="rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-4">
+                        <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">budget</p>
+                        <p className="mt-2 text-xl font-semibold text-[var(--color-accent)]">{formatBudget(dashboardSeed.budgetLimit)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="glass-panel rounded-[2rem] p-5">
+                <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">how it works</p>
+                <div className="mt-5 space-y-4">
+                  {[
+                    ['1', 'Open the builder', 'Load your protected participant session only when you are ready to draft.'],
+                    ['2', 'Choose nation pools', 'Select a World Cup team and load its admin-approved player list.'],
+                    ['3', 'Fit the cap', 'Draft 11 starters and 4 locked subs under the shared 3,000,000 SVC budget.'],
+                    ['4', 'Lock the reveal', 'Your squad stays hidden until you reveal it or the admin reveal begins at kickoff.'],
+                  ].map(([step, title, body]) => (
+                    <div key={step} className="rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="mono inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 text-[11px] uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                          {step}
+                        </span>
+                        <p className="text-base font-semibold text-white">{title}</p>
+                      </div>
+                      <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-panel rounded-[2rem] p-5">
+                <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">next action</p>
+                <p className="mt-4 text-sm leading-relaxed text-[var(--color-paper)]">
+                  The builder itself only loads after you press the main CTA. That keeps the workflow deterministic and avoids background
+                  API traffic.
+                </p>
+              </div>
+            </div>
+          </section>
+        </section>
+      ) : null}
+
       {accessState === 'active' && participant && squad ? (
         <section className="space-y-6">
           <div className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
@@ -471,6 +581,8 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                     setTeamPlayers([])
                     setLoadedTeamCode(null)
                     setSelectedTeamCode(undefined)
+                    setDashboardSeed(null)
+                    clearParticipantReady()
                     setAccessState('guest')
                     setRegistrationForm(initialRegistrationForm)
                     setSessionError(null)

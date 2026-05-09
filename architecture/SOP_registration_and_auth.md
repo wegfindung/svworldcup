@@ -27,8 +27,10 @@ Allow participants to register securely with verified email, enter the squad bui
 8. Verification email is sent through SMTP.
 9. User confirms via emailed link.
 10. Verification activates the participant account and creates a participant session.
-11. The verified participant enters the squad builder with the starting wage budget.
-12. Frontend verification must be confirmed by an explicit user action on the verification screen, not by an automatic request on page load.
+11. The verified participant lands in a local dashboard shell with the starting wage budget.
+12. The dashboard must expose an explicit primary CTA such as `Start building my squad`.
+13. The protected squad/session payload is only requested after that CTA is pressed.
+14. Frontend verification must be confirmed by an explicit user action on the verification screen, not by an automatic request on page load.
 
 ## Participant Session Rules
 
@@ -36,7 +38,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - One active registration per normalized email address.
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
 - Verification link consumption must also establish the participant session.
-- Session recovery from the frontend must start from an explicit user action such as `Open my squad`.
+- Post-verification builder recovery from the frontend must start from an explicit user action such as `Start building my squad`.
 - Squad mutations are blocked after tournament lock.
 - Hidden squads remain private until self-reveal or global kickoff reveal.
 - A participant may request a fresh email link if they are pending verification or need to re-enter on another device.
