@@ -230,11 +230,9 @@ export function createAdminRouter(
 
   router.post('/reveal/global', async (req, res) => {
     const parsed = globalRevealSchema.parse(req.body)
-    const current = await configRepository.getEventControls()
     const eventControls = await configRepository.updateEventControls({
-      ...current,
-      globalRevealProfiles: parsed.revealProfiles || current.globalRevealProfiles,
-      globalRevealSquads: parsed.revealSquads || current.globalRevealSquads,
+      globalRevealProfiles: parsed.revealProfiles,
+      globalRevealSquads: parsed.revealSquads,
     })
     res.json({ eventControls })
   })

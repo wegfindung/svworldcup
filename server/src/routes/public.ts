@@ -105,7 +105,8 @@ export function createPublicRouter({ configRepository, registrationRepository, t
 
     const leagueRows = await scoringRepository.getLeagueLeaderboard(participant.leagueType)
     const score = leagueRows.find((row) => row.participantId === participant.participantId)
-    const squad = canShowSquad ? await squadRepository.getOrCreate(participant.participantId) : undefined
+    const revealableSquad = canShowSquad ? await squadRepository.getOrCreate(participant.participantId) : undefined
+    const squad = revealableSquad?.isLocked ? revealableSquad : undefined
 
     res.json({
       item: {
@@ -117,7 +118,7 @@ export function createPublicRouter({ configRepository, registrationRepository, t
         primaryTeamCode: participant.primaryTeamCode,
         secondaryTeamCode: participant.secondaryTeamCode,
         revealProfile: canShowProfile,
-        revealSquad: canShowSquad,
+        revealSquad: Boolean(squad),
         score,
         squad,
       },

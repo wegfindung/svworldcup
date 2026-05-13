@@ -56,18 +56,19 @@ function scoreEntry(entry: MatchEntryRecord, scoring: ScoringConfig) {
   )
 }
 
-function buildEntryScoreMap(entries: MatchEntryRecord[], scoring: ScoringConfig) {
-  const scores = new Map<number, { score: number; inOfficialSquad: boolean }>()
+function buildFixtureEntryScoreMap(entries: MatchEntryRecord[], scoring: ScoringConfig) {
+  const fixtures = new Map<string, Map<number, { score: number; inOfficialSquad: boolean }>>()
 
   for (const entry of entries) {
-    const current = scores.get(entry.playerId) ?? { score: 0, inOfficialSquad: false }
-    scores.set(entry.playerId, {
-      score: current.score + scoreEntry(entry, scoring),
-      inOfficialSquad: current.inOfficialSquad || entry.inOfficialSquad,
+    const fixtureEntries = fixtures.get(entry.fixtureId) ?? new Map<number, { score: number; inOfficialSquad: boolean }>()
+    fixtureEntries.set(entry.playerId, {
+      score: scoreEntry(entry, scoring),
+      inOfficialSquad: entry.inOfficialSquad,
     })
+    fixtures.set(entry.fixtureId, fixtureEntries)
   }
 
-  return scores
+  return fixtures
 }
 
 function calculateParticipantRows(
@@ -76,7 +77,7 @@ function calculateParticipantRows(
   entries: MatchEntryRecord[],
   scoring: ScoringConfig,
 ) {
-  const entryScores = buildEntryScoreMap(entries, scoring)
+  const fixtureEntryScores = buildFixtureEntryScoreMap(entries, scoring)
   const slotsByParticipant = new Map<string, ScoreSlot[]>()
 
   for (const slot of slots) {
@@ -88,30 +89,36 @@ function calculateParticipantRows(
   return participants.map((participant) => {
     const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
     const starterSlots = participantSlots.filter((slot) => slot.slotGroup === 'starter')
-    const starterAbsences = new Map<SlotClass, number>()
-
-    for (const slot of starterSlots) {
-      const playerState = entryScores.get(slot.playerId)
-      if (playerState && !playerState.inOfficialSquad) {
-        starterAbsences.set(slot.slotClass, (starterAbsences.get(slot.slotClass) ?? 0) + 1)
-      }
-    }
+    const subSlots = participantSlots.filter((slot) => slot.slotGroup === 'sub')
 
     let baseScore = 0
-    for (const slot of participantSlots) {
-      const playerState = entryScores.get(slot.playerId)
-      if (!playerState) {
-        continue
+    for (const entryScores of fixtureEntryScores.values()) {
+      const starterAbsences = new Map<SlotClass, number>()
+
+      for (const slot of starterSlots) {
+        const playerState = entryScores.get(slot.playerId)
+        if (!playerState) {
+          continue
+        }
+
+        if (!playerState.inOfficialSquad) {
+          starterAbsences.set(slot.slotClass, (starterAbsences.get(slot.slotClass) ?? 0) + 1)
+        }
+
+        baseScore += playerState.score
       }
 
-      if (slot.slotGroup === 'starter') {
-        baseScore += playerState.score
-        continue
-      }
+      for (const slot of subSlots) {
+        const missingStarters = starterAbsences.get(slot.slotClass) ?? 0
+        if (missingStarters < 1) {
+          continue
+        }
 
-      const missingStarters = starterAbsences.get(slot.slotClass) ?? 0
-      if (missingStarters > 0) {
-        baseScore += playerState.score
+        const playerState = entryScores.get(slot.playerId)
+        if (playerState) {
+          baseScore += playerState.score
+        }
+
         starterAbsences.set(slot.slotClass, missingStarters - 1)
       }
     }

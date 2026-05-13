@@ -83,6 +83,13 @@ export function createParticipantRouter(
   router.post('/reveal', async (req, res) => {
     const participantId = res.locals.participant.participantId as string
     const parsed = z.object({ revealSquad: z.boolean().default(false) }).parse(req.body)
+    if (parsed.revealSquad) {
+      const squad = await squadRepository.getOrCreate(participantId)
+      if (!squad.isLocked) {
+        return res.status(409).json({ error: 'Lock your squad before revealing it publicly.' })
+      }
+    }
+
     const profile = await registrationRepository.revealParticipant(participantId, parsed.revealSquad)
     if (!profile) {
       return res.status(404).json({ error: 'Participant not found.' })

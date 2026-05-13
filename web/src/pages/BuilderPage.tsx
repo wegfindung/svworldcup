@@ -82,6 +82,16 @@ function buildReadyState(participant: ParticipantProfile, budgetLimit: number): 
   }
 }
 
+function buildPublicProfileUrl(participant: Pick<ParticipantProfile, 'displayName' | 'participantId'>) {
+  const slug = participant.displayName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return `/profiles/${slug || 'manager'}-${participant.participantId.slice(0, 8)}`
+}
+
 export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   void _locale
 
@@ -164,6 +174,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     setSelectedTeamCode(undefined)
     setLoadedTeamCode(null)
     setTeamPlayers([])
+    setPublicProfileUrl(null)
     setBuilderError(null)
   }
 
@@ -195,6 +206,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       persistReadyState(buildReadyState(session.participant, session.budgetLimit))
       setParticipant(session.participant)
       setSquad(squadResponse.squad)
+      setPublicProfileUrl(session.participant.revealProfile ? buildPublicProfileUrl(session.participant) : null)
       setSelectedTeamCode(session.participant.primaryTeamCode)
       setAccessState('active')
     } catch (error) {
@@ -426,7 +438,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     try {
       const response = await revealParticipantProfile(revealSquad)
       setParticipant(response.participant)
-      setPublicProfileUrl(response.publicProfileUrl)
+      setPublicProfileUrl(response.publicProfileUrl || buildPublicProfileUrl(response.participant))
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Profile reveal failed.')
     }
