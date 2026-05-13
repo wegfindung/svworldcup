@@ -13,6 +13,17 @@ Apply deterministic event scoring with clear separation between rookie/veteran l
 - minutes: `0`
 - optional admin-entered performance points: `0.5` to `1.0`
 
+## Scoring Slice V1
+
+- Admins can upsert one player match entry per `(fixtureId, playerId)`.
+- A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, optional performance points, and a source note.
+- Public league leaderboards are calculated from locked squads only.
+- Starter slots score from their player match entries.
+- Substitute slots score only when at least one starter in the same slot class is marked absent from the official squad.
+- Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
+- Nations qualify for the public table once they have at least two scored entries.
+- Veteran ownership boost is currently represented as a deterministic `bonusPercent` field and remains `0` until the influence snapshot source is implemented.
+
 ## Score Configuration
 
 - Scoring values are stored in backend configuration.
@@ -53,6 +64,8 @@ Apply deterministic event scoring with clear separation between rookie/veteran l
 - Squads are private by default.
 - Participants may reveal their own squad.
 - Admin can reveal all squads globally at kickoff.
+- Global reveal controls are stored as event-level configuration and do not mutate individual participant reveal flags.
+- Public profile APIs must treat global profile reveal and global squad reveal as visibility overrides while preserving the participant's own reveal state.
 
 ## Edge Cases
 

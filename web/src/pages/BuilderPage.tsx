@@ -13,6 +13,7 @@ import {
   loginParticipant,
   logoutParticipant,
   lockSquad,
+  revealParticipantProfile,
   registerParticipant,
   removeSquadPlayer,
   requestParticipantPasswordReset,
@@ -97,6 +98,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
   const [teamPlayersLoading, setTeamPlayersLoading] = useState(false)
   const [builderError, setBuilderError] = useState<string | null>(null)
+  const [publicProfileUrl, setPublicProfileUrl] = useState<string | null>(null)
 
   const [registrationForm, setRegistrationForm] = useState<RegistrationFormState>(initialRegistrationForm)
   const [registrationBusy, setRegistrationBusy] = useState(false)
@@ -411,6 +413,22 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad could not be locked.')
+    }
+  }
+
+  async function handleReveal(revealSquad: boolean) {
+    const approved = window.confirm(revealSquad ? 'Reveal your public profile and submitted squad?' : 'Reveal your public profile without showing the squad?')
+    if (!approved) {
+      return
+    }
+
+    setBuilderError(null)
+    try {
+      const response = await revealParticipantProfile(revealSquad)
+      setParticipant(response.participant)
+      setPublicProfileUrl(response.publicProfileUrl)
+    } catch (error) {
+      setBuilderError(error instanceof Error ? error.message : 'Profile reveal failed.')
     }
   }
 
@@ -1197,6 +1215,46 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                     </button>
                   </div>
                 </div>
+
+                {squad.isLocked ? (
+                  <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-black/15 px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          {participant?.revealProfile ? 'Public profile is live' : 'Ready to share?'}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
+                          {participant?.revealSquad
+                            ? 'Your submitted squad is visible on your public profile.'
+                            : 'Reveal the profile first, then choose whether the locked squad should also be public.'}
+                        </p>
+                        {publicProfileUrl ? (
+                          <Link to={publicProfileUrl} className="mt-3 inline-flex text-sm font-semibold text-[var(--color-accent)]">
+                            Open public profile
+                          </Link>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleReveal(false)}
+                          disabled={participant?.revealProfile}
+                          className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                        >
+                          Reveal profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleReveal(true)}
+                          disabled={participant?.revealSquad}
+                          className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                        >
+                          Reveal squad
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-5 space-y-4">
                   <div className="space-y-2">

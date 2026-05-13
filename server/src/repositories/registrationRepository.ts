@@ -28,6 +28,8 @@ export interface RegistrationRepository {
   resetPasswordByPlainToken(plainToken: string, passwordHash: string): Promise<ParticipantProfile | null>
   getByParticipantId(participantId: string): Promise<ParticipantProfile | null>
   getByEmail(email: string): Promise<ParticipantProfile | null>
+  revealParticipant(participantId: string, revealSquad: boolean): Promise<ParticipantProfile | null>
+  getPublicProfileBySlug(slug: string): Promise<ParticipantProfile | null>
   getCounts(): Promise<{ pending: number; active: number }>
 }
 
@@ -42,6 +44,8 @@ interface ParticipantRow {
   status: RegistrationRecord['status']
   verified_at: string | null
   has_password: boolean
+  reveal_profile?: boolean
+  reveal_squad?: boolean
 }
 
 interface MemoryPasswordResetRecord {
@@ -62,6 +66,15 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
 }
 
+export function publicProfileSlug(displayName: string, participantId: string) {
+  const base = displayName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return `${base || 'manager'}-${participantId.slice(0, 8)}`
+}
+
 function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
   return {
     participantId: record.participantId,
@@ -74,6 +87,8 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     status: record.status,
     verifiedAt: record.verifiedAt,
     hasPassword: record.hasPassword,
+    revealProfile: record.revealProfile,
+    revealSquad: record.revealSquad,
   }
 }
 
@@ -89,6 +104,8 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     status: row.status,
     verifiedAt: row.verified_at ?? undefined,
     hasPassword: row.has_password,
+    revealProfile: row.reveal_profile ?? false,
+    revealSquad: row.reveal_squad ?? false,
   }
 }
 
@@ -250,6 +267,26 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
   async getByEmail(email: string) {
     const record = this.byEmail.get(normalizeEmail(email))
     return record ? toParticipantProfile(this.attachPasswordState(record)) : null
+  }
+
+  async revealParticipant(participantId: string, revealSquad: boolean) {
+    const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
+    if (!record) {
+      return null
+    }
+
+    const nextRecord: RegistrationRecord = this.attachPasswordState({
+      ...record,
+      revealProfile: true,
+      revealSquad: revealSquad || record.revealSquad,
+    })
+    this.byEmail.set(nextRecord.email, nextRecord)
+    return toParticipantProfile(nextRecord)
+  }
+
+  async getPublicProfileBySlug(slug: string) {
+    const record = [...this.byEmail.values()].find((item) => publicProfileSlug(item.displayName, item.participantId) === slug)
+    return record && record.status === 'active' ? toParticipantProfile(this.attachPasswordState(record)) : null
   }
 
   async getCounts() {
@@ -733,7 +770,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
-          (password_hash IS NOT NULL) AS has_password
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
         FROM participants
         WHERE participant_id = $1
       `,
@@ -756,13 +795,67 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
-          (password_hash IS NOT NULL) AS has_password
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
         FROM participants
         WHERE email = $1
       `,
       [normalizeEmail(email)],
     )
     const row = result.rows[0]
+    return row ? mapParticipantRow(row) : null
+  }
+
+  async revealParticipant(participantId: string, revealSquad: boolean) {
+    const result = await this.pool.query<ParticipantRow>(
+      `
+        UPDATE participants
+        SET reveal_profile = TRUE,
+            reveal_squad = CASE WHEN $2 THEN TRUE ELSE reveal_squad END,
+            updated_at = NOW()
+        WHERE participant_id = $1
+        RETURNING
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
+      `,
+      [participantId, revealSquad],
+    )
+    const row = result.rows[0]
+    return row ? mapParticipantRow(row) : null
+  }
+
+  async getPublicProfileBySlug(slug: string) {
+    const result = await this.pool.query<ParticipantRow>(
+      `
+        SELECT
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
+        FROM participants
+        WHERE status = 'active'
+      `,
+    )
+    const row = result.rows.find((participant) => publicProfileSlug(participant.display_name, participant.participant_id) === slug)
     return row ? mapParticipantRow(row) : null
   }
 

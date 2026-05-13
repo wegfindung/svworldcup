@@ -67,6 +67,8 @@ export interface ParticipantProfile {
   status: 'pending_verification' | 'active' | 'locked' | 'withdrawn'
   verifiedAt?: string
   hasPassword: boolean
+  revealProfile?: boolean
+  revealSquad?: boolean
 }
 
 export interface TeamPoolPlayer {
@@ -105,4 +107,71 @@ export interface AdminProfile {
   adminId: string
   email: string
   isActive: boolean
+}
+
+export interface AdminOverview {
+  counts: {
+    pending: number
+    active: number
+  }
+  scoring: ScoringConfig
+  eventControls: EventControls
+  scoringLocked: boolean
+  defaults: ScoringConfig
+  teamSelectionCounts: Record<string, number>
+}
+
+export interface EventControls {
+  globalRevealProfiles: boolean
+  globalRevealSquads: boolean
+}
+
+export interface MatchEntryInput {
+  fixtureId: string
+  playerId: number
+  inOfficialSquad: boolean
+  minutes: number
+  goals: number
+  assists: number
+  cleanSheetEligible: boolean
+  performancePoints?: number
+  sourceNote?: string
+}
+
+export interface MatchEntryRecord extends MatchEntryInput {
+  entryId: string
+}
+
+export interface ParticipantScoreRow {
+  participantId: string
+  displayName: string
+  leagueType: LeagueType
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  totalScore: number
+  baseScore: number
+  bonusPercent: number
+  rank: number
+}
+
+export interface NationScoreRow {
+  teamCode: string
+  participantCount: number
+  averageScore: number
+  topScore: number
+  rank: number
+}
+
+export interface PublicParticipantProfile {
+  slug: string
+  participantId: string
+  displayName: string
+  soccerverseUsername?: string
+  leagueType: LeagueType
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  revealProfile: boolean
+  revealSquad: boolean
+  score?: ParticipantScoreRow
+  squad?: ParticipantSquad
 }

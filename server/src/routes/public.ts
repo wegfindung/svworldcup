@@ -6,6 +6,8 @@ import { defaultLocale, fixtures, isKnownTeamCode, supportedLocales, teams } fro
 import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { RegistrationRepository } from '../repositories/registrationRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import type { ScoringRepository } from '../repositories/scoringRepository.js'
+import type { SquadRepository } from '../repositories/squadRepository.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
@@ -20,9 +22,11 @@ interface Dependencies {
   configRepository: ConfigRepository
   registrationRepository: RegistrationRepository
   teamPoolRepository: TeamPoolRepository
+  scoringRepository: ScoringRepository
+  squadRepository: SquadRepository
 }
 
-export function createPublicRouter({ configRepository, registrationRepository, teamPoolRepository }: Dependencies) {
+export function createPublicRouter({ configRepository, registrationRepository, teamPoolRepository, scoringRepository, squadRepository }: Dependencies) {
   const router = Router()
 
   router.get('/health', async (_req, res) => {
@@ -71,6 +75,53 @@ export function createPublicRouter({ configRepository, registrationRepository, t
 
     const items = await teamPoolRepository.listByTeam(teamCode)
     res.json({ items })
+  })
+
+  router.get('/leaderboards/rookie', async (_req, res) => {
+    const items = await scoringRepository.getLeagueLeaderboard('rookie')
+    res.json({ items })
+  })
+
+  router.get('/leaderboards/veteran', async (_req, res) => {
+    const items = await scoringRepository.getLeagueLeaderboard('veteran')
+    res.json({ items })
+  })
+
+  router.get('/leaderboards/nations', async (_req, res) => {
+    const items = await scoringRepository.getNationLeaderboard()
+    res.json({ items })
+  })
+
+  router.get('/profiles/:slug', async (req, res) => {
+    const slug = String(req.params.slug ?? '').trim()
+    const participant = await registrationRepository.getPublicProfileBySlug(slug)
+    const eventControls = await configRepository.getEventControls()
+    const canShowProfile = participant?.revealProfile || eventControls.globalRevealProfiles
+    const canShowSquad = participant?.revealSquad || eventControls.globalRevealSquads
+
+    if (!participant || !canShowProfile) {
+      return res.status(404).json({ error: 'Public profile not found.' })
+    }
+
+    const leagueRows = await scoringRepository.getLeagueLeaderboard(participant.leagueType)
+    const score = leagueRows.find((row) => row.participantId === participant.participantId)
+    const squad = canShowSquad ? await squadRepository.getOrCreate(participant.participantId) : undefined
+
+    res.json({
+      item: {
+        slug,
+        participantId: participant.participantId,
+        displayName: participant.displayName,
+        soccerverseUsername: participant.soccerverseUsername,
+        leagueType: participant.leagueType,
+        primaryTeamCode: participant.primaryTeamCode,
+        secondaryTeamCode: participant.secondaryTeamCode,
+        revealProfile: canShowProfile,
+        revealSquad: canShowSquad,
+        score,
+        squad,
+      },
+    })
   })
 
   router.get('/player-search', async (req, res) => {

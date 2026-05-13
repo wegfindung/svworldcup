@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { createRequireParticipant } from '../middleware/participantAuth.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
+import { publicProfileSlug, type RegistrationRepository } from '../repositories/registrationRepository.js'
 import { SquadValidationError, type SquadRepository } from '../repositories/squadRepository.js'
 
 const assignPlayerSchema = z.object({
@@ -12,6 +13,7 @@ const assignPlayerSchema = z.object({
 export function createParticipantRouter(
   participantSessionRepository: ParticipantSessionRepository,
   squadRepository: SquadRepository,
+  registrationRepository: RegistrationRepository,
 ) {
   const router = Router()
   const requireParticipant = createRequireParticipant(participantSessionRepository)
@@ -76,6 +78,20 @@ export function createParticipantRouter(
       }
       throw error
     }
+  })
+
+  router.post('/reveal', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const parsed = z.object({ revealSquad: z.boolean().default(false) }).parse(req.body)
+    const profile = await registrationRepository.revealParticipant(participantId, parsed.revealSquad)
+    if (!profile) {
+      return res.status(404).json({ error: 'Participant not found.' })
+    }
+
+    res.json({
+      participant: profile,
+      publicProfileUrl: `/profiles/${publicProfileSlug(profile.displayName, profile.participantId)}`,
+    })
   })
 
   return router

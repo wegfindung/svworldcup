@@ -43,6 +43,8 @@ export interface ParticipantProfile {
   status: ParticipantStatus
   verifiedAt?: string
   hasPassword: boolean
+  revealProfile?: boolean
+  revealSquad?: boolean
 }
 
 export interface RegistrationRecord extends ParticipantProfile {
@@ -85,6 +87,11 @@ export interface ScoringConfig {
   minutes: number
   performancePointsMin: number
   performancePointsMax: number
+}
+
+export interface EventControls {
+  globalRevealProfiles: boolean
+  globalRevealSquads: boolean
 }
 
 export interface PublicBootstrapPayload {
@@ -149,4 +156,54 @@ export interface SoccerversePlayerRecord {
   positions: string[]
   positionMain?: string
   imageUrl?: string
+}
+
+export interface MatchEntryInput {
+  fixtureId: string
+  playerId: number
+  inOfficialSquad: boolean
+  minutes: number
+  goals: number
+  assists: number
+  cleanSheetEligible: boolean
+  performancePoints?: number
+  sourceNote?: string
+}
+
+export interface MatchEntryRecord extends MatchEntryInput {
+  entryId: string
+}
+
+export interface ParticipantScoreRow {
+  participantId: string
+  displayName: string
+  leagueType: LeagueType
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  totalScore: number
+  baseScore: number
+  bonusPercent: number
+  rank: number
+}
+
+export interface NationScoreRow {
+  teamCode: string
+  participantCount: number
+  averageScore: number
+  topScore: number
+  rank: number
+}
+
+export interface PublicParticipantProfile {
+  slug: string
+  participantId: string
+  displayName: string
+  soccerverseUsername?: string
+  leagueType: LeagueType
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  revealProfile: boolean
+  revealSquad: boolean
+  score?: ParticipantScoreRow
+  squad?: ParticipantSquad
 }

@@ -18,6 +18,7 @@ import {
 } from '../repositories/configRepository.js'
 import { MemorySquadRepository, PostgresSquadRepository, type SquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository, PostgresTeamPoolRepository, type TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import { MemoryScoringRepository, PostgresScoringRepository, type ScoringRepository } from '../repositories/scoringRepository.js'
 
 let pool: Pool | null = null
 let registrationRepository: RegistrationRepository | null = null
@@ -26,6 +27,7 @@ let adminRepository: AdminRepository | null = null
 let participantSessionRepository: ParticipantSessionRepository | null = null
 let teamPoolRepository: TeamPoolRepository | null = null
 let squadRepository: SquadRepository | null = null
+let scoringRepository: ScoringRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -104,4 +106,14 @@ export function createSquadRepository(): SquadRepository {
       : new MemorySquadRepository(createTeamPoolRepository())
   }
   return squadRepository
+}
+
+export function createScoringRepository(): ScoringRepository {
+  if (!scoringRepository) {
+    const existingPool = getPool()
+    scoringRepository = existingPool
+      ? new PostgresScoringRepository(existingPool, createConfigRepository())
+      : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository())
+  }
+  return scoringRepository
 }

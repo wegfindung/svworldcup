@@ -11,6 +11,7 @@ import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { RegistrationRepository } from '../repositories/registrationRepository.js'
 import type { AdminRepository } from '../repositories/adminRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerverse.js'
@@ -49,6 +50,23 @@ const teamPlayersSchema = z.object({
   ),
 })
 
+const matchEntrySchema = z.object({
+  fixtureId: z.string().trim().min(1).max(120),
+  playerId: z.coerce.number().int().positive(),
+  inOfficialSquad: z.boolean(),
+  minutes: z.coerce.number().int().min(0).max(130),
+  goals: z.coerce.number().int().min(0).max(20),
+  assists: z.coerce.number().int().min(0).max(20),
+  cleanSheetEligible: z.boolean().default(false),
+  performancePoints: z.coerce.number().min(0).max(5).optional(),
+  sourceNote: z.string().trim().max(200).optional(),
+})
+
+const globalRevealSchema = z.object({
+  revealProfiles: z.boolean().default(true),
+  revealSquads: z.boolean().default(true),
+})
+
 function isScoringLocked(): boolean {
   if (!env.TOURNAMENT_KICKOFF_AT) {
     return false
@@ -62,6 +80,7 @@ export function createAdminRouter(
   registrationRepository: RegistrationRepository,
   configRepository: ConfigRepository,
   teamPoolRepository: TeamPoolRepository,
+  scoringRepository: ScoringRepository,
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
@@ -124,10 +143,12 @@ export function createAdminRouter(
   router.get('/overview', async (_req, res) => {
     const counts = await registrationRepository.getCounts()
     const scoring = await configRepository.getScoringConfig()
+    const eventControls = await configRepository.getEventControls()
     const selectionCounts = await teamPoolRepository.getTeamSelectionCounts()
     res.json({
       counts,
       scoring,
+      eventControls,
       scoringLocked: isScoringLocked(),
       defaults: scoringDefaults,
       teamSelectionCounts: selectionCounts,
@@ -193,6 +214,29 @@ export function createAdminRouter(
     const parsed = scoringSchema.parse(req.body)
     const updated = await configRepository.updateScoringConfig(parsed)
     res.json({ item: updated })
+  })
+
+  router.get('/match-entries', async (req, res) => {
+    const fixtureId = typeof req.query.fixtureId === 'string' ? req.query.fixtureId.trim() : undefined
+    const items = await scoringRepository.listMatchEntries(fixtureId || undefined)
+    res.json({ items })
+  })
+
+  router.put('/match-entries', async (req, res) => {
+    const parsed = matchEntrySchema.parse(req.body)
+    const item = await scoringRepository.upsertMatchEntry(parsed)
+    res.json({ item })
+  })
+
+  router.post('/reveal/global', async (req, res) => {
+    const parsed = globalRevealSchema.parse(req.body)
+    const current = await configRepository.getEventControls()
+    const eventControls = await configRepository.updateEventControls({
+      ...current,
+      globalRevealProfiles: parsed.revealProfiles || current.globalRevealProfiles,
+      globalRevealSquads: parsed.revealSquads || current.globalRevealSquads,
+    })
+    res.json({ eventControls })
   })
 
   router.post('/participants/resend-verification', async (req, res) => {

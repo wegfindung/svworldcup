@@ -1,8 +1,16 @@
 import type {
   AdminProfile,
+  AdminOverview,
   BootstrapPayload,
+  EventControls,
+  MatchEntryInput,
+  MatchEntryRecord,
+  ScoringConfig,
   ParticipantProfile,
   ParticipantSquad,
+  ParticipantScoreRow,
+  PublicParticipantProfile,
+  NationScoreRow,
   SoccerversePlayer,
   TeamPoolPlayer,
   TeamSeed,
@@ -129,6 +137,27 @@ export function fetchTeamPlayers(teamCode: string) {
   })
 }
 
+export function fetchRookieLeaderboard() {
+  return getJson<{ items: ParticipantScoreRow[] }>('/api/public/leaderboards/rookie', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchVeteranLeaderboard() {
+  return getJson<{ items: ParticipantScoreRow[] }>('/api/public/leaderboards/veteran', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchNationLeaderboard() {
+  return getJson<{ items: NationScoreRow[] }>('/api/public/leaderboards/nations', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
 export function fetchParticipantSquad() {
   return getJson<{ squad: ParticipantSquad }>('/api/participant/squad', {
     method: 'GET',
@@ -175,6 +204,56 @@ export function loginAdmin(email: string, password: string) {
   return getJson<{ admin: AdminProfile }>('/api/admin/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+  })
+}
+
+export function revealParticipantProfile(revealSquad: boolean) {
+  return getJson<{ participant: ParticipantProfile; publicProfileUrl: string }>('/api/participant/reveal', {
+    method: 'POST',
+    body: JSON.stringify({ revealSquad }),
+  })
+}
+
+export function fetchPublicProfile(slug: string) {
+  return getJson<{ item: PublicParticipantProfile }>(`/api/public/profiles/${encodeURIComponent(slug)}`, {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchAdminOverview() {
+  return getJson<AdminOverview>('/api/admin/overview', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function updateAdminScoring(scoring: ScoringConfig) {
+  return getJson<{ item: ScoringConfig }>('/api/admin/scoring', {
+    method: 'PUT',
+    body: JSON.stringify(scoring),
+  })
+}
+
+export function fetchAdminMatchEntries(fixtureId?: string) {
+  const query = fixtureId ? `?fixtureId=${encodeURIComponent(fixtureId)}` : ''
+  return getJson<{ items: MatchEntryRecord[] }>(`/api/admin/match-entries${query}`, {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function saveAdminMatchEntry(entry: MatchEntryInput) {
+  return getJson<{ item: MatchEntryRecord }>('/api/admin/match-entries', {
+    method: 'PUT',
+    body: JSON.stringify(entry),
+  })
+}
+
+export function triggerGlobalReveal(payload: { revealProfiles: boolean; revealSquads: boolean }) {
+  return getJson<{ eventControls: EventControls }>('/api/admin/reveal/global', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 }
 
