@@ -407,12 +407,38 @@ export interface AddSkipNameInput {
   createdBy: string
 }
 
-// Output of a MatchStatsImporter adapter: a batch ready to create, plus the names the
-// adapter deliberately skipped (D12 skip list) for the review summary.
-export interface ImportedMatch {
-  batchInput: CreateMatchBatchInput
+// One parsed player row plus its resolution outcome. Produced by a MatchStatsImporter
+// adapter for the pre-persist resolve stage; skipped names are reported separately, so a
+// row here is always 'resolved' or 'unresolved' at parse time (an override can later make
+// it 'skipped').
+export interface ResolvedMatchRow {
+  sourceName: string
+  teamCode: string
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating: number
+  resolution: PlayerResolution
+}
+
+// Output of a MatchStatsImporter adapter: the parsed + auto-resolved match, before any
+// persistence. The admin resolves or skips every unresolved row, then it is finalized
+// into a CreateMatchBatchInput.
+export interface MatchResolution {
+  fixtureId: string
+  sourceUrl: string
+  homeGoals: number
+  awayGoals: number
+  rows: ResolvedMatchRow[]
   skippedNames: string[]
 }
+
+// An admin's resolve-or-skip choice for one row in the pre-persist stage, keyed by the
+// row's (teamCode, sourceName).
+export type ResolutionOverride =
+  | { sourceName: string; teamCode: string; playerId: number }
+  | { sourceName: string; teamCode: string; skip: true }
 
 // --- Audit log (see architecture/SOP_match_data_import.md, audit logging) ---
 

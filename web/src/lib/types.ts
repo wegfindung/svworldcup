@@ -320,3 +320,42 @@ export interface MatchImportSkipNameEntry {
   createdBy: string
   createdAt: string
 }
+
+// Resolution outcome for one source name — mirrors the server (D9).
+export type PlayerResolution =
+  | { status: 'resolved'; playerId: number }
+  | { status: 'skipped' }
+  | { status: 'unresolved'; reason: string }
+
+// One parsed player row plus its resolution, from POST /match-import/parse.
+export interface ResolvedMatchRow {
+  sourceName: string
+  teamCode: string
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating: number
+  resolution: PlayerResolution
+}
+
+// The pre-persist parse result — nothing is persisted until /upload (Fix 7).
+export interface MatchResolution {
+  fixtureId: string
+  sourceUrl: string
+  homeGoals: number
+  awayGoals: number
+  rows: ResolvedMatchRow[]
+  skippedNames: string[]
+}
+
+// The admin's resolve-or-skip choice for one row in the pre-persist stage.
+export type ResolutionOverride =
+  | { sourceName: string; teamCode: string; playerId: number }
+  | { sourceName: string; teamCode: string; skip: true }
+
+// What the import panel submits — structured JSON, or a CSV/TSV player-rows paste whose
+// match-level fields come from form inputs (Fix 12).
+export type MatchImportInput =
+  | { format: 'json'; json: unknown }
+  | { format: 'csv'; text: string; homeGoals: number; awayGoals: number; sourceUrl: string }

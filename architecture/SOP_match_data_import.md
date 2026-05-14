@@ -30,8 +30,11 @@ Out of scope:
 
 ## Lifecycle
 
-1. Upload. An admin selects a target fixture from the schedule and submits one JSON
-   describing that fixture. One JSON equals one fixture equals one pending batch.
+1. Upload. An admin selects a target fixture from the schedule, then submits that fixture's
+   data as either JSON or CSV/TSV. The submission is first parsed and resolved without
+   persisting anything; the admin resolves or skips every player row, and only a fully
+   resolved submission is persisted as a pending batch. One submission equals one fixture
+   equals one pending batch.
 2. Review. The submitted batch lands in the pending tables, never directly in
    `admin_match_entries`. The review UI shows parsed rows, resolved players, and skipped
    players. Rows are editable.
@@ -53,33 +56,46 @@ Out of scope:
 - Exactly one path writes `admin_match_entries`: promotion after two confirmations. No
   bypass exists.
 
-## JSON Contract
+## Input Contract
 
-- The submitted JSON is pure source-transcription: player names, team names, final score,
-  per-player minutes, goals, assists, rating, lineup status, and the source URL.
-- It carries no application IDs and no derived fields. The server owns player-ID
-  resolution, fixture identity, and clean-sheet derivation.
-- One JSON describes exactly one complete fixture. Multi-screenshot stitching happens
-  outside the platform.
-- A payload containing the same player twice in one fixture is rejected loudly, never
-  silently deduplicated.
-- `clean_sheet_eligible` is not in the JSON; it is a review-UI judgement.
+A fixture's data is submitted in one of two formats. Both are pure source-transcription:
+they carry no application IDs and no derived fields. The server owns player-ID resolution,
+fixture identity, and clean-sheet derivation. One submission describes exactly one complete
+fixture; multi-screenshot stitching happens outside the platform.
+
+- **JSON.** A single object with a `match` block (home and away team names, final score,
+  source URL) and a `players` array (per-player name, team, lineup status, minutes, goals,
+  assists, rating).
+- **CSV/TSV.** A pure player-rows table — one row per player, the same per-player fields as
+  the JSON `players` array. The delimiter (tab or comma) is auto-detected. A header row
+  naming the columns is required, so column order is free and a missing or misnamed column
+  fails loudly rather than mis-mapping silently. The match-level fields (final score, source
+  URL) are not in the paste; the admin supplies them in form fields, and the home and away
+  teams come from the selected fixture.
+
+Common to both:
+
+- A submission naming the same player twice for one team is rejected loudly, never silently
+  deduplicated.
+- `clean_sheet_eligible` is never in the submission; it is a review-UI judgement.
 
 ## Fixture Identity
 
 - The admin explicitly selects the target fixture before uploading. Fixture identity comes
   from that selection; there is no name-based fixture inference.
-- The server cross-checks the JSON's two team names against the selected fixture's two
-  teams. A mismatch is rejected loudly.
+- For a JSON submission, the server cross-checks the JSON's two team names against the
+  selected fixture's two teams; a mismatch is rejected loudly. A CSV/TSV submission carries
+  no match-level team names — the two teams come from the selected fixture directly — so
+  instead every player row's team is validated against the fixture's two teams.
 - Knockout fixture rows must show the real qualified teams before their stats are imported,
   or the team cross-check and player resolution fail.
 
 ## Source URL
 
-- Every screenshot-sourced import records the source URL the screenshot was taken from. It
-  is stored with the pending batch and shown as a clickable link in the review UI.
+- Every import records the source URL the data was taken from. For a JSON submission it is
+  part of the `match` block; for a CSV/TSV submission the admin supplies it in a form field.
+  It is stored with the pending batch and shown as a clickable link in the review UI.
 - The platform stores and links the URL only; it never fetches it server-side.
-- The manual-entry path has no source URL; it uses a source note instead.
 
 ## Player-ID Resolution
 
@@ -96,13 +112,20 @@ Out of scope:
 
 ## Unresolved Players
 
-- Rows that resolve are imported; unresolved rows are listed prominently in the review UI
-  with a reason. Unresolved rows cannot affect scoring, since only drafted and locked
-  players score.
+- Every player row must end in one of two states before a submission can be persisted:
+  resolved to a real `world_cup_players` record, or explicitly skipped. A submission with
+  any still-unresolved row cannot be saved as a pending batch, so an incomplete report can
+  never reach review, confirmation, or promotion.
+- Resolution happens in the pre-persist stage (see Preview). The submission is parsed and
+  auto-resolved without writing anything; the admin then resolves or skips every
+  outstanding row, and only the fully resolved result is persisted.
 - A name that is genuinely not pool-relevant can be added to a per-team skip list by
-  deliberate reviewer action, so it is not re-flagged on every future import. The skip
-  list is separate from the name-to-player mapping table and is populated only by explicit
-  reviewer choice.
+  deliberate reviewer action, so it is not re-flagged on every future import. The skip list
+  is separate from the name-to-player mapping table and is populated only by explicit
+  reviewer choice. Skipping a row is a valid way to clear it; a skipped player simply does
+  not enter the batch.
+- When a name has no `world_cup_players` record at all, the intended workflow is to curate
+  the player into that team's pool and re-submit, so auto-resolution picks them up.
 
 ## Clean Sheet
 
@@ -134,22 +157,25 @@ Out of scope:
 
 ## Re-submission
 
-- Re-submitting a fixture's JSON never writes `admin_match_entries` directly.
-- If the fixture is mid-review, the new JSON replaces the pending batch entirely and
+- Re-submitting a fixture's data never writes `admin_match_entries` directly.
+- If the fixture is mid-review, the new submission replaces the pending batch entirely and
   confirmations reset to zero.
 - If the fixture is already promoted, re-submission creates a fresh correction batch that
   needs its own two confirmations before it re-promotes over the confirmed rows.
 - The uploader is warned before review progress is discarded or already-confirmed data is
   corrected.
 - Persisted name mappings and the skip list still apply on re-submission; stat values come
-  fresh from the new JSON.
+  fresh from the new submission.
 
 ## Preview
 
-- There is no separate validate-only or dry-run mode. The pending stage is the preview:
-  submitting JSON creates a pending batch, the review UI shows what would happen, and
-  deleting the batch discards it.
-- Malformed JSON fails fast with clear errors and creates no pending batch.
+- Submitting a fixture's data first parses and resolves it without persisting anything. The
+  admin sees the parsed rows and their resolution state, resolves or skips every unresolved
+  row, and only then is the pending batch persisted. This pre-persist stage is the preview;
+  it never writes to the database.
+- Malformed input fails fast with clear errors and creates nothing.
+- After persistence, the pending batch's review UI remains the place to inspect and edit
+  the fixture before the two-admin confirmation; deleting the batch discards it.
 
 ## Rating
 

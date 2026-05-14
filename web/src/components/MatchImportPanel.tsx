@@ -1,15 +1,23 @@
 import { useMemo, useState } from 'react'
 import { EmptyState } from './EmptyState'
+import { MatchImportResolveStage } from './MatchImportResolveStage'
 import { MatchImportReview } from './MatchImportReview'
 import { TeamFlag } from './TeamFlag'
-import { fetchMatchImportBatches, uploadMatchImport } from '../lib/api'
+import { fetchMatchImportBatches, parseMatchImport, uploadMatchImport } from '../lib/api'
 import {
   previewAwayTeam,
   previewBatch,
   previewHomeTeam,
   previewPools,
 } from '../data/matchImportPreviewData'
-import type { FixtureSeed, PendingMatchBatch, TeamSeed } from '../lib/types'
+import type {
+  FixtureSeed,
+  MatchImportInput,
+  MatchResolution,
+  PendingMatchBatch,
+  ResolutionOverride,
+  TeamSeed,
+} from '../lib/types'
 
 interface MatchImportPanelProps {
   fixtures: FixtureSeed[]
@@ -39,6 +47,9 @@ function teamSeedFor(teams: Map<string, TeamSeed>, code: string): TeamSeed {
   )
 }
 
+const inputClass =
+  'h-11 rounded-[1rem] border border-white/10 bg-black/15 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]'
+
 export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPanelProps) {
   const [batches, setBatches] = useState<PendingMatchBatch[]>([])
   const [batchesLoaded, setBatchesLoaded] = useState(false)
@@ -46,8 +57,14 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
   const [reviewBatch, setReviewBatch] = useState<PendingMatchBatch | null>(null)
   const [previewMode, setPreviewMode] = useState(false)
   const [uploadFixtureId, setUploadFixtureId] = useState<string | null>(null)
-  const [jsonText, setJsonText] = useState('')
+  const [format, setFormat] = useState<'json' | 'csv'>('json')
+  const [pasteText, setPasteText] = useState('')
+  const [csvHomeGoals, setCsvHomeGoals] = useState('')
+  const [csvAwayGoals, setCsvAwayGoals] = useState('')
+  const [csvSourceUrl, setCsvSourceUrl] = useState('')
   const [replaceExisting, setReplaceExisting] = useState(false)
+  const [resolution, setResolution] = useState<MatchResolution | null>(null)
+  const [pendingInput, setPendingInput] = useState<MatchImportInput | null>(null)
   const [uploadBusy, setUploadBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -109,51 +126,98 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
 
   function handleStartUpload(fixtureId: string) {
     setUploadFixtureId(fixtureId)
-    setJsonText('')
+    setFormat('json')
+    setPasteText('')
+    setCsvHomeGoals('')
+    setCsvAwayGoals('')
+    setCsvSourceUrl('')
     setReplaceExisting(false)
+    setResolution(null)
+    setPendingInput(null)
     setError(null)
     setMessage(null)
   }
 
-  async function handleSubmitUpload() {
+  function buildInput(): MatchImportInput | null {
+    if (format === 'json') {
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(pasteText)
+      } catch {
+        setError('The pasted text is not valid JSON.')
+        return null
+      }
+      return { format: 'json', json: parsed }
+    }
+    const homeGoals = Number(csvHomeGoals)
+    const awayGoals = Number(csvAwayGoals)
+    if (!Number.isInteger(homeGoals) || !Number.isInteger(awayGoals) || homeGoals < 0 || awayGoals < 0) {
+      setError('Enter the final score as whole numbers.')
+      return null
+    }
+    if (!csvSourceUrl.trim()) {
+      setError('Enter the source URL.')
+      return null
+    }
+    return { format: 'csv', text: pasteText, homeGoals, awayGoals, sourceUrl: csvSourceUrl.trim() }
+  }
+
+  async function handleParse() {
     if (!uploadFixtureId) {
       return
     }
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(jsonText)
-    } catch {
-      setError('The pasted text is not valid JSON.')
+    const input = buildInput()
+    if (!input) {
       return
     }
+    setUploadBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const response = await parseMatchImport({ fixtureId: uploadFixtureId, input })
+      setResolution(response.resolution)
+      setPendingInput(input)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not parse the submission.')
+    } finally {
+      setUploadBusy(false)
+    }
+  }
 
+  async function handleSubmitResolved(overrides: ResolutionOverride[]) {
+    if (!uploadFixtureId || !pendingInput) {
+      return
+    }
     setUploadBusy(true)
     setError(null)
     setMessage(null)
     try {
       const response = await uploadMatchImport({
         fixtureId: uploadFixtureId,
-        json: parsed,
+        input: pendingInput,
+        overrides,
         replace: replaceExisting,
       })
       applyBatch(response.batch)
       setUploadFixtureId(null)
-      setJsonText('')
+      setPasteText('')
+      setResolution(null)
+      setPendingInput(null)
       const skipped = response.skippedNames.length
       setMessage(
         `Imported ${response.batch.rows.length} rows${
-          skipped > 0 ? ` · ${skipped} name${skipped === 1 ? '' : 's'} skipped` : ''
+          skipped > 0 ? ` · ${skipped} name${skipped === 1 ? '' : 's'} auto-skipped` : ''
         }. Opened for review.`,
       )
       setReviewBatch(response.batch)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Upload failed.')
+      setError(caught instanceof Error ? caught.message : 'Submit failed.')
     } finally {
       setUploadBusy(false)
     }
   }
 
-  // --- Review / preview views ---
+  // --- Preview / review views ---
 
   if (previewMode) {
     return (
@@ -201,6 +265,31 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
     )
   }
 
+  // --- Pre-persist resolve stage (Fix 7) ---
+
+  if (resolution && uploadFixtureId) {
+    const fixture = fixtures.find((item) => item.fixtureId === uploadFixtureId)
+    const home = teamSeedFor(teamByCode, fixture?.homeTeamCode ?? '???')
+    const away = teamSeedFor(teamByCode, fixture?.awayTeamCode ?? '???')
+    return (
+      <section className="space-y-4">
+        <MatchImportResolveStage
+          resolution={resolution}
+          homeTeam={home}
+          awayTeam={away}
+          busy={uploadBusy}
+          onSubmit={handleSubmitResolved}
+          onBack={() => setResolution(null)}
+        />
+        {error ? (
+          <div className="rounded-[1.1rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+            {error}
+          </div>
+        ) : null}
+      </section>
+    )
+  }
+
   // --- Upload form view ---
 
   if (uploadFixtureId) {
@@ -208,6 +297,11 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
     const existing = batchByFixture.get(uploadFixtureId)
     const home = fixture ? teamSeedFor(teamByCode, fixture.homeTeamCode) : null
     const away = fixture ? teamSeedFor(teamByCode, fixture.awayTeamCode) : null
+    const csvFieldsFilled =
+      format === 'json' ||
+      (csvHomeGoals.trim() !== '' && csvAwayGoals.trim() !== '' && csvSourceUrl.trim() !== '')
+    const parseDisabled =
+      uploadBusy || !pasteText.trim() || !csvFieldsFilled || (Boolean(existing) && !replaceExisting)
 
     return (
       <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
@@ -217,9 +311,9 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
             <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
               {home && away ? `${home.nameEn} vs ${away.nameEn}` : 'Upload match stats'}
             </h3>
-            <p className="mt-3 max-w-[58ch] text-sm leading-relaxed text-[var(--color-muted)]">
-              Paste the JSON your AI assistant produced from the match screenshots. It is validated, resolved
-              against the team pools, and stored as a pending batch for two-admin review.
+            <p className="mt-3 max-w-[60ch] text-sm leading-relaxed text-[var(--color-muted)]">
+              Submit the fixture's data as JSON or as a CSV/TSV player-rows table. It is parsed and resolved
+              against the team pools — nothing is saved until you resolve every flagged row and submit.
             </p>
           </div>
           <button
@@ -247,13 +341,71 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           </div>
         ) : null}
 
+        <div className="mt-4 flex gap-2">
+          {(['json', 'csv'] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFormat(value)}
+              className={[
+                'rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition active:scale-[0.98]',
+                format === value
+                  ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                  : 'border border-white/10 text-white hover:bg-white/6',
+              ].join(' ')}
+            >
+              {value === 'json' ? 'JSON' : 'CSV / TSV'}
+            </button>
+          ))}
+        </div>
+
+        {format === 'csv' ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <label className="grid gap-2">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">home goals</span>
+              <input
+                type="number"
+                min={0}
+                value={csvHomeGoals}
+                onChange={(event) => setCsvHomeGoals(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">away goals</span>
+              <input
+                type="number"
+                min={0}
+                value={csvAwayGoals}
+                onChange={(event) => setCsvAwayGoals(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="grid gap-2 sm:col-span-3">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">source URL</span>
+              <input
+                value={csvSourceUrl}
+                onChange={(event) => setCsvSourceUrl(event.target.value)}
+                placeholder="https://www.sofascore.com/..."
+                className={inputClass}
+              />
+            </label>
+          </div>
+        ) : null}
+
         <label className="mt-4 grid gap-2">
-          <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">match JSON</span>
+          <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
+            {format === 'json' ? 'match JSON' : 'player rows (CSV/TSV, with a header row)'}
+          </span>
           <textarea
-            value={jsonText}
-            onChange={(event) => setJsonText(event.target.value)}
+            value={pasteText}
+            onChange={(event) => setPasteText(event.target.value)}
             rows={12}
-            placeholder={'{\n  "match": { ... },\n  "players": [ ... ]\n}'}
+            placeholder={
+              format === 'json'
+                ? '{\n  "match": { ... },\n  "players": [ ... ]\n}'
+                : 'name\tteam\tlineupStatus\tminutes\tgoals\tassists\trating\n...'
+            }
             className="mono w-full rounded-[1rem] border border-white/10 bg-black/15 px-3 py-3 text-xs text-white outline-none transition focus:border-[var(--color-accent)]"
           />
         </label>
@@ -261,11 +413,11 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            disabled={uploadBusy || !jsonText.trim() || (Boolean(existing) && !replaceExisting)}
-            onClick={() => void handleSubmitUpload()}
+            disabled={parseDisabled}
+            onClick={() => void handleParse()}
             className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
           >
-            {uploadBusy ? 'Uploading…' : 'Submit JSON'}
+            {uploadBusy ? 'Parsing…' : 'Parse and resolve'}
           </button>
           {error ? <p className="text-sm text-amber-200">{error}</p> : null}
         </div>
@@ -282,8 +434,8 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           <p className="eyebrow">match data import</p>
           <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">Import match stats per fixture.</h3>
           <p className="mt-3 max-w-[64ch] text-sm leading-relaxed text-[var(--color-muted)]">
-            Pick a fixture, paste the screenshot-extracted JSON, then review and confirm. Each fixture needs two
-            distinct admin confirmations before its stats are promoted to the scoring tables.
+            Pick a fixture, submit the JSON or CSV/TSV, resolve every flagged row, then confirm. Each fixture needs
+            two distinct admin confirmations before its stats are promoted to the scoring tables.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -344,6 +496,13 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
                       <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-accent)]">
                         v{batch.dataVersion} · {validConfirmerCount(batch)}/2
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStartUpload(fixture.fixtureId)}
+                        className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                      >
+                        Re-upload
+                      </button>
                       <button
                         type="button"
                         onClick={() => setReviewBatch(batch)}

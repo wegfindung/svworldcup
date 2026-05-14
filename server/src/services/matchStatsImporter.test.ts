@@ -28,44 +28,44 @@ async function makeImporter() {
   return { importer: new JsonMatchStatsImporter(mapping, pools), mapping }
 }
 
-describe('JsonMatchStatsImporter', () => {
+describe('JsonMatchStatsImporter.resolveMatch', () => {
   it('auto-resolves a player against the team pool', async () => {
     const { importer } = await makeImporter()
-    const result = await importer.importMatch({ fixtureId: BRA_MAR_FIXTURE, createdBy: 'a@example.com', json: baseJson() })
-    expect(result.batchInput.rows).toHaveLength(1)
-    expect(result.batchInput.rows[0].playerId).toBe(10)
-    expect(result.batchInput.sourceUrl).toBe('https://x.test/m')
-    expect(result.batchInput.homeGoals).toBe(1)
-    expect(result.batchInput.awayGoals).toBe(0)
+    const result = await importer.resolveMatch({ fixtureId: BRA_MAR_FIXTURE, json: baseJson() })
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0].resolution).toEqual({ status: 'resolved', playerId: 10 })
+    expect(result.sourceUrl).toBe('https://x.test/m')
+    expect(result.homeGoals).toBe(1)
+    expect(result.awayGoals).toBe(0)
   })
 
-  it('leaves an unknown player unresolved with a null playerId', async () => {
+  it('leaves an unknown player unresolved', async () => {
     const { importer } = await makeImporter()
     const json = baseJson()
     json.players[0].name = 'Unknown Newcomer'
-    const result = await importer.importMatch({ fixtureId: BRA_MAR_FIXTURE, createdBy: 'a@example.com', json })
-    expect(result.batchInput.rows[0].playerId).toBeNull()
+    const result = await importer.resolveMatch({ fixtureId: BRA_MAR_FIXTURE, json })
+    expect(result.rows[0].resolution.status).toBe('unresolved')
   })
 
-  it('skips a name on the skip list and reports it instead of creating a row', async () => {
+  it('auto-skips a name on the skip list and reports it instead of returning a row', async () => {
     const { importer, mapping } = await makeImporter()
     await mapping.addSkipName({ teamCode: 'BRA', normalizedSourceName: 'vinicius junior', createdBy: 'a@example.com' })
-    const result = await importer.importMatch({ fixtureId: BRA_MAR_FIXTURE, createdBy: 'a@example.com', json: baseJson() })
-    expect(result.batchInput.rows).toHaveLength(0)
+    const result = await importer.resolveMatch({ fixtureId: BRA_MAR_FIXTURE, json: baseJson() })
+    expect(result.rows).toHaveLength(0)
     expect(result.skippedNames).toEqual(['Vinicius Junior'])
   })
 
-  it('rejects JSON describing a different fixture than the one selected (D10)', async () => {
+  it('rejects a submission describing a different fixture than the one selected (D10)', async () => {
     const { importer } = await makeImporter()
     await expect(
-      importer.importMatch({ fixtureId: '2026-06-13-d-usa-par', createdBy: 'a@example.com', json: baseJson() }),
+      importer.resolveMatch({ fixtureId: '2026-06-13-d-usa-par', json: baseJson() }),
     ).rejects.toBeInstanceOf(MatchImportValidationError)
   })
 
   it('rejects an unknown fixture', async () => {
     const { importer } = await makeImporter()
     await expect(
-      importer.importMatch({ fixtureId: 'not-a-fixture', createdBy: 'a@example.com', json: baseJson() }),
+      importer.resolveMatch({ fixtureId: 'not-a-fixture', json: baseJson() }),
     ).rejects.toBeInstanceOf(MatchImportValidationError)
   })
 })
