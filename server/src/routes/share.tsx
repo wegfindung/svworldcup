@@ -281,13 +281,17 @@ function buildShareCardSvg(
   copy: ShareRenderCopy,
   fonts: LoadedFont[],
 ) {
-  const statementLines = wrapText(payload.statement, players.length === 2 ? 28 : 31, 3)
+  const statementLines = wrapText(payload.statement, players.length === 2 ? 24 : 27, 3)
   const cardWidth = players.length === 2 ? 334 : 270
   const cardHeight = 284
   const cardGap = 28
   const totalCardsWidth = players.length * cardWidth + (players.length - 1) * cardGap
   const cardsStartX = Math.round((shareCardWidth - totalCardsWidth) / 2)
-  const cardsTopY = 228
+  const panelX = 58
+  const panelY = 126
+  const panelWidth = 1084
+  const panelHeight = 406
+  const cardsTopY = 238
   const ctaY = 548
 
   const playerCardsSvg = players
@@ -361,20 +365,20 @@ function buildShareCardSvg(
   <rect width="${shareCardWidth}" height="${shareCardHeight}" fill="url(#floodlight-left)" />
   <rect width="${shareCardWidth}" height="${shareCardHeight}" fill="url(#floodlight-right)" />
 
-  <rect x="58" y="198" width="1084" height="264" rx="38" ry="38" fill="rgba(1,14,10,0.42)" stroke="rgba(150,255,205,0.14)" stroke-width="2" />
-  <line x1="58" y1="330" x2="1142" y2="330" stroke="rgba(202,255,225,0.16)" stroke-width="2" />
-  <line x1="600" y1="198" x2="600" y2="462" stroke="rgba(202,255,225,0.14)" stroke-width="2" />
-  <circle cx="600" cy="330" r="62" fill="none" stroke="rgba(202,255,225,0.14)" stroke-width="2" />
-  <rect x="58" y="252" width="112" height="156" rx="28" ry="28" fill="none" stroke="rgba(202,255,225,0.11)" stroke-width="2" />
-  <rect x="1030" y="252" width="112" height="156" rx="28" ry="28" fill="none" stroke="rgba(202,255,225,0.11)" stroke-width="2" />
+  <rect x="${panelX}" y="${panelY}" width="${panelWidth}" height="${panelHeight}" rx="38" ry="38" fill="rgba(1,14,10,0.42)" stroke="rgba(150,255,205,0.14)" stroke-width="2" />
+  <rect x="84" y="154" width="220" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
+  <line x1="58" y1="340" x2="1142" y2="340" stroke="rgba(202,255,225,0.16)" stroke-width="2" />
+  <line x1="600" y1="214" x2="600" y2="492" stroke="rgba(202,255,225,0.14)" stroke-width="2" />
+  <circle cx="600" cy="340" r="62" fill="none" stroke="rgba(202,255,225,0.14)" stroke-width="2" />
+  <rect x="58" y="286" width="112" height="156" rx="28" ry="28" fill="none" stroke="rgba(202,255,225,0.11)" stroke-width="2" />
+  <rect x="1030" y="286" width="112" height="156" rx="28" ry="28" fill="none" stroke="rgba(202,255,225,0.11)" stroke-width="2" />
 
   <rect x="72" y="48" width="286" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
   <text x="92" y="73" fill="#f4f0e8" font-size="18" font-weight="700" letter-spacing="2">${escapeXml(copy.bodyBadge.toUpperCase())}</text>
   <text x="1128" y="74" text-anchor="end" fill="rgba(255,255,255,0.74)" font-size="18" font-weight="500">${escapeXml(
     `${copy.bodyBylinePrefix} ${payload.managerName}`,
   )}</text>
-
-  ${renderMultilineText(statementLines, 72, 142, 56, 54, 700, '#f4f0e8')}
+  ${renderMultilineText(statementLines, 84, 230, 52, 48, 700, '#f4f0e8')}
 
   ${playerCardsSvg}
 
@@ -500,7 +504,7 @@ function buildShareSnapshotHtml(
       }
 
       .hero {
-        padding: 32px;
+        padding: 24px 24px 8px;
         background:
           radial-gradient(circle at top left, rgba(214, 255, 114, 0.12), transparent 18rem),
           linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
@@ -540,30 +544,8 @@ function buildShareSnapshotHtml(
         text-decoration: none;
       }
 
-      h1 {
-        margin: 22px 0 0;
-        max-width: 12ch;
-        font-size: clamp(2.6rem, 4.8vw, 4.3rem);
-        line-height: 0.94;
-        letter-spacing: -0.05em;
-      }
-
-      .intro {
-        margin: 18px 0 0;
-        max-width: 62ch;
-        font-size: 1.02rem;
-        line-height: 1.7;
-        color: var(--muted);
-      }
-
-      .meta {
-        margin: 18px 0 0;
-        font-size: 0.95rem;
-        color: rgba(214,255,114,0.9);
-      }
-
       .image-wrap {
-        padding: 18px;
+        padding: 12px 18px 18px;
       }
 
       .image-frame {
@@ -579,39 +561,17 @@ function buildShareSnapshotHtml(
         height: auto;
       }
 
-      .footer {
-        display: grid;
-        gap: 18px;
-        padding: 0 32px 32px;
-      }
-
-      .player-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .player-chip {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.05);
-        padding: 10px 14px;
-        font-size: 14px;
-        color: var(--text);
-      }
-
-      .cta-note {
-        font-size: 0.98rem;
+      .subnote {
+        padding: 0 24px 24px;
+        font-size: 0.95rem;
         color: var(--muted);
       }
 
       @media (max-width: 768px) {
         main { width: min(1180px, calc(100% - 20px)); padding-top: 18px; }
-        .hero { padding: 22px; }
+        .hero { padding: 20px 20px 6px; }
         .image-wrap { padding: 12px; }
-        .footer { padding: 0 22px 22px; }
+        .subnote { padding: 0 20px 20px; }
       }
     </style>
   </head>
@@ -623,9 +583,6 @@ function buildShareSnapshotHtml(
             <span class="badge">${escapeHtml(copy.bodyBadge)}</span>
             <a class="builder-link" href="${escapeHtml(origin)}/builder">${escapeHtml(copy.bodyButton)}</a>
           </div>
-          <h1>${escapeHtml(payload.statement)}</h1>
-          <p class="intro">${escapeHtml(copy.bodyIntro)}</p>
-          <p class="meta">${escapeHtml(`${copy.bodyBylinePrefix} ${payload.managerName}`)}</p>
         </div>
 
         <div class="image-wrap">
@@ -634,12 +591,7 @@ function buildShareSnapshotHtml(
           </div>
         </div>
 
-        <div class="footer">
-          <div class="player-row">
-            ${playerNames.map((playerName) => `<span class="player-chip">${escapeHtml(playerName)}</span>`).join('')}
-          </div>
-          <p class="cta-note">${escapeHtml(copy.cta)}</p>
-        </div>
+        <p class="subnote">${escapeHtml(copy.bodyIntro)} ${escapeHtml(`${copy.bodyBylinePrefix} ${payload.managerName}`)}</p>
       </section>
     </main>
   </body>
