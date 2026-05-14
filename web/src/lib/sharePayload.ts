@@ -3,6 +3,7 @@ import type { LocaleCode, SlotClass, TeamPoolPlayer } from './types'
 export interface ShareSnapshotPlayer {
   playerId: number
   displayName: string
+  shareLabel?: string
   teamCode: string
   imageUrl: string
   slotClass: SlotClass
@@ -44,10 +45,11 @@ export function buildShareCardUrl(payload: ShareSnapshotPayload) {
   return `/api/public/share-card.png?data=${encodeURIComponent(encoded)}`
 }
 
-export function createShareSnapshotPlayer(player: TeamPoolPlayer, slotClass: SlotClass): ShareSnapshotPlayer {
+export function createShareSnapshotPlayer(player: TeamPoolPlayer, slotClass: SlotClass, shareLabel?: string): ShareSnapshotPlayer {
   return {
     playerId: player.playerId,
     displayName: player.displayName,
+    shareLabel: shareLabel?.trim() ? shareLabel.trim() : undefined,
     teamCode: player.teamCode || player.nationalityCode,
     imageUrl: player.imageUrl,
     slotClass,

@@ -2,7 +2,7 @@ import type { LocaleCode } from './types'
 
 export interface ShareStatementPreset {
   id: string
-  text: string
+  template: string
 }
 
 interface ShareComposerCopy {
@@ -17,7 +17,13 @@ interface ShareComposerCopy {
   customCounter: string
   playersLabel: string
   playersHelp: string
+  selectedPlayersLabel: string
+  selectedPlayersHelp: string
+  playerNameLabel: string
+  playerNameHelp: string
+  playerNamePlaceholder: string
   previewLabel: string
+  previewHelp: string
   shareButton: string
   copyButton: string
   copiedLabel: string
@@ -35,65 +41,77 @@ interface ShareComposerCopy {
 
 const englishCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Create a shareable World Cup squad card.',
-  body: 'Pick a statement, choose two or three featured players, and generate a public preview link. You can keep editing your squad afterwards.',
-  statementLabel: 'Choose the player statement',
-  statementHelp: 'Use one of the preset one-liners or write your own sentence.',
-  presetsLabel: 'Preset lines',
-  customLabel: 'Custom statement',
-  customPlaceholder: 'Write one short sentence for your share graphic.',
+  title: 'Create a polished World Cup picks card.',
+  body: 'Choose two or three featured players, fine-tune the names shown on the artwork, and publish a cleaner public preview link without locking your squad.',
+  statementLabel: 'Choose the headline',
+  statementHelp: 'Preset headlines adapt automatically to 2 or 3 selected players. You can also write your own.',
+  presetsLabel: 'Preset headlines',
+  customLabel: 'Custom headline',
+  customPlaceholder: 'Write one short headline for the share graphic.',
   customCounter: 'characters',
   playersLabel: 'Choose 2-3 featured players',
-  playersHelp: 'These players appear on the graphic. A round country flag is added automatically.',
+  playersHelp: 'These players appear on the artwork. Their country flag is placed inside the portrait automatically.',
+  selectedPlayersLabel: 'Names on the graphic',
+  selectedPlayersHelp: 'Use an optional nickname or shorter label if you want something other than the official player name.',
+  playerNameLabel: 'Display name on graphic',
+  playerNameHelp: 'Optional. Leave empty to use the official name.',
+  playerNamePlaceholder: 'Nickname or shorter display name',
   previewLabel: 'Live share preview',
+  previewHelp: 'The image below is the same card used for the public preview and social share link.',
   shareButton: 'Share now',
   copyButton: 'Copy public link',
   copiedLabel: 'Public link copied.',
   previewButton: 'Open public preview',
   backButton: 'Back to builder',
-  lockedHint: 'Your full squad unlocks sharing. Locking is not required.',
+  lockedHint: 'A full 15-player squad unlocks sharing. Final submit is not required.',
   incompleteTitle: 'Complete all 15 squad slots first',
   incompleteBody: 'Return to the builder, fill every slot, then come back to generate a social sharing card.',
   loading: 'Loading your current squad…',
   errorTitle: 'Share composer unavailable',
   selectionHint: 'Select at least 2 and at most 3 players.',
-  prizeCta: 'Build your World Cup squad and win prizes.',
+  prizeCta: 'Join the Soccerverse World Cup and compete for prizes.',
   presets: [
-    { id: 'big-stage', text: 'This is my World Cup squad for the big stage.' },
-    { id: 'win-it-all', text: 'I built this squad to win it all.' },
-    { id: 'my-picks', text: 'These are my picks for a World Cup run.' },
+    { id: 'top-picks', template: 'My {count} top picks for the World Cup.' },
+    { id: 'backing', template: 'These are the {count} players I am backing for the World Cup.' },
+    { id: 'featured', template: 'My featured {count} for the Soccerverse World Cup.' },
   ],
 }
 
 const germanCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Erstelle eine teilbare WM-Kader-Grafik.',
-  body: 'Wähle einen Satz, markiere zwei oder drei Spieler und erzeuge einen öffentlichen Vorschaulink. Deinen Kader kannst du danach weiter ändern.',
-  statementLabel: 'Wähle den Nutzersatz',
-  statementHelp: 'Nutze eine der Vorlagen oder schreibe deinen eigenen Ein-Satz-Text.',
+  title: 'Erstelle eine professionelle WM-Picks-Grafik.',
+  body: 'Wähle zwei oder drei Spieler aus, passe die angezeigten Namen bei Bedarf an und veröffentliche einen deutlich besseren Vorschaulink, ohne deinen Kader zu locken.',
+  statementLabel: 'Wähle die Überschrift',
+  statementHelp: 'Die Vorlagen passen sich automatisch an 2 oder 3 ausgewählte Spieler an. Du kannst auch deine eigene Überschrift schreiben.',
   presetsLabel: 'Vorlagen',
-  customLabel: 'Benutzerdefiniert',
-  customPlaceholder: 'Schreibe einen kurzen Satz für deine Share-Grafik.',
+  customLabel: 'Eigene Überschrift',
+  customPlaceholder: 'Schreibe eine kurze Überschrift für die Share-Grafik.',
   customCounter: 'Zeichen',
   playersLabel: 'Wähle 2-3 Spieler für die Grafik',
-  playersHelp: 'Diese Spieler erscheinen auf der Grafik. Die runde Länderflagge wird automatisch ergänzt.',
+  playersHelp: 'Diese Spieler erscheinen auf der Grafik. Die Länderflagge sitzt automatisch im Portrait.',
+  selectedPlayersLabel: 'Namen auf der Grafik',
+  selectedPlayersHelp: 'Hier kannst du optional Spitznamen oder kürzere Anzeigenamen verwenden statt des offiziellen Spielnamens.',
+  playerNameLabel: 'Anzeigename auf der Grafik',
+  playerNameHelp: 'Optional. Leer lassen, um den offiziellen Namen zu verwenden.',
+  playerNamePlaceholder: 'Spitzname oder kürzerer Anzeigename',
   previewLabel: 'Live-Vorschau',
+  previewHelp: 'Das Bild unten ist dieselbe Karte, die auch im öffentlichen Preview-Link und beim Teilen verwendet wird.',
   shareButton: 'Jetzt teilen',
   copyButton: 'Öffentlichen Link kopieren',
   copiedLabel: 'Öffentlicher Link kopiert.',
   previewButton: 'Öffentliche Vorschau öffnen',
   backButton: 'Zurück zum Builder',
-  lockedHint: 'Das Teilen wird durch einen vollständigen Kader freigeschaltet. Ein Lock ist nicht nötig.',
+  lockedHint: 'Ein vollständiger 15er-Kader schaltet das Teilen frei. Ein Final Submit ist nicht nötig.',
   incompleteTitle: 'Fülle zuerst alle 15 Kaderplätze',
   incompleteBody: 'Gehe zurück in den Builder, fülle jeden Slot und erstelle danach deine Social-Sharing-Grafik.',
   loading: 'Dein aktueller Kader wird geladen…',
   errorTitle: 'Share-Composer nicht verfügbar',
   selectionHint: 'Wähle mindestens 2 und höchstens 3 Spieler.',
-  prizeCta: 'Baue deinen WM-Kader und spiele um Preise.',
+  prizeCta: 'Mach beim Soccerverse World Cup mit und spiele um Preise.',
   presets: [
-    { id: 'big-stage', text: 'Das ist mein WM-Kader für die große Bühne.' },
-    { id: 'win-it-all', text: 'Diesen Kader habe ich gebaut, um alles zu gewinnen.' },
-    { id: 'my-picks', text: 'Das sind meine Picks für einen tiefen WM-Run.' },
+    { id: 'top-picks', template: 'Meine {count} Top Picks für die WM.' },
+    { id: 'backing', template: 'Auf diese {count} Spieler setze ich bei der WM.' },
+    { id: 'featured', template: 'Das sind meine {count} Featured Picks für den Soccerverse World Cup.' },
   ],
 }
 
@@ -109,4 +127,8 @@ const copyByLocale: Record<LocaleCode, ShareComposerCopy> = {
 
 export function getShareComposerCopy(locale: LocaleCode) {
   return copyByLocale[locale] ?? englishCopy
+}
+
+export function renderSharePreset(template: string, playerCount: number) {
+  return template.replaceAll('{count}', String(playerCount))
 }

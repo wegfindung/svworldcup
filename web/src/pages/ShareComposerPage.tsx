@@ -4,7 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
-import { getShareComposerCopy } from '../lib/shareCopy'
+import { getShareComposerCopy, renderSharePreset } from '../lib/shareCopy'
 import { buildShareCardUrl, buildShareSnapshotUrl, createShareSnapshotPlayer, type ShareSnapshotPayload } from '../lib/sharePayload'
 import type { LocaleCode, ParticipantProfile, ParticipantSquad } from '../lib/types'
 
@@ -15,6 +15,7 @@ interface ShareComposerPageProps {
 type LoadState = 'loading' | 'ready' | 'error'
 
 const maxCustomStatementLength = 110
+const maxShareLabelLength = 28
 
 function buildAbsoluteUrl(path: string) {
   if (typeof window === 'undefined') {
@@ -33,6 +34,10 @@ function normalizeFeaturedPlayerIds(currentIds: number[], draftedPlayerIds: numb
   return draftedPlayerIds.slice(0, 3)
 }
 
+function sanitizeShareLabel(value: string) {
+  return value.trim().slice(0, maxShareLabelLength)
+}
+
 export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const copy = getShareComposerCopy(locale)
   const [loadState, setLoadState] = useState<LoadState>('loading')
@@ -40,9 +45,10 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const [squad, setSquad] = useState<ParticipantSquad | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [statementMode, setStatementMode] = useState<'preset' | 'custom'>('preset')
-  const [selectedPresetId, setSelectedPresetId] = useState(copy.presets[0]?.id ?? 'big-stage')
+  const [selectedPresetId, setSelectedPresetId] = useState(copy.presets[0]?.id ?? 'top-picks')
   const [customStatement, setCustomStatement] = useState('')
   const [featuredPlayerIds, setFeaturedPlayerIds] = useState<number[]>([])
+  const [playerNameOverrides, setPlayerNameOverrides] = useState<Record<number, string>>({})
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
 
   useEffect(() => {
@@ -90,15 +96,15 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
       .sort((left, right) => right.player.rating - left.player.rating || left.player.displayName.localeCompare(right.player.displayName))
   }, [squad])
 
-  const isCompleteSquad = (squad?.slots.filter((slot) => slot.player).length ?? 0) === 15
-  const effectivePresetId = copy.presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : (copy.presets[0]?.id ?? 'big-stage')
+  const draftedPlayerIds = useMemo(() => draftedPlayers.map((entry) => entry.player.playerId), [draftedPlayers])
+  const isCompleteSquad = draftedPlayers.length === 15
+  const effectivePresetId = copy.presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : (copy.presets[0]?.id ?? 'top-picks')
   const selectedPreset = copy.presets.find((preset) => preset.id === effectivePresetId) ?? copy.presets[0]
-  const statement =
-    statementMode === 'custom' ? customStatement.trim().slice(0, maxCustomStatementLength) : (selectedPreset?.text ?? '').trim()
-  const normalizedFeaturedPlayerIds = normalizeFeaturedPlayerIds(
-    featuredPlayerIds,
-    draftedPlayers.map((entry) => entry.player.playerId),
-  )
+  const normalizedFeaturedPlayerIds = normalizeFeaturedPlayerIds(featuredPlayerIds, draftedPlayerIds)
+  const selectedPlayerCount = Math.max(2, Math.min(3, normalizedFeaturedPlayerIds.length || 3))
+  const presetStatement = selectedPreset ? renderSharePreset(selectedPreset.template, selectedPlayerCount) : ''
+  const statement = statementMode === 'custom' ? customStatement.trim().slice(0, maxCustomStatementLength) : presetStatement
+
   const featuredPlayers = draftedPlayers
     .filter((entry) => normalizedFeaturedPlayerIds.includes(entry.player.playerId))
     .slice()
@@ -107,6 +113,11 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
         normalizedFeaturedPlayerIds.indexOf(left.player.playerId) - normalizedFeaturedPlayerIds.indexOf(right.player.playerId),
     )
 
+  function resolveShareLabel(playerId: number, fallbackLabel: string) {
+    const override = sanitizeShareLabel(playerNameOverrides[playerId] ?? '')
+    return override || fallbackLabel
+  }
+
   const sharePayload: ShareSnapshotPayload | null =
     participant && isCompleteSquad && statement && featuredPlayers.length >= 2 && featuredPlayers.length <= 3
       ? {
@@ -114,7 +125,9 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
           locale,
           managerName: participant.displayName,
           statement,
-          featuredPlayers: featuredPlayers.map((entry) => createShareSnapshotPlayer(entry.player, entry.slotClass)),
+          featuredPlayers: featuredPlayers.map((entry) =>
+            createShareSnapshotPlayer(entry.player, entry.slotClass, resolveShareLabel(entry.player.playerId, entry.player.displayName)),
+          ),
         }
       : null
 
@@ -125,10 +138,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   function toggleFeaturedPlayer(playerId: number) {
     setCopyState('idle')
     setFeaturedPlayerIds((current) => {
-      const baseline = normalizeFeaturedPlayerIds(
-        current,
-        draftedPlayers.map((entry) => entry.player.playerId),
-      )
+      const baseline = normalizeFeaturedPlayerIds(current, draftedPlayerIds)
 
       if (baseline.includes(playerId)) {
         return baseline.filter((item) => item !== playerId)
@@ -140,6 +150,14 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
       return [...baseline, playerId]
     })
+  }
+
+  function updatePlayerNameOverride(playerId: number, value: string) {
+    setCopyState('idle')
+    setPlayerNameOverrides((current) => ({
+      ...current,
+      [playerId]: value.slice(0, maxShareLabelLength),
+    }))
   }
 
   async function handleCopyLink() {
@@ -160,17 +178,21 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
       return
     }
 
-    await navigator.share({
-      title: `${sharePayload.managerName} · Soccerverse World Cup`,
-      text: `${sharePayload.statement} ${copy.prizeCta}`,
-      url: shareUrl,
-    })
+    try {
+      await navigator.share({
+        title: `${sharePayload.managerName} · Soccerverse World Cup`,
+        text: `${sharePayload.statement} ${copy.prizeCta}`,
+        url: shareUrl,
+      })
+    } catch {
+      // Share cancellation should not surface as a blocking UI error here.
+    }
   }
 
   if (loadState === 'loading') {
     return (
-      <div className="space-y-6 pb-12">
-        <section className="glass-panel rounded-[2rem] p-6">
+      <div className="space-y-4 pb-10">
+        <section className="glass-panel rounded-[1.15rem] p-5">
           <p className="text-sm text-[var(--color-muted)]">{copy.loading}</p>
         </section>
       </div>
@@ -179,8 +201,8 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
   if (loadState === 'error' || !participant || !squad) {
     return (
-      <div className="space-y-6 pb-12">
-        <section className="glass-panel rounded-[2rem] p-6">
+      <div className="space-y-4 pb-10">
+        <section className="glass-panel rounded-[1.15rem] p-5">
           <EmptyState title={copy.errorTitle} body={error ?? 'Unknown error.'} />
           <div className="mt-5">
             <Link to="/builder" className="text-sm font-semibold text-[var(--color-accent)]">
@@ -194,8 +216,8 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
   if (!isCompleteSquad) {
     return (
-      <div className="space-y-6 pb-12">
-        <section className="glass-panel rounded-[2rem] p-6">
+      <div className="space-y-4 pb-10">
+        <section className="glass-panel rounded-[1.15rem] p-5">
           <EmptyState title={copy.incompleteTitle} body={copy.incompleteBody} />
           <div className="mt-5">
             <Link to="/builder" className="text-sm font-semibold text-[var(--color-accent)]">
@@ -208,35 +230,39 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   }
 
   return (
-    <div className="space-y-6 pb-12">
-      <section className="hero-card rounded-[2rem] px-6 py-8 sm:px-8">
-        <p className="eyebrow">{copy.eyebrow}</p>
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.92fr]">
+    <div className="space-y-4 pb-10">
+      <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
+        <div className="grid gap-6 xl:grid-cols-[1fr_21rem]">
           <div>
-            <h2 className="section-title max-w-[12ch]">{copy.title}</h2>
-            <p className="mt-5 max-w-[64ch] text-base leading-relaxed text-[var(--color-muted)]">{copy.body}</p>
+            <p className="eyebrow">{copy.eyebrow}</p>
+            <h2 className="section-title mt-4 max-w-[12ch]">{copy.title}</h2>
+            <p className="mt-4 max-w-[64ch] text-base leading-relaxed text-[var(--color-muted)]">{copy.body}</p>
             <p className="mt-4 text-sm font-medium text-[var(--color-accent)]">{copy.lockedHint}</p>
           </div>
-          <div className="rounded-[1.6rem] border border-[var(--color-accent)]/18 bg-[var(--color-accent)]/10 p-5">
-            <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)]">{participant.displayName}</p>
+
+          <div className="surface-row rounded-[1rem] border border-[var(--color-accent)]/20 bg-[linear-gradient(180deg,rgba(24,180,133,0.12),rgba(8,13,12,0.3))] p-4">
+            <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">{participant.displayName}</p>
             <p className="mt-3 text-lg font-semibold text-white">{copy.prizeCta}</p>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">{copy.selectionHint}</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{copy.selectionHint}</p>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
-        <div className="space-y-6">
-          <div className="glass-panel rounded-[1.8rem] p-5 sm:p-6">
-            <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.statementLabel}</p>
-            <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{copy.statementHelp}</p>
+      <section className="grid gap-4 xl:grid-cols-[0.96fr_1.04fr]">
+        <div className="space-y-4">
+          <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+            <p className="eyebrow">{copy.statementLabel}</p>
+            <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.statementHelp}</p>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setStatementMode('preset')}
+                onClick={() => {
+                  setCopyState('idle')
+                  setStatementMode('preset')
+                }}
                 className={[
-                  'rounded-full px-4 py-2 text-sm font-semibold transition',
+                  'rounded-full px-4 py-2 text-sm font-semibold transition active:scale-[0.98]',
                   statementMode === 'preset' ? 'bg-[var(--color-accent)] text-[var(--color-ink)]' : 'border border-white/10 text-white hover:bg-white/6',
                 ].join(' ')}
               >
@@ -244,9 +270,12 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setStatementMode('custom')}
+                onClick={() => {
+                  setCopyState('idle')
+                  setStatementMode('custom')
+                }}
                 className={[
-                  'rounded-full px-4 py-2 text-sm font-semibold transition',
+                  'rounded-full px-4 py-2 text-sm font-semibold transition active:scale-[0.98]',
                   statementMode === 'custom' ? 'bg-[var(--color-accent)] text-[var(--color-ink)]' : 'border border-white/10 text-white hover:bg-white/6',
                 ].join(' ')}
               >
@@ -255,25 +284,31 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
             </div>
 
             {statementMode === 'preset' ? (
-              <div className="mt-5 grid gap-3">
-                {copy.presets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    className={[
-                      'rounded-[1.3rem] border px-4 py-4 text-left transition',
-                      selectedPresetId === preset.id
-                        ? 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10'
-                        : 'border-white/8 bg-black/12 hover:bg-white/6',
-                    ].join(' ')}
-                  >
-                    <span className="text-sm font-semibold text-white">{preset.text}</span>
-                  </button>
-                ))}
+              <div className="mt-4 grid gap-3">
+                {copy.presets.map((preset) => {
+                  const presetText = renderSharePreset(preset.template, selectedPlayerCount)
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setCopyState('idle')
+                        setSelectedPresetId(preset.id)
+                      }}
+                      className={[
+                        'surface-row rounded-[0.95rem] border px-4 py-4 text-left transition active:scale-[0.99]',
+                        selectedPresetId === preset.id
+                          ? 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10'
+                          : 'border-white/8 hover:bg-white/6',
+                      ].join(' ')}
+                    >
+                      <span className="text-sm font-semibold text-white">{presetText}</span>
+                    </button>
+                  )
+                })}
               </div>
             ) : (
-              <div className="mt-5">
+              <div className="mt-4">
                 <textarea
                   rows={4}
                   value={customStatement}
@@ -283,7 +318,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                     setCustomStatement(event.target.value)
                   }}
                   placeholder={copy.customPlaceholder}
-                  className="min-h-32 w-full rounded-[1.3rem] border border-white/10 bg-[rgba(8,13,12,0.74)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
+                  className="min-h-32 w-full rounded-[1rem] border border-white/10 bg-[rgba(8,13,12,0.74)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                 />
                 <p className="mt-2 text-xs text-[var(--color-muted)]">
                   {customStatement.trim().length}/{maxCustomStatementLength} {copy.customCounter}
@@ -292,11 +327,11 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
             )}
           </div>
 
-          <div className="glass-panel rounded-[1.8rem] p-5 sm:p-6">
-            <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.playersLabel}</p>
-            <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{copy.playersHelp}</p>
+          <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+            <p className="eyebrow">{copy.playersLabel}</p>
+            <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.playersHelp}</p>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {draftedPlayers.map((entry) => {
                 const isSelected = normalizedFeaturedPlayerIds.includes(entry.player.playerId)
                 const selectionLocked = !isSelected && normalizedFeaturedPlayerIds.length >= 3
@@ -307,10 +342,10 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                     onClick={() => toggleFeaturedPlayer(entry.player.playerId)}
                     disabled={selectionLocked}
                     className={[
-                      'rounded-[1.4rem] border p-4 text-left transition',
+                      'surface-row rounded-[0.95rem] border p-3 text-left transition active:scale-[0.99]',
                       isSelected
                         ? 'border-[var(--color-accent)]/34 bg-[var(--color-accent)]/10'
-                        : 'border-white/8 bg-black/12 hover:bg-white/6',
+                        : 'border-white/8 hover:bg-white/6',
                       selectionLocked ? 'cursor-not-allowed opacity-55' : '',
                     ].join(' ')}
                   >
@@ -318,9 +353,9 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                       <PlayerPortrait
                         src={entry.player.imageUrl}
                         alt={entry.player.displayName}
-                        width={68}
-                        height={68}
-                        className="h-16 w-16 rounded-[1rem] border border-white/10 object-cover"
+                        width={76}
+                        height={76}
+                        className="h-[4.5rem] w-[4.5rem] rounded-[0.9rem] border border-white/10 object-cover"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
@@ -330,13 +365,16 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                               {entry.slotLabel} · {entry.slotClass}
                             </p>
                           </div>
-                          <div className="rounded-full border border-white/10 px-3 py-1">
-                            <span className="mono text-xs text-[var(--color-accent)]">{entry.player.rating}</span>
-                          </div>
+                          <span className="mono rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-[var(--color-accent)]">
+                            {entry.player.rating}
+                          </span>
                         </div>
+
                         <div className="mt-3 flex items-center gap-2">
                           <TeamFlag teamCode={entry.player.teamCode || entry.player.nationalityCode} label={entry.player.displayName} size="sm" />
-                          <span className="text-xs text-[var(--color-muted)]">{entry.player.teamCode || entry.player.nationalityCode}</span>
+                          <span className="mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                            {entry.player.teamCode || entry.player.nationalityCode}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -345,37 +383,98 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
               })}
             </div>
           </div>
+
+          <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="eyebrow">{copy.selectedPlayersLabel}</p>
+                <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.selectedPlayersHelp}</p>
+              </div>
+              <span className="mono rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                {featuredPlayers.length}/3
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {featuredPlayers.map((entry, index) => {
+                const shareLabel = playerNameOverrides[entry.player.playerId] ?? ''
+                return (
+                  <div key={entry.slotKey} className="surface-row rounded-[0.95rem] border border-white/8 p-3">
+                    <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)]">
+                      <div className="flex items-center gap-3">
+                        <span className="mono inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 text-[11px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                          {index + 1}
+                        </span>
+                        <PlayerPortrait
+                          src={entry.player.imageUrl}
+                          alt={entry.player.displayName}
+                          width={56}
+                          height={56}
+                          className="h-14 w-14 rounded-[0.85rem] border border-white/10 object-cover"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-white">{entry.player.displayName}</p>
+                        <p className="mt-1 text-xs text-[var(--color-muted)]">{copy.playerNameHelp}</p>
+                        <label className="mt-3 grid gap-2">
+                          <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.playerNameLabel}</span>
+                          <input
+                            type="text"
+                            value={shareLabel}
+                            maxLength={maxShareLabelLength}
+                            onChange={(event) => updatePlayerNameOverride(entry.player.playerId, event.target.value)}
+                            placeholder={copy.playerNamePlaceholder}
+                            className="h-11 rounded-[0.9rem] border border-white/10 bg-[rgba(8,13,12,0.74)] px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                          />
+                        </label>
+                        <p className="mt-2 text-[11px] text-[var(--color-muted)]">
+                          {sanitizeShareLabel(shareLabel) || entry.player.displayName}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="glass-panel rounded-[1.8rem] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
+        <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.previewLabel}</p>
-                <p className="mt-2 text-sm text-[var(--color-muted)]">{statement || copy.selectionHint}</p>
+                <p className="eyebrow">{copy.previewLabel}</p>
+                <p className="mt-3 max-w-[56ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.previewHelp}</p>
               </div>
               <Link to="/builder" className="text-sm font-semibold text-[var(--color-accent)]">
                 {copy.backButton}
               </Link>
             </div>
 
+            <div className="mt-4 rounded-[1rem] border border-white/8 bg-[rgba(6,12,11,0.86)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{participant.displayName}</p>
+              <p className="mt-2 text-lg font-semibold leading-tight text-white">{statement || copy.selectionHint}</p>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">{copy.prizeCta}</p>
+            </div>
+
             {cardUrl ? (
-              <div className="mt-5 overflow-hidden rounded-[1.6rem] border border-white/8 bg-black/15">
+              <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[rgba(6,12,11,0.92)] shadow-[0_24px_60px_-36px_rgba(0,0,0,0.95)]">
                 <img src={cardUrl} alt={statement} className="block w-full" />
               </div>
             ) : (
-              <div className="mt-5">
+              <div className="mt-4">
                 <EmptyState title={copy.errorTitle} body={copy.selectionHint} />
               </div>
             )}
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3">
               {typeof navigator.share === 'function' ? (
                 <button
                   type="button"
                   onClick={() => void handleNativeShare()}
                   disabled={!shareUrl}
-                  className="rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="premium-button px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {copy.shareButton}
                 </button>
@@ -384,7 +483,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                 type="button"
                 onClick={() => void handleCopyLink()}
                 disabled={!shareUrl}
-                className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
               >
                 {copy.copyButton}
               </button>
@@ -393,7 +492,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                   href={shareUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6"
+                  className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                 >
                   {copy.previewButton}
                 </a>

@@ -7,6 +7,7 @@ export type ShareLocale = (typeof supportedShareLocales)[number]
 const featuredPlayerSchema = z.object({
   playerId: z.coerce.number().int().positive(),
   displayName: z.string().trim().min(1).max(120),
+  shareLabel: z.string().trim().min(1).max(80).optional(),
   teamCode: z.string().trim().toUpperCase().length(3),
   imageUrl: z.string().trim().url(),
   slotClass: z.enum(['GK', 'DEF', 'MID', 'FWD']),
