@@ -12,6 +12,10 @@ import type { RegistrationRepository } from '../repositories/registrationReposit
 import type { AdminRepository } from '../repositories/adminRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
+import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
+import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
+import type { AuditRepository } from '../repositories/auditRepository.js'
+import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerverse.js'
@@ -81,6 +85,9 @@ export function createAdminRouter(
   configRepository: ConfigRepository,
   teamPoolRepository: TeamPoolRepository,
   scoringRepository: ScoringRepository,
+  matchImportRepository: MatchImportRepository,
+  matchMappingRepository: MatchMappingRepository,
+  auditRepository: AuditRepository,
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
@@ -139,6 +146,17 @@ export function createAdminRouter(
   })
 
   router.use(requireAdmin)
+
+  router.use(
+    '/match-import',
+    createMatchImportRouter({
+      matchImportRepository,
+      matchMappingRepository,
+      teamPoolRepository,
+      scoringRepository,
+      auditRepository,
+    }),
+  )
 
   router.get('/overview', async (_req, res) => {
     const counts = await registrationRepository.getCounts()

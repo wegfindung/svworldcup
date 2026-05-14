@@ -29,6 +29,7 @@ import {
   PostgresMatchMappingRepository,
   type MatchMappingRepository,
 } from '../repositories/matchMappingRepository.js'
+import { MemoryAuditRepository, PostgresAuditRepository, type AuditRepository } from '../repositories/auditRepository.js'
 
 let pool: Pool | null = null
 let registrationRepository: RegistrationRepository | null = null
@@ -40,6 +41,7 @@ let squadRepository: SquadRepository | null = null
 let scoringRepository: ScoringRepository | null = null
 let matchImportRepository: MatchImportRepository | null = null
 let matchMappingRepository: MatchMappingRepository | null = null
+let auditRepository: AuditRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -148,4 +150,12 @@ export function createMatchMappingRepository(): MatchMappingRepository {
       : new MemoryMatchMappingRepository()
   }
   return matchMappingRepository
+}
+
+export function createAuditRepository(): AuditRepository {
+  if (!auditRepository) {
+    const existingPool = getPool()
+    auditRepository = existingPool ? new PostgresAuditRepository(existingPool) : new MemoryAuditRepository()
+  }
+  return auditRepository
 }

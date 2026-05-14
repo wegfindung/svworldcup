@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
 import { canConfirm } from '../lib/confirmationRules.js'
+import { MatchImportValidationError } from '../lib/matchImportError.js'
 import type {
   CreateMatchBatchInput,
   PendingMatchBatch,
@@ -9,12 +10,7 @@ import type {
   UpdateMatchRowInput,
 } from '../domain/types.js'
 
-export class MatchImportValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'MatchImportValidationError'
-  }
-}
+export { MatchImportValidationError }
 
 // D4: no resolved player may appear twice in one fixture. Unresolved rows (null playerId)
 // are exempt — several may coexist in the same batch.

@@ -14,7 +14,10 @@ import { handleShareSnapshotPage } from './routes/share.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import {
   createAdminRepository,
+  createAuditRepository,
   createConfigRepository,
+  createMatchImportRepository,
+  createMatchMappingRepository,
   createParticipantSessionRepository,
   createRegistrationRepository,
   createScoringRepository,
@@ -31,6 +34,9 @@ export function createApp() {
   const teamPoolRepository = createTeamPoolRepository()
   const squadRepository = createSquadRepository()
   const scoringRepository = createScoringRepository()
+  const matchImportRepository = createMatchImportRepository()
+  const matchMappingRepository = createMatchMappingRepository()
+  const auditRepository = createAuditRepository()
   const publicDirCandidates = [resolve(process.cwd(), 'public'), resolve(process.cwd(), 'web', 'dist')]
   const publicDir = publicDirCandidates.find((candidate) => existsSync(candidate))
   const cspDirectives = helmet.contentSecurityPolicy.getDefaultDirectives()
@@ -102,7 +108,20 @@ export function createApp() {
   app.use('/api/public', publicApiLimiter, createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, scoringRepository, squadRepository }))
   app.use('/api/auth', authApiLimiter, createAuthRouter(registrationRepository, participantSessionRepository))
   app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository))
-  app.use('/api/admin', adminApiLimiter, createAdminRouter(adminRepository, registrationRepository, configRepository, teamPoolRepository, scoringRepository))
+  app.use(
+    '/api/admin',
+    adminApiLimiter,
+    createAdminRouter(
+      adminRepository,
+      registrationRepository,
+      configRepository,
+      teamPoolRepository,
+      scoringRepository,
+      matchImportRepository,
+      matchMappingRepository,
+      auditRepository,
+    ),
+  )
 
   app.use(errorHandler)
 

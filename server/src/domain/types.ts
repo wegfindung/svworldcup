@@ -167,6 +167,8 @@ export interface MatchEntryInput {
   assists: number
   cleanSheetEligible: boolean
   performancePoints?: number
+  // D19: rating is a raw captured fact; performance_points derivation from it is parked.
+  rating?: number
   sourceNote?: string
 }
 
@@ -299,6 +301,33 @@ export interface AddSkipNameInput {
   teamCode: string
   normalizedSourceName: string
   createdBy: string
+}
+
+// Output of a MatchStatsImporter adapter: a batch ready to create, plus the names the
+// adapter deliberately skipped (D12 skip list) for the review summary.
+export interface ImportedMatch {
+  batchInput: CreateMatchBatchInput
+  skippedNames: string[]
+}
+
+// --- Audit log (see architecture/SOP_match_data_import.md, audit logging) ---
+
+export interface AuditLogInput {
+  actorEmail: string
+  actionKey: string
+  entityType: string
+  entityId: string
+  detail?: Record<string, unknown>
+}
+
+export interface AuditLogEntry {
+  auditId: string
+  actorEmail: string
+  actionKey: string
+  entityType: string
+  entityId: string
+  detail: Record<string, unknown>
+  createdAt: string
 }
 
 export interface ParticipantScoreRow {
