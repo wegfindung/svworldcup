@@ -77,6 +77,8 @@ Common to both:
 
 - A submission naming the same player twice for one team is rejected loudly, never silently
   deduplicated.
+- A submission listing more than eleven starters for either team is rejected loudly. The
+  starting lineup is fixed at eleven players; used substitutes are not capped.
 - `clean_sheet_eligible` is never in the submission; it is a review-UI judgement.
 
 ## Fixture Identity
@@ -119,11 +121,12 @@ Common to both:
 - Resolution happens in the pre-persist stage (see Preview). The submission is parsed and
   auto-resolved without writing anything; the admin then resolves or skips every
   outstanding row, and only the fully resolved result is persisted.
-- A name that is genuinely not pool-relevant can be added to a per-team skip list by
-  deliberate reviewer action, so it is not re-flagged on every future import. The skip list
-  is separate from the name-to-player mapping table and is populated only by explicit
-  reviewer choice. Skipping a row is a valid way to clear it; a skipped player simply does
-  not enter the batch.
+- An unresolved row is cleared in the pre-persist resolve stage in one of two ways: skipped
+  for this submission only, or added to the per-team skip list. Both drop the player from the
+  submission so the row simply does not enter the batch; the skip-list entry additionally
+  means the name is auto-skipped on every future import, so a genuinely not-pool-relevant
+  name is not re-flagged. The skip list is separate from the name-to-player mapping table and
+  is populated only by explicit reviewer choice in the resolve stage.
 - When a name has no `world_cup_players` record at all, the intended workflow is to curate
   the player into that team's pool and re-submit, so auto-resolution picks them up.
 

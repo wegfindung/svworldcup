@@ -45,6 +45,7 @@ export function assertMatchImportSemantics(json: MatchImportJson): void {
   const matchTeams = new Set([homeTeam, awayTeam])
 
   const seen = new Set<string>()
+  const starterCounts = new Map<string, number>()
   for (const player of json.players) {
     const normalizedTeam = normalizeName(player.team)
     if (!matchTeams.has(normalizedTeam)) {
@@ -59,5 +60,15 @@ export function assertMatchImportSemantics(json: MatchImportJson): void {
       )
     }
     seen.add(key)
+
+    if (player.lineupStatus === 'starter') {
+      const count = (starterCounts.get(normalizedTeam) ?? 0) + 1
+      if (count > 11) {
+        throw new MatchImportValidationError(
+          `${player.team} has more than 11 starters. The starting lineup is fixed at 11 players.`,
+        )
+      }
+      starterCounts.set(normalizedTeam, count)
+    }
   }
 }

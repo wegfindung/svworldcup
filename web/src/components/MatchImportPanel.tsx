@@ -1,15 +1,10 @@
 import { useMemo, useState } from 'react'
 import { EmptyState } from './EmptyState'
+import { InfoTip } from './InfoTip'
 import { MatchImportResolveStage } from './MatchImportResolveStage'
 import { MatchImportReview } from './MatchImportReview'
 import { TeamFlag } from './TeamFlag'
 import { fetchMatchImportBatches, parseMatchImport, uploadMatchImport } from '../lib/api'
-import {
-  previewAwayTeam,
-  previewBatch,
-  previewHomeTeam,
-  previewPools,
-} from '../data/matchImportPreviewData'
 import type {
   FixtureSeed,
   MatchImportInput,
@@ -55,7 +50,6 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
   const [batchesLoaded, setBatchesLoaded] = useState(false)
   const [listBusy, setListBusy] = useState(false)
   const [reviewBatch, setReviewBatch] = useState<PendingMatchBatch | null>(null)
-  const [previewMode, setPreviewMode] = useState(false)
   const [uploadFixtureId, setUploadFixtureId] = useState<string | null>(null)
   const [format, setFormat] = useState<'json' | 'csv'>('json')
   const [pasteText, setPasteText] = useState('')
@@ -217,25 +211,7 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
     }
   }
 
-  // --- Preview / review views ---
-
-  if (previewMode) {
-    return (
-      <section className="space-y-4">
-        <MatchImportReview
-          batch={previewBatch}
-          homeTeam={previewHomeTeam}
-          awayTeam={previewAwayTeam}
-          adminEmail={adminEmail}
-          preview
-          previewPools={previewPools}
-          onBatchUpdated={() => undefined}
-          onBatchRemoved={() => undefined}
-          onClose={() => setPreviewMode(false)}
-        />
-      </section>
-    )
-  }
+  // --- Review view ---
 
   if (reviewBatch) {
     const sides = resolveSides(reviewBatch)
@@ -341,7 +317,7 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           </div>
         ) : null}
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex items-center gap-2">
           {(['json', 'csv'] as const).map((value) => (
             <button
               key={value}
@@ -357,6 +333,10 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
               {value === 'json' ? 'JSON' : 'CSV / TSV'}
             </button>
           ))}
+          <InfoTip
+            label="About the input formats"
+            content="JSON carries its own match block (teams, score, source URL). CSV/TSV is a pure player-rows table with a header row — you enter the score and source URL in the fields above the paste box."
+          />
         </div>
 
         {format === 'csv' ? (
@@ -447,13 +427,6 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           >
             {listBusy ? 'Loading…' : 'Refresh pending imports'}
           </button>
-          <button
-            type="button"
-            onClick={() => setPreviewMode(true)}
-            className="rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-          >
-            Preview review screen
-          </button>
         </div>
       </div>
 
@@ -496,6 +469,10 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
                       <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-accent)]">
                         v{batch.dataVersion} · {validConfirmerCount(batch)}/2
                       </span>
+                      <InfoTip
+                        label="About the batch status"
+                        content="v = data version (bumps on every edit). N/2 = distinct admin confirmations on the current version. Two are needed before the fixture is promoted to the scoring tables."
+                      />
                       <button
                         type="button"
                         onClick={() => handleStartUpload(fixture.fixtureId)}

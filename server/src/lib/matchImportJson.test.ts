@@ -60,4 +60,38 @@ describe('assertMatchImportSemantics', () => {
     json.players[1].team = 'Brazil'
     expect(() => assertMatchImportSemantics(json)).toThrow(MatchImportValidationError)
   })
+
+  it('rejects more than 11 starters for one team (Fix 8)', () => {
+    const raw = validJson()
+    for (let i = 0; i < 11; i += 1) {
+      raw.players.push({
+        name: `Brazil starter ${i}`,
+        team: 'Brazil',
+        lineupStatus: 'starter',
+        minutes: 90,
+        goals: 0,
+        assists: 0,
+        rating: 6.5,
+      })
+    }
+    expect(() => assertMatchImportSemantics(parseMatchImportJson(raw))).toThrow(
+      MatchImportValidationError,
+    )
+  })
+
+  it('accepts exactly 11 starters for one team (Fix 8)', () => {
+    const raw = validJson()
+    for (let i = 0; i < 10; i += 1) {
+      raw.players.push({
+        name: `Brazil starter ${i}`,
+        team: 'Brazil',
+        lineupStatus: 'starter',
+        minutes: 90,
+        goals: 0,
+        assists: 0,
+        rating: 6.5,
+      })
+    }
+    expect(() => assertMatchImportSemantics(parseMatchImportJson(raw))).not.toThrow()
+  })
 })

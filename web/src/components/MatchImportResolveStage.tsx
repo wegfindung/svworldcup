@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ConfirmModal } from './ConfirmModal'
+import { InfoTip } from './InfoTip'
 import { PlayerPortrait } from './PlayerPortrait'
 import { TeamFlag } from './TeamFlag'
-import { fetchTeamSelections } from '../lib/api'
+import { addMatchImportSkipName, fetchTeamSelections, removeMatchImportSkipName } from '../lib/api'
 import type {
   LineupStatus,
   MatchResolution,
@@ -20,7 +22,12 @@ interface MatchImportResolveStageProps {
   onBack: () => void
 }
 
-type RowChoice = { kind: 'player'; playerId: number } | { kind: 'skip' }
+// 'skip' = skip for this submission only. 'skip-always' = also written to the persistent
+// per-team skip list (Fix 6).
+type RowChoice =
+  | { kind: 'player'; playerId: number }
+  | { kind: 'skip' }
+  | { kind: 'skip-always' }
 
 function rowKey(teamCode: string, sourceName: string): string {
   return `${teamCode}:${sourceName}`
@@ -28,6 +35,9 @@ function rowKey(teamCode: string, sourceName: string): string {
 
 const pillButtonClass =
   'rounded-full border border-white/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]'
+
+// Fix 5: keep the native <option> popup on-theme in Chrome/Firefox.
+const optionClass = 'bg-[var(--color-ink-soft)] text-white'
 
 // Fix 7: the pre-persist resolve stage. Nothing is persisted — the admin resolves or skips
 // every flagged row, then Submit calls /upload with the overrides.
@@ -43,6 +53,10 @@ export function MatchImportResolveStage({
   const [poolsLoaded, setPoolsLoaded] = useState(false)
   const [poolsError, setPoolsError] = useState<string | null>(null)
   const [choices, setChoices] = useState<Map<string, RowChoice>>(new Map())
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  // Which row key has a skip-list write in flight, and the last skip-list error.
+  const [skipBusyKey, setSkipBusyKey] = useState<string | null>(null)
+  const [skipError, setSkipError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -74,6 +88,36 @@ export function MatchImportResolveStage({
     })
   }
 
+  // Fix 6: "Always skip this name" writes the persistent per-team skip-list entry, then
+  // marks the row skipped for this submission. Undo removes the skip-list entry again.
+  async function handleAlwaysSkip(row: ResolvedMatchRow) {
+    const key = rowKey(row.teamCode, row.sourceName)
+    setSkipBusyKey(key)
+    setSkipError(null)
+    try {
+      await addMatchImportSkipName(row.teamCode, row.sourceName)
+      setChoice(key, { kind: 'skip-always' })
+    } catch (caught) {
+      setSkipError(caught instanceof Error ? caught.message : 'Could not update the skip list.')
+    } finally {
+      setSkipBusyKey(null)
+    }
+  }
+
+  async function handleUndoSkipAlways(row: ResolvedMatchRow) {
+    const key = rowKey(row.teamCode, row.sourceName)
+    setSkipBusyKey(key)
+    setSkipError(null)
+    try {
+      await removeMatchImportSkipName(row.teamCode, row.sourceName)
+      setChoice(key, null)
+    } catch (caught) {
+      setSkipError(caught instanceof Error ? caught.message : 'Could not update the skip list.')
+    } finally {
+      setSkipBusyKey(null)
+    }
+  }
+
   const unresolvedRemaining = useMemo(
     () =>
       resolution.rows.filter(
@@ -92,9 +136,9 @@ export function MatchImportResolveStage({
       const choice = choices.get(rowKey(row.teamCode, row.sourceName))
       if (!choice) continue
       overrides.push(
-        choice.kind === 'skip'
-          ? { sourceName: row.sourceName, teamCode: row.teamCode, skip: true }
-          : { sourceName: row.sourceName, teamCode: row.teamCode, playerId: choice.playerId },
+        choice.kind === 'player'
+          ? { sourceName: row.sourceName, teamCode: row.teamCode, playerId: choice.playerId }
+          : { sourceName: row.sourceName, teamCode: row.teamCode, skip: true },
       )
     }
     onSubmit(overrides)
@@ -132,13 +176,20 @@ export function MatchImportResolveStage({
         </div>
 
         <div className="mt-3">
-          {choice?.kind === 'skip' ? (
+          {choice?.kind === 'skip' || choice?.kind === 'skip-always' ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="mono rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                skipped — not imported
+                {choice.kind === 'skip-always' ? 'skipped — added to skip list' : 'skipped — not imported'}
               </span>
-              <button type="button" disabled={busy} onClick={() => setChoice(key, null)} className={pillButtonClass}>
-                Undo
+              <button
+                type="button"
+                disabled={busy || skipBusyKey === key}
+                onClick={() =>
+                  choice.kind === 'skip-always' ? void handleUndoSkipAlways(row) : setChoice(key, null)
+                }
+                className={pillButtonClass}
+              >
+                {skipBusyKey === key ? 'Working…' : 'Undo'}
               </button>
             </div>
           ) : choice?.kind === 'player' ? (
@@ -174,22 +225,32 @@ export function MatchImportResolveStage({
                   }}
                   className="mt-2 h-10 w-full rounded-[0.85rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50"
                 >
-                  <option value="">Select a player…</option>
+                  <option className={optionClass} value="">Select a player…</option>
                   {pool.map((candidate) => (
-                    <option key={candidate.playerId} value={candidate.playerId}>
+                    <option className={optionClass} key={candidate.playerId} value={candidate.playerId}>
                       {candidate.displayName}
                     </option>
                   ))}
                 </select>
               )}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setChoice(key, { kind: 'skip' })}
-                className={`mt-2 ${pillButtonClass}`}
-              >
-                Skip this player
-              </button>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy || skipBusyKey === key}
+                  onClick={() => setChoice(key, { kind: 'skip' })}
+                  className={pillButtonClass}
+                >
+                  Skip once
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || skipBusyKey === key}
+                  onClick={() => void handleAlwaysSkip(row)}
+                  className={pillButtonClass}
+                >
+                  {skipBusyKey === key ? 'Working…' : 'Always skip this name'}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -262,7 +323,13 @@ export function MatchImportResolveStage({
       <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="eyebrow">resolution status</p>
+            <p className="eyebrow flex items-center gap-1.5">
+              resolution status
+              <InfoTip
+                label="About resolving rows"
+                content="Every flagged row must be resolved to a pool player or skipped before you can submit. 'Skip once' drops the player from this submission only; 'Always skip this name' also adds it to the team skip list so it is auto-skipped on every future import."
+              />
+            </p>
             <p className="mt-3 text-lg font-semibold text-white">
               {unresolvedRemaining === 0
                 ? 'All rows resolved or skipped'
@@ -277,7 +344,7 @@ export function MatchImportResolveStage({
           <button
             type="button"
             disabled={busy || unresolvedRemaining > 0 || !poolsLoaded}
-            onClick={handleSubmit}
+            onClick={() => setConfirmOpen(true)}
             className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
           >
             {busy ? 'Submitting…' : 'Submit match report'}
@@ -286,6 +353,11 @@ export function MatchImportResolveStage({
         {poolsError ? (
           <div className="mt-3 rounded-[1.1rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
             {poolsError}
+          </div>
+        ) : null}
+        {skipError ? (
+          <div className="mt-3 rounded-[1.1rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+            {skipError}
           </div>
         ) : null}
       </div>
@@ -301,6 +373,18 @@ export function MatchImportResolveStage({
           {renderColumn(awayTeam)}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmOpen}
+        title="Submit the match report?"
+        body="This creates the pending batch and counts as your confirmation #1. One other distinct admin must then confirm before the fixture is promoted."
+        confirmLabel="Submit match report"
+        onConfirm={() => {
+          setConfirmOpen(false)
+          handleSubmit()
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   )
 }
