@@ -6,6 +6,9 @@ Provide a controlled lifecycle for getting real-world match performance data int
 `admin_match_entries` (the table the scoring engine reads), gated by two-admin
 verification, so no unreviewed data can reach scoring.
 
+This SOP states the business rules. `import-engine.md` is the architectural and operational
+walkthrough — how the parts connect and how every path behaves.
+
 ## Scope
 
 In scope:
@@ -18,7 +21,9 @@ Out of scope:
 
 - Screenshot handling. The platform never receives or stores images. An admin extracts a
   screenshot into JSON using a general-purpose AI assistant on their own machine; the
-  platform only ever sees the resulting JSON.
+  platform only ever sees the resulting JSON. A standard extraction prompt template
+  (`architecture/match-import-extraction-prompt.md`) is shipped so team members extract
+  consistently across whichever assistant they use.
 - The scoring rubric (rating-to-performance-points curve, clean-sheet rule). The import
   engine is scoring-neutral and captures raw facts only.
 - A concrete API-Football adapter. The importer interface is defined; the API adapter
@@ -39,6 +44,10 @@ Out of scope:
 
 - Imports land in net-new pending tables. `admin_match_entries` remains the confirmed
   table and is not modified by the import path except for one additive `rating` column.
+- The pending batch stores the fixture-level final score (home and away goals) alongside
+  the source URL. The score is a fixture-level fact, not per-player, so it lives on the
+  batch and is not propagated to `admin_match_entries`. It serves the review-UI result
+  display and the clean-sheet judgement, both of which happen in the pending stage.
 - The scoring engine continues to read `admin_match_entries` directly and is otherwise
   unaffected.
 - Promotion is a plain upsert keyed by `(fixture_id, player_id)`.

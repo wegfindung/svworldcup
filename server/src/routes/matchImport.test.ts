@@ -77,6 +77,8 @@ describe('match import routes', () => {
     expect(upload.status).toBe(201)
     expect(upload.body.batch.rows).toHaveLength(2)
     expect(upload.body.batch.confirmations).toHaveLength(1)
+    expect(upload.body.batch.homeGoals).toBe(1)
+    expect(upload.body.batch.awayGoals).toBe(0)
 
     const batchId = upload.body.batch.batchId
     const confirm = await request(app)

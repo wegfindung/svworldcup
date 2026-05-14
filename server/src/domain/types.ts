@@ -235,6 +235,10 @@ export interface PendingMatchBatch {
   batchId: string
   fixtureId: string
   sourceUrl: string
+  // Fixture-level final score (D16 review display, D11 clean-sheet judgement). Stored on the
+  // batch only — not propagated to admin_match_entries.
+  homeGoals: number
+  awayGoals: number
   dataVersion: number
   createdBy: string
   lastEditedBy?: string
@@ -259,6 +263,8 @@ export interface CreateMatchBatchRowInput {
 export interface CreateMatchBatchInput {
   fixtureId: string
   sourceUrl: string
+  homeGoals: number
+  awayGoals: number
   createdBy: string
   rows: CreateMatchBatchRowInput[]
 }

@@ -177,6 +177,8 @@ CREATE TABLE IF NOT EXISTS pending_match_batches (
     batch_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     fixture_id TEXT NOT NULL UNIQUE REFERENCES fixtures(fixture_id) ON DELETE CASCADE,
     source_url TEXT NOT NULL,
+    home_goals INTEGER CHECK (home_goals >= 0),
+    away_goals INTEGER CHECK (away_goals >= 0),
     data_version INTEGER NOT NULL DEFAULT 1,
     created_by TEXT NOT NULL,
     last_edited_by TEXT,

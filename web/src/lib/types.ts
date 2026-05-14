@@ -207,6 +207,8 @@ export interface PendingMatchBatch {
   batchId: string
   fixtureId: string
   sourceUrl: string
+  homeGoals: number
+  awayGoals: number
   dataVersion: number
   createdBy: string
   lastEditedBy?: string

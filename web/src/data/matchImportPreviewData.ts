@@ -66,6 +66,8 @@ export const previewBatch: PendingMatchBatch = {
   batchId: 'preview-batch',
   fixtureId: 'preview-fixture-bra-mar',
   sourceUrl: 'https://www.sofascore.com/example-brazil-morocco',
+  homeGoals: 2,
+  awayGoals: 0,
   dataVersion: 2,
   createdBy: 'importer@svworldcup.test',
   lastEditedBy: 'reviewer@svworldcup.test',

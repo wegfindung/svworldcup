@@ -21,6 +21,8 @@ function batchInput(overrides: Partial<CreateMatchBatchInput> = {}): CreateMatch
   return {
     fixtureId: 'wc-2026-001',
     sourceUrl: 'https://sofascore.com/match',
+    homeGoals: 2,
+    awayGoals: 1,
     createdBy: 'importer@example.com',
     rows: [row({ playerId: 1 }), row({ playerId: 2, sourceName: 'Player Two' })],
     ...overrides,
@@ -35,6 +37,8 @@ describe('MemoryMatchImportRepository.createBatch', () => {
     expect(batch.dataVersion).toBe(1)
     expect(batch.rows).toHaveLength(2)
     expect(batch.confirmations).toHaveLength(1)
+    expect(batch.homeGoals).toBe(2)
+    expect(batch.awayGoals).toBe(1)
     expect(validConfirmerEmails(batch)).toEqual(['importer@example.com'])
     expect(isPromotable(batch)).toBe(false)
   })

@@ -252,7 +252,11 @@ export function MatchImportReview({
           <div>
             <p className="eyebrow">match import review</p>
             <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">
-              {homeTeam.nameEn} <span className="text-[var(--color-muted)]">vs</span> {awayTeam.nameEn}
+              {homeTeam.nameEn}{' '}
+              <span className="mono text-[var(--color-accent)]">
+                {batch.homeGoals}&nbsp;–&nbsp;{batch.awayGoals}
+              </span>{' '}
+              {awayTeam.nameEn}
             </h3>
             <p className="mt-2 text-sm text-[var(--color-muted)]">
               Imported by <span className="text-white">{batch.createdBy}</span> · data version v{batch.dataVersion}

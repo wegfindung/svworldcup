@@ -94,6 +94,8 @@ export class MemoryMatchImportRepository implements MatchImportRepository {
       batchId,
       fixtureId: input.fixtureId,
       sourceUrl: input.sourceUrl,
+      homeGoals: input.homeGoals,
+      awayGoals: input.awayGoals,
       dataVersion: 1,
       createdBy: input.createdBy,
       lastEditedBy: undefined,
@@ -186,6 +188,8 @@ interface BatchRow {
   batch_id: string
   fixture_id: string
   source_url: string
+  home_goals: number | null
+  away_goals: number | null
   data_version: number
   created_by: string
   last_edited_by: string | null
@@ -246,7 +250,8 @@ type Queryable = Pool | PoolClient
 async function loadBatch(executor: Queryable, batchId: string): Promise<PendingMatchBatch | null> {
   const batchResult = await executor.query<BatchRow>(
     `
-      SELECT batch_id, fixture_id, source_url, data_version, created_by, last_edited_by, created_at, updated_at
+      SELECT batch_id, fixture_id, source_url, home_goals, away_goals, data_version,
+             created_by, last_edited_by, created_at, updated_at
       FROM pending_match_batches
       WHERE batch_id = $1
     `,
@@ -280,6 +285,8 @@ async function loadBatch(executor: Queryable, batchId: string): Promise<PendingM
     batchId: batch.batch_id,
     fixtureId: batch.fixture_id,
     sourceUrl: batch.source_url,
+    homeGoals: batch.home_goals ?? 0,
+    awayGoals: batch.away_goals ?? 0,
     dataVersion: batch.data_version,
     createdBy: batch.created_by,
     lastEditedBy: batch.last_edited_by ?? undefined,
@@ -295,11 +302,11 @@ async function insertBatch(client: PoolClient, input: CreateMatchBatchInput): Pr
 
   const batchResult = await client.query<{ batch_id: string }>(
     `
-      INSERT INTO pending_match_batches (fixture_id, source_url, created_by)
-      VALUES ($1, $2, $3)
+      INSERT INTO pending_match_batches (fixture_id, source_url, home_goals, away_goals, created_by)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING batch_id
     `,
-    [input.fixtureId, input.sourceUrl, input.createdBy],
+    [input.fixtureId, input.sourceUrl, input.homeGoals, input.awayGoals, input.createdBy],
   )
   const batchId = batchResult.rows[0].batch_id
 

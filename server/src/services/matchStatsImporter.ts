@@ -102,6 +102,8 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
       batchInput: {
         fixtureId,
         sourceUrl: json.match.sourceUrl,
+        homeGoals: json.match.homeGoals,
+        awayGoals: json.match.awayGoals,
         createdBy: request.createdBy,
         rows,
       },

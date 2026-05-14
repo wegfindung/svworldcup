@@ -35,6 +35,8 @@ describe('JsonMatchStatsImporter', () => {
     expect(result.batchInput.rows).toHaveLength(1)
     expect(result.batchInput.rows[0].playerId).toBe(10)
     expect(result.batchInput.sourceUrl).toBe('https://x.test/m')
+    expect(result.batchInput.homeGoals).toBe(1)
+    expect(result.batchInput.awayGoals).toBe(0)
   })
 
   it('leaves an unknown player unresolved with a null playerId', async () => {

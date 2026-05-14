@@ -73,6 +73,7 @@ Provide a secure Soccerverse World Cup event platform with:
 - promotion of confirmed match stats
 - player-name mapping corrections
 - import skip-list changes
+- pending match-stat batch discard
 
 ## i18n Rules
 
