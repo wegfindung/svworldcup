@@ -6,7 +6,7 @@ export const messages: Record<LocaleCode, Record<string, string>> = {
     heroTitle: 'Build a hidden World Cup squad worth revealing.',
     heroBody:
       'Pick your 15 under the Soccerverse wage cap, lock one free entry, and compete across rookie, veteran, and nation tables once kickoff arrives.',
-    heroPrimary: 'Start building your squad',
+    heroPrimary: 'Register your entry',
     heroSecondary: 'View public tables',
     scoringTitle: 'Tournament rules',
     builderTitle: 'Player search',
