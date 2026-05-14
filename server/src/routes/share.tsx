@@ -10,7 +10,7 @@ import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '4'
+const shareRenderVersion = '5'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 
@@ -336,18 +336,21 @@ async function buildShareCardSvg(
 ) {
   const statementLines = wrapText(payload.statement, players.length === 2 ? 38 : 34, 2)
   const cardWidth = players.length === 2 ? 270 : 270
-  const cardHeight = 284
+  const cardHeight = 304
+  const namePlateHeight = 58
+  const namePlateY = cardHeight - 72
   const cardGap = players.length === 2 ? 52 : 28
   const totalCardsWidth = players.length * cardWidth + (players.length - 1) * cardGap
   const cardsStartX = Math.round((shareCardWidth - totalCardsWidth) / 2)
   const panelX = 58
-  const panelY = 210
+  const panelY = 194
   const panelWidth = 1084
-  const panelHeight = 318
-  const cardsTopY = 230
+  const panelHeight = 334
+  const cardsTopY = 210
   const ctaY = 548
   const ctaText = truncateText(copy.cta, 76)
-  const [badgeTextUrl, bylineTextUrl, statementTextUrl, ctaTextUrl] = await Promise.all([
+  const attributionText = 'Soccerverse.com - images: Official partnership with FIFPro'
+  const [badgeTextUrl, bylineTextUrl, attributionTextUrl, statementTextUrl, ctaTextUrl] = await Promise.all([
     renderTextDataUrl(fonts, {
       lines: [copy.bodyBadge.toUpperCase()],
       width: 390,
@@ -367,6 +370,17 @@ async function buildShareCardSvg(
       lineHeight: 22,
       weight: 500,
       fill: 'rgba(255,255,255,0.74)',
+      textAlign: 'right',
+      justifyContent: 'center',
+    }),
+    renderTextDataUrl(fonts, {
+      lines: [attributionText],
+      width: 520,
+      height: 24,
+      fontSize: 13,
+      lineHeight: 16,
+      weight: 500,
+      fill: 'rgba(255,255,255,0.58)',
       textAlign: 'right',
       justifyContent: 'center',
     }),
@@ -404,9 +418,9 @@ async function buildShareCardSvg(
       const playerNameUrl = await renderTextDataUrl(fonts, {
         lines: playerNameLines,
         width: cardWidth - 36,
-        height: 64,
+        height: namePlateHeight,
         fontSize: players.length === 2 ? 24 : 22,
-        lineHeight: 22,
+        lineHeight: 21,
         weight: 700,
         fill: '#f4f0e8',
         textAlign: 'center',
@@ -425,13 +439,13 @@ async function buildShareCardSvg(
           </defs>
           <rect x="0" y="0" width="${cardWidth}" height="${cardHeight}" rx="32" ry="32" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.22)" stroke-width="2" />
           <image href="${player.portraitDataUrl}" x="0" y="0" width="${cardWidth}" height="${cardHeight}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${playerClipId})" />
-          <rect x="0" y="${cardHeight - 132}" width="${cardWidth}" height="132" fill="url(#card-bottom-shade)" clip-path="url(#${playerClipId})" />
+          <rect x="0" y="${cardHeight - 126}" width="${cardWidth}" height="126" fill="url(#card-bottom-shade)" clip-path="url(#${playerClipId})" />
           <g transform="translate(${flagX}, 18)">
             <circle cx="22" cy="22" r="24" fill="#f4f0e8" fill-opacity="0.96" />
             <image href="${player.flagDataUrl}" x="0" y="0" width="44" height="44" clip-path="url(#${flagClipId})" preserveAspectRatio="xMidYMid slice" />
           </g>
-          <rect x="18" y="${cardHeight - 82}" width="${cardWidth - 36}" height="64" rx="20" ry="20" fill="rgba(4,10,8,0.86)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" />
-          <image href="${playerNameUrl}" x="18" y="${cardHeight - 82}" width="${cardWidth - 36}" height="64" />
+          <rect x="18" y="${namePlateY}" width="${cardWidth - 36}" height="${namePlateHeight}" rx="20" ry="20" fill="rgba(4,10,8,0.86)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" />
+          <image href="${playerNameUrl}" x="18" y="${namePlateY}" width="${cardWidth - 36}" height="${namePlateHeight}" />
         </g>
       `
       }),
@@ -483,6 +497,7 @@ async function buildShareCardSvg(
   <rect x="72" y="48" width="430" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
   <image href="${badgeTextUrl}" x="92" y="48" width="390" height="40" />
   <image href="${bylineTextUrl}" x="708" y="48" width="420" height="40" />
+  <image href="${attributionTextUrl}" x="608" y="84" width="520" height="24" />
   <image href="${statementTextUrl}" x="72" y="102" width="820" height="108" />
 
   ${playerCardsSvg}
