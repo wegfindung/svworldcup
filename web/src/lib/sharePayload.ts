@@ -1,5 +1,7 @@
 import type { LocaleCode, SlotClass, TeamPoolPlayer } from './types'
 
+const shareRenderVersion = '3'
+
 export interface ShareSnapshotPlayer {
   playerId: number
   displayName: string
@@ -37,12 +39,12 @@ export function encodeShareSnapshotPayload(payload: ShareSnapshotPayload) {
 
 export function buildShareSnapshotUrl(payload: ShareSnapshotPayload) {
   const encoded = encodeShareSnapshotPayload(payload)
-  return `/share/snapshot?data=${encodeURIComponent(encoded)}`
+  return `/share/snapshot?data=${encodeURIComponent(encoded)}&v=${shareRenderVersion}`
 }
 
 export function buildShareCardUrl(payload: ShareSnapshotPayload) {
   const encoded = encodeShareSnapshotPayload(payload)
-  return `/api/public/share-card.png?data=${encodeURIComponent(encoded)}`
+  return `/api/public/share-card.png?data=${encodeURIComponent(encoded)}&v=${shareRenderVersion}`
 }
 
 export function createShareSnapshotPlayer(player: TeamPoolPlayer, slotClass: SlotClass, shareLabel?: string): ShareSnapshotPlayer {
