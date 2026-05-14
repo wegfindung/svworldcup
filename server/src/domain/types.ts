@@ -49,6 +49,13 @@ export interface ParticipantProfile {
   revealSquad?: boolean
 }
 
+export interface AdminParticipantRecord extends ParticipantProfile {
+  createdAt?: string
+  updatedAt?: string
+  verificationSentAt?: string
+  passwordSetAt?: string
+}
+
 export interface RegistrationRecord extends ParticipantProfile {
   verificationTokenHash: string
   verificationTokenExpiresAt: string

@@ -238,6 +238,11 @@ export function createAdminRouter(
     })
   })
 
+  router.get('/participants', async (_req, res) => {
+    const items = await registrationRepository.listForAdmin()
+    res.json({ items })
+  })
+
   router.get('/teams', async (_req, res) => {
     const selectionCounts = await teamPoolRepository.getTeamSelectionCounts()
     res.json({

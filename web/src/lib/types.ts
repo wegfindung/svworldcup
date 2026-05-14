@@ -72,6 +72,13 @@ export interface ParticipantProfile {
   revealSquad?: boolean
 }
 
+export interface AdminParticipantRecord extends ParticipantProfile {
+  createdAt?: string
+  updatedAt?: string
+  verificationSentAt?: string
+  passwordSetAt?: string
+}
+
 export interface TeamPoolPlayer {
   teamCode: string
   playerId: number

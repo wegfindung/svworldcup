@@ -3,6 +3,7 @@ import { Pool } from 'pg'
 import { verifyPassword } from '../lib/passwords.js'
 import { hashToken } from '../lib/tokens.js'
 import type {
+  AdminParticipantRecord,
   LeagueType,
   ParticipantProfile,
   RegistrationCreationResult,
@@ -31,6 +32,7 @@ export interface RegistrationRepository {
   revealParticipant(participantId: string, revealSquad: boolean): Promise<ParticipantProfile | null>
   getPublicProfileBySlug(slug: string): Promise<ParticipantProfile | null>
   getCounts(): Promise<{ pending: number; active: number }>
+  listForAdmin(): Promise<AdminParticipantRecord[]>
 }
 
 interface ParticipantRow {
@@ -47,6 +49,13 @@ interface ParticipantRow {
   has_password: boolean
   reveal_profile?: boolean
   reveal_squad?: boolean
+}
+
+interface AdminParticipantRow extends ParticipantRow {
+  verification_sent_at: string | null
+  password_set_at: string | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 interface MemoryPasswordResetRecord {
@@ -109,6 +118,16 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     hasPassword: row.has_password,
     revealProfile: row.reveal_profile ?? false,
     revealSquad: row.reveal_squad ?? false,
+  }
+}
+
+function mapAdminParticipantRow(row: AdminParticipantRow): AdminParticipantRecord {
+  return {
+    ...mapParticipantRow(row),
+    createdAt: row.created_at ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
+    verificationSentAt: row.verification_sent_at ?? undefined,
+    passwordSetAt: row.password_set_at ?? undefined,
   }
 }
 
@@ -306,6 +325,15 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       }
     }
     return { pending, active }
+  }
+
+  async listForAdmin() {
+    return [...this.byEmail.values()]
+      .map((record): AdminParticipantRecord => ({
+        ...toParticipantProfile(this.attachPasswordState(record)),
+        createdAt: record.createdAt,
+      }))
+      .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? '') || left.email.localeCompare(right.email))
   }
 }
 
@@ -894,5 +922,33 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       pending: counts.pending_verification ?? 0,
       active: counts.active ?? 0,
     }
+  }
+
+  async listForAdmin() {
+    const result = await this.pool.query<AdminParticipantRow>(
+      `
+        SELECT
+          participant_id,
+          email,
+          display_name,
+          soccerverse_username,
+          referrer_soccerverse_username,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          status,
+          verified_at,
+          verification_sent_at,
+          password_set_at,
+          created_at,
+          updated_at,
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
+        FROM participants
+        ORDER BY created_at DESC, email ASC
+      `,
+    )
+    return result.rows.map(mapAdminParticipantRow)
   }
 }
