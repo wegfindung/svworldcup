@@ -15,6 +15,7 @@ import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
+import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
@@ -71,6 +72,28 @@ const globalRevealSchema = z.object({
   revealSquads: z.boolean().default(true),
 })
 
+const emailCampaignSchema = z.object({
+  campaignId: z.string().trim().uuid().optional(),
+  kind: z.enum(['newsletter', 'autoresponder']),
+  status: z.enum(['draft', 'scheduled', 'active', 'paused']).optional(),
+  triggerKey: z.enum(['manual', 'registration_created', 'registration_verified']).optional(),
+  subject: z.string().trim().min(1).max(255),
+  bodyHtml: z.string().trim().min(1).max(100_000),
+  audienceStatus: z.enum(['all', 'pending_verification', 'active']).default('active'),
+  scheduledAt: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((value) => value || undefined),
+  delayMinutes: z.coerce.number().int().min(0).max(60 * 24 * 30).optional(),
+  batchSize: z.coerce.number().int().min(1).max(500).optional(),
+})
+
+const emailTestSchema = emailCampaignSchema.extend({
+  recipient: z.string().trim().email(),
+})
+
 function isScoringLocked(): boolean {
   if (!env.TOURNAMENT_KICKOFF_AT) {
     return false
@@ -88,6 +111,7 @@ export function createAdminRouter(
   matchImportRepository: MatchImportRepository,
   matchMappingRepository: MatchMappingRepository,
   auditRepository: AuditRepository,
+  emailMarketingRepository: EmailMarketingRepository,
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
@@ -157,6 +181,47 @@ export function createAdminRouter(
       auditRepository,
     }),
   )
+
+  router.get('/email-marketing/campaigns', async (_req, res) => {
+    const campaigns = await emailMarketingRepository.listCampaigns()
+    res.json({ campaigns })
+  })
+
+  router.post('/email-marketing/campaigns', async (req, res) => {
+    const parsed = emailCampaignSchema.parse(req.body)
+    const campaign = await emailMarketingRepository.saveCampaign(parsed, res.locals.admin.email)
+    res.status(parsed.campaignId ? 200 : 201).json({ campaign })
+  })
+
+  router.delete('/email-marketing/campaigns/:campaignId', async (req, res) => {
+    const deleted = await emailMarketingRepository.deleteCampaign(String(req.params.campaignId))
+    if (!deleted) {
+      return res.status(404).json({ error: 'Campaign not found.' })
+    }
+    res.status(204).end()
+  })
+
+  router.get('/email-marketing/campaigns/:campaignId/recipients', async (req, res) => {
+    const recipients = await emailMarketingRepository.listRecipients(String(req.params.campaignId))
+    res.json({ recipients })
+  })
+
+  router.post('/email-marketing/campaigns/:campaignId/send-now', async (req, res) => {
+    const result = await emailMarketingRepository.sendNow(String(req.params.campaignId))
+    res.json({ result })
+  })
+
+  router.post('/email-marketing/test', async (req, res) => {
+    const parsed = emailTestSchema.parse(req.body)
+    await emailMarketingRepository.sendTestMail(parsed, res.locals.admin.email)
+    res.json({ status: 'sent' })
+  })
+
+  router.post('/email-marketing/run-due', async (req, res) => {
+    const limit = z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) }).parse(req.body).limit
+    const results = await emailMarketingRepository.runDueCampaigns(limit)
+    res.json({ results })
+  })
 
   router.get('/overview', async (_req, res) => {
     const counts = await registrationRepository.getCounts()

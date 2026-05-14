@@ -40,14 +40,16 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
 button,
 a,
 input,
-select {
+select,
+textarea {
   transition:
     transform 420ms var(--ease-premium),
     border-color 420ms var(--ease-premium),
@@ -59,7 +61,8 @@ select {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible {
   outline: 2px solid rgba(34, 189, 147, 0.72);
   outline-offset: 3px;
 }

@@ -185,6 +185,67 @@ export interface MatchEntryRecord extends MatchEntryInput {
   entryId: string
 }
 
+export type EmailCampaignKind = 'newsletter' | 'autoresponder'
+export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
+export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'
+export type EmailCampaignAudienceStatus = 'all' | 'pending_verification' | 'active'
+export type EmailRecipientStatus = 'pending' | 'sent' | 'failed' | 'skipped'
+
+export interface EmailCampaignInput {
+  campaignId?: string
+  kind: EmailCampaignKind
+  status?: EmailCampaignStatus
+  triggerKey?: EmailCampaignTrigger
+  subject: string
+  bodyHtml: string
+  audienceStatus: EmailCampaignAudienceStatus
+  scheduledAt?: string
+  delayMinutes?: number
+  batchSize?: number
+}
+
+export interface EmailCampaignRecord extends EmailCampaignInput {
+  campaignId: string
+  status: EmailCampaignStatus
+  triggerKey: EmailCampaignTrigger
+  delayMinutes: number
+  batchSize: number
+  createdBy: string
+  updatedBy: string
+  sentAt?: string
+  createdAt: string
+  updatedAt: string
+  previewRecipientCount: number
+  queuedCount: number
+  pendingCount: number
+  sentCount: number
+  failedCount: number
+}
+
+export interface EmailCampaignRecipient {
+  recipientId: string
+  campaignId: string
+  participantId?: string
+  email: string
+  displayName: string
+  leagueType?: LeagueType
+  primaryTeamCode?: string
+  secondaryTeamCode?: string
+  status: EmailRecipientStatus
+  queuedAt: string
+  sentAt?: string
+  error?: string
+}
+
+export interface EmailCampaignDispatchSummary {
+  campaignId: string
+  sent: number
+  failed: number
+  skipped: number
+  pending: number
+  status: EmailCampaignStatus
+}
+
 // --- Match data import engine (see architecture/SOP_match_data_import.md) ---
 
 export type LineupStatus = 'starter' | 'substitute'

@@ -12,10 +12,12 @@ import { createParticipantRouter } from './routes/participant.js'
 import { createPublicRouter } from './routes/public.js'
 import { handleShareSnapshotPage } from './routes/share.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
+import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
 import {
   createAdminRepository,
   createAuditRepository,
   createConfigRepository,
+  createEmailMarketingRepository,
   createMatchImportRepository,
   createMatchMappingRepository,
   createParticipantSessionRepository,
@@ -37,6 +39,7 @@ export function createApp() {
   const matchImportRepository = createMatchImportRepository()
   const matchMappingRepository = createMatchMappingRepository()
   const auditRepository = createAuditRepository()
+  const emailMarketingRepository = createEmailMarketingRepository()
   const publicDirCandidates = [resolve(process.cwd(), 'public'), resolve(process.cwd(), 'web', 'dist')]
   const publicDir = publicDirCandidates.find((candidate) => existsSync(candidate))
   const cspDirectives = helmet.contentSecurityPolicy.getDefaultDirectives()
@@ -69,6 +72,7 @@ export function createApp() {
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
     console.error('Failed to bootstrap initial team pools', error)
   })
+  startEmailMarketingScheduler(emailMarketingRepository)
 
   app.set('trust proxy', env.RATE_LIMIT_TRUST_PROXY)
   app.use(
@@ -106,7 +110,11 @@ export function createApp() {
   }
 
   app.use('/api/public', publicApiLimiter, createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, scoringRepository, squadRepository }))
-  app.use('/api/auth', authApiLimiter, createAuthRouter(registrationRepository, participantSessionRepository, squadRepository))
+  app.use(
+    '/api/auth',
+    authApiLimiter,
+    createAuthRouter(registrationRepository, participantSessionRepository, squadRepository, emailMarketingRepository),
+  )
   app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository))
   app.use(
     '/api/admin',
@@ -120,6 +128,7 @@ export function createApp() {
       matchImportRepository,
       matchMappingRepository,
       auditRepository,
+      emailMarketingRepository,
     ),
   )
 

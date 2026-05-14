@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest'
+import { MemoryEmailMarketingRepository } from './emailMarketingRepository.js'
+import type { ParticipantProfile } from '../domain/types.js'
+
+const participant: ParticipantProfile = {
+  participantId: 'participant-1',
+  email: 'manager@example.com',
+  displayName: 'Test Manager',
+  leagueType: 'rookie',
+  primaryTeamCode: 'BRA',
+  status: 'active',
+  verifiedAt: new Date().toISOString(),
+  hasPassword: false,
+}
+
+describe('MemoryEmailMarketingRepository', () => {
+  it('queues and sends active autoresponders for matching registration events', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+    const campaign = await repository.saveCampaign(
+      {
+        kind: 'autoresponder',
+        status: 'active',
+        triggerKey: 'registration_verified',
+        subject: 'Welcome {{display_name}}',
+        bodyHtml: 'Start building your squad for {{primary_team_code}}.',
+        audienceStatus: 'all',
+      },
+      'admin@example.com',
+    )
+
+    const runs = await repository.queueAutoresponders('registration_verified', participant)
+    const recipients = await repository.listRecipients(campaign.campaignId)
+
+    expect(runs).toHaveLength(1)
+    expect(runs[0]).toMatchObject({ sent: 1, failed: 0, pending: 0, status: 'active' })
+    expect(recipients).toHaveLength(1)
+    expect(recipients[0]).toMatchObject({ email: 'manager@example.com', status: 'sent' })
+  })
+
+  it('keeps delayed autoresponders pending until due', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+    const campaign = await repository.saveCampaign(
+      {
+        kind: 'autoresponder',
+        status: 'active',
+        triggerKey: 'registration_created',
+        subject: 'Pending registration',
+        bodyHtml: 'Confirm your registration.',
+        audienceStatus: 'all',
+        delayMinutes: 30,
+      },
+      'admin@example.com',
+    )
+
+    const runs = await repository.queueAutoresponders('registration_created', participant)
+    const recipients = await repository.listRecipients(campaign.campaignId)
+
+    expect(runs).toHaveLength(0)
+    expect(recipients).toHaveLength(1)
+    expect(recipients[0]).toMatchObject({ email: 'manager@example.com', status: 'pending' })
+  })
+})

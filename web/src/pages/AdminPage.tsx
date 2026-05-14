@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { EmptyState } from '../components/EmptyState'
+import { EmailMarketingPanel } from '../components/EmailMarketingPanel'
 import { MatchImportPanel } from '../components/MatchImportPanel'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
@@ -566,6 +567,8 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       </section>
 
       <MatchImportPanel fixtures={fixtures} teams={teams} adminEmail={admin?.email ?? ''} />
+
+      <EmailMarketingPanel adminEmail={admin?.email ?? ''} />
 
       <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">

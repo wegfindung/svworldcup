@@ -2,6 +2,10 @@ import type {
   AdminProfile,
   AdminOverview,
   BootstrapPayload,
+  EmailCampaignDispatchSummary,
+  EmailCampaignInput,
+  EmailCampaignRecipient,
+  EmailCampaignRecord,
   EventControls,
   MatchEntryInput,
   MatchEntryRecord,
@@ -267,6 +271,61 @@ export function triggerGlobalReveal(payload: { revealProfiles: boolean; revealSq
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+export function fetchEmailCampaigns() {
+  return getJson<{ campaigns: EmailCampaignRecord[] }>('/api/admin/email-marketing/campaigns', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function saveEmailCampaign(campaign: EmailCampaignInput) {
+  return getJson<{ campaign: EmailCampaignRecord }>('/api/admin/email-marketing/campaigns', {
+    method: 'POST',
+    body: JSON.stringify(campaign),
+  })
+}
+
+export function deleteEmailCampaign(campaignId: string) {
+  return getJson<void>(`/api/admin/email-marketing/campaigns/${encodeURIComponent(campaignId)}`, {
+    method: 'DELETE',
+    headers: {},
+  })
+}
+
+export function sendEmailCampaignNow(campaignId: string) {
+  return getJson<{ result: EmailCampaignDispatchSummary }>(
+    `/api/admin/email-marketing/campaigns/${encodeURIComponent(campaignId)}/send-now`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  )
+}
+
+export function runDueEmailCampaigns() {
+  return getJson<{ results: EmailCampaignDispatchSummary[] }>('/api/admin/email-marketing/run-due', {
+    method: 'POST',
+    body: JSON.stringify({ limit: 10 }),
+  })
+}
+
+export function sendEmailCampaignTest(campaign: EmailCampaignInput, recipient: string) {
+  return getJson<{ status: 'sent' }>('/api/admin/email-marketing/test', {
+    method: 'POST',
+    body: JSON.stringify({ ...campaign, recipient }),
+  })
+}
+
+export function fetchEmailCampaignRecipients(campaignId: string) {
+  return getJson<{ recipients: EmailCampaignRecipient[] }>(
+    `/api/admin/email-marketing/campaigns/${encodeURIComponent(campaignId)}/recipients`,
+    {
+      method: 'GET',
+      headers: {},
+    },
+  )
 }
 
 export function logoutAdmin() {

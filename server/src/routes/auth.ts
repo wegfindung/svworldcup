@@ -18,6 +18,7 @@ import {
   type RegistrationRepository,
 } from '../repositories/registrationRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
+import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 
 const registrationSchema = z
   .object({
@@ -100,6 +101,7 @@ export function createAuthRouter(
   registrationRepository: RegistrationRepository,
   participantSessionRepository: ParticipantSessionRepository,
   squadRepository: SquadRepository,
+  emailMarketingRepository: EmailMarketingRepository,
 ) {
   const router = Router()
 
@@ -111,6 +113,9 @@ export function createAuthRouter(
       const result = await registrationRepository.createPending(parsed, plainToken)
       const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
       const delivery = await sendVerificationMail(parsed.email, verificationUrl)
+      void emailMarketingRepository.queueAutoresponders('registration_created', result.record).catch((error) => {
+        console.error('Failed to queue registration autoresponder', error)
+      })
 
       res.status(201).json({
         participantId: result.record.participantId,
@@ -161,6 +166,9 @@ export function createAuthRouter(
     }
 
     const squadSummary = await buildSquadSummary(verified.participantId, squadRepository)
+    void emailMarketingRepository.queueAutoresponders('registration_verified', verified).catch((error) => {
+      console.error('Failed to queue verification autoresponder', error)
+    })
     res.setHeader('Set-Cookie', await issueParticipantSession(verified.participantId, participantSessionRepository))
     res.json({
       participantId: verified.participantId,
