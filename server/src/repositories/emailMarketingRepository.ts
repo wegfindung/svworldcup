@@ -12,10 +12,13 @@ import type {
   EmailRecipientStatus,
   ParticipantProfile,
 } from '../domain/types.js'
+import { env } from '../config/env.js'
 import { sendAppMail } from '../lib/mailer.js'
 
 const newsletterInputStatuses: EmailCampaignStatus[] = ['draft', 'scheduled']
 const autoresponderInputStatuses: EmailCampaignStatus[] = ['draft', 'active', 'paused']
+const smtpMaxPerMinute = 95
+const smtpMaxPerTenMinutes = 1_000
 
 interface EmailRecipientSeed {
   participantId?: string
@@ -24,6 +27,8 @@ interface EmailRecipientSeed {
   leagueType?: 'rookie' | 'veteran'
   primaryTeamCode?: string
   secondaryTeamCode?: string
+  referrerSoccerverseUsername?: string
+  marketingUnsubscribeToken?: string
 }
 
 interface CampaignStats {
@@ -61,6 +66,8 @@ interface EmailRecipientRow {
   league_type: 'rookie' | 'veteran' | null
   primary_team_code: string | null
   secondary_team_code: string | null
+  referrer_soccerverse_username: string | null
+  marketing_unsubscribe_token: string | null
   status: EmailRecipientStatus
   queued_at: Date | string
   sent_at: Date | string | null
@@ -153,12 +160,19 @@ function stripHtml(value: string) {
     .trim()
 }
 
-function wrapMarketingHtml(content: string) {
+function wrapMarketingHtml(content: string, unsubscribeUrl?: string) {
+  const unsubscribeFooter = unsubscribeUrl
+    ? `<p style="margin:18px 0 0;font-size:12px;color:#8fa39b;">You can unsubscribe from Soccerverse World Cup marketing emails here: <a href="${escapeHtml(
+        unsubscribeUrl,
+      )}" style="color:#22bd93;">unsubscribe</a></p>`
+    : ''
+
   return `
     <div style="margin:0;padding:28px;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;line-height:1.55;">
       <div style="max-width:640px;margin:0 auto;border:1px solid rgba(242,239,231,0.16);border-radius:18px;padding:28px;background:#101815;">
         ${content}
         <p style="margin:28px 0 0;font-size:12px;color:#8fa39b;">Soccerverse World Cup</p>
+        ${unsubscribeFooter}
       </div>
     </div>
   `
@@ -197,7 +211,7 @@ function normalizeInput(input: EmailCampaignInput) {
   }
 }
 
-function applyPlaceholders(value: string, recipient: EmailRecipientSeed) {
+function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubscribeUrl?: string) {
   const displayName = recipient.displayName.trim() || recipient.email
   const replacements: Record<string, string> = {
     '{{display_name}}': displayName,
@@ -205,6 +219,8 @@ function applyPlaceholders(value: string, recipient: EmailRecipientSeed) {
     '{{league_type}}': recipient.leagueType ?? '',
     '{{primary_team_code}}': recipient.primaryTeamCode ?? '',
     '{{secondary_team_code}}': recipient.secondaryTeamCode ?? '',
+    '{{referrer_soccerverse_username}}': recipient.referrerSoccerverseUsername ?? '',
+    '{{unsubscribe_url}}': unsubscribeUrl ?? '',
     '{{builder_url}}': 'https://worldcup.svtool.info/builder',
   }
 
@@ -223,6 +239,8 @@ function seedFromParticipant(participant: ParticipantProfile): EmailRecipientSee
     leagueType: participant.leagueType,
     primaryTeamCode: participant.primaryTeamCode,
     secondaryTeamCode: participant.secondaryTeamCode,
+    referrerSoccerverseUsername: participant.referrerSoccerverseUsername,
+    marketingUnsubscribeToken: participant.marketingUnsubscribeToken,
   }
 }
 
@@ -236,6 +254,8 @@ function mapRecipientRow(row: EmailRecipientRow): EmailCampaignRecipient {
     leagueType: row.league_type ?? undefined,
     primaryTeamCode: row.primary_team_code ?? undefined,
     secondaryTeamCode: row.secondary_team_code ?? undefined,
+    referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
+    marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
     status: row.status,
     queuedAt: requiredIso(row.queued_at),
     sentAt: toIso(row.sent_at),
@@ -265,13 +285,18 @@ function mapCampaignRow(row: EmailCampaignRow, stats: CampaignStats): EmailCampa
 }
 
 async function sendCampaignMail(campaign: Pick<EmailCampaignRecord, 'subject' | 'bodyHtml'>, recipient: EmailRecipientSeed) {
-  const subject = applyPlaceholders(campaign.subject, recipient)
-  const body = htmlFromEditorValue(applyPlaceholders(campaign.bodyHtml, recipient))
+  const unsubscribeUrl = recipient.marketingUnsubscribeToken
+    ? `${env.PUBLIC_WEB_URL.replace(/\/+$/, '')}/api/public/email/unsubscribe?token=${encodeURIComponent(
+        recipient.marketingUnsubscribeToken,
+      )}`
+    : undefined
+  const subject = applyPlaceholders(campaign.subject, recipient, unsubscribeUrl)
+  const body = htmlFromEditorValue(applyPlaceholders(campaign.bodyHtml, recipient, unsubscribeUrl))
   await sendAppMail({
     to: recipient.email,
     subject,
-    html: wrapMarketingHtml(body),
-    text: stripHtml(body),
+    html: wrapMarketingHtml(body, unsubscribeUrl),
+    text: unsubscribeUrl ? `${stripHtml(body)}\n\nUnsubscribe: ${unsubscribeUrl}` : stripHtml(body),
   })
 }
 
@@ -279,6 +304,8 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
   storageKind: 'memory' = 'memory'
   private readonly campaigns = new Map<string, Omit<EmailCampaignRecord, keyof CampaignStats>>()
   private readonly recipients = new Map<string, EmailCampaignRecipient>()
+  private readonly deliveryLog: number[] = []
+  private processingCampaigns = false
 
   private campaignStats(campaignId: string): CampaignStats {
     const rows = [...this.recipients.values()].filter((recipient) => recipient.campaignId === campaignId)
@@ -378,6 +405,10 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
   }
 
   async queueAutoresponders(triggerKey: EmailCampaignTrigger, participant: ParticipantProfile) {
+    if (!participant.marketingOptIn || participant.marketingUnsubscribedAt) {
+      return []
+    }
+
     const matching = (await this.listCampaigns()).filter(
       (campaign) => campaign.kind === 'autoresponder' && campaign.status === 'active' && campaign.triggerKey === triggerKey,
     )
@@ -397,6 +428,8 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
           leagueType: participant.leagueType,
           primaryTeamCode: participant.primaryTeamCode,
           secondaryTeamCode: participant.secondaryTeamCode,
+          referrerSoccerverseUsername: participant.referrerSoccerverseUsername,
+          marketingUnsubscribeToken: participant.marketingUnsubscribeToken,
           status: 'pending',
           queuedAt,
         })
@@ -409,6 +442,12 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
   }
 
   private async processCampaign(campaign: EmailCampaignRecord, sendAllNewsletterRecipients: boolean) {
+    if (this.processingCampaigns) {
+      const pending = this.campaignStats(campaign.campaignId).pendingCount
+      return { campaignId: campaign.campaignId, sent: 0, failed: 0, skipped: 0, pending, status: campaign.status }
+    }
+
+    this.processingCampaigns = true
     const recipients = [...this.recipients.values()].filter((recipient) => {
       if (recipient.campaignId !== campaign.campaignId || recipient.status !== 'pending') {
         return false
@@ -417,36 +456,61 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
     })
     let sent = 0
     let failed = 0
-    for (const recipient of recipients.slice(0, campaign.batchSize)) {
-      try {
-        await sendCampaignMail(campaign, recipient)
-        recipient.status = 'sent'
-        recipient.sentAt = new Date().toISOString()
-        recipient.error = undefined
-        sent += 1
-      } catch (error) {
-        recipient.status = 'failed'
-        recipient.error = error instanceof Error ? error.message : 'Send failed.'
-        failed += 1
+    try {
+      const availableQuota = this.availableSendQuota()
+      for (const recipient of recipients.slice(0, Math.min(campaign.batchSize, availableQuota))) {
+        try {
+          await sendCampaignMail(campaign, recipient)
+          recipient.status = 'sent'
+          recipient.sentAt = new Date().toISOString()
+          recipient.error = undefined
+          this.recordAcceptedDelivery()
+          sent += 1
+        } catch (error) {
+          recipient.status = 'failed'
+          recipient.error = error instanceof Error ? error.message : 'Send failed.'
+          failed += 1
+        }
       }
+
+      const pending = this.campaignStats(campaign.campaignId).pendingCount
+      const status: EmailCampaignStatus = campaign.kind === 'newsletter' ? (pending > 0 ? 'sending' : 'sent') : 'active'
+      const existing = this.campaigns.get(campaign.campaignId)
+      if (existing) {
+        this.campaigns.set(campaign.campaignId, {
+          ...existing,
+          status,
+          sentAt: status === 'sent' ? new Date().toISOString() : existing.sentAt,
+          updatedAt: new Date().toISOString(),
+        })
+      }
+      return { campaignId: campaign.campaignId, sent, failed, skipped: 0, pending, status }
+    } finally {
+      this.processingCampaigns = false
     }
-    const pending = this.campaignStats(campaign.campaignId).pendingCount
-    const status: EmailCampaignStatus = campaign.kind === 'newsletter' ? (pending > 0 ? 'sending' : 'sent') : 'active'
-    const existing = this.campaigns.get(campaign.campaignId)
-    if (existing) {
-      this.campaigns.set(campaign.campaignId, {
-        ...existing,
-        status,
-        sentAt: status === 'sent' ? new Date().toISOString() : existing.sentAt,
-        updatedAt: new Date().toISOString(),
-      })
+  }
+
+  private availableSendQuota() {
+    const now = Date.now()
+    const tenMinutesAgo = now - 10 * 60 * 1000
+    const oneMinuteAgo = now - 60 * 1000
+    while (this.deliveryLog.length && this.deliveryLog[0] < tenMinutesAgo) {
+      this.deliveryLog.shift()
     }
-    return { campaignId: campaign.campaignId, sent, failed, skipped: 0, pending, status }
+
+    const sentLastTenMinutes = this.deliveryLog.length
+    const sentLastMinute = this.deliveryLog.filter((sentAt) => sentAt >= oneMinuteAgo).length
+    return Math.max(0, Math.min(smtpMaxPerTenMinutes - sentLastTenMinutes, smtpMaxPerMinute - sentLastMinute))
+  }
+
+  private recordAcceptedDelivery() {
+    this.deliveryLog.push(Date.now())
   }
 }
 
 export class PostgresEmailMarketingRepository implements EmailMarketingRepository {
   storageKind: 'postgres' = 'postgres'
+  private processingCampaigns = false
 
   constructor(private readonly pool: Pool) {}
 
@@ -625,6 +689,9 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     if (triggerKey === 'manual') {
       return []
     }
+    if (!participant.marketingOptIn || participant.marketingUnsubscribedAt) {
+      return []
+    }
 
     const campaigns = await this.pool.query<EmailCampaignRow>(
       `
@@ -656,6 +723,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           FROM participants
           WHERE email IS NOT NULL
             AND email <> ''
+            AND marketing_opt_in = TRUE
+            AND marketing_unsubscribed_at IS NULL
             AND ($1 = 'all' OR status = $1)
         `,
         [audienceStatus],
@@ -697,12 +766,24 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
       league_type: 'rookie' | 'veteran'
       primary_team_code: string
       secondary_team_code: string | null
+      referrer_soccerverse_username: string | null
+      marketing_unsubscribe_token: string | null
     }>(
       `
-        SELECT participant_id, email, display_name, league_type, primary_team_code, secondary_team_code
+        SELECT
+          participant_id,
+          email,
+          display_name,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          referrer_soccerverse_username,
+          marketing_unsubscribe_token
         FROM participants
         WHERE email IS NOT NULL
           AND email <> ''
+          AND marketing_opt_in = TRUE
+          AND marketing_unsubscribed_at IS NULL
           AND ($1 = 'all' OR status = $1)
         ORDER BY created_at ASC
       `,
@@ -719,6 +800,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           leagueType: row.league_type,
           primaryTeamCode: row.primary_team_code,
           secondaryTeamCode: row.secondary_team_code ?? undefined,
+          referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
+          marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
         },
         queuedAt,
       )
@@ -729,9 +812,18 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     await this.pool.query(
       `
         INSERT INTO email_campaign_recipients (
-          campaign_id, participant_id, email, display_name, league_type, primary_team_code, secondary_team_code, queued_at
+          campaign_id,
+          participant_id,
+          email,
+          display_name,
+          league_type,
+          primary_team_code,
+          secondary_team_code,
+          referrer_soccerverse_username,
+          marketing_unsubscribe_token,
+          queued_at
         )
-        VALUES ($1, $2, LOWER($3), $4, $5, $6, $7, $8)
+        VALUES ($1, $2, LOWER($3), $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (campaign_id, email)
         DO UPDATE SET
           participant_id = COALESCE(email_campaign_recipients.participant_id, EXCLUDED.participant_id),
@@ -739,6 +831,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           league_type = EXCLUDED.league_type,
           primary_team_code = EXCLUDED.primary_team_code,
           secondary_team_code = EXCLUDED.secondary_team_code,
+          referrer_soccerverse_username = EXCLUDED.referrer_soccerverse_username,
+          marketing_unsubscribe_token = EXCLUDED.marketing_unsubscribe_token,
           queued_at = CASE
             WHEN email_campaign_recipients.status = 'pending' THEN EXCLUDED.queued_at
             ELSE email_campaign_recipients.queued_at
@@ -752,69 +846,134 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         recipient.leagueType ?? null,
         recipient.primaryTeamCode ?? null,
         recipient.secondaryTeamCode ?? null,
+        recipient.referrerSoccerverseUsername ?? null,
+        recipient.marketingUnsubscribeToken ?? null,
         queuedAt,
       ],
     )
   }
 
   private async processCampaign(campaignId: string) {
-    const campaign = await this.getCampaign(campaignId)
-    if (!campaign) {
-      throw new Error('Campaign not found.')
-    }
-
-    const recipientResult = await this.pool.query<EmailRecipientRow>(
-      `
-        SELECT *
-        FROM email_campaign_recipients
-        WHERE campaign_id = $1
-          AND status = 'pending'
-          AND queued_at <= NOW()
-        ORDER BY queued_at ASC, created_at ASC
-        LIMIT $2
-      `,
-      [campaignId, campaign.batchSize],
-    )
-
-    let sent = 0
-    let failed = 0
-    for (const row of recipientResult.rows) {
-      const recipient = mapRecipientRow(row)
-      try {
-        await sendCampaignMail(campaign, recipient)
-        await this.pool.query(
-          `
-            UPDATE email_campaign_recipients
-            SET status = 'sent', sent_at = NOW(), error = NULL
-            WHERE recipient_id = $1
-          `,
-          [recipient.recipientId],
-        )
-        sent += 1
-      } catch (error) {
-        await this.pool.query(
-          `
-            UPDATE email_campaign_recipients
-            SET status = 'failed', error = $2
-            WHERE recipient_id = $1
-          `,
-          [recipient.recipientId, error instanceof Error ? error.message : 'Send failed.'],
-        )
-        failed += 1
+    if (this.processingCampaigns) {
+      const pending = await this.countPending(campaignId)
+      const campaign = await this.getCampaign(campaignId)
+      return {
+        campaignId,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        pending,
+        status: campaign?.status ?? 'sending',
       }
     }
 
-    const pending = await this.countPending(campaignId)
-    const nextStatus: EmailCampaignStatus = campaign.kind === 'newsletter' ? (pending > 0 ? 'sending' : 'sent') : 'active'
-    await this.updateCampaignStatus(campaignId, nextStatus, nextStatus === 'sent')
-    return {
-      campaignId,
-      sent,
-      failed,
-      skipped: 0,
-      pending,
-      status: nextStatus,
+    this.processingCampaigns = true
+    const campaign = await this.getCampaign(campaignId)
+    if (!campaign) {
+      this.processingCampaigns = false
+      throw new Error('Campaign not found.')
     }
+
+    try {
+      const skipped = await this.skipUnsubscribedRecipients(campaignId)
+      const availableQuota = await this.availableSendQuota()
+      const recipientResult = await this.pool.query<EmailRecipientRow>(
+        `
+          SELECT *
+          FROM email_campaign_recipients
+          WHERE campaign_id = $1
+            AND status = 'pending'
+            AND queued_at <= NOW()
+          ORDER BY queued_at ASC, created_at ASC
+          LIMIT $2
+        `,
+        [campaignId, Math.min(campaign.batchSize, availableQuota)],
+      )
+
+      let sent = 0
+      let failed = 0
+      for (const row of recipientResult.rows) {
+        const recipient = mapRecipientRow(row)
+        try {
+          await sendCampaignMail(campaign, recipient)
+          await this.pool.query(
+            `
+              UPDATE email_campaign_recipients
+              SET status = 'sent', sent_at = NOW(), error = NULL
+              WHERE recipient_id = $1
+            `,
+            [recipient.recipientId],
+          )
+          await this.recordAcceptedDelivery()
+          sent += 1
+        } catch (error) {
+          await this.pool.query(
+            `
+              UPDATE email_campaign_recipients
+              SET status = 'failed', error = $2
+              WHERE recipient_id = $1
+            `,
+            [recipient.recipientId, error instanceof Error ? error.message : 'Send failed.'],
+          )
+          failed += 1
+        }
+      }
+
+      const pending = await this.countPending(campaignId)
+      const nextStatus: EmailCampaignStatus = campaign.kind === 'newsletter' ? (pending > 0 ? 'sending' : 'sent') : 'active'
+      await this.updateCampaignStatus(campaignId, nextStatus, nextStatus === 'sent')
+      return {
+        campaignId,
+        sent,
+        failed,
+        skipped,
+        pending,
+        status: nextStatus,
+      }
+    } finally {
+      this.processingCampaigns = false
+    }
+  }
+
+  private async skipUnsubscribedRecipients(campaignId: string) {
+    const result = await this.pool.query(
+      `
+        UPDATE email_campaign_recipients r
+        SET status = 'skipped',
+            error = 'Recipient has no active marketing consent.'
+        FROM participants p
+        WHERE r.participant_id = p.participant_id
+          AND r.campaign_id = $1
+          AND r.status = 'pending'
+          AND (p.marketing_opt_in = FALSE OR p.marketing_unsubscribed_at IS NOT NULL)
+      `,
+      [campaignId],
+    )
+    return result.rowCount ?? 0
+  }
+
+  private async availableSendQuota() {
+    const cleanupCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    await this.pool.query('DELETE FROM email_delivery_log WHERE sent_at < $1', [cleanupCutoff])
+    const result = await this.pool.query<{
+      sent_last_minute: string
+      sent_last_ten_minutes: string
+    }>(
+      `
+        SELECT
+          COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '1 minute')::int AS sent_last_minute,
+          COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '10 minutes')::int AS sent_last_ten_minutes
+        FROM email_delivery_log
+      `,
+    )
+    const row = result.rows[0]
+    const sentLastMinute = Number(row?.sent_last_minute ?? 0)
+    const sentLastTenMinutes = Number(row?.sent_last_ten_minutes ?? 0)
+    return Math.max(0, Math.min(smtpMaxPerMinute - sentLastMinute, smtpMaxPerTenMinutes - sentLastTenMinutes))
+  }
+
+  private async recordAcceptedDelivery() {
+    await this.pool.query('INSERT INTO email_delivery_log DEFAULT VALUES')
   }
 
   private async countPending(campaignId: string) {

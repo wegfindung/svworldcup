@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
+import { recordReferralClick } from './lib/api'
 import {
   readReferralFromSearch,
   resolveReferrerSoccerverseUsername,
@@ -51,8 +52,13 @@ function App() {
     const referrer = readReferralFromSearch(location.search)
     if (referrer) {
       storeReferrerSoccerverseUsername(referrer)
+      const clickStorageKey = `svworldcup-referral-click:${referrer}`
+      if (!window.sessionStorage.getItem(clickStorageKey)) {
+        window.sessionStorage.setItem(clickStorageKey, '1')
+        void recordReferralClick(referrer, `${location.pathname}${location.search}`).catch(() => undefined)
+      }
     }
-  }, [location.search])
+  }, [location.pathname, location.search])
 
   return (
     <div className="stadium-shell min-h-[100dvh] bg-[var(--color-ink)] text-[var(--color-paper)]">
@@ -152,7 +158,7 @@ function App() {
             <Route path="/tables" element={<TablesPage />} />
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/admin" element={<AdminPage locale={locale} />} />
+            <Route path="/admin/*" element={<AdminPage locale={locale} />} />
             <Route path="/profiles/:slug" element={<ProfilePage />} />
           </Routes>
         </main>

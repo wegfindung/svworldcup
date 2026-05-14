@@ -6,6 +6,8 @@ const participant: ParticipantProfile = {
   participantId: 'participant-1',
   email: 'manager@example.com',
   displayName: 'Test Manager',
+  marketingOptIn: true,
+  marketingUnsubscribeToken: 'token-1',
   leagueType: 'rookie',
   primaryTeamCode: 'BRA',
   status: 'active',

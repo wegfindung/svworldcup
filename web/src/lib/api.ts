@@ -21,6 +21,7 @@ import type {
   ParticipantScoreRow,
   PublicParticipantProfile,
   NationScoreRow,
+  ReferralAnalyticsRow,
   SoccerversePlayer,
   TeamPoolPlayer,
   TeamSeed,
@@ -66,6 +67,7 @@ export function registerParticipant(payload: {
   displayName: string
   soccerverseUsername?: string
   referrerSoccerverseUsername?: string
+  marketingOptIn?: boolean
   primaryTeamCode: string
   secondaryTeamCode?: string
 }) {
@@ -250,6 +252,20 @@ export function fetchAdminParticipants() {
   return getJson<{ items: AdminParticipantRecord[] }>('/api/admin/participants', {
     method: 'GET',
     headers: {},
+  })
+}
+
+export function fetchAdminReferralAnalytics() {
+  return getJson<{ items: ReferralAnalyticsRow[] }>('/api/admin/referrals', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function recordReferralClick(referrerSoccerverseUsername: string, landingPath: string) {
+  return getJson<void>('/api/public/referral-click', {
+    method: 'POST',
+    body: JSON.stringify({ referrerSoccerverseUsername, landingPath }),
   })
 }
 

@@ -29,6 +29,7 @@ export interface RegistrationInput {
   displayName: string
   soccerverseUsername?: string
   referrerSoccerverseUsername?: string
+  marketingOptIn?: boolean
   primaryTeamCode: string
   secondaryTeamCode?: string
 }
@@ -39,6 +40,9 @@ export interface ParticipantProfile {
   displayName: string
   soccerverseUsername?: string
   referrerSoccerverseUsername?: string
+  marketingOptIn: boolean
+  marketingUnsubscribedAt?: string
+  marketingUnsubscribeToken?: string
   leagueType: LeagueType
   primaryTeamCode: string
   secondaryTeamCode?: string
@@ -54,6 +58,15 @@ export interface AdminParticipantRecord extends ParticipantProfile {
   updatedAt?: string
   verificationSentAt?: string
   passwordSetAt?: string
+}
+
+export interface ReferralAnalyticsRow {
+  referrerSoccerverseUsername: string
+  clickCount: number
+  registrationCount: number
+  verifiedCount: number
+  marketingOptInCount: number
+  conversionRate: number
 }
 
 export interface RegistrationRecord extends ParticipantProfile {
@@ -240,6 +253,8 @@ export interface EmailCampaignRecipient {
   leagueType?: LeagueType
   primaryTeamCode?: string
   secondaryTeamCode?: string
+  referrerSoccerverseUsername?: string
+  marketingUnsubscribeToken?: string
   status: EmailRecipientStatus
   queuedAt: string
   sentAt?: string

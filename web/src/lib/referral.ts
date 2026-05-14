@@ -1,6 +1,7 @@
 const storageKey = 'svworldcup-referrer-soccerverse-username'
 
 const referralParamNames = ['ref', 'sv_ref', 'soccerverse_ref', 'referrer', 'referrerSoccerverseUsername'] as const
+const defaultShareReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
 
 export function sanitizeReferrerSoccerverseUsername(value: string) {
   const trimmed = value.trim().replace(/^@+/, '')
@@ -77,6 +78,20 @@ export function buildLandingReferralUrl(referrerSoccerverseUsername: string, ori
   }
 
   return normalizedOrigin
+}
+
+export function getDefaultShareReferrerSoccerverseUsername(seed = '') {
+  const normalizedSeed = seed.trim()
+  if (!normalizedSeed) {
+    return defaultShareReferrers[Math.floor(Math.random() * defaultShareReferrers.length)]
+  }
+
+  const seedHash = [...normalizedSeed].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0)
+  return defaultShareReferrers[seedHash % defaultShareReferrers.length]
+}
+
+export function resolveShareReferrerSoccerverseUsername(soccerverseUsername?: string, seed?: string) {
+  return sanitizeReferrerSoccerverseUsername(soccerverseUsername ?? '') || getDefaultShareReferrerSoccerverseUsername(seed)
 }
 
 export function buildReferralInvitationText(referrerSoccerverseUsername: string, origin?: string) {

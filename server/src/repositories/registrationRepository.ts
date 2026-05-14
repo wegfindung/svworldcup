@@ -6,6 +6,7 @@ import type {
   AdminParticipantRecord,
   LeagueType,
   ParticipantProfile,
+  ReferralAnalyticsRow,
   RegistrationCreationResult,
   RegistrationInput,
   RegistrationRecord,
@@ -33,6 +34,9 @@ export interface RegistrationRepository {
   getPublicProfileBySlug(slug: string): Promise<ParticipantProfile | null>
   getCounts(): Promise<{ pending: number; active: number }>
   listForAdmin(): Promise<AdminParticipantRecord[]>
+  unsubscribeMarketing(token: string): Promise<boolean>
+  recordReferralClick(input: { referrerSoccerverseUsername: string; landingPath?: string; userAgent?: string }): Promise<void>
+  getReferralAnalytics(): Promise<ReferralAnalyticsRow[]>
 }
 
 interface ParticipantRow {
@@ -41,6 +45,9 @@ interface ParticipantRow {
   display_name: string
   soccerverse_username: string | null
   referrer_soccerverse_username: string | null
+  marketing_opt_in: boolean
+  marketing_unsubscribed_at: string | null
+  marketing_unsubscribe_token: string | null
   league_type: LeagueType
   primary_team_code: string
   secondary_team_code: string | null
@@ -62,6 +69,13 @@ interface MemoryPasswordResetRecord {
   participantId: string
   tokenHash: string
   expiresAt: string
+}
+
+interface MemoryReferralClickRecord {
+  referrerSoccerverseUsername: string
+  landingPath?: string
+  userAgent?: string
+  createdAt: string
 }
 
 function deriveLeagueType(soccerverseUsername?: string): LeagueType {
@@ -92,6 +106,9 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     displayName: record.displayName,
     soccerverseUsername: record.soccerverseUsername,
     referrerSoccerverseUsername: record.referrerSoccerverseUsername,
+    marketingOptIn: record.marketingOptIn,
+    marketingUnsubscribedAt: record.marketingUnsubscribedAt,
+    marketingUnsubscribeToken: record.marketingUnsubscribeToken,
     leagueType: record.leagueType,
     primaryTeamCode: record.primaryTeamCode,
     secondaryTeamCode: record.secondaryTeamCode,
@@ -110,6 +127,9 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     displayName: row.display_name,
     soccerverseUsername: row.soccerverse_username ?? undefined,
     referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
+    marketingOptIn: row.marketing_opt_in,
+    marketingUnsubscribedAt: row.marketing_unsubscribed_at ?? undefined,
+    marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
     leagueType: row.league_type,
     primaryTeamCode: row.primary_team_code,
     secondaryTeamCode: row.secondary_team_code ?? undefined,
@@ -137,6 +157,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
   private readonly byTokenHash = new Map<string, string>()
   private readonly passwordHashes = new Map<string, string>()
   private readonly passwordResetByTokenHash = new Map<string, MemoryPasswordResetRecord>()
+  private readonly referralClicks: MemoryReferralClickRecord[] = []
 
   private attachPasswordState(record: RegistrationRecord): RegistrationRecord {
     return {
@@ -162,6 +183,9 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       displayName: input.displayName.trim(),
       soccerverseUsername: input.soccerverseUsername?.trim() || undefined,
       referrerSoccerverseUsername: input.referrerSoccerverseUsername?.trim() || existing?.referrerSoccerverseUsername,
+      marketingOptIn: input.marketingOptIn ? true : (existing?.marketingOptIn ?? false),
+      marketingUnsubscribedAt: input.marketingOptIn ? undefined : existing?.marketingUnsubscribedAt,
+      marketingUnsubscribeToken: existing?.marketingUnsubscribeToken ?? randomUUID(),
       leagueType,
       primaryTeamCode: input.primaryTeamCode,
       secondaryTeamCode: input.secondaryTeamCode,
@@ -335,6 +359,91 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       }))
       .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? '') || left.email.localeCompare(right.email))
   }
+
+  async unsubscribeMarketing(token: string) {
+    const trimmedToken = token.trim()
+    const record = [...this.byEmail.values()].find((item) => item.marketingUnsubscribeToken === trimmedToken)
+    if (!record) {
+      return false
+    }
+
+    const nextRecord = this.attachPasswordState({
+      ...record,
+      marketingOptIn: false,
+      marketingUnsubscribedAt: new Date().toISOString(),
+    })
+    this.byEmail.set(nextRecord.email, nextRecord)
+    return true
+  }
+
+  async recordReferralClick(input: { referrerSoccerverseUsername: string; landingPath?: string; userAgent?: string }) {
+    const referrerSoccerverseUsername = input.referrerSoccerverseUsername.trim()
+    if (!referrerSoccerverseUsername) {
+      return
+    }
+
+    this.referralClicks.push({
+      referrerSoccerverseUsername,
+      landingPath: input.landingPath,
+      userAgent: input.userAgent,
+      createdAt: new Date().toISOString(),
+    })
+  }
+
+  async getReferralAnalytics(): Promise<ReferralAnalyticsRow[]> {
+    const rows = new Map<string, ReferralAnalyticsRow>()
+    const ensureRow = (referrer: string) => {
+      const key = referrer.toLowerCase()
+      const existing = rows.get(key)
+      if (existing) {
+        return existing
+      }
+
+      const next: ReferralAnalyticsRow = {
+        referrerSoccerverseUsername: referrer,
+        clickCount: 0,
+        registrationCount: 0,
+        verifiedCount: 0,
+        marketingOptInCount: 0,
+        conversionRate: 0,
+      }
+      rows.set(key, next)
+      return next
+    }
+
+    for (const click of this.referralClicks) {
+      ensureRow(click.referrerSoccerverseUsername).clickCount += 1
+    }
+
+    for (const record of this.byEmail.values()) {
+      const referrer = record.referrerSoccerverseUsername?.trim()
+      if (!referrer) {
+        continue
+      }
+
+      const row = ensureRow(referrer)
+      row.registrationCount += 1
+      if (record.status === 'active') {
+        row.verifiedCount += 1
+      }
+      if (record.marketingOptIn && !record.marketingUnsubscribedAt) {
+        row.marketingOptInCount += 1
+      }
+    }
+
+    return [...rows.values()]
+      .map((row) => ({
+        ...row,
+        conversionRate: row.clickCount > 0 ? row.registrationCount / row.clickCount : 0,
+      }))
+      .sort(
+        (left, right) =>
+          right.verifiedCount - left.verifiedCount ||
+          right.registrationCount - left.registrationCount ||
+          right.clickCount - left.clickCount ||
+          left.referrerSoccerverseUsername.localeCompare(right.referrerSoccerverseUsername),
+      )
+  }
 }
 
 export class PostgresRegistrationRepository implements RegistrationRepository {
@@ -377,14 +486,27 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       >(
         `
           INSERT INTO participants (
-            email, display_name, soccerverse_username, referrer_soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verification_sent_at
+            email,
+            display_name,
+            soccerverse_username,
+            referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribe_token,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verification_sent_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending_verification', NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending_verification', NOW())
           ON CONFLICT (email)
           DO UPDATE SET
             display_name = EXCLUDED.display_name,
             soccerverse_username = EXCLUDED.soccerverse_username,
             referrer_soccerverse_username = COALESCE(EXCLUDED.referrer_soccerverse_username, participants.referrer_soccerverse_username),
+            marketing_opt_in = CASE WHEN EXCLUDED.marketing_opt_in THEN TRUE ELSE participants.marketing_opt_in END,
+            marketing_unsubscribed_at = CASE WHEN EXCLUDED.marketing_opt_in THEN NULL ELSE participants.marketing_unsubscribed_at END,
+            marketing_unsubscribe_token = COALESCE(participants.marketing_unsubscribe_token, EXCLUDED.marketing_unsubscribe_token),
             league_type = EXCLUDED.league_type,
             primary_team_code = EXCLUDED.primary_team_code,
             secondary_team_code = EXCLUDED.secondary_team_code,
@@ -397,6 +519,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             display_name,
             soccerverse_username,
             referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -409,6 +534,8 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           input.displayName.trim(),
           input.soccerverseUsername?.trim() || null,
           input.referrerSoccerverseUsername?.trim() || null,
+          input.marketingOptIn ? true : false,
+          randomUUID(),
           leagueType,
           input.primaryTeamCode,
           input.secondaryTeamCode ?? null,
@@ -436,6 +563,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           displayName: participant.display_name,
           soccerverseUsername: participant.soccerverse_username ?? undefined,
           referrerSoccerverseUsername: participant.referrer_soccerverse_username ?? undefined,
+          marketingOptIn: participant.marketing_opt_in,
+          marketingUnsubscribedAt: participant.marketing_unsubscribed_at ?? undefined,
+          marketingUnsubscribeToken: participant.marketing_unsubscribe_token ?? undefined,
           leagueType: participant.league_type,
           primaryTeamCode: participant.primary_team_code,
           secondaryTeamCode: participant.secondary_team_code ?? undefined,
@@ -472,6 +602,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.display_name,
             p.soccerverse_username,
             p.referrer_soccerverse_username,
+            p.marketing_opt_in,
+            p.marketing_unsubscribed_at,
+            p.marketing_unsubscribe_token,
             p.league_type,
             p.primary_team_code,
             p.secondary_team_code,
@@ -513,6 +646,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
               display_name,
               soccerverse_username,
               referrer_soccerverse_username,
+              marketing_opt_in,
+              marketing_unsubscribed_at,
+              marketing_unsubscribe_token,
               league_type,
               primary_team_code,
               secondary_team_code,
@@ -551,6 +687,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             display_name,
             soccerverse_username,
             referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -593,6 +732,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           displayName: participant.display_name,
           soccerverseUsername: participant.soccerverse_username ?? undefined,
           referrerSoccerverseUsername: participant.referrer_soccerverse_username ?? undefined,
+          marketingOptIn: participant.marketing_opt_in,
+          marketingUnsubscribedAt: participant.marketing_unsubscribed_at ?? undefined,
+          marketingUnsubscribeToken: participant.marketing_unsubscribe_token ?? undefined,
           leagueType: participant.league_type,
           primaryTeamCode: participant.primary_team_code,
           secondaryTeamCode: participant.secondary_team_code ?? undefined,
@@ -624,6 +766,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -658,6 +803,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -687,6 +835,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             display_name,
             soccerverse_username,
             referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -747,6 +898,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.display_name,
             p.soccerverse_username,
             p.referrer_soccerverse_username,
+            p.marketing_opt_in,
+            p.marketing_unsubscribed_at,
+            p.marketing_unsubscribe_token,
             p.league_type,
             p.primary_team_code,
             p.secondary_team_code,
@@ -784,6 +938,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             display_name,
             soccerverse_username,
             referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -812,6 +969,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -838,6 +998,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -869,6 +1032,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -893,6 +1059,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -933,6 +1102,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           display_name,
           soccerverse_username,
           referrer_soccerverse_username,
+          marketing_opt_in,
+          marketing_unsubscribed_at,
+          marketing_unsubscribe_token,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -950,5 +1122,95 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       `,
     )
     return result.rows.map(mapAdminParticipantRow)
+  }
+
+  async unsubscribeMarketing(token: string) {
+    const trimmedToken = token.trim()
+    if (!trimmedToken) {
+      return false
+    }
+
+    const result = await this.pool.query(
+      `
+        UPDATE participants
+        SET marketing_opt_in = FALSE,
+            marketing_unsubscribed_at = COALESCE(marketing_unsubscribed_at, NOW()),
+            updated_at = NOW()
+        WHERE marketing_unsubscribe_token = $1
+        RETURNING participant_id
+      `,
+      [trimmedToken],
+    )
+    return (result.rowCount ?? 0) > 0
+  }
+
+  async recordReferralClick(input: { referrerSoccerverseUsername: string; landingPath?: string; userAgent?: string }) {
+    const referrerSoccerverseUsername = input.referrerSoccerverseUsername.trim()
+    if (!referrerSoccerverseUsername) {
+      return
+    }
+
+    await this.pool.query(
+      `
+        INSERT INTO referral_clicks (referrer_soccerverse_username, landing_path, user_agent)
+        VALUES ($1, $2, $3)
+      `,
+      [referrerSoccerverseUsername, input.landingPath ?? null, input.userAgent ?? null],
+    )
+  }
+
+  async getReferralAnalytics(): Promise<ReferralAnalyticsRow[]> {
+    const result = await this.pool.query<{
+      referrer_soccerverse_username: string
+      click_count: number | string
+      registration_count: number | string
+      verified_count: number | string
+      marketing_opt_in_count: number | string
+    }>(
+      `
+        WITH clicks AS (
+          SELECT
+            LOWER(referrer_soccerverse_username) AS ref_key,
+            MIN(referrer_soccerverse_username) AS referrer_soccerverse_username,
+            COUNT(*)::int AS click_count
+          FROM referral_clicks
+          GROUP BY LOWER(referrer_soccerverse_username)
+        ),
+        registrations AS (
+          SELECT
+            LOWER(referrer_soccerverse_username) AS ref_key,
+            MIN(referrer_soccerverse_username) AS referrer_soccerverse_username,
+            COUNT(*)::int AS registration_count,
+            COUNT(*) FILTER (WHERE status = 'active')::int AS verified_count,
+            COUNT(*) FILTER (WHERE marketing_opt_in = TRUE AND marketing_unsubscribed_at IS NULL)::int AS marketing_opt_in_count
+          FROM participants
+          WHERE referrer_soccerverse_username IS NOT NULL
+            AND referrer_soccerverse_username <> ''
+          GROUP BY LOWER(referrer_soccerverse_username)
+        )
+        SELECT
+          COALESCE(clicks.referrer_soccerverse_username, registrations.referrer_soccerverse_username) AS referrer_soccerverse_username,
+          COALESCE(clicks.click_count, 0)::int AS click_count,
+          COALESCE(registrations.registration_count, 0)::int AS registration_count,
+          COALESCE(registrations.verified_count, 0)::int AS verified_count,
+          COALESCE(registrations.marketing_opt_in_count, 0)::int AS marketing_opt_in_count
+        FROM clicks
+        FULL JOIN registrations USING (ref_key)
+        ORDER BY verified_count DESC, registration_count DESC, click_count DESC, referrer_soccerverse_username ASC
+      `,
+    )
+
+    return result.rows.map((row) => {
+      const clickCount = Number(row.click_count)
+      const registrationCount = Number(row.registration_count)
+      return {
+        referrerSoccerverseUsername: row.referrer_soccerverse_username,
+        clickCount,
+        registrationCount,
+        verifiedCount: Number(row.verified_count),
+        marketingOptInCount: Number(row.marketing_opt_in_count),
+        conversionRate: clickCount > 0 ? registrationCount / clickCount : 0,
+      }
+    })
   }
 }

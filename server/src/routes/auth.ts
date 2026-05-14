@@ -26,6 +26,7 @@ const registrationSchema = z
     displayName: z.string().trim().min(2).max(40),
     soccerverseUsername: z.string().trim().max(60).optional(),
     referrerSoccerverseUsername: z.string().trim().max(60).optional(),
+    marketingOptIn: z.boolean().optional().default(false),
     primaryTeamCode: z.string().trim().toUpperCase().length(3),
     secondaryTeamCode: z.string().trim().toUpperCase().length(3).optional(),
   })

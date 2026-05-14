@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS participants (
     display_name TEXT NOT NULL,
     soccerverse_username TEXT,
     referrer_soccerverse_username TEXT,
+    marketing_opt_in BOOLEAN NOT NULL DEFAULT FALSE,
+    marketing_unsubscribed_at TIMESTAMPTZ,
+    marketing_unsubscribe_token TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     league_type TEXT NOT NULL CHECK (league_type IN ('rookie', 'veteran')),
     primary_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     secondary_team_code CHAR(3) REFERENCES teams(code),
@@ -198,6 +201,8 @@ CREATE TABLE IF NOT EXISTS email_campaign_recipients (
     league_type TEXT CHECK (league_type IN ('rookie', 'veteran')),
     primary_team_code CHAR(3),
     secondary_team_code CHAR(3),
+    referrer_soccerverse_username TEXT,
+    marketing_unsubscribe_token TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'skipped')),
     queued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     sent_at TIMESTAMPTZ,
@@ -212,6 +217,25 @@ CREATE INDEX IF NOT EXISTS email_campaigns_due_idx
 
 CREATE INDEX IF NOT EXISTS email_campaign_recipients_due_idx
     ON email_campaign_recipients (campaign_id, status, queued_at);
+
+CREATE TABLE IF NOT EXISTS email_delivery_log (
+    delivery_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS email_delivery_log_sent_at_idx
+    ON email_delivery_log (sent_at);
+
+CREATE TABLE IF NOT EXISTS referral_clicks (
+    click_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    referrer_soccerverse_username TEXT NOT NULL,
+    landing_path TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS referral_clicks_referrer_created_idx
+    ON referral_clicks (referrer_soccerverse_username, created_at);
 
 -- Match data import engine: pending batch lifecycle + player-name resolution memory.
 -- See architecture/SOP_match_data_import.md and db/migrations/2026-05-14-match-data-import.sql.

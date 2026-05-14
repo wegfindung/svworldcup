@@ -75,6 +75,9 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
       display_name: string
       soccerverse_username: string | null
       referrer_soccerverse_username: string | null
+      marketing_opt_in: boolean
+      marketing_unsubscribed_at: string | null
+      marketing_unsubscribe_token: string | null
       league_type: ParticipantProfile['leagueType']
       primary_team_code: string
       secondary_team_code: string | null
@@ -89,6 +92,9 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
           p.display_name,
           p.soccerverse_username,
           p.referrer_soccerverse_username,
+          p.marketing_opt_in,
+          p.marketing_unsubscribed_at,
+          p.marketing_unsubscribe_token,
           p.league_type,
           p.primary_team_code,
           p.secondary_team_code,
@@ -115,6 +121,9 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
       displayName: row.display_name,
       soccerverseUsername: row.soccerverse_username ?? undefined,
       referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
+      marketingOptIn: row.marketing_opt_in,
+      marketingUnsubscribedAt: row.marketing_unsubscribed_at ?? undefined,
+      marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
       leagueType: row.league_type,
       primaryTeamCode: row.primary_team_code,
       secondaryTeamCode: row.secondary_team_code ?? undefined,

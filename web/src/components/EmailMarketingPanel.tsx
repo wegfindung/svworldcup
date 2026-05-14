@@ -310,6 +310,9 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
         <div>
           <p className="eyebrow">email marketing</p>
           <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">Campaigns and autoresponders.</h3>
+          <p className="mt-3 max-w-[72ch] text-sm leading-relaxed text-[var(--color-muted)]">
+            Newsletter audiences only include active marketing opt-ins. SMTP delivery is processed sequentially with the All-Inkl quota guard.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -498,6 +501,11 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
               />
             </label>
           </div>
+
+          <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">
+            Available placeholders: {'{{display_name}}'}, {'{{email}}'}, {'{{league_type}}'}, {'{{primary_team_code}}'},{' '}
+            {'{{secondary_team_code}}'}, {'{{referrer_soccerverse_username}}'}, {'{{builder_url}}'}, {'{{unsubscribe_url}}'}.
+          </p>
 
           <label className="mt-4 grid gap-2">
             <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Subject</span>

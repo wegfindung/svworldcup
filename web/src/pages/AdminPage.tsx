@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { EmailMarketingPanel } from '../components/EmailMarketingPanel'
 import { MatchImportPanel } from '../components/MatchImportPanel'
@@ -9,6 +10,7 @@ import {
   fetchAdminMatchEntries,
   fetchAdminOverview,
   fetchAdminParticipants,
+  fetchAdminReferralAnalytics,
   fetchAdminTeams,
   fetchBootstrap,
   fetchTeamSelections,
@@ -20,7 +22,7 @@ import {
   triggerGlobalReveal,
   updateAdminScoring,
 } from '../lib/api'
-import type { AdminOverview, AdminParticipantRecord, AdminProfile, FixtureSeed, LocaleCode, MatchEntryInput, MatchEntryRecord, ScoringConfig, SoccerversePlayer, TeamPoolPlayer, TeamSeed } from '../lib/types'
+import type { AdminOverview, AdminParticipantRecord, AdminProfile, FixtureSeed, LocaleCode, MatchEntryInput, MatchEntryRecord, ReferralAnalyticsRow, ScoringConfig, SoccerversePlayer, TeamPoolPlayer, TeamSeed } from '../lib/types'
 
 interface AdminPageProps {
   locale: LocaleCode
@@ -72,6 +74,7 @@ function teamLabel(teamCode?: string) {
 
 export function AdminPage({ locale: _locale }: AdminPageProps) {
   void _locale
+  const location = useLocation()
   const [authState, setAuthState] = useState<'guest' | 'active'>('guest')
   const [admin, setAdmin] = useState<AdminProfile | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
@@ -106,6 +109,10 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
   const [fixtures, setFixtures] = useState<FixtureSeed[]>([])
   const [participants, setParticipants] = useState<AdminParticipantRecord[]>([])
   const [participantsBusy, setParticipantsBusy] = useState(false)
+  const [referralAnalytics, setReferralAnalytics] = useState<ReferralAnalyticsRow[]>([])
+  const [referralAnalyticsBusy, setReferralAnalyticsBusy] = useState(false)
+
+  const adminScreen = location.pathname.includes('/email-marketing') ? 'email-marketing' : 'operations'
 
   const selectedTeam = useMemo(
     () => teams.find((team) => team.code === selectedTeamCode) ?? null,
@@ -148,6 +155,20 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
     }
   }
 
+  async function handleRefreshReferralAnalytics() {
+    setReferralAnalyticsBusy(true)
+    setPanelError(null)
+
+    try {
+      const response = await fetchAdminReferralAnalytics()
+      setReferralAnalytics(response.items)
+    } catch (error) {
+      setPanelError(error instanceof Error ? error.message : 'Could not load referral analytics.')
+    } finally {
+      setReferralAnalyticsBusy(false)
+    }
+  }
+
   async function handleLoadTeamSelections(teamCode: string) {
     setSelectedTeamCode(teamCode)
     setLoadedTeamCode(null)
@@ -176,11 +197,13 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       const response = await loginAdmin(loginEmail, loginPassword)
       setTeamsBusy(true)
       setParticipantsBusy(true)
-      const [teamResponse, overviewResponse, bootstrapResponse, participantResponse] = await Promise.all([
+      setReferralAnalyticsBusy(true)
+      const [teamResponse, overviewResponse, bootstrapResponse, participantResponse, referralResponse] = await Promise.all([
         fetchAdminTeams(),
         fetchAdminOverview(),
         fetchBootstrap(),
         fetchAdminParticipants(),
+        fetchAdminReferralAnalytics(),
       ])
       setAdmin(response.admin)
       setTeams(teamResponse.items)
@@ -188,6 +211,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       setScoringForm(overviewResponse.scoring)
       setFixtures(bootstrapResponse.fixtures)
       setParticipants(participantResponse.items)
+      setReferralAnalytics(referralResponse.items)
       if (!teamResponse.items.some((team) => team.code === selectedTeamCode)) {
         setSelectedTeamCode(teamResponse.items[0]?.code ?? 'GER')
       }
@@ -201,6 +225,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       setLoginBusy(false)
       setTeamsBusy(false)
       setParticipantsBusy(false)
+      setReferralAnalyticsBusy(false)
     }
   }
 
@@ -400,15 +425,21 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
-            <p className="eyebrow">team preselection backend</p>
-            <h2 className="section-title mt-6 max-w-[11ch]">Build the official World Cup team pools.</h2>
+            <p className="eyebrow">{adminScreen === 'email-marketing' ? 'email marketing backend' : 'team preselection backend'}</p>
+            <h2 className="section-title mt-6 max-w-[11ch]">
+              {adminScreen === 'email-marketing' ? 'Plan mailings and autoresponders.' : 'Build the official World Cup team pools.'}
+            </h2>
             <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
-              Logged in as <span className="font-medium text-white">{admin?.email}</span>. Search by name or player ID, add candidates,
-              then save the player pool for each nation.
+              Logged in as <span className="font-medium text-white">{admin?.email}</span>.{' '}
+              {adminScreen === 'email-marketing'
+                ? 'Create drafts, schedule newsletters, and run opt-in autoresponders through SMTP.'
+                : 'Search by name or player ID, add candidates, then save the player pool for each nation.'}
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-              Team and player requests only start after button presses. Switching the highlighted nation alone does not hit the API.
-            </p>
+            {adminScreen === 'operations' ? (
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                Team and player requests only start after button presses. Switching the highlighted nation alone does not hit the API.
+              </p>
+            ) : null}
           </div>
 
           <button
@@ -419,6 +450,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
               setSelections([])
               setCandidates([])
               setParticipants([])
+              setReferralAnalytics([])
               setLoadedTeamCode(null)
               setPanelError(null)
               setAuthState('guest')
@@ -429,6 +461,34 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
           </button>
         </div>
       </section>
+
+      <nav className="glass-panel flex flex-wrap gap-2 rounded-[1.15rem] p-2">
+        {[
+          ['/admin', 'Operations'],
+          ['/admin/email-marketing', 'Email marketing'],
+        ].map(([to, label]) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/admin'}
+            className={({ isActive }) =>
+              [
+                'rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition active:scale-[0.98]',
+                isActive
+                  ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                  : 'border border-white/10 text-white hover:bg-white/6',
+              ].join(' ')
+            }
+          >
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {adminScreen === 'email-marketing' ? (
+        <EmailMarketingPanel adminEmail={admin?.email ?? ''} />
+      ) : (
+        <>
 
       <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
@@ -528,6 +588,14 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
                         <span>Password: {participant.hasPassword ? 'set' : 'missing'}</span>
                         <span>Profile: {participant.revealProfile ? 'public' : 'hidden'}</span>
                         <span>Squad: {participant.revealSquad ? 'public' : 'hidden'}</span>
+                        <span>
+                          Marketing:{' '}
+                          {participant.marketingUnsubscribedAt
+                            ? 'unsubscribed'
+                            : participant.marketingOptIn
+                              ? 'opted in'
+                              : 'off'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4 align-top">
@@ -536,6 +604,67 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
                         <span>Verified: {formatAdminDate(participant.verifiedAt)}</span>
                         <span>Verification sent: {formatAdminDate(participant.verificationSentAt)}</span>
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+
+      <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <p className="eyebrow">referral analytics</p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">Landing-page referral performance.</h3>
+            <p className="mt-3 max-w-[72ch] text-sm leading-relaxed text-[var(--color-muted)]">
+              Compare tracked landing visits with account registrations, verified accounts, and marketing opt-ins per Soccerverse referrer.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleRefreshReferralAnalytics()}
+            disabled={referralAnalyticsBusy}
+            className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+          >
+            {referralAnalyticsBusy ? 'Refreshing...' : 'Refresh referrals'}
+          </button>
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-[1rem] border border-white/8">
+          {referralAnalyticsBusy && referralAnalytics.length === 0 ? (
+            <div className="grid gap-2 p-3">
+              <div className="skeleton h-14 rounded-[1rem]" />
+              <div className="skeleton h-14 rounded-[1rem]" />
+            </div>
+          ) : referralAnalytics.length === 0 ? (
+            <div className="p-3">
+              <EmptyState title="No referral activity yet" body="Tracked referral links will appear here after visitors open a landing page with a ref parameter." />
+            </div>
+          ) : (
+            <table className="min-w-[780px] w-full border-collapse text-left text-sm">
+              <thead className="border-b border-white/8 bg-black/20">
+                <tr>
+                  {['Referrer', 'Clicks', 'Registrations', 'Verified', 'Opt-ins', 'Conversion'].map((heading) => (
+                    <th key={heading} className="mono px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {referralAnalytics.map((row) => (
+                  <tr key={row.referrerSoccerverseUsername} className="border-b border-white/8 bg-black/10 last:border-b-0">
+                    <td className="px-4 py-3 font-semibold text-white">{row.referrerSoccerverseUsername}</td>
+                    <td className="px-4 py-3 text-[var(--color-muted)]">{row.clickCount}</td>
+                    <td className="px-4 py-3 text-[var(--color-muted)]">{row.registrationCount}</td>
+                    <td className="px-4 py-3 text-[var(--color-muted)]">{row.verifiedCount}</td>
+                    <td className="px-4 py-3 text-[var(--color-muted)]">{row.marketingOptInCount}</td>
+                    <td className="px-4 py-3">
+                      <span className="mono rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        {Math.round(row.conversionRate * 1000) / 10}%
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -748,8 +877,6 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       </section>
 
       <MatchImportPanel fixtures={fixtures} teams={teams} adminEmail={admin?.email ?? ''} />
-
-      <EmailMarketingPanel adminEmail={admin?.email ?? ''} />
 
       <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
@@ -983,6 +1110,8 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
           </div>
         </div>
       </section>
+        </>
+      )}
     </div>
   )
 }

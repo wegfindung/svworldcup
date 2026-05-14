@@ -7,6 +7,9 @@ function buildTransport() {
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
       secure: env.SMTP_SECURE,
+      pool: true,
+      maxConnections: 1,
+      maxMessages: Infinity,
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASSWORD,
@@ -51,7 +54,7 @@ export async function sendVerificationMail(recipient: string, verificationUrl: s
   const safeUrl = escapeHtml(verificationUrl)
   const result = await sendAppMail({
     to: recipient,
-    subject: 'Action Required: Confirm your Soccerverse World Cup Registration!',
+    subject: '⚽ Action Required: Confirm your Soccerverse World Cup Registration!',
     text: [
       'Welcome to the Soccerverse World Cup!',
       '',

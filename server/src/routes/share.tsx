@@ -10,9 +10,10 @@ import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '7'
+const shareRenderVersion = '8'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
+const defaultShareReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
 
 interface LoadedFont {
   name: string
@@ -58,6 +59,15 @@ function buildLandingReferralUrl(origin: string, referrerUsername: string) {
   }
 
   return normalizedOrigin
+}
+
+function getDefaultReferrerUsername(seed: string) {
+  const seedHash = [...seed.trim()].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0)
+  return defaultShareReferrers[seedHash % defaultShareReferrers.length]
+}
+
+function resolveReferralUsername(payload: ShareSnapshotPayload) {
+  return sanitizeReferrerUsername(payload.referrerUsername) || getDefaultReferrerUsername(payload.managerName)
 }
 
 function buildReferralInvitationText(referralUrl: string) {
@@ -597,7 +607,7 @@ function buildShareSnapshotHtml(
 ) {
   const playerNames = payload.featuredPlayers.map((player) => getSharePlayerLabel(player))
   const description = `${payload.statement} ${copy.pageDescriptionPrefix}: ${playerNames.join(', ')}. ${copy.cta}`
-  const referralUsername = sanitizeReferrerUsername(payload.referrerUsername || payload.managerName)
+  const referralUsername = resolveReferralUsername(payload)
   const referralUrl = buildLandingReferralUrl(origin, referralUsername)
   const referralInvitationText = buildReferralInvitationText(referralUrl)
 
@@ -804,11 +814,12 @@ function buildShareSnapshotHtml(
           <p class="invite-text">${escapeHtml(referralInvitationText)}</p>
           <div class="invite-actions">
             <a class="invite-action" href="${escapeHtml(referralUrl)}">${escapeHtml(copy.inviteButton)}</a>
-            <button class="invite-action" type="button" data-share-text="${escapeHtml(referralInvitationText)}" onclick="navigator.clipboard && navigator.clipboard.writeText(this.dataset.shareText || '')">${escapeHtml(copy.inviteCopyButton)}</button>
+            <button class="invite-action" type="button" data-copy-share-text="${escapeHtml(referralInvitationText)}">${escapeHtml(copy.inviteCopyButton)}</button>
           </div>
         </div>
       </section>
     </main>
+    <script src="/share-copy.js" defer></script>
   </body>
 </html>`
 }

@@ -4,7 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
-import { buildReferralInvitationText, sanitizeReferrerSoccerverseUsername } from '../lib/referral'
+import { buildReferralInvitationText, resolveShareReferrerSoccerverseUsername } from '../lib/referral'
 import { getShareComposerCopy, renderSharePreset } from '../lib/shareCopy'
 import { buildShareCardUrl, buildShareSnapshotUrl, createShareSnapshotPlayer, type ShareSnapshotPayload } from '../lib/sharePayload'
 import type { LocaleCode, ParticipantProfile, ParticipantSquad } from '../lib/types'
@@ -106,7 +106,10 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const selectedPlayerCount = Math.max(2, Math.min(3, normalizedFeaturedPlayerIds.length || 3))
   const presetStatement = selectedPreset ? renderSharePreset(selectedPreset.template, selectedPlayerCount) : ''
   const statement = statementMode === 'custom' ? customStatement.trim().slice(0, maxCustomStatementLength) : presetStatement
-  const referralUsername = sanitizeReferrerSoccerverseUsername(participant?.soccerverseUsername || participant?.displayName || '')
+  const referralUsername = resolveShareReferrerSoccerverseUsername(
+    participant?.soccerverseUsername,
+    participant?.participantId ?? participant?.displayName,
+  )
   const referralInvitationText = buildReferralInvitationText(referralUsername)
 
   const featuredPlayers = draftedPlayers

@@ -47,6 +47,7 @@ interface RegistrationFormState {
   displayName: string
   email: string
   soccerverseUsername: string
+  marketingOptIn: boolean
   primaryTeamCode?: string
   secondaryTeamCode?: string
 }
@@ -66,6 +67,7 @@ const initialRegistrationForm: RegistrationFormState = {
   displayName: '',
   email: '',
   soccerverseUsername: '',
+  marketingOptIn: false,
 }
 
 const initialPasswordForm: PasswordFormState = {
@@ -340,6 +342,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
         soccerverseUsername:
           registrationForm.mode === 'veteran' ? registrationForm.soccerverseUsername.trim() || undefined : undefined,
         referrerSoccerverseUsername: referrerSoccerverseUsername || undefined,
+        marketingOptIn: registrationForm.marketingOptIn,
         primaryTeamCode: registrationForm.primaryTeamCode,
         secondaryTeamCode: registrationForm.secondaryTeamCode,
       })
@@ -672,6 +675,23 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
                   }
                 />
               </div>
+
+              <label className="flex items-start gap-3 rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.62)] px-4 py-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                <input
+                  type="checkbox"
+                  checked={registrationForm.marketingOptIn}
+                  onChange={(event) =>
+                    setRegistrationForm((current) => ({
+                      ...current,
+                      marketingOptIn: event.target.checked,
+                    }))
+                  }
+                  className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+                />
+                <span>
+                  I want to receive Soccerverse World Cup news, reminders, and event updates by email. I can unsubscribe any time.
+                </span>
+              </label>
 
               {registrationError ? (
                 <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">

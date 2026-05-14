@@ -64,6 +64,7 @@ Database initialization:
 - `db/init/02-seed-tournament.sql` seeds scoring config, 48 teams, and 24 opening fixtures
 - `db/migrations/2026-05-08-session-and-team-pools.sql` upgrades an existing database with admin sessions, participant sessions, and team-pool tables
 - `db/migrations/2026-05-14-referrer-soccerverse-username.sql` stores optional `ref` campaign attribution on participant registrations
+- `db/migrations/2026-05-14-marketing-consent-and-referral-analytics.sql` adds marketing consent, unsubscribe tokens, delivery throttling logs, and referral click analytics
 - `tools/check-deploy-readiness.ts` validates the production env key set without printing secrets
 
 ## Runtime checks

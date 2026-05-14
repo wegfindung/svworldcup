@@ -19,6 +19,16 @@ const playerSearchSchema = z.object({
   perPage: z.coerce.number().int().min(1).max(20).default(12),
 })
 
+const referralClickSchema = z.object({
+  referrerSoccerverseUsername: z.string().trim().max(60),
+  landingPath: z.string().trim().max(300).optional(),
+})
+
+function normalizeReferrerSoccerverseUsername(value: string) {
+  const sanitized = value.trim().replace(/^@+/, '').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 60)
+  return sanitized || undefined
+}
+
 interface Dependencies {
   configRepository: ConfigRepository
   registrationRepository: RegistrationRepository
@@ -69,6 +79,43 @@ export function createPublicRouter({ configRepository, registrationRepository, t
   })
 
   router.get('/share-card.png', handleShareCardImage)
+
+  router.post('/referral-click', async (req, res) => {
+    const parsed = referralClickSchema.parse(req.body)
+    const referrerSoccerverseUsername = normalizeReferrerSoccerverseUsername(parsed.referrerSoccerverseUsername)
+    if (referrerSoccerverseUsername) {
+      await registrationRepository.recordReferralClick({
+        referrerSoccerverseUsername,
+        landingPath: parsed.landingPath,
+        userAgent: req.header('user-agent')?.slice(0, 300),
+      })
+    }
+
+    res.status(204).end()
+  })
+
+  router.get('/email/unsubscribe', async (req, res) => {
+    const token = String(req.query.token ?? '').trim()
+    const unsubscribed = token ? await registrationRepository.unsubscribeMarketing(token) : false
+    res.type('html').send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Soccerverse World Cup Email Preferences</title>
+  </head>
+  <body style="margin:0;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;">
+    <main style="max-width:620px;margin:0 auto;padding:48px 24px;line-height:1.55;">
+      <h1 style="margin:0 0 16px;font-size:28px;">${unsubscribed ? 'Email subscription stopped.' : 'Unsubscribe link not found.'}</h1>
+      <p style="margin:0;color:#c6d3ce;">${
+        unsubscribed
+          ? 'You will no longer receive Soccerverse World Cup marketing emails.'
+          : 'This unsubscribe link is invalid or has already been removed.'
+      }</p>
+    </main>
+  </body>
+</html>`)
+  })
 
   router.get('/team-players/:teamCode', async (req, res) => {
     const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()

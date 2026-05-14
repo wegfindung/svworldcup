@@ -243,6 +243,11 @@ export function createAdminRouter(
     res.json({ items })
   })
 
+  router.get('/referrals', async (_req, res) => {
+    const items = await registrationRepository.getReferralAnalytics()
+    res.json({ items })
+  })
+
   router.get('/teams', async (_req, res) => {
     const selectionCounts = await teamPoolRepository.getTeamSelectionCounts()
     res.json({
