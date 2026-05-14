@@ -174,6 +174,133 @@ export interface MatchEntryRecord extends MatchEntryInput {
   entryId: string
 }
 
+// --- Match data import engine (see architecture/SOP_match_data_import.md) ---
+
+export type LineupStatus = 'starter' | 'substitute'
+
+export interface MatchImportJsonMatch {
+  homeTeam: string
+  awayTeam: string
+  homeGoals: number
+  awayGoals: number
+  sourceUrl: string
+}
+
+export interface MatchImportJsonPlayer {
+  name: string
+  team: string
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating: number
+}
+
+export interface MatchImportJson {
+  match: MatchImportJsonMatch
+  players: MatchImportJsonPlayer[]
+}
+
+// D9 resolution outcome for one source name.
+export type PlayerResolution =
+  | { status: 'resolved'; playerId: number }
+  | { status: 'skipped' }
+  | { status: 'unresolved'; reason: string }
+
+export interface PendingMatchStatRow {
+  rowId: string
+  batchId: string
+  sourceName: string
+  teamCode: string
+  playerId: number | null
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating?: number
+  cleanSheetEligible: boolean
+}
+
+export interface PendingMatchConfirmation {
+  confirmationId: string
+  batchId: string
+  adminEmail: string
+  dataVersion: number
+  createdAt: string
+}
+
+export interface PendingMatchBatch {
+  batchId: string
+  fixtureId: string
+  sourceUrl: string
+  dataVersion: number
+  createdBy: string
+  lastEditedBy?: string
+  createdAt: string
+  updatedAt: string
+  rows: PendingMatchStatRow[]
+  confirmations: PendingMatchConfirmation[]
+}
+
+export interface CreateMatchBatchRowInput {
+  sourceName: string
+  teamCode: string
+  playerId: number | null
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating?: number
+  cleanSheetEligible: boolean
+}
+
+export interface CreateMatchBatchInput {
+  fixtureId: string
+  sourceUrl: string
+  createdBy: string
+  rows: CreateMatchBatchRowInput[]
+}
+
+export interface UpdateMatchRowInput {
+  playerId?: number | null
+  lineupStatus?: LineupStatus
+  minutes?: number
+  goals?: number
+  assists?: number
+  rating?: number
+  cleanSheetEligible?: boolean
+}
+
+export interface MatchImportPlayerMapEntry {
+  mapId: string
+  teamCode: string
+  normalizedSourceName: string
+  playerId: number
+  createdBy: string
+  createdAt: string
+}
+
+export interface UpsertPlayerMapInput {
+  teamCode: string
+  normalizedSourceName: string
+  playerId: number
+  createdBy: string
+}
+
+export interface MatchImportSkipNameEntry {
+  skipId: string
+  teamCode: string
+  normalizedSourceName: string
+  createdBy: string
+  createdAt: string
+}
+
+export interface AddSkipNameInput {
+  teamCode: string
+  normalizedSourceName: string
+  createdBy: string
+}
+
 export interface ParticipantScoreRow {
   participantId: string
   displayName: string
