@@ -73,6 +73,10 @@ function formatBudget(value: number) {
   return `${value.toLocaleString('en-US')} SVC`
 }
 
+function compactSlotLabel(label: string) {
+  return label.replace('Starting ', '').replace('Reserve ', 'Sub ')
+}
+
 function buildReadyState(participant: ParticipantProfile, budgetLimit: number): ParticipantReadyState {
   return {
     displayName: participant.displayName,
@@ -484,10 +488,10 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 pb-10">
       {accessState === 'guest' ? (
         <section className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+          <div className="hero-card allow-dropdown-overflow rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
             <p className="eyebrow">registration workflow</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
@@ -645,7 +649,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
           </div>
 
           <div className="grid gap-4">
-            <div className="glass-panel rounded-[2rem] p-5 sm:p-6">
+            <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
               <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">returning participant</p>
               <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">Sign in later with your password.</h3>
               <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-[var(--color-muted)]">
@@ -703,7 +707,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
               </form>
             </div>
 
-            <div className="glass-panel rounded-[2rem] p-5 sm:p-6">
+            <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
               <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">password recovery</p>
               <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Request a new recovery link.</h3>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
@@ -749,7 +753,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
 
       {accessState === 'pending' ? (
         <section className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
-          <div className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
+          <div className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
             <p className="eyebrow">step 2 · verify email</p>
             <h2 className="mt-6 max-w-[11ch] text-[clamp(2.6rem,2.8vw+1rem,4.4rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
               Confirm the link to unlock the budget.
@@ -785,7 +789,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
           </div>
 
           <div className="grid gap-4">
-            <div className="glass-panel rounded-[2rem] p-5 sm:p-6">
+            <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
               <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">what happens next</p>
               <div className="mt-5 space-y-3">
                 {[
@@ -810,8 +814,8 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       ) : null}
 
       {accessState === 'ready' && dashboardSeed ? (
-        <section className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr]">
-          <div className="hero-card rounded-[2.6rem] px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <section>
+          <div className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
                 Verified
@@ -824,29 +828,29 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
               </span>
             </div>
 
-            <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="mt-7 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <p className="eyebrow">participant dashboard</p>
-                <h2 className="mt-5 max-w-[11ch] text-[clamp(2.7rem,2.4vw+1.2rem,4.8rem)] font-semibold leading-[0.92] tracking-[-0.05em] text-white">
+                <h2 className="mt-4 max-w-[16ch] text-[clamp(2.1rem,1.6vw+1rem,3.35rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-white">
                   Your entry is live. The draft starts when you do.
                 </h2>
-                <p className="mt-5 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
+                <p className="mt-4 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)]">
                   Welcome back, <span className="font-semibold text-white">{dashboardSeed.displayName}</span>. Your email is confirmed,
                   your budget is reserved, and the protected builder only opens after your main CTA.
                 </p>
 
-                <div className="mt-8 flex flex-wrap gap-4">
+                <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={() => void handleOpenBuilder()}
                     disabled={sessionBusy}
-                    className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-8 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                    className="premium-button px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {sessionBusy ? 'Opening builder…' : 'Start building my squad'}
                   </button>
                   <Link
                     to="/tables"
-                    className="inline-flex items-center rounded-full border border-white/12 px-6 py-4 text-base font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                    className="inline-flex items-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                   >
                     View public tables
                   </Link>
@@ -857,26 +861,41 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                     {sessionError}
                   </div>
                 ) : null}
+
+                <div className="data-strip mt-6 max-w-[34rem]">
+                  <div>
+                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Status</p>
+                    <p className="mt-2 text-sm font-semibold text-white">Verified</p>
+                  </div>
+                  <div>
+                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">League</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
+                  </div>
+                  <div>
+                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Budget</p>
+                    <p className="mono mt-2 text-sm font-semibold text-[var(--color-accent)]">{formatBudget(dashboardSeed.budgetLimit)}</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid gap-4">
-                <div className="rounded-[2rem] border border-white/8 bg-[rgba(8,13,12,0.72)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="surface-row rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">account snapshot</p>
                   <div className="mt-5 grid gap-3">
-                    <div className="rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
+                    <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
                       <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Nickname</p>
                       <p className="mt-2 text-lg font-semibold text-white">{dashboardSeed.displayName}</p>
                     </div>
-                    <div className="rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
+                    <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
                       <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Email</p>
-                      <p className="mt-2 text-sm font-medium text-white">{dashboardSeed.email}</p>
+                      <p className="mt-2 break-all text-sm font-medium text-white">{dashboardSeed.email}</p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
+                    <div className="grid gap-3">
+                      <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
                         <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">League</p>
                         <p className="mt-2 text-base font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
                       </div>
-                      <div className="rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
+                      <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
                         <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Budget</p>
                         <p className="mt-2 text-base font-semibold text-[var(--color-accent)]">{formatBudget(dashboardSeed.budgetLimit)}</p>
                       </div>
@@ -884,18 +903,18 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   </div>
                 </div>
 
-                <div className="rounded-[2rem] border border-white/8 bg-[rgba(8,13,12,0.72)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <div className="surface-row rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">security</p>
-                      <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                      <h3 className="mt-3 max-w-[16rem] text-xl font-semibold tracking-tight text-white">
                         {dashboardSeed.hasPassword ? 'Password login is active' : 'Set a password for later sign-ins'}
                       </h3>
                     </div>
                     <button
                       type="button"
                       onClick={() => void handleSignOut()}
-                      className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                      className="whitespace-nowrap rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                     >
                       Sign out
                     </button>
@@ -907,9 +926,9 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                         This browser session is already verified. Add a password now so you can come back later from a fresh device or a
                         closed browser.
                       </p>
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-3 2xl:grid-cols-2">
                         <label className="grid gap-2">
-                          <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">New password</span>
+                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">New password</span>
                           <input
                             required
                             type="password"
@@ -921,11 +940,11 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                                 password: event.target.value,
                               }))
                             }
-                            className="rounded-[1.2rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
+                            className="min-w-0 rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                           />
                         </label>
                         <label className="grid gap-2">
-                          <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Repeat password</span>
+                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Repeat password</span>
                           <input
                             required
                             type="password"
@@ -937,7 +956,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                                 confirmPassword: event.target.value,
                               }))
                             }
-                            className="rounded-[1.2rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
+                            className="min-w-0 rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                           />
                         </label>
                       </div>
@@ -977,71 +996,71 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
       ) : null}
 
       {accessState === 'active' && participant && squad ? (
-        <section className="space-y-6">
-          <div className="hero-card rounded-[2.5rem] px-6 py-8 sm:px-8 sm:py-10">
-            <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="space-y-4">
+          <div className="hero-card rounded-[1.15rem] px-4 py-5 sm:px-5">
+            <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
               <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
                     Builder unlocked
                   </span>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                  <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
                     {leagueLabel(participant.leagueType)}
                   </span>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                  <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
                     {draftedCount}/15 locked in
                   </span>
                   {squad.isLocked ? (
-                    <span className="rounded-full border border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
+                    <span className="rounded-full border border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
                       Final submitted
                     </span>
                   ) : null}
                 </div>
 
-                <p className="eyebrow mt-7">step 3 · squad builder</p>
-                <h2 className="mt-4 max-w-[11ch] text-[clamp(2.6rem,2.6vw+1rem,4.3rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
+                <p className="eyebrow mt-5">step 3 · squad builder</p>
+                <h2 className="mt-3 max-w-[13ch] text-[clamp(2rem,1.7vw+1rem,3.25rem)] font-semibold leading-[0.96] tracking-[-0.045em] text-white">
                   Draft the one hidden squad that counts.
                 </h2>
-                <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
+                <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[var(--color-muted)]">
                   Verified as <span className="font-medium text-white">{participant.displayName}</span>. Load one team pool at a time,
                   draft only if the slot qualifies, and stay under the fixed {formatBudget(squad.budgetLimit)} cap.
                   {squad.isLocked ? ' This squad is now locked and cannot be edited.' : ''}
                 </p>
               </div>
 
-              <div className="grid gap-4">
-                <div className="rounded-[2rem] border border-white/8 bg-[rgba(8,13,12,0.74)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <div className="flex items-start justify-between gap-4">
+              <div className="grid gap-3 md:grid-cols-[1.05fr_0.95fr] lg:grid-cols-1 xl:grid-cols-[1.05fr_0.95fr]">
+                <div className="surface-row rounded-[0.9rem] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">account</p>
-                      <p className="mt-3 text-xl font-semibold text-white">{participant.displayName}</p>
-                      <p className="mt-2 text-sm text-[var(--color-muted)]">{participant.email}</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">account</p>
+                      <p className="mt-2 text-base font-semibold text-white">{participant.displayName}</p>
+                      <p className="mt-1 break-all text-xs text-[var(--color-muted)]">{participant.email}</p>
                       {participant.soccerverseUsername ? (
-                        <p className="mt-2 text-sm text-[var(--color-muted)]">Main Soccerverse account: {participant.soccerverseUsername}</p>
+                        <p className="mt-1 text-xs text-[var(--color-muted)]">Main Soccerverse account: {participant.soccerverseUsername}</p>
                       ) : null}
                     </div>
                     <button
                       type="button"
                       onClick={() => void handleSignOut()}
-                      className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                      className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                     >
                       Sign out
                     </button>
                   </div>
                 </div>
 
-                <div className="rounded-[2rem] border border-white/8 bg-[rgba(8,13,12,0.74)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">draft progress</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
+                <div className="surface-row rounded-[0.9rem] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                  <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">draft progress</p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3">
                       <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Budget left</p>
-                      <p className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">
+                      <p className="mt-1 text-lg font-semibold tracking-tight text-[var(--color-accent)]">
                         {formatBudget(squad.budgetRemaining)}
                       </p>
                     </div>
-                    <div className="rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
+                    <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3">
                       <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Slots filled</p>
-                      <p className="mt-2 text-2xl font-semibold tracking-tight text-white">{draftedCount} / 15</p>
+                      <p className="mt-1 text-lg font-semibold tracking-tight text-white">{draftedCount} / 15</p>
                     </div>
                   </div>
                   {socialSharingUnlocked ? (
@@ -1067,22 +1086,22 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
-            <div className="space-y-6">
-              <div className="glass-panel rounded-[2.1rem] p-5 sm:p-6">
-                <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="space-y-4">
+              <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="eyebrow">team pool</p>
-                    <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Choose one nation, then one player.</h3>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">Scouting board</h3>
                   </div>
                   {selectedTeam ? (
-                    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[rgba(8,13,12,0.7)] px-4 py-2">
+                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[rgba(8,13,12,0.7)] px-3 py-1.5">
                       <TeamFlag teamCode={selectedTeam.code} label={selectedTeam.nameEn} size="sm" />
-                      <span className="text-sm font-medium text-white">{selectedTeam.nameEn}</span>
+                      <span className="text-xs font-medium text-white">{selectedTeam.nameEn}</span>
                     </div>
                   ) : null}
                 </div>
 
-                <div className="mt-6 max-w-xl">
+                <div className="mt-4 max-w-xl">
                   <TeamSelect
                     label="World Cup team"
                     teams={eventTeams}
@@ -1097,28 +1116,28 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   />
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-3 flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={() => void handleLoadTeamPlayers()}
                     disabled={teamPlayersLoading || !selectedTeamCode}
-                    className="rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                    className="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                   >
                     {teamPlayersLoading ? 'Loading team pool…' : 'Load selected team pool'}
                   </button>
-                  <p className="self-center text-sm text-[var(--color-muted)]">No team request is sent until you press this button.</p>
+                  <p className="self-center text-xs text-[var(--color-muted)]">No request is sent until you load the team.</p>
                 </div>
 
                 {builderError ? (
-                  <div className="mt-5 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+                  <div className="mt-4 rounded-[0.9rem] border border-amber-300/20 bg-amber-300/8 px-3 py-2.5 text-sm text-[var(--color-paper)]">
                     {builderError}
                   </div>
                 ) : null}
 
                 {teamPlayersLoading ? (
-                  <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  <div className="mt-4 space-y-2">
                     {Array.from({ length: 6 }).map((_, index) => (
-                      <div key={index} className="skeleton h-44 rounded-[1.6rem]" />
+                      <div key={index} className="skeleton h-20 rounded-[0.85rem]" />
                     ))}
                   </div>
                 ) : null}
@@ -1145,72 +1164,80 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                 ) : null}
 
                 {teamPlayers.length > 0 ? (
-                  <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  <div className="mt-4 max-h-[44rem] space-y-2 overflow-y-auto pr-1">
                     {teamPlayers.map((player) => {
                       const isAlreadyDrafted = draftedPlayerIds.has(player.playerId)
                       const openSlots = getOpenEligibleSlots(player)
                       return (
                         <article
                           key={player.playerId}
-                          className="rounded-[1.6rem] border border-white/8 bg-[rgba(8,13,12,0.74)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                          className="surface-row rounded-[0.85rem] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/5"
                         >
-                          <div className="flex items-start gap-4">
-                            <PlayerPortrait
-                              src={player.imageUrl}
-                              alt={player.displayName}
-                              width={84}
-                              height={84}
-                              className="h-20 w-20 rounded-[1.2rem] border border-white/10 object-cover"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="truncate text-lg font-semibold text-white">{player.displayName}</p>
-                                  <p className="mt-1 text-sm text-[var(--color-muted)]">ID {player.playerId}</p>
-                                </div>
-                                <div className="rounded-full border border-white/10 px-3 py-1">
-                                  <span className="mono text-sm text-[var(--color-accent)]">{player.rating}</span>
-                                </div>
-                              </div>
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {player.positions.map((positionCode) => (
-                                  <span
-                                    key={`${player.playerId}-${positionCode}`}
-                                    className="mono rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]"
-                                  >
-                                    {positionCode}
+                          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,auto)] xl:items-center">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <PlayerPortrait
+                                src={player.imageUrl}
+                                alt={player.displayName}
+                                width={56}
+                                height={56}
+                                className="h-14 w-14 shrink-0 rounded-[0.8rem] border border-white/10 object-cover"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <p className="truncate text-sm font-semibold text-white">{player.displayName}</p>
+                                  <span className="mono shrink-0 rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 px-2 py-0.5 text-[11px] text-[var(--color-accent)]">
+                                    {player.rating}
                                   </span>
-                                ))}
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                  <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                                    ID {player.playerId}
+                                  </span>
+                                  <span className="mono text-[10px] uppercase tracking-[0.12em] text-white/80">
+                                    {formatBudget(player.capCost)}
+                                  </span>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {player.positions.map((positionCode) => (
+                                    <span
+                                      key={`${player.playerId}-${positionCode}`}
+                                      className="mono rounded-full border border-white/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--color-muted)]"
+                                    >
+                                      {positionCode}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                              <p className="mt-4 text-sm font-medium text-white">{formatBudget(player.capCost)}</p>
                             </div>
-                          </div>
 
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {squad.isLocked ? (
-                              <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2 text-xs text-[var(--color-sand)]">
-                                Squad locked
-                              </span>
-                            ) : isAlreadyDrafted ? (
-                              <span className="rounded-full border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-[var(--color-accent)]">
-                                Already in squad
-                              </span>
-                            ) : openSlots.length === 0 ? (
-                              <span className="rounded-full border border-white/10 px-3 py-2 text-xs text-[var(--color-muted)]">
-                                No open eligible slot
-                              </span>
-                            ) : (
-                              openSlots.map((slot) => (
-                                <button
-                                  key={`${player.playerId}-${slot.key}`}
-                                  type="button"
-                                  onClick={() => void handleAssign(slot.key, player.playerId)}
-                                  className="rounded-full bg-[var(--color-accent)]/12 px-3 py-2 text-xs font-semibold text-[var(--color-accent)] transition hover:-translate-y-[1px] hover:bg-[var(--color-accent)]/18 active:scale-[0.98]"
-                                >
-                                  Add to {slot.label}
-                                </button>
-                              ))
-                            )}
+                            <div className="flex flex-wrap gap-1.5 xl:justify-end">
+                              {squad.isLocked ? (
+                                <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-2.5 py-1.5 text-[11px] text-[var(--color-sand)]">
+                                  Squad locked
+                                </span>
+                              ) : isAlreadyDrafted ? (
+                                <span className="rounded-full border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-2.5 py-1.5 text-[11px] text-[var(--color-accent)]">
+                                  Already in squad
+                                </span>
+                              ) : openSlots.length === 0 ? (
+                                <span className="rounded-full border border-white/10 px-2.5 py-1.5 text-[11px] text-[var(--color-muted)]">
+                                  No eligible slot
+                                </span>
+                              ) : (
+                                openSlots.map((slot) => (
+                                  <button
+                                    key={`${player.playerId}-${slot.key}`}
+                                    type="button"
+                                    aria-label={`Add ${player.displayName} to ${slot.label}`}
+                                    title={`Add to ${slot.label}`}
+                                    onClick={() => void handleAssign(slot.key, player.playerId)}
+                                    className="rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-accent)] transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-accent)]/15 active:scale-[0.98]"
+                                  >
+                                    + {compactSlotLabel(slot.label)}
+                                  </button>
+                                ))
+                              )}
+                            </div>
                           </div>
                         </article>
                       )
@@ -1221,18 +1248,18 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
             </div>
 
             <div className="space-y-4">
-              <div className="glass-panel rounded-[2rem] p-5">
+              <div className="glass-panel rounded-[1.15rem] p-4">
                 <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget monitor</p>
-                <div className="mt-5 flex items-end justify-between gap-4">
+                <div className="mt-4 flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-3xl font-semibold tracking-tight text-[var(--color-accent)]">{formatBudget(squad.budgetRemaining)}</p>
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">Remaining of {formatBudget(squad.budgetLimit)}</p>
+                    <p className="text-2xl font-semibold tracking-tight text-[var(--color-accent)]">{formatBudget(squad.budgetRemaining)}</p>
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">Remaining of {formatBudget(squad.budgetLimit)}</p>
                   </div>
-                  <div className="rounded-full border border-white/10 px-4 py-2">
-                    <span className="mono text-sm text-white">{formatBudget(squad.budgetUsed)} used</span>
+                  <div className="rounded-full border border-white/10 px-3 py-1.5">
+                    <span className="mono text-xs text-white">{formatBudget(squad.budgetUsed)} used</span>
                   </div>
                 </div>
-                <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/6">
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/6">
                   <div
                     className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-accent),#d7a85b)] transition-all duration-300"
                     style={{ width: `${budgetUsedRatio}%` }}
@@ -1240,29 +1267,29 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                 </div>
               </div>
 
-              <div className="glass-panel rounded-[2rem] p-5">
+              <div className="glass-panel rounded-[1.15rem] p-4">
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">current squad</p>
-                    <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">4-3-3 starters + 4 locked subs</h3>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 starters + 4 locked subs</h3>
                   </div>
                   <button
                     type="button"
                     onClick={() => void handleReset()}
                     disabled={squad.isLocked}
-                    className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                    className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                   >
                     Reset
                   </button>
                 </div>
 
-                <div className="mt-5 rounded-[1.4rem] border border-[var(--color-accent)]/18 bg-[var(--color-accent)]/8 px-4 py-4">
+                <div className="mt-4 rounded-[1rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-3 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-white">
                         {squad.isLocked ? 'Squad submitted' : 'Ready for final submission?'}
                       </p>
-                      <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
+                      <p className="mt-1 text-xs leading-6 text-[var(--color-muted)]">
                         {squad.isLocked
                           ? 'This squad is immutable unless an admin unlock flow is added later.'
                           : 'Fill all 15 slots, then lock the squad as your one official entry.'}
@@ -1272,7 +1299,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                       type="button"
                       onClick={() => void handleLockSquad()}
                       disabled={squad.isLocked || draftedCount !== 15}
-                      className="rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                      className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                     >
                       {squad.isLocked ? 'Locked' : 'Final submit'}
                     </button>
@@ -1323,38 +1350,38 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   <div className="space-y-2">
                     <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">starters</p>
                     {groupedSquadSlots.starters.map((slot) => (
-                      <div key={slot.key} className="rounded-[1.3rem] border border-white/8 bg-[rgba(8,13,12,0.74)] px-4 py-3">
-                        <div className="flex items-start justify-between gap-4">
+                      <div key={slot.key} className="rounded-[0.85rem] border border-white/8 bg-[rgba(8,13,12,0.74)] px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">{slot.label}</p>
-                            <p className="mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
+                            <p className="text-xs font-semibold text-white">{slot.label}</p>
+                            <p className="mono mt-1 text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
                           </div>
                           {slot.player && !squad.isLocked ? (
                             <button
                               type="button"
                               onClick={() => void handleRemove(slot.key)}
-                              className="rounded-full border border-white/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                              className="rounded-full border border-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                             >
                               Delete
                             </button>
                           ) : null}
                         </div>
                         {slot.player ? (
-                          <div className="mt-3 flex items-center gap-3">
+                          <div className="mt-2 flex items-center gap-2.5">
                             <PlayerPortrait
                               src={slot.player.imageUrl}
                               alt={slot.player.displayName}
-                              width={52}
-                              height={52}
-                              className="h-12 w-12 rounded-xl border border-white/10 object-cover"
+                              width={44}
+                              height={44}
+                              className="h-11 w-11 rounded-[0.75rem] border border-white/10 object-cover"
                             />
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-white">{slot.player.displayName}</p>
-                              <p className="mt-1 text-xs text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
+                              <p className="truncate text-xs font-medium text-white">{slot.player.displayName}</p>
+                              <p className="mt-1 text-[11px] text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
                             </div>
                           </div>
                         ) : (
-                          <p className="mt-3 text-sm text-[var(--color-muted)]">Empty slot</p>
+                          <p className="mt-2 text-xs text-[var(--color-muted)]">Empty slot</p>
                         )}
                       </div>
                     ))}
@@ -1363,38 +1390,38 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                   <div className="space-y-2">
                     <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">subs</p>
                     {groupedSquadSlots.subs.map((slot) => (
-                      <div key={slot.key} className="rounded-[1.3rem] border border-white/8 bg-[rgba(8,13,12,0.74)] px-4 py-3">
-                        <div className="flex items-start justify-between gap-4">
+                      <div key={slot.key} className="rounded-[0.85rem] border border-white/8 bg-[rgba(8,13,12,0.74)] px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">{slot.label}</p>
-                            <p className="mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
+                            <p className="text-xs font-semibold text-white">{slot.label}</p>
+                            <p className="mono mt-1 text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
                           </div>
                           {slot.player && !squad.isLocked ? (
                             <button
                               type="button"
                               onClick={() => void handleRemove(slot.key)}
-                              className="rounded-full border border-white/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                              className="rounded-full border border-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                             >
                               Delete
                             </button>
                           ) : null}
                         </div>
                         {slot.player ? (
-                          <div className="mt-3 flex items-center gap-3">
+                          <div className="mt-2 flex items-center gap-2.5">
                             <PlayerPortrait
                               src={slot.player.imageUrl}
                               alt={slot.player.displayName}
-                              width={52}
-                              height={52}
-                              className="h-12 w-12 rounded-xl border border-white/10 object-cover"
+                              width={44}
+                              height={44}
+                              className="h-11 w-11 rounded-[0.75rem] border border-white/10 object-cover"
                             />
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-white">{slot.player.displayName}</p>
-                              <p className="mt-1 text-xs text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
+                              <p className="truncate text-xs font-medium text-white">{slot.player.displayName}</p>
+                              <p className="mt-1 text-[11px] text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
                             </div>
                           </div>
                         ) : (
-                          <p className="mt-3 text-sm text-[var(--color-muted)]">Empty slot</p>
+                          <p className="mt-2 text-xs text-[var(--color-muted)]">Empty slot</p>
                         )}
                       </div>
                     ))}

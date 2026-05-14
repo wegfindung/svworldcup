@@ -273,14 +273,14 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
   if (authState === 'guest') {
     return (
       <div className="mx-auto max-w-3xl pb-12">
-        <section className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
+        <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
           <p className="eyebrow">admin access</p>
           <h2 className="section-title mt-6 max-w-[11ch]">Email and password backend access.</h2>
           <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
             Use the protected backend to preselect all 48 World Cup team pools before public drafting opens.
           </p>
 
-          <form onSubmit={handleLogin} className="mt-8 grid gap-4 rounded-[1.9rem] border border-white/10 bg-black/15 p-5 sm:p-6">
+          <form onSubmit={handleLogin} className="mt-7 grid gap-4 rounded-[1.1rem] border border-white/10 bg-black/15 p-4 sm:p-5">
             <label className="grid gap-2">
               <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Admin email</span>
               <input
@@ -322,8 +322,8 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
   }
 
   return (
-    <div className="space-y-6 pb-12">
-      <section className="hero-card rounded-[2.4rem] px-6 py-8 sm:px-8 sm:py-10">
+    <div className="space-y-4 pb-10">
+      <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="eyebrow">team preselection backend</p>
@@ -356,7 +356,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <form onSubmit={handleSaveScoring} className="glass-panel rounded-[2rem] p-5 sm:p-6">
+        <form onSubmit={handleSaveScoring} className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="eyebrow">scoring settings</p>
@@ -411,7 +411,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
           </div>
         </form>
 
-        <form onSubmit={handleSaveMatchEntry} className="glass-panel rounded-[2rem] p-5 sm:p-6">
+        <form onSubmit={handleSaveMatchEntry} className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="eyebrow">match stat entry</p>
@@ -557,7 +557,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
         </form>
       </section>
 
-      <section className="glass-panel rounded-[2rem] p-5 sm:p-6">
+      <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <p className="eyebrow">reveal controls</p>
@@ -598,7 +598,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-        <div className="glass-panel rounded-[2rem] p-5 sm:p-6">
+        <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
           <p className="eyebrow">teams</p>
           {teamsBusy ? (
             <div className="mt-5 grid gap-3">
@@ -637,8 +637,8 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="glass-panel rounded-[2rem] p-5 sm:p-6">
+        <div className="space-y-4">
+          <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="eyebrow">selected team</p>

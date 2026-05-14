@@ -61,7 +61,7 @@ export function TeamSelect({ label, teams, value, placeholder, excludeTeamCode, 
         </button>
 
         {open ? (
-          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-30 max-h-96 w-full overflow-y-auto rounded-[1.6rem] border border-white/10 bg-[rgba(8,13,12,0.98)] p-2 shadow-[0_28px_60px_-30px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 max-h-[22rem] w-full overflow-y-auto rounded-[1.15rem] border border-white/10 bg-[rgba(8,13,12,0.98)] p-2 shadow-[0_28px_60px_-30px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
             <button
               type="button"
               onClick={() => {
