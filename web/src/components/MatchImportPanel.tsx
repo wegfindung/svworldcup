@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from './EmptyState'
 import { InfoTip } from './InfoTip'
 import { MatchImportResolveStage } from './MatchImportResolveStage'
@@ -78,6 +78,26 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
     }
     return map
   }, [batches])
+
+  // Load any in-progress batches on mount so the fixture list reflects existing pending
+  // batches and the upload form's batch-exists/replace guard is live from the start.
+  useEffect(() => {
+    let active = true
+    void fetchMatchImportBatches()
+      .then((response) => {
+        if (active) {
+          setBatches(response.items)
+          setBatchesLoaded(true)
+        }
+      })
+      .catch(() => {
+        // A mount-time load failure is non-blocking — the "Refresh pending imports"
+        // button stays available and surfaces errors.
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   function resolveSides(batch: PendingMatchBatch): { home: TeamSeed; away: TeamSeed } {
     const fixture = fixtures.find((item) => item.fixtureId === batch.fixtureId)
@@ -206,6 +226,26 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
       setReviewBatch(response.batch)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Submit failed.')
+      // A failed submit can mean a batch already exists for this fixture (a re-submission
+      // race, or a prior partial upload). Re-fetch so the admin lands on Review instead of
+      // being stranded re-submitting on the resolve stage.
+      try {
+        const response = await fetchMatchImportBatches()
+        setBatches(response.items)
+        setBatchesLoaded(true)
+        const existing = response.items.find((item) => item.fixtureId === uploadFixtureId)
+        if (existing) {
+          setUploadFixtureId(null)
+          setPasteText('')
+          setResolution(null)
+          setPendingInput(null)
+          setError(null)
+          setMessage('A pending batch already exists for this fixture — opened for review.')
+          setReviewBatch(existing)
+        }
+      } catch {
+        // Keep the original submit error visible if the batch-list refresh also fails.
+      }
     } finally {
       setUploadBusy(false)
     }

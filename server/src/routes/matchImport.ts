@@ -141,6 +141,18 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
     // Fix 7: rejects loudly if any row is still unresolved with no resolve/skip choice.
     const finalized = finalizeSubmission(resolution, parsed.overrides, adminEmail)
 
+    // D9/D12: persist the admin's manual resolve/skip choices first. These are idempotent
+    // ON CONFLICT upserts and are meant to persist regardless of the batch outcome, so an
+    // orphaned write from a rejected upload is harmless. Doing them before the batch keeps
+    // the only post-batch-creation step the audit row — so a mid-route failure cannot
+    // strand a committed batch the way it could when the batch was created first.
+    for (const write of finalized.mappingWrites) {
+      await deps.matchMappingRepository.upsertPlayerMap({ ...write, createdBy: adminEmail })
+    }
+    for (const write of finalized.skipWrites) {
+      await deps.matchMappingRepository.addSkipName({ ...write, createdBy: adminEmail })
+    }
+
     // D14: replace an existing batch only when explicitly asked; otherwise createBatch fails
     // loudly if one already exists for the fixture.
     const existing = await deps.matchImportRepository.getBatchByFixture(parsed.fixtureId)
@@ -148,14 +160,6 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
     const batch = replaced
       ? await deps.matchImportRepository.replaceBatch(parsed.fixtureId, finalized.batchInput)
       : await deps.matchImportRepository.createBatch(finalized.batchInput)
-
-    // D9/D12: persist the admin's manual resolve/skip choices so the names are remembered.
-    for (const write of finalized.mappingWrites) {
-      await deps.matchMappingRepository.upsertPlayerMap({ ...write, createdBy: adminEmail })
-    }
-    for (const write of finalized.skipWrites) {
-      await deps.matchMappingRepository.addSkipName({ ...write, createdBy: adminEmail })
-    }
 
     await deps.auditRepository.record({
       actorEmail: adminEmail,
