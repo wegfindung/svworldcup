@@ -44,6 +44,7 @@ Provide a secure Soccerverse World Cup event platform with:
 - World Cup team player-pool maintenance
 - score parameter changes until kickoff
 - match result entry
+- match-data import lifecycle: upload, review, two-admin confirm, promote
 - global squad reveal
 - verification resend
 - analytics overview
@@ -66,6 +67,13 @@ Provide a secure Soccerverse World Cup event platform with:
 - reveal actions
 - score-config changes
 - verification resend actions
+- match-data import
+- pending match-stat edits
+- match-stat fixture confirmations
+- promotion of confirmed match stats
+- player-name mapping corrections
+- import skip-list changes
+- pending match-stat batch discard
 
 ## i18n Rules
 

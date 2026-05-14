@@ -16,6 +16,7 @@ Apply deterministic event scoring with clear separation between rookie/veteran l
 ## Scoring Slice V1
 
 - Admins can upsert one player match entry per `(fixtureId, playerId)`.
+- Player match entries reach `admin_match_entries` only through the match-data import lifecycle (upload, review, two-admin confirm, promote) — see `SOP_match_data_import.md`. The scoring engine reads `admin_match_entries` and is otherwise unaffected by that lifecycle.
 - A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, optional performance points, and a source note.
 - Public league leaderboards are calculated from locked squads only.
 - Starter slots score from their player match entries.

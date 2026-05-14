@@ -19,6 +19,17 @@ import {
 import { MemorySquadRepository, PostgresSquadRepository, type SquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository, PostgresTeamPoolRepository, type TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { MemoryScoringRepository, PostgresScoringRepository, type ScoringRepository } from '../repositories/scoringRepository.js'
+import {
+  MemoryMatchImportRepository,
+  PostgresMatchImportRepository,
+  type MatchImportRepository,
+} from '../repositories/matchImportRepository.js'
+import {
+  MemoryMatchMappingRepository,
+  PostgresMatchMappingRepository,
+  type MatchMappingRepository,
+} from '../repositories/matchMappingRepository.js'
+import { MemoryAuditRepository, PostgresAuditRepository, type AuditRepository } from '../repositories/auditRepository.js'
 
 let pool: Pool | null = null
 let registrationRepository: RegistrationRepository | null = null
@@ -28,6 +39,9 @@ let participantSessionRepository: ParticipantSessionRepository | null = null
 let teamPoolRepository: TeamPoolRepository | null = null
 let squadRepository: SquadRepository | null = null
 let scoringRepository: ScoringRepository | null = null
+let matchImportRepository: MatchImportRepository | null = null
+let matchMappingRepository: MatchMappingRepository | null = null
+let auditRepository: AuditRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -116,4 +130,32 @@ export function createScoringRepository(): ScoringRepository {
       : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository())
   }
   return scoringRepository
+}
+
+export function createMatchImportRepository(): MatchImportRepository {
+  if (!matchImportRepository) {
+    const existingPool = getPool()
+    matchImportRepository = existingPool
+      ? new PostgresMatchImportRepository(existingPool)
+      : new MemoryMatchImportRepository()
+  }
+  return matchImportRepository
+}
+
+export function createMatchMappingRepository(): MatchMappingRepository {
+  if (!matchMappingRepository) {
+    const existingPool = getPool()
+    matchMappingRepository = existingPool
+      ? new PostgresMatchMappingRepository(existingPool)
+      : new MemoryMatchMappingRepository()
+  }
+  return matchMappingRepository
+}
+
+export function createAuditRepository(): AuditRepository {
+  if (!auditRepository) {
+    const existingPool = getPool()
+    auditRepository = existingPool ? new PostgresAuditRepository(existingPool) : new MemoryAuditRepository()
+  }
+  return auditRepository
 }

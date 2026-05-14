@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { EmptyState } from '../components/EmptyState'
+import { MatchImportPanel } from '../components/MatchImportPanel'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
@@ -7,6 +8,7 @@ import {
   fetchAdminMatchEntries,
   fetchAdminOverview,
   fetchAdminTeams,
+  fetchBootstrap,
   fetchTeamSelections,
   loginAdmin,
   logoutAdmin,
@@ -16,7 +18,7 @@ import {
   triggerGlobalReveal,
   updateAdminScoring,
 } from '../lib/api'
-import type { AdminOverview, AdminProfile, LocaleCode, MatchEntryInput, MatchEntryRecord, ScoringConfig, SoccerversePlayer, TeamPoolPlayer, TeamSeed } from '../lib/types'
+import type { AdminOverview, AdminProfile, FixtureSeed, LocaleCode, MatchEntryInput, MatchEntryRecord, ScoringConfig, SoccerversePlayer, TeamPoolPlayer, TeamSeed } from '../lib/types'
 
 interface AdminPageProps {
   locale: LocaleCode
@@ -77,6 +79,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
   const [matchMessage, setMatchMessage] = useState<string | null>(null)
   const [revealBusy, setRevealBusy] = useState(false)
   const [revealMessage, setRevealMessage] = useState<string | null>(null)
+  const [fixtures, setFixtures] = useState<FixtureSeed[]>([])
 
   const selectedTeam = useMemo(
     () => teams.find((team) => team.code === selectedTeamCode) ?? null,
@@ -110,11 +113,16 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
     try {
       const response = await loginAdmin(loginEmail, loginPassword)
       setTeamsBusy(true)
-      const [teamResponse, overviewResponse] = await Promise.all([fetchAdminTeams(), fetchAdminOverview()])
+      const [teamResponse, overviewResponse, bootstrapResponse] = await Promise.all([
+        fetchAdminTeams(),
+        fetchAdminOverview(),
+        fetchBootstrap(),
+      ])
       setAdmin(response.admin)
       setTeams(teamResponse.items)
       setOverview(overviewResponse)
       setScoringForm(overviewResponse.scoring)
+      setFixtures(bootstrapResponse.fixtures)
       if (!teamResponse.items.some((team) => team.code === selectedTeamCode)) {
         setSelectedTeamCode(teamResponse.items[0]?.code ?? 'GER')
       }
@@ -556,6 +564,8 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
           ) : null}
         </form>
       </section>
+
+      <MatchImportPanel fixtures={fixtures} teams={teams} adminEmail={admin?.email ?? ''} />
 
       <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
