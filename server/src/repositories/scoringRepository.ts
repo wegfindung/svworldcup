@@ -50,6 +50,11 @@ function clampPerformancePoints(value: number | undefined, scoring: ScoringConfi
   return Math.min(scoring.performancePointsMax, Math.max(scoring.performancePointsMin, value))
 }
 
+function toTimestamp(value: string) {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : Number.MAX_SAFE_INTEGER
+}
+
 function scoreEntry(entry: MatchEntryRecord, scoring: ScoringConfig) {
   return (
     entry.goals * scoring.goal +
@@ -150,7 +155,7 @@ function rankParticipants(rows: RankableParticipantRow[]): ParticipantScoreRow[]
     .sort(
       (left, right) =>
         right.totalScore - left.totalScore ||
-        left.registeredAt.localeCompare(right.registeredAt) ||
+        toTimestamp(left.registeredAt) - toTimestamp(right.registeredAt) ||
         left.displayName.localeCompare(right.displayName),
     )
     .map(({ registeredAt: _registeredAt, ...row }, index) => ({ ...row, rank: index + 1 }))
