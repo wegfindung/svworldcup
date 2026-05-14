@@ -61,8 +61,8 @@ export function ProfilePage() {
 
   if (loadState === 'loading') {
     return (
-      <div className="space-y-6 pb-12">
-        <section className="hero-card rounded-[2rem] px-6 py-8 sm:px-8">
+      <div className="space-y-4 pb-10">
+        <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
           <div className="skeleton h-8 w-40 rounded-full" />
           <div className="skeleton mt-8 h-28 max-w-2xl rounded-[1.4rem]" />
         </section>
@@ -72,8 +72,8 @@ export function ProfilePage() {
 
   if (loadState === 'error' || !profile) {
     return (
-      <div className="space-y-6 pb-12">
-        <section className="glass-panel rounded-[2rem] p-6">
+      <div className="space-y-4 pb-10">
+        <section className="glass-panel rounded-[1.15rem] p-5">
           <EmptyState title="No public profile found" body={error ?? 'This participant has not revealed a public profile yet.'} />
         </section>
       </div>
@@ -83,8 +83,8 @@ export function ProfilePage() {
   const squadPlayers = profile.squad?.slots.filter((slot) => slot.player) ?? []
 
   return (
-    <div className="space-y-6 pb-12">
-      <section className="hero-card rounded-[2rem] px-6 py-8 sm:px-8">
+    <div className="space-y-4 pb-10">
+      <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
         <p className="eyebrow">public profile</p>
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.8fr]">
           <div>
@@ -111,7 +111,7 @@ export function ProfilePage() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[0.7fr_1.3fr]">
-        <div className="glass-panel rounded-[1.6rem] p-5">
+        <div className="glass-panel rounded-[1.15rem] p-4">
           <p className="eyebrow text-[10px]">nations</p>
           <div className="mt-5 grid gap-3">
             <div className="flex items-center gap-3 rounded-[1.1rem] border border-white/8 bg-black/12 p-3">
@@ -133,7 +133,7 @@ export function ProfilePage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-[1.6rem] p-5">
+        <div className="glass-panel rounded-[1.15rem] p-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="eyebrow text-[10px]">submitted squad</p>
@@ -145,7 +145,7 @@ export function ProfilePage() {
           {profile.revealSquad && squadPlayers.length ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {squadPlayers.map((slot) => (
-                <article key={slot.key} className="rounded-[1.1rem] border border-white/8 bg-black/12 p-3">
+                <article key={slot.key} className="surface-row rounded-[0.9rem] p-3 transition hover:bg-white/5">
                   <div className="flex items-center gap-3">
                     <PlayerPortrait
                       src={slot.player?.imageUrl ?? '/placeholders/player.svg'}

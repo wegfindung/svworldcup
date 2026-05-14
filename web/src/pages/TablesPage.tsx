@@ -16,7 +16,7 @@ function formatScore(value: number) {
 
 function ParticipantTable({ title, rows }: { title: string; rows: ParticipantScoreRow[] }) {
   return (
-    <section className="glass-panel rounded-[1.6rem] p-5">
+    <section className="glass-panel rounded-[1.15rem] p-4">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow text-[10px]">league table</p>
@@ -25,11 +25,11 @@ function ParticipantTable({ title, rows }: { title: string; rows: ParticipantSco
         <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} entries</span>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-[1.1rem] border border-white/8">
+      <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
         {rows.length ? (
           <div className="divide-y divide-white/8">
             {rows.map((row) => (
-              <div key={row.participantId} className="grid grid-cols-[3.5rem_1fr_auto] items-center gap-3 bg-black/12 px-4 py-3">
+              <div key={row.participantId} className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 bg-black/12 px-3.5 py-2.5 transition hover:bg-white/5">
                 <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{row.displayName}</p>
@@ -64,7 +64,7 @@ function ParticipantTable({ title, rows }: { title: string; rows: ParticipantSco
 
 function NationTable({ rows }: { rows: NationScoreRow[] }) {
   return (
-    <section className="glass-panel rounded-[1.6rem] p-5">
+    <section className="glass-panel rounded-[1.15rem] p-4">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow text-[10px]">national league</p>
@@ -73,11 +73,11 @@ function NationTable({ rows }: { rows: NationScoreRow[] }) {
         <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} nations</span>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-[1.1rem] border border-white/8">
+      <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
         {rows.length ? (
           <div className="divide-y divide-white/8">
             {rows.map((row) => (
-              <div key={row.teamCode} className="grid grid-cols-[3.5rem_1fr_auto] items-center gap-3 bg-black/12 px-4 py-3">
+              <div key={row.teamCode} className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 bg-black/12 px-3.5 py-2.5 transition hover:bg-white/5">
                 <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
                 <div className="flex min-w-0 items-center gap-3">
                   <TeamFlag teamCode={row.teamCode} label={row.teamCode} size="sm" />
@@ -131,8 +131,8 @@ export function TablesPage() {
   }
 
   return (
-    <div className="space-y-6 pb-12">
-      <section className="hero-card rounded-[2rem] px-6 py-7 sm:px-8">
+    <div className="space-y-4 pb-10">
+      <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
         <p className="eyebrow">public standings</p>
         <div className="mt-5 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
           <div>
@@ -145,33 +145,33 @@ export function TablesPage() {
             type="button"
             onClick={handleLoadTables}
             disabled={loadState === 'loading'}
-            className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--color-accent)] px-6 text-sm font-semibold text-[var(--color-ink)] shadow-[0_18px_32px_-24px_rgba(24,180,133,0.9)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+            className="premium-button h-11 px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loadState === 'loading' ? 'Loading tables...' : 'Load public tables'}
           </button>
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="glass-panel rounded-[1.6rem] p-5">
+      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="glass-panel rounded-[1.15rem] p-4">
           <p className="eyebrow text-[10px]">scoring profile</p>
           <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-            <div className="rounded-[1rem] border border-white/8 bg-black/12 p-3">
+            <div className="surface-row rounded-[0.85rem] p-3">
               <p className="text-[var(--color-muted)]">Goal</p>
               <p className="mono mt-2 text-xl text-white">{defaultScoring.goal}</p>
             </div>
-            <div className="rounded-[1rem] border border-white/8 bg-black/12 p-3">
+            <div className="surface-row rounded-[0.85rem] p-3">
               <p className="text-[var(--color-muted)]">Assist</p>
               <p className="mono mt-2 text-xl text-white">{defaultScoring.assist}</p>
             </div>
-            <div className="rounded-[1rem] border border-white/8 bg-black/12 p-3">
+            <div className="surface-row rounded-[0.85rem] p-3">
               <p className="text-[var(--color-muted)]">Clean sheet</p>
               <p className="mono mt-2 text-xl text-white">{defaultScoring.cleanSheet}</p>
             </div>
           </div>
         </div>
 
-        <div className="glass-panel rounded-[1.6rem] p-5">
+        <div className="glass-panel rounded-[1.15rem] p-4">
           <p className="eyebrow text-[10px]">privacy rule</p>
           <p className="mt-4 text-sm leading-relaxed text-[var(--color-paper)]">
             These endpoints expose standings only. Squad details remain hidden until participant or global reveal is wired into the public profile layer.
@@ -180,19 +180,19 @@ export function TablesPage() {
       </section>
 
       {loadState === 'idle' ? (
-        <section className="glass-panel rounded-[1.8rem] p-6">
+        <section className="glass-panel rounded-[1.15rem] p-5">
           <EmptyState title="Tables are ready to load" body="Use the explicit load action to request current public standings from the backend." />
         </section>
       ) : null}
 
       {loadState === 'error' ? (
-        <section className="glass-panel rounded-[1.8rem] p-6">
+        <section className="glass-panel rounded-[1.15rem] p-5">
           <EmptyState title="Could not load standings" body={error ?? 'The backend returned an unexpected response.'} />
         </section>
       ) : null}
 
       {loadState === 'ready' ? (
-        <section className="grid gap-5 xl:grid-cols-3">
+        <section className="grid gap-4 xl:grid-cols-3">
           <ParticipantTable title="Rookie" rows={rookies} />
           <ParticipantTable title="Veteran" rows={veterans} />
           <NationTable rows={nations} />
