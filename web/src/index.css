@@ -123,6 +123,10 @@ select:focus-visible {
   position: relative;
 }
 
+.allow-dropdown-overflow {
+  overflow: visible;
+}
+
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 0.66rem;

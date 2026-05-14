@@ -37,33 +37,38 @@ function App() {
   }, [locale])
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--color-ink)] text-[var(--color-paper)]">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(24,180,133,0.15),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(228,162,74,0.12),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_30%)]" />
-      <div className="pointer-events-none fixed inset-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:88px_88px]" />
-      <div className="relative mx-auto flex min-h-[100dvh] max-w-[1320px] flex-col px-4 py-4 sm:px-5 lg:px-6">
-        <header className="glass-panel sticky top-4 z-20 mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[1.35rem] px-4 py-3 sm:px-5">
-          <NavLink to="/" className="shrink-0 transition hover:-translate-y-[1px] active:scale-[0.99]">
-            <img
-              src="/brand/logo-200.webp"
-              alt="Soccerverse World Cup Community Event"
-              width={200}
-              height={133}
-              className="h-auto w-[160px] max-w-full"
-            />
+    <div className="stadium-shell min-h-[100dvh] bg-[var(--color-ink)] text-[var(--color-paper)]">
+      <div className="noise-layer" />
+      <div className="relative z-[2] mx-auto flex min-h-[100dvh] max-w-[1440px] flex-col px-3 py-3 sm:px-5 lg:px-7">
+        <header className="premium-nav sticky top-3 z-20 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] px-3 py-2.5 sm:px-4">
+          <NavLink to="/" className="group flex shrink-0 items-center gap-3 transition active:scale-[0.99]">
+            <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-xl border border-white/10 bg-black/20">
+              <img
+                src="/brand/logo-200.webp"
+                alt="Soccerverse World Cup Community Event"
+                width={90}
+                height={60}
+                className="h-auto w-[58px] max-w-none transition duration-500 group-hover:scale-[1.04]"
+              />
+            </span>
+            <span className="hidden leading-none sm:block">
+              <span className="block text-sm font-semibold tracking-[0.08em] text-white">SOCCERVERSE</span>
+              <span className="mono mt-1 block text-[10px] uppercase tracking-[0.24em] text-[var(--color-accent)]">World Cup</span>
+            </span>
           </NavLink>
 
           <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
-            <nav className="flex flex-wrap justify-end gap-2">
+            <nav className="flex flex-wrap justify-end rounded-full border border-white/8 bg-black/20 p-1">
               {navigation.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   className={({ isActive }) =>
                     [
-                      'rounded-full px-3.5 py-2 text-sm transition duration-300 ease-out',
+                      'rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em]',
                       isActive
-                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
-                        : 'text-[var(--color-muted)] hover:-translate-y-[1px] hover:bg-white/6 hover:text-white active:scale-[0.98]',
+                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]'
+                        : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
                     ].join(' ')
                   }
                 >
@@ -80,7 +85,7 @@ function App() {
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="flex-1 reveal-in">
           <Routes>
             <Route path="/" element={<HomePage locale={locale} />} />
             <Route path="/builder" element={<BuilderPage locale={locale} />} />

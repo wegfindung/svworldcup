@@ -95,7 +95,7 @@ function DiscordIcon() {
 
 function MatchPlanCard() {
   return (
-    <div className="glass-panel rounded-[1.5rem] p-5 sm:p-6">
+    <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">group stage match plan</p>
@@ -104,7 +104,7 @@ function MatchPlanCard() {
         <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">BST schedule</span>
       </div>
 
-      <div className="mt-5 max-h-[30rem] space-y-4 overflow-y-auto pr-2">
+      <div className="mt-5 max-h-[29rem] space-y-3 overflow-y-auto pr-2">
         {groupStageMatchPlan.map((day) => (
           <section key={day.day} className="space-y-3">
             <div className="sticky top-0 z-10 -mx-1 rounded-full border border-white/8 bg-[rgba(11,17,16,0.92)] px-4 py-2 backdrop-blur">
@@ -115,7 +115,7 @@ function MatchPlanCard() {
               {day.matches.map((match, index) => (
                 <div
                   key={`${day.day}-${match.group}-${match.home}-${match.away}-${index}`}
-                  className="rounded-[1.05rem] border border-white/8 bg-black/15 px-3.5 py-2.5"
+                  className="surface-row rounded-[0.9rem] px-3 py-2.5 transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/20"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -150,13 +150,13 @@ function MatchPlanCard() {
 
 function SuperstarCard() {
   return (
-    <div className="glass-panel overflow-hidden rounded-[1.35rem] p-4">
+    <div className="glass-panel overflow-hidden rounded-[1.15rem] p-3.5">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Add a superstar</p>
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      <div className="mt-3 grid grid-cols-4 gap-1.5">
         {superstarPlayers.map((player, index) => (
           <div
             key={player.playerId}
-            className="group overflow-hidden rounded-[0.95rem] border border-white/10 bg-black/20"
+            className="group overflow-hidden rounded-[0.75rem] border border-white/10 bg-black/20 transition hover:-translate-y-[2px] hover:border-[var(--color-accent)]/25"
             style={{ animationDelay: `${index * 70}ms` }}
           >
             <PlayerPortrait
@@ -166,7 +166,7 @@ function SuperstarCard() {
               height={120}
               className="aspect-square w-full object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
             />
-            <p className="px-2 py-1.5 text-[9px] font-medium uppercase tracking-[0.1em] text-[var(--color-paper)]">
+            <p className="px-2 py-1.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-[var(--color-paper)]">
               {player.name}
             </p>
           </div>
@@ -178,7 +178,7 @@ function SuperstarCard() {
 
 function NationFlagsCard() {
   return (
-    <div className="glass-panel rounded-[1.35rem] p-4">
+    <div className="glass-panel rounded-[1.15rem] p-3.5">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Top football nations</p>
       <div className="mt-4 grid grid-cols-5 justify-items-center gap-x-2 gap-y-3 sm:gap-x-3">
         {footballNations.map((nation) => (
@@ -206,7 +206,7 @@ function NationFlagsCard() {
 
 function DiscordCard() {
   return (
-    <div className="glass-panel rounded-[1.35rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-4">
+    <div className="glass-panel rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-3.5">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Join Discord</p>
       <div className="mt-4 flex items-start gap-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/12 bg-black/20 text-[var(--color-paper)]">
@@ -223,7 +223,7 @@ function DiscordCard() {
         href="https://discord.com/invite/ze5xJgg7AM"
         target="_blank"
         rel="noreferrer"
-        className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+        className="premium-button mt-5 gap-2 px-4 py-2.5 text-sm font-semibold"
       >
         <DiscordIcon />
         Open community invite
@@ -240,42 +240,65 @@ export function HomePage({ locale }: HomePageProps) {
   const scoring = defaultScoring
 
   return (
-    <div className="space-y-6 pb-10">
-      <section className="table-grid gap-6">
-        <div className="hero-card rounded-[1.55rem] px-5 py-7 sm:px-7 sm:py-8 lg:px-8 lg:py-9">
+    <div className="space-y-4 pb-10">
+      <section className="table-grid">
+        <div className="hero-card rounded-[1.35rem] px-4 py-5 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="eyebrow">{t(locale, 'heroEyebrow')}</p>
+            <span className="mono rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)]">
+              Community event 2026
+            </span>
           </div>
-          <div className="mt-8">
+          <div className="mt-7 grid gap-7 xl:grid-cols-[minmax(0,1fr)_17rem]">
             <div className="max-w-[56rem]">
               <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
                 Hidden squads. Shared reveals. One locked draft.
               </p>
-              <h2 className="section-title mt-3 max-w-[12ch]">{t(locale, 'heroTitle')}</h2>
+              <h2 className="section-title mt-3 max-w-[13ch]">{t(locale, 'heroTitle')}</h2>
               <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">
                 {t(locale, 'heroBody')}
               </p>
-              <div className="mt-7 flex flex-wrap gap-4">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/builder"
-                  className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-6 py-3.5 text-base font-semibold text-[var(--color-ink)] shadow-[0_18px_28px_-22px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] active:scale-[0.98] sm:px-7"
+                  className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
                 >
                   {t(locale, 'heroPrimary')}
                 </Link>
+                <Link
+                  to="/tables"
+                  className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+                >
+                  View live tables
+                </Link>
+              </div>
+            </div>
+            <div className="data-strip self-end">
+              <div>
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Teams</p>
+                <p className="mono mt-2 text-2xl text-white">48</p>
+              </div>
+              <div>
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Squad</p>
+                <p className="mono mt-2 text-2xl text-white">15</p>
+              </div>
+              <div>
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Games</p>
+                <p className="mono mt-2 text-2xl text-white">72</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-3.5">
+        <div className="grid gap-3">
           <SuperstarCard />
           <NationFlagsCard />
           <DiscordCard />
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="glass-panel rounded-[1.5rem] p-5 sm:p-6">
+      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="eyebrow">{t(locale, 'scoringTitle')}</p>
@@ -285,7 +308,7 @@ export function HomePage({ locale }: HomePageProps) {
           </div>
 
           <div className="mt-5 max-h-[27rem] space-y-3 overflow-y-auto pr-2">
-            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">eligibility</p>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--color-paper)]">
                 <li>No multi-accounts.</li>
@@ -294,7 +317,7 @@ export function HomePage({ locale }: HomePageProps) {
               </ul>
             </div>
 
-            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">salary budget</p>
               <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">3,000,000 SVC</p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
@@ -302,7 +325,7 @@ export function HomePage({ locale }: HomePageProps) {
               </p>
             </div>
 
-            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">points</p>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
@@ -329,7 +352,7 @@ export function HomePage({ locale }: HomePageProps) {
               </p>
             </div>
 
-            <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">request policy</p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-paper)]">
                 No API data is requested from the landing page. Registration, verification, builder loading, and backend tools only talk
