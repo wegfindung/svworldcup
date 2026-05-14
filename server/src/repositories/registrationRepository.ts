@@ -38,6 +38,7 @@ interface ParticipantRow {
   email: string
   display_name: string
   soccerverse_username: string | null
+  referrer_soccerverse_username: string | null
   league_type: LeagueType
   primary_team_code: string
   secondary_team_code: string | null
@@ -81,6 +82,7 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     email: record.email,
     displayName: record.displayName,
     soccerverseUsername: record.soccerverseUsername,
+    referrerSoccerverseUsername: record.referrerSoccerverseUsername,
     leagueType: record.leagueType,
     primaryTeamCode: record.primaryTeamCode,
     secondaryTeamCode: record.secondaryTeamCode,
@@ -98,6 +100,7 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     email: row.email,
     displayName: row.display_name,
     soccerverseUsername: row.soccerverse_username ?? undefined,
+    referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
     leagueType: row.league_type,
     primaryTeamCode: row.primary_team_code,
     secondaryTeamCode: row.secondary_team_code ?? undefined,
@@ -139,6 +142,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       email,
       displayName: input.displayName.trim(),
       soccerverseUsername: input.soccerverseUsername?.trim() || undefined,
+      referrerSoccerverseUsername: input.referrerSoccerverseUsername?.trim() || existing?.referrerSoccerverseUsername,
       leagueType,
       primaryTeamCode: input.primaryTeamCode,
       secondaryTeamCode: input.secondaryTeamCode,
@@ -345,13 +349,14 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       >(
         `
           INSERT INTO participants (
-            email, display_name, soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verification_sent_at
+            email, display_name, soccerverse_username, referrer_soccerverse_username, league_type, primary_team_code, secondary_team_code, status, verification_sent_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, 'pending_verification', NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending_verification', NOW())
           ON CONFLICT (email)
           DO UPDATE SET
             display_name = EXCLUDED.display_name,
             soccerverse_username = EXCLUDED.soccerverse_username,
+            referrer_soccerverse_username = COALESCE(EXCLUDED.referrer_soccerverse_username, participants.referrer_soccerverse_username),
             league_type = EXCLUDED.league_type,
             primary_team_code = EXCLUDED.primary_team_code,
             secondary_team_code = EXCLUDED.secondary_team_code,
@@ -363,6 +368,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             email,
             display_name,
             soccerverse_username,
+            referrer_soccerverse_username,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -374,6 +380,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           input.displayName.trim(),
           input.soccerverseUsername?.trim() || null,
+          input.referrerSoccerverseUsername?.trim() || null,
           leagueType,
           input.primaryTeamCode,
           input.secondaryTeamCode ?? null,
@@ -400,6 +407,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email: participant.email,
           displayName: participant.display_name,
           soccerverseUsername: participant.soccerverse_username ?? undefined,
+          referrerSoccerverseUsername: participant.referrer_soccerverse_username ?? undefined,
           leagueType: participant.league_type,
           primaryTeamCode: participant.primary_team_code,
           secondaryTeamCode: participant.secondary_team_code ?? undefined,
@@ -435,6 +443,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.email,
             p.display_name,
             p.soccerverse_username,
+            p.referrer_soccerverse_username,
             p.league_type,
             p.primary_team_code,
             p.secondary_team_code,
@@ -475,6 +484,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
               email,
               display_name,
               soccerverse_username,
+              referrer_soccerverse_username,
               league_type,
               primary_team_code,
               secondary_team_code,
@@ -512,6 +522,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             email,
             display_name,
             soccerverse_username,
+            referrer_soccerverse_username,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -553,6 +564,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email: participant.email,
           displayName: participant.display_name,
           soccerverseUsername: participant.soccerverse_username ?? undefined,
+          referrerSoccerverseUsername: participant.referrer_soccerverse_username ?? undefined,
           leagueType: participant.league_type,
           primaryTeamCode: participant.primary_team_code,
           secondaryTeamCode: participant.secondary_team_code ?? undefined,
@@ -583,6 +595,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           display_name,
           soccerverse_username,
+          referrer_soccerverse_username,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -616,6 +629,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           display_name,
           soccerverse_username,
+          referrer_soccerverse_username,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -644,6 +658,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             email,
             display_name,
             soccerverse_username,
+            referrer_soccerverse_username,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -703,6 +718,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.email,
             p.display_name,
             p.soccerverse_username,
+            p.referrer_soccerverse_username,
             p.league_type,
             p.primary_team_code,
             p.secondary_team_code,
@@ -739,6 +755,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             email,
             display_name,
             soccerverse_username,
+            referrer_soccerverse_username,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -766,6 +783,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           display_name,
           soccerverse_username,
+          referrer_soccerverse_username,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -791,6 +809,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           display_name,
           soccerverse_username,
+          referrer_soccerverse_username,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -821,6 +840,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           display_name,
           soccerverse_username,
+          referrer_soccerverse_username,
           league_type,
           primary_team_code,
           secondary_team_code,
@@ -844,6 +864,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           email,
           display_name,
           soccerverse_username,
+          referrer_soccerverse_username,
           league_type,
           primary_team_code,
           secondary_team_code,

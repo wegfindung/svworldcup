@@ -74,6 +74,7 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
       email: string
       display_name: string
       soccerverse_username: string | null
+      referrer_soccerverse_username: string | null
       league_type: ParticipantProfile['leagueType']
       primary_team_code: string
       secondary_team_code: string | null
@@ -87,6 +88,7 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
           p.email,
           p.display_name,
           p.soccerverse_username,
+          p.referrer_soccerverse_username,
           p.league_type,
           p.primary_team_code,
           p.secondary_team_code,
@@ -112,6 +114,7 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
       email: row.email,
       displayName: row.display_name,
       soccerverseUsername: row.soccerverse_username ?? undefined,
+      referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
       leagueType: row.league_type,
       primaryTeamCode: row.primary_team_code,
       secondaryTeamCode: row.secondary_team_code ?? undefined,

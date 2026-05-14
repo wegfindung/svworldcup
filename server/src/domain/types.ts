@@ -28,6 +28,7 @@ export interface RegistrationInput {
   email: string
   displayName: string
   soccerverseUsername?: string
+  referrerSoccerverseUsername?: string
   primaryTeamCode: string
   secondaryTeamCode?: string
 }
@@ -37,6 +38,7 @@ export interface ParticipantProfile {
   email: string
   displayName: string
   soccerverseUsername?: string
+  referrerSoccerverseUsername?: string
   leagueType: LeagueType
   primaryTeamCode: string
   secondaryTeamCode?: string

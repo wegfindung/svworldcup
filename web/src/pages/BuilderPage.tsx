@@ -39,6 +39,7 @@ import type {
 
 interface BuilderPageProps {
   locale: LocaleCode
+  referrerSoccerverseUsername?: string
 }
 
 interface RegistrationFormState {
@@ -122,7 +123,7 @@ function buildPublicProfileUrl(participant: Pick<ParticipantProfile, 'displayNam
   return `/profiles/${slug || 'manager'}-${participant.participantId.slice(0, 8)}`
 }
 
-export function BuilderPage({ locale: _locale }: BuilderPageProps) {
+export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' }: BuilderPageProps) {
   void _locale
 
   const initialReadyState = readParticipantReady()
@@ -338,6 +339,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
         displayName: registrationForm.displayName,
         soccerverseUsername:
           registrationForm.mode === 'veteran' ? registrationForm.soccerverseUsername.trim() || undefined : undefined,
+        referrerSoccerverseUsername: referrerSoccerverseUsername || undefined,
         primaryTeamCode: registrationForm.primaryTeamCode,
         secondaryTeamCode: registrationForm.secondaryTeamCode,
       })

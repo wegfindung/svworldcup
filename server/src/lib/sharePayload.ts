@@ -18,6 +18,7 @@ const shareSnapshotSchema = z.object({
   version: z.literal(1),
   locale: z.enum(supportedShareLocales),
   managerName: z.string().trim().min(1).max(80),
+  referrerUsername: z.string().trim().min(1).max(60).optional(),
   statement: z.string().trim().min(1).max(140),
   featuredPlayers: z.array(featuredPlayerSchema).min(2).max(3),
 })

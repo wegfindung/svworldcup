@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
+import {
+  readReferralFromSearch,
+  resolveReferrerSoccerverseUsername,
+  storeReferrerSoccerverseUsername,
+  withReferral,
+} from './lib/referral'
 import type { LocaleCode } from './lib/types'
 import { AdminPage } from './pages/AdminPage'
 import { BuilderPage } from './pages/BuilderPage'
@@ -20,6 +26,7 @@ const navigation = [
 ]
 
 function App() {
+  const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [locale, setLocale] = useState<LocaleCode>(() => {
     if (typeof window === 'undefined') {
@@ -38,6 +45,15 @@ function App() {
     window.localStorage.setItem('svworldcup-locale', locale)
   }, [locale])
 
+  const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
+
+  useEffect(() => {
+    const referrer = readReferralFromSearch(location.search)
+    if (referrer) {
+      storeReferrerSoccerverseUsername(referrer)
+    }
+  }, [location.search])
+
   return (
     <div className="stadium-shell min-h-[100dvh] bg-[var(--color-ink)] text-[var(--color-paper)]">
       <div className="noise-layer" />
@@ -45,7 +61,7 @@ function App() {
         <header className="premium-nav sticky top-3 z-20 mb-4 flex flex-col gap-3 rounded-[1.15rem] px-3 py-2 sm:px-4">
           <div className="flex items-center justify-between gap-3">
             <NavLink
-              to="/"
+              to={withReferral('/', referrerSoccerverseUsername)}
               onClick={() => setMobileNavOpen(false)}
               className="group flex shrink-0 items-center transition active:scale-[0.99]"
             >
@@ -65,7 +81,7 @@ function App() {
                 {navigation.map((item) => (
                   <NavLink
                     key={item.to}
-                    to={item.to}
+                    to={withReferral(item.to, referrerSoccerverseUsername)}
                     className={({ isActive }) =>
                       [
                         'rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em]',
@@ -107,7 +123,7 @@ function App() {
               {navigation.map((item) => (
                 <NavLink
                   key={item.to}
-                  to={item.to}
+                  to={withReferral(item.to, referrerSoccerverseUsername)}
                   onClick={() => setMobileNavOpen(false)}
                   className={({ isActive }) =>
                     [
@@ -127,8 +143,11 @@ function App() {
 
         <main className="flex-1 reveal-in">
           <Routes>
-            <Route path="/" element={<HomePage locale={locale} />} />
-            <Route path="/builder" element={<BuilderPage locale={locale} />} />
+            <Route path="/" element={<HomePage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
+            <Route
+              path="/builder"
+              element={<BuilderPage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />}
+            />
             <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage />} />
             <Route path="/verify" element={<VerifyPage />} />

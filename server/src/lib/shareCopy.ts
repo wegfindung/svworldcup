@@ -9,6 +9,9 @@ interface ShareLocaleCopy {
   bodyIntro: string
   bodyButton: string
   bodyBylinePrefix: string
+  inviteLabel: string
+  inviteButton: string
+  inviteCopyButton: string
 }
 
 const englishCopy: ShareLocaleCopy = {
@@ -20,6 +23,9 @@ const englishCopy: ShareLocaleCopy = {
   bodyIntro: 'A shareable snapshot built in the Soccerverse World Cup squad builder.',
   bodyButton: 'Open the squad builder',
   bodyBylinePrefix: 'Shared by',
+  inviteLabel: 'Invite text',
+  inviteButton: 'Open competition link',
+  inviteCopyButton: 'Copy invite text',
 }
 
 const copyByLocale: Record<ShareLocale, ShareLocaleCopy> = {
@@ -34,6 +40,9 @@ const copyByLocale: Record<ShareLocale, ShareLocaleCopy> = {
     bodyIntro: 'Eine teilbare Vorschau aus dem Soccerverse World Cup Kader-Builder.',
     bodyButton: 'Zum Kader-Builder',
     bodyBylinePrefix: 'Geteilt von',
+    inviteLabel: 'Einladungstext',
+    inviteButton: 'Wettbewerbslink öffnen',
+    inviteCopyButton: 'Einladungstext kopieren',
   },
   fr: englishCopy,
   pt: englishCopy,

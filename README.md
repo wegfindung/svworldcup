@@ -50,11 +50,20 @@ Expected production env highlights:
 - SMTP variables
 - either `DATABASE_URL` or the discrete `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASS`
 
+SMTP sending limits for All-Inkl.com:
+
+- Send volume: official limit is 1,000 emails per 10 minutes.
+- Larger mailings must be staggered: send 1,000 emails, pause 10 minutes, then send the next 1,000.
+- The practical ceiling is about 3,000 emails per hour only when those pauses are strictly observed.
+- Connections: maximum 3 simultaneous SMTP connections. Newsletter jobs should send sequentially, ideally over one maintained SMTP connection.
+- Scope: limits apply per webhosting package / KAS account, not per mailbox or domain. Splitting one mailing across sender addresses inside the same hosting package does not bypass the shared limit.
+
 Database initialization:
 
 - `db/init/01-schema.sql` creates the schema
 - `db/init/02-seed-tournament.sql` seeds scoring config, 48 teams, and 24 opening fixtures
 - `db/migrations/2026-05-08-session-and-team-pools.sql` upgrades an existing database with admin sessions, participant sessions, and team-pool tables
+- `db/migrations/2026-05-14-referrer-soccerverse-username.sql` stores optional `ref` campaign attribution on participant registrations
 - `tools/check-deploy-readiness.ts` validates the production env key set without printing secrets
 
 ## Runtime checks

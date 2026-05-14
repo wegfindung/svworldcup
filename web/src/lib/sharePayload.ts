@@ -1,6 +1,6 @@
 import type { LocaleCode, SlotClass, TeamPoolPlayer } from './types'
 
-const shareRenderVersion = '6'
+const shareRenderVersion = '7'
 
 export interface ShareSnapshotPlayer {
   playerId: number
@@ -16,6 +16,7 @@ export interface ShareSnapshotPayload {
   version: 1
   locale: LocaleCode
   managerName: string
+  referrerUsername?: string
   statement: string
   featuredPlayers: ShareSnapshotPlayer[]
 }

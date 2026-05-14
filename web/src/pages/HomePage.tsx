@@ -4,6 +4,7 @@ import { TeamFlag } from '../components/TeamFlag'
 import { groupStageMatchPlan } from '../data/worldCupMatchPlan'
 import { t } from '../i18n/messages'
 import { defaultScoring } from '../data/eventConfig'
+import { withReferral } from '../lib/referral'
 import type { LocaleCode } from '../lib/types'
 
 const superstarPlayers = [
@@ -234,9 +235,10 @@ function DiscordCard() {
 
 interface HomePageProps {
   locale: LocaleCode
+  referrerSoccerverseUsername?: string
 }
 
-export function HomePage({ locale }: HomePageProps) {
+export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageProps) {
   const scoring = defaultScoring
 
   return (
@@ -260,13 +262,13 @@ export function HomePage({ locale }: HomePageProps) {
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  to="/builder"
+                  to={withReferral('/builder', referrerSoccerverseUsername)}
                   className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
                 >
                   {t(locale, 'heroPrimary')}
                 </Link>
                 <Link
-                  to="/tables"
+                  to={withReferral('/tables', referrerSoccerverseUsername)}
                   className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
                 >
                   View live tables

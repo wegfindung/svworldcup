@@ -1,0 +1,16 @@
+# SOP Email Marketing
+
+## Goal
+
+Admin email marketing must support autoresponders, scheduled newsletters, drafts, and SMTP delivery without exceeding provider limits.
+
+## All-Inkl.com SMTP Limits
+
+- Send volume: All-Inkl.com's official SMTP limit is 1,000 emails per 10 minutes.
+- Staggered sending: for larger mailings, All-Inkl support recommends sending 1,000 emails, pausing for 10 minutes, then sending the next 1,000.
+- Hourly planning: this allows about 3,000 emails per hour only if the pauses are strictly observed.
+- Connection limit: at most 3 simultaneous SMTP connections may be open. Sending more in parallel can cause the server to block delivery immediately.
+- Delivery mode: newsletter jobs should send messages sequentially, preferably through one maintained SMTP connection.
+- Limit scope: the restrictions apply per webhosting package / KAS user account.
+- The limit is not per single email address or single domain. Multiple domains and mailboxes inside the same hosting package share the same limit.
+- Splitting one newsletter across sender addresses in the same hosting package does not bypass the shared limit.

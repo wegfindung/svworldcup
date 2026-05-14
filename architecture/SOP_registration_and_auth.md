@@ -23,6 +23,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - `primaryTeamCode`
 - optional `secondaryTeamCode`
 - optional `soccerverseUsername` based on league path
+- optional `referrerSoccerverseUsername` from the landing page `ref` campaign parameter
 7. Backend stores a pending registration with a one-time verification token and expiry.
 8. Verification email is sent through SMTP.
 9. User confirms via emailed link.
@@ -39,6 +40,8 @@ Allow participants to register securely with verified email, enter the squad bui
 
 - Verified email is mandatory for participant sessions.
 - One active registration per normalized email address.
+- A landing page `ref` parameter must survive navigation before registration via URL propagation and session storage.
+- The referral value must be stored separately as `referrerSoccerverseUsername` / `referrer_soccerverse_username`; it must not change rookie/veteran classification and must not overwrite the participant's own `soccerverseUsername`.
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
 - Verification link consumption must also establish the participant session.
 - Post-verification builder recovery from the frontend must start from an explicit user action such as `Start building my squad`.
@@ -106,6 +109,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - `email` must be normalized and syntactically valid.
 - `displayName` must be length-limited and trimmed.
 - `soccerverseUsername` is required for veteran registrations and empty for rookies.
+- `referrerSoccerverseUsername` is optional, trimmed, safe-character filtered, and length-limited to 60 characters.
 - `primaryCountryCode` is required.
 - `secondaryCountryCode` is optional.
 - `primaryCountryCode` and `secondaryCountryCode` must refer to seeded team/country records.

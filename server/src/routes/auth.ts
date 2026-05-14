@@ -25,6 +25,7 @@ const registrationSchema = z
     email: z.string().trim().email(),
     displayName: z.string().trim().min(2).max(40),
     soccerverseUsername: z.string().trim().max(60).optional(),
+    referrerSoccerverseUsername: z.string().trim().max(60).optional(),
     primaryTeamCode: z.string().trim().toUpperCase().length(3),
     secondaryTeamCode: z.string().trim().toUpperCase().length(3).optional(),
   })
@@ -79,6 +80,15 @@ function buildSessionCookie(plainToken: string) {
   })
 }
 
+function normalizeReferrerSoccerverseUsername(value?: string) {
+  const trimmed = value?.trim().replace(/^@+/, '') ?? ''
+  if (!trimmed) {
+    return undefined
+  }
+
+  return trimmed.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 60) || undefined
+}
+
 async function issueParticipantSession(participantId: string, participantSessionRepository: ParticipantSessionRepository) {
   const sessionToken = generatePlainToken()
   await participantSessionRepository.createSession(participantId, sessionToken, participantSessionTtlSeconds)
@@ -107,12 +117,16 @@ export function createAuthRouter(
 
   router.post('/register', async (req, res) => {
     const parsed = registrationSchema.parse(req.body)
+    const registrationInput = {
+      ...parsed,
+      referrerSoccerverseUsername: normalizeReferrerSoccerverseUsername(parsed.referrerSoccerverseUsername),
+    }
     const plainToken = generatePlainToken()
 
     try {
-      const result = await registrationRepository.createPending(parsed, plainToken)
+      const result = await registrationRepository.createPending(registrationInput, plainToken)
       const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
-      const delivery = await sendVerificationMail(parsed.email, verificationUrl)
+      const delivery = await sendVerificationMail(registrationInput.email, verificationUrl)
       void emailMarketingRepository.queueAutoresponders('registration_created', result.record).catch((error) => {
         console.error('Failed to queue registration autoresponder', error)
       })

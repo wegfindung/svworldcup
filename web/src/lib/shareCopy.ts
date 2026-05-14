@@ -24,6 +24,10 @@ interface ShareComposerCopy {
   playerNamePlaceholder: string
   previewLabel: string
   previewHelp: string
+  referralTextLabel: string
+  referralTextHelp: string
+  referralTextCopyButton: string
+  referralTextCopiedLabel: string
   shareButton: string
   copyButton: string
   copiedLabel: string
@@ -58,6 +62,10 @@ const englishCopy: ShareComposerCopy = {
   playerNamePlaceholder: 'Nickname or shorter display name',
   previewLabel: 'Live share preview',
   previewHelp: 'The image below is the same card used for the public preview and social share link.',
+  referralTextLabel: 'Invite text',
+  referralTextHelp: 'Copy this text for posts, DMs, or marketing emails. The link keeps your referral parameter.',
+  referralTextCopyButton: 'Copy invite text',
+  referralTextCopiedLabel: 'Invite text copied.',
   shareButton: 'Share now',
   copyButton: 'Copy public link',
   copiedLabel: 'Public link copied.',
@@ -96,6 +104,10 @@ const germanCopy: ShareComposerCopy = {
   playerNamePlaceholder: 'Spitzname oder kürzerer Anzeigename',
   previewLabel: 'Live-Vorschau',
   previewHelp: 'Das Bild unten ist dieselbe Karte, die auch im öffentlichen Preview-Link und beim Teilen verwendet wird.',
+  referralTextLabel: 'Einladungstext',
+  referralTextHelp: 'Kopiere diesen Text für Posts, DMs oder Marketing-Mails. Der Link enthält deinen Referral-Parameter.',
+  referralTextCopyButton: 'Einladungstext kopieren',
+  referralTextCopiedLabel: 'Einladungstext kopiert.',
   shareButton: 'Jetzt teilen',
   copyButton: 'Öffentlichen Link kopieren',
   copiedLabel: 'Öffentlicher Link kopiert.',

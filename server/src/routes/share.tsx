@@ -10,7 +10,7 @@ import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '6'
+const shareRenderVersion = '7'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 
@@ -39,6 +39,29 @@ function escapeXml(value: string) {
 
 function buildOrigin(req: Request) {
   return `${req.protocol}://${req.get('host') ?? 'localhost'}`
+}
+
+function sanitizeReferrerUsername(value?: string) {
+  const trimmed = value?.trim().replace(/^@+/, '') ?? ''
+  if (!trimmed) {
+    return ''
+  }
+
+  return trimmed.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 60)
+}
+
+function buildLandingReferralUrl(origin: string, referrerUsername: string) {
+  const normalizedOrigin = origin.replace(/\/+$/, '')
+  const sanitizedReferrer = sanitizeReferrerUsername(referrerUsername)
+  if (sanitizedReferrer) {
+    return `${normalizedOrigin}?ref=${encodeURIComponent(sanitizedReferrer)}`
+  }
+
+  return normalizedOrigin
+}
+
+function buildReferralInvitationText(referralUrl: string) {
+  return `Show that you have the best soccer knowledge and join the competition ${referralUrl}`
 }
 
 function getRawSharePayload(req: Request) {
@@ -574,6 +597,9 @@ function buildShareSnapshotHtml(
 ) {
   const playerNames = payload.featuredPlayers.map((player) => getSharePlayerLabel(player))
   const description = `${payload.statement} ${copy.pageDescriptionPrefix}: ${playerNames.join(', ')}. ${copy.cta}`
+  const referralUsername = sanitizeReferrerUsername(payload.referrerUsername || payload.managerName)
+  const referralUrl = buildLandingReferralUrl(origin, referralUsername)
+  const referralInvitationText = buildReferralInvitationText(referralUrl)
 
   return `<!doctype html>
 <html lang="${escapeHtml(payload.locale)}">
@@ -700,11 +726,59 @@ function buildShareSnapshotHtml(
         color: var(--muted);
       }
 
+      .invite-card {
+        margin: 0 24px 24px;
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 20px;
+        background: rgba(0,0,0,0.2);
+        padding: 16px;
+      }
+
+      .invite-label {
+        margin: 0 0 8px;
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .invite-text {
+        margin: 0;
+        color: var(--text);
+        font-size: 1rem;
+        line-height: 1.55;
+      }
+
+      .invite-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .invite-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.05);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 700;
+        padding: 10px 14px;
+        text-decoration: none;
+      }
+
       @media (max-width: 768px) {
         main { width: min(1180px, calc(100% - 20px)); padding-top: 18px; }
         .hero { padding: 20px 20px 6px; }
         .image-wrap { padding: 12px; }
         .subnote { padding: 0 20px 20px; }
+        .invite-card { margin: 0 20px 20px; }
       }
     </style>
   </head>
@@ -725,6 +799,14 @@ function buildShareSnapshotHtml(
         </div>
 
         <p class="subnote">${escapeHtml(copy.bodyIntro)} ${escapeHtml(`${copy.bodyBylinePrefix} ${payload.managerName}`)}</p>
+        <div class="invite-card">
+          <p class="invite-label">${escapeHtml(copy.inviteLabel)}</p>
+          <p class="invite-text">${escapeHtml(referralInvitationText)}</p>
+          <div class="invite-actions">
+            <a class="invite-action" href="${escapeHtml(referralUrl)}">${escapeHtml(copy.inviteButton)}</a>
+            <button class="invite-action" type="button" data-share-text="${escapeHtml(referralInvitationText)}" onclick="navigator.clipboard && navigator.clipboard.writeText(this.dataset.shareText || '')">${escapeHtml(copy.inviteCopyButton)}</button>
+          </div>
+        </div>
       </section>
     </main>
   </body>

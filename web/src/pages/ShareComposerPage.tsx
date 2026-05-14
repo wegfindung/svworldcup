@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
+import { buildReferralInvitationText, sanitizeReferrerSoccerverseUsername } from '../lib/referral'
 import { getShareComposerCopy, renderSharePreset } from '../lib/shareCopy'
 import { buildShareCardUrl, buildShareSnapshotUrl, createShareSnapshotPlayer, type ShareSnapshotPayload } from '../lib/sharePayload'
 import type { LocaleCode, ParticipantProfile, ParticipantSquad } from '../lib/types'
@@ -50,6 +51,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const [featuredPlayerIds, setFeaturedPlayerIds] = useState<number[]>([])
   const [playerNameOverrides, setPlayerNameOverrides] = useState<Record<number, string>>({})
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
+  const [referralTextCopyState, setReferralTextCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
 
   useEffect(() => {
     let cancelled = false
@@ -104,6 +106,8 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const selectedPlayerCount = Math.max(2, Math.min(3, normalizedFeaturedPlayerIds.length || 3))
   const presetStatement = selectedPreset ? renderSharePreset(selectedPreset.template, selectedPlayerCount) : ''
   const statement = statementMode === 'custom' ? customStatement.trim().slice(0, maxCustomStatementLength) : presetStatement
+  const referralUsername = sanitizeReferrerSoccerverseUsername(participant?.soccerverseUsername || participant?.displayName || '')
+  const referralInvitationText = buildReferralInvitationText(referralUsername)
 
   const featuredPlayers = draftedPlayers
     .filter((entry) => normalizedFeaturedPlayerIds.includes(entry.player.playerId))
@@ -124,6 +128,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
           version: 1,
           locale,
           managerName: participant.displayName,
+          referrerUsername: referralUsername || undefined,
           statement,
           featuredPlayers: featuredPlayers.map((entry) =>
             createShareSnapshotPlayer(entry.player, entry.slotClass, resolveShareLabel(entry.player.playerId, entry.player.displayName)),
@@ -173,6 +178,15 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
     }
   }
 
+  async function handleCopyReferralText() {
+    try {
+      await navigator.clipboard.writeText(referralInvitationText)
+      setReferralTextCopyState('copied')
+    } catch {
+      setReferralTextCopyState('error')
+    }
+  }
+
   async function handleNativeShare() {
     if (!shareUrl || !sharePayload || typeof navigator.share !== 'function') {
       return
@@ -181,7 +195,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
     try {
       await navigator.share({
         title: `${sharePayload.managerName} · Soccerverse World Cup`,
-        text: `${sharePayload.statement} ${copy.prizeCta}`,
+        text: referralInvitationText,
         url: shareUrl,
       })
     } catch {
@@ -461,6 +475,32 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                 <EmptyState title={copy.errorTitle} body={copy.selectionHint} />
               </div>
             )}
+
+            <div className="mt-4 rounded-[1rem] border border-white/10 bg-black/20 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">{copy.referralTextLabel}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">{copy.referralTextHelp}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyReferralText()}
+                  className="rounded-full border border-white/12 px-3 py-2 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                >
+                  {copy.referralTextCopyButton}
+                </button>
+              </div>
+              <textarea
+                readOnly
+                rows={3}
+                value={referralInvitationText}
+                className="mt-3 min-h-24 w-full resize-none rounded-[0.85rem] border border-white/10 bg-[rgba(8,13,12,0.74)] px-3 py-2 text-sm leading-relaxed text-white outline-none"
+              />
+              {referralTextCopyState === 'copied' ? (
+                <p className="mt-2 text-sm text-[var(--color-accent)]">{copy.referralTextCopiedLabel}</p>
+              ) : null}
+              {referralTextCopyState === 'error' ? <p className="mt-2 text-sm text-[var(--color-sand)]">{copy.errorTitle}</p> : null}
+            </div>
 
             <div className="mt-4 flex flex-wrap gap-3">
               {typeof navigator.share === 'function' ? (

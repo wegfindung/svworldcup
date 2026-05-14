@@ -61,6 +61,7 @@ export interface ParticipantProfile {
   email: string
   displayName: string
   soccerverseUsername?: string
+  referrerSoccerverseUsername?: string
   leagueType: LeagueType
   primaryTeamCode: string
   secondaryTeamCode?: string

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS participants (
     email TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL,
     soccerverse_username TEXT,
+    referrer_soccerverse_username TEXT,
     league_type TEXT NOT NULL CHECK (league_type IN ('rookie', 'veteran')),
     primary_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     secondary_team_code CHAR(3) REFERENCES teams(code),

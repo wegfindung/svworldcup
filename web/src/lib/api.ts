@@ -64,6 +64,7 @@ export function registerParticipant(payload: {
   email: string
   displayName: string
   soccerverseUsername?: string
+  referrerSoccerverseUsername?: string
   primaryTeamCode: string
   secondaryTeamCode?: string
 }) {
