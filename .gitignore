@@ -24,6 +24,8 @@ pnpm-debug.log*
 # Temp and coverage
 .tmp/
 coverage/
+test-results/
+playwright-report/
 
 # OS and editor
 .DS_Store

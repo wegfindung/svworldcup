@@ -1,6 +1,10 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { createRequireParticipant } from '../middleware/participantAuth.js'
+import { participantSessionCookieName } from '../config/auth.js'
+import { createRequireCookieCsrf } from '../lib/csrf.js'
+import { parseShareSnapshotPayload } from '../lib/sharePayload.js'
+import { createSignedShareSnapshot } from '../lib/shareSignature.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
 import { publicProfileSlug, type RegistrationRepository } from '../repositories/registrationRepository.js'
 import { SquadValidationError, type SquadRepository } from '../repositories/squadRepository.js'
@@ -17,8 +21,10 @@ export function createParticipantRouter(
 ) {
   const router = Router()
   const requireParticipant = createRequireParticipant(participantSessionRepository)
+  const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
 
   router.use(requireParticipant)
+  router.use(requireParticipantCsrf)
 
   router.get('/squad', async (_req, res) => {
     const participantId = res.locals.participant.participantId as string
@@ -98,6 +104,33 @@ export function createParticipantRouter(
     res.json({
       participant: profile,
       publicProfileUrl: `/profiles/${publicProfileSlug(profile.displayName, profile.participantId)}`,
+    })
+  })
+
+  router.post('/share-snapshot', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const participant = res.locals.participant
+    const payload = parseShareSnapshotPayload(req.body)
+
+    if (payload.managerName !== participant.displayName) {
+      return res.status(422).json({ error: 'Share payload manager does not match the active account.' })
+    }
+
+    const squad = await squadRepository.getOrCreate(participantId)
+    if (!squad.isLocked) {
+      return res.status(409).json({ error: 'Lock your squad before creating a signed share preview.' })
+    }
+
+    const draftedPlayerIds = new Set(squad.slots.map((slot) => slot.player?.playerId).filter((playerId): playerId is number => Boolean(playerId)))
+    const containsOnlyDraftedPlayers = payload.featuredPlayers.every((player) => draftedPlayerIds.has(player.playerId))
+    if (!containsOnlyDraftedPlayers) {
+      return res.status(422).json({ error: 'Share payload contains players outside the submitted squad.' })
+    }
+
+    const signed = createSignedShareSnapshot(payload)
+    res.json({
+      sharePath: signed.snapshotPath,
+      cardPath: signed.cardPath,
     })
   })
 

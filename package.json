@@ -8,6 +8,10 @@
     "dev:web": "npm --prefix web run dev",
     "dev:server": "npm --prefix server run dev",
     "build": "npm --prefix server run build && npm --prefix web run build",
-    "lint": "npm --prefix web run lint"
+    "lint": "npm --prefix web run lint",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

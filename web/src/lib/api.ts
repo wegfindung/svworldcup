@@ -26,19 +26,59 @@ import type {
   TeamPoolPlayer,
   TeamSeed,
 } from './types'
+import type { ShareSnapshotPayload } from './sharePayload'
 
 interface AuthParticipantResponse {
   participant: ParticipantProfile
   budgetLimit: number
   squadSummary: ParticipantSquadSummary
+  csrfToken?: string
+}
+
+let participantCsrfToken = ''
+let adminCsrfToken = ''
+
+function isUnsafeMethod(method?: string) {
+  const normalizedMethod = (method ?? 'GET').toUpperCase()
+  return normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD' && normalizedMethod !== 'OPTIONS'
+}
+
+function csrfTokenForPath(path: string) {
+  if (path.startsWith('/api/admin')) {
+    return adminCsrfToken
+  }
+  if (path.startsWith('/api/participant') || path === '/api/auth/set-password' || path === '/api/auth/logout') {
+    return participantCsrfToken
+  }
+  return ''
+}
+
+function storeCsrfToken(path: string, payload: unknown) {
+  if (!payload || typeof payload !== 'object' || !('csrfToken' in payload)) {
+    return
+  }
+
+  const csrfToken = typeof payload.csrfToken === 'string' ? payload.csrfToken : ''
+  if (!csrfToken) {
+    return
+  }
+
+  if (path.startsWith('/api/admin')) {
+    adminCsrfToken = csrfToken
+  }
+  if (path.startsWith('/api/auth') || path.startsWith('/api/participant')) {
+    participantCsrfToken = csrfToken
+  }
 }
 
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const csrfToken = isUnsafeMethod(init?.method) ? csrfTokenForPath(path) : ''
   const response = await fetch(path, {
     credentials: 'same-origin',
     ...init,
     headers: {
       'content-type': 'application/json',
+      ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
       ...(init?.headers ?? {}),
     },
   })
@@ -52,7 +92,9 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
     return undefined as T
   }
 
-  return (await response.json()) as T
+  const payload = (await response.json()) as T
+  storeCsrfToken(path, payload)
+  return payload
 }
 
 export function fetchBootstrap() {
@@ -147,6 +189,8 @@ export function logoutParticipant() {
   return getJson<void>('/api/auth/logout', {
     method: 'POST',
     body: JSON.stringify({}),
+  }).finally(() => {
+    participantCsrfToken = ''
   })
 }
 
@@ -231,6 +275,13 @@ export function revealParticipantProfile(revealSquad: boolean) {
   return getJson<{ participant: ParticipantProfile; publicProfileUrl: string }>('/api/participant/reveal', {
     method: 'POST',
     body: JSON.stringify({ revealSquad }),
+  })
+}
+
+export function createSignedShareSnapshot(payload: ShareSnapshotPayload) {
+  return getJson<{ sharePath: string; cardPath: string }>('/api/participant/share-snapshot', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 }
 
@@ -357,6 +408,8 @@ export function logoutAdmin() {
   return getJson<void>('/api/admin/logout', {
     method: 'POST',
     body: JSON.stringify({}),
+  }).finally(() => {
+    adminCsrfToken = ''
   })
 }
 

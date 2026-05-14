@@ -14,6 +14,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS participants_marketing_unsubscribe_token_unq
 ALTER TABLE email_campaign_recipients ADD COLUMN IF NOT EXISTS referrer_soccerverse_username TEXT;
 ALTER TABLE email_campaign_recipients ADD COLUMN IF NOT EXISTS marketing_unsubscribe_token TEXT;
 
+ALTER TABLE email_campaigns ADD COLUMN IF NOT EXISTS audience_league TEXT NOT NULL DEFAULT 'all';
+ALTER TABLE email_campaigns ADD COLUMN IF NOT EXISTS audience_team_code CHAR(3);
+ALTER TABLE email_campaigns ADD COLUMN IF NOT EXISTS audience_referrer TEXT;
+
 CREATE TABLE IF NOT EXISTS email_delivery_log (
     delivery_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

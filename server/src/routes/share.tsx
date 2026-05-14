@@ -5,12 +5,13 @@ import type { Request, Response } from 'express'
 import { Resvg } from '@resvg/resvg-js'
 import React from 'react'
 import satori from 'satori'
-import { decodeShareSnapshotPayload, type ShareSnapshotPayload } from '../lib/sharePayload.js'
+import type { ShareSnapshotPayload } from '../lib/sharePayload.js'
+import { decodeSignedShareSnapshotPayload } from '../lib/shareSignature.js'
 import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '8'
+const shareRenderVersion = '9'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 const defaultShareReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
@@ -78,6 +79,10 @@ function getRawSharePayload(req: Request) {
   return String(req.query.data ?? '').trim()
 }
 
+function getShareSignature(req: Request) {
+  return String(req.query.sig ?? '').trim()
+}
+
 function getSharePlayerLabel(player: ShareSnapshotPayload['featuredPlayers'][number]) {
   return player.shareLabel?.trim() || player.displayName
 }
@@ -119,21 +124,35 @@ async function findFirstFile(directory: string, matcher: (name: string) => boole
   return match ? resolve(directory, match) : null
 }
 
+async function findFirstFileInDirectories(directories: string[], matcher: (name: string) => boolean) {
+  for (const directory of directories) {
+    const match = await findFirstFile(directory, matcher)
+    if (match) {
+      return match
+    }
+  }
+
+  return null
+}
+
 async function findFontPath(prefix: string) {
-  const runtimeAssetsDir = resolve(process.cwd(), 'public', 'assets')
-  const devAssetsDir = resolve(process.cwd(), 'web', 'dist', 'assets')
-  const sourceFontDir = resolve(process.cwd(), 'web', 'node_modules', '@fontsource', 'outfit', 'files')
-  const runtimeMatch = await findFirstFile(runtimeAssetsDir, (name) => name.startsWith(prefix) && name.endsWith('.woff'))
+  const cwd = process.cwd()
+  const runtimeAssetsDirs = [
+    resolve(cwd, 'public', 'assets'),
+    resolve(cwd, '..', 'public', 'assets'),
+    resolve(cwd, 'web', 'dist', 'assets'),
+    resolve(cwd, '..', 'web', 'dist', 'assets'),
+  ]
+  const sourceFontDirs = [
+    resolve(cwd, 'web', 'node_modules', '@fontsource', 'outfit', 'files'),
+    resolve(cwd, '..', 'web', 'node_modules', '@fontsource', 'outfit', 'files'),
+  ]
+  const runtimeMatch = await findFirstFileInDirectories(runtimeAssetsDirs, (name) => name.startsWith(prefix) && name.endsWith('.woff'))
   if (runtimeMatch) {
     return runtimeMatch
   }
 
-  const devMatch = await findFirstFile(devAssetsDir, (name) => name.startsWith(prefix) && name.endsWith('.woff'))
-  if (devMatch) {
-    return devMatch
-  }
-
-  const sourceMatch = await findFirstFile(sourceFontDir, (name) => name.startsWith(prefix.replace(/-$/, '')) && name.endsWith('.woff'))
+  const sourceMatch = await findFirstFileInDirectories(sourceFontDirs, (name) => name.startsWith(prefix.replace(/-$/, '')) && name.endsWith('.woff'))
   if (sourceMatch) {
     return sourceMatch
   }
@@ -178,10 +197,14 @@ async function loadShareFonts() {
 }
 
 async function resolvePublicAssetPath(relativePath: string) {
+  const cwd = process.cwd()
   const candidates = [
-    resolve(process.cwd(), 'public', relativePath),
-    resolve(process.cwd(), 'web', 'public', relativePath),
-    resolve(process.cwd(), 'web', 'dist', relativePath),
+    resolve(cwd, 'public', relativePath),
+    resolve(cwd, 'web', 'public', relativePath),
+    resolve(cwd, 'web', 'dist', relativePath),
+    resolve(cwd, '..', 'public', relativePath),
+    resolve(cwd, '..', 'web', 'public', relativePath),
+    resolve(cwd, '..', 'web', 'dist', relativePath),
   ]
 
   const match = candidates.find((candidate) => existsSync(candidate))
@@ -831,11 +854,12 @@ export async function handleShareSnapshotPage(req: Request, res: Response) {
   }
 
   try {
-    const payload = decodeShareSnapshotPayload(rawPayload)
+    const signature = getShareSignature(req)
+    const payload = decodeSignedShareSnapshotPayload(rawPayload, signature)
     const copy = getShareCopy(payload.locale)
     const origin = buildOrigin(req)
-    const pageUrl = `${origin}/share/snapshot?data=${encodeURIComponent(rawPayload)}&v=${shareRenderVersion}`
-    const imageUrl = `${origin}/api/public/share-card.png?data=${encodeURIComponent(rawPayload)}&v=${shareRenderVersion}`
+    const pageUrl = `${origin}/share/snapshot?data=${encodeURIComponent(rawPayload)}&sig=${encodeURIComponent(signature)}&v=${shareRenderVersion}`
+    const imageUrl = `${origin}/api/public/share-card.png?data=${encodeURIComponent(rawPayload)}&sig=${encodeURIComponent(signature)}&v=${shareRenderVersion}`
 
     res.setHeader('Cache-Control', immutableCacheControl)
     res.type('html').send(buildShareSnapshotHtml(payload, copy, origin, pageUrl, imageUrl))
@@ -848,7 +872,9 @@ export async function handleShareCardImage(req: Request, res: Response) {
   const rawPayload = getRawSharePayload(req)
 
   try {
-    const pngBuffer = rawPayload ? await renderShareCardPng(decodeShareSnapshotPayload(rawPayload)) : await renderFallbackShareCardPng()
+    const pngBuffer = rawPayload
+      ? await renderShareCardPng(decodeSignedShareSnapshotPayload(rawPayload, getShareSignature(req)))
+      : await renderFallbackShareCardPng()
     res.setHeader('Cache-Control', immutableCacheControl)
     res.type('png').send(Buffer.from(pngBuffer))
   } catch (error) {

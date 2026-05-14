@@ -25,8 +25,16 @@ const shareSnapshotSchema = z.object({
 
 export type ShareSnapshotPayload = z.infer<typeof shareSnapshotSchema>
 
+export function parseShareSnapshotPayload(input: unknown): ShareSnapshotPayload {
+  return shareSnapshotSchema.parse(input)
+}
+
+export function encodeShareSnapshotPayload(payload: ShareSnapshotPayload) {
+  return Buffer.from(JSON.stringify(parseShareSnapshotPayload(payload)), 'utf8').toString('base64url')
+}
+
 export function decodeShareSnapshotPayload(encoded: string): ShareSnapshotPayload {
   const json = Buffer.from(encoded, 'base64url').toString('utf8')
   const parsed = JSON.parse(json) as unknown
-  return shareSnapshotSchema.parse(parsed)
+  return parseShareSnapshotPayload(parsed)
 }

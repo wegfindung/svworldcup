@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import type {
   EmailCampaignAudienceStatus,
+  EmailCampaignAudienceLeague,
   EmailCampaignDispatchSummary,
   EmailCampaignInput,
   EmailCampaignKind,
@@ -47,6 +48,9 @@ interface EmailCampaignRow {
   subject: string
   body_html: string
   audience_status: EmailCampaignAudienceStatus
+  audience_league: EmailCampaignAudienceLeague
+  audience_team_code: string | null
+  audience_referrer: string | null
   scheduled_at: Date | string | null
   delay_minutes: number
   batch_size: number
@@ -205,10 +209,51 @@ function normalizeInput(input: EmailCampaignInput) {
     subject,
     bodyHtml,
     audienceStatus: input.audienceStatus ?? 'active',
+    audienceLeague: input.audienceLeague ?? 'all',
+    audienceTeamCode: input.audienceTeamCode?.trim().toUpperCase() || undefined,
+    audienceReferrer: input.audienceReferrer?.trim() || undefined,
     scheduledAt,
     delayMinutes: kind === 'autoresponder' ? clampDelayMinutes(input.delayMinutes) : 0,
     batchSize: clampBatchSize(input.batchSize),
   }
+}
+
+function campaignAudienceMatchesParticipant(
+  campaign: Pick<EmailCampaignRecord, 'audienceStatus' | 'audienceLeague' | 'audienceTeamCode' | 'audienceReferrer'>,
+  participant: ParticipantProfile,
+) {
+  if (campaign.audienceStatus !== 'all' && participant.status !== campaign.audienceStatus) {
+    return false
+  }
+
+  const audienceLeague = campaign.audienceLeague ?? 'all'
+  if (audienceLeague !== 'all' && participant.leagueType !== audienceLeague) {
+    return false
+  }
+
+  const audienceTeamCode = campaign.audienceTeamCode?.trim().toUpperCase()
+  if (audienceTeamCode && participant.primaryTeamCode !== audienceTeamCode && participant.secondaryTeamCode !== audienceTeamCode) {
+    return false
+  }
+
+  const audienceReferrer = campaign.audienceReferrer?.trim().toLowerCase()
+  if (audienceReferrer && participant.referrerSoccerverseUsername?.trim().toLowerCase() !== audienceReferrer) {
+    return false
+  }
+
+  return true
+}
+
+function campaignRowAudienceMatchesParticipant(campaign: EmailCampaignRow, participant: ParticipantProfile) {
+  return campaignAudienceMatchesParticipant(
+    {
+      audienceStatus: campaign.audience_status,
+      audienceLeague: campaign.audience_league ?? 'all',
+      audienceTeamCode: campaign.audience_team_code ?? undefined,
+      audienceReferrer: campaign.audience_referrer ?? undefined,
+    },
+    participant,
+  )
 }
 
 function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubscribeUrl?: string) {
@@ -272,6 +317,9 @@ function mapCampaignRow(row: EmailCampaignRow, stats: CampaignStats): EmailCampa
     subject: row.subject,
     bodyHtml: row.body_html,
     audienceStatus: row.audience_status,
+    audienceLeague: row.audience_league ?? 'all',
+    audienceTeamCode: row.audience_team_code ?? undefined,
+    audienceReferrer: row.audience_referrer ?? undefined,
     scheduledAt: toIso(row.scheduled_at),
     delayMinutes: row.delay_minutes,
     batchSize: row.batch_size,
@@ -341,6 +389,9 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
       subject: normalized.subject,
       bodyHtml: normalized.bodyHtml,
       audienceStatus: normalized.audienceStatus,
+      audienceLeague: normalized.audienceLeague,
+      audienceTeamCode: normalized.audienceTeamCode,
+      audienceReferrer: normalized.audienceReferrer,
       scheduledAt: normalized.scheduledAt,
       delayMinutes: normalized.delayMinutes,
       batchSize: normalized.batchSize,
@@ -410,7 +461,11 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
     }
 
     const matching = (await this.listCampaigns()).filter(
-      (campaign) => campaign.kind === 'autoresponder' && campaign.status === 'active' && campaign.triggerKey === triggerKey,
+      (campaign) =>
+        campaign.kind === 'autoresponder' &&
+        campaign.status === 'active' &&
+        campaign.triggerKey === triggerKey &&
+        campaignAudienceMatchesParticipant(campaign, participant),
     )
     const summaries: EmailCampaignDispatchSummary[] = []
     for (const campaign of matching) {
@@ -518,7 +573,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     const result = await this.pool.query<EmailCampaignRow>('SELECT * FROM email_campaigns ORDER BY updated_at DESC')
     const campaigns: EmailCampaignRecord[] = []
     for (const row of result.rows) {
-      campaigns.push(mapCampaignRow(row, await this.getCampaignStats(row.campaign_id, row.audience_status)))
+      campaigns.push(mapCampaignRow(row, await this.getCampaignStats(row)))
     }
     return campaigns
   }
@@ -528,7 +583,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
       campaignId,
     ])
     const row = result.rows[0]
-    return row ? mapCampaignRow(row, await this.getCampaignStats(row.campaign_id, row.audience_status)) : null
+    return row ? mapCampaignRow(row, await this.getCampaignStats(row)) : null
   }
 
   async saveCampaign(input: EmailCampaignInput, actorEmail: string) {
@@ -544,10 +599,13 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
               subject = $5,
               body_html = $6,
               audience_status = $7,
-              scheduled_at = $8,
-              delay_minutes = $9,
-              batch_size = $10,
-              updated_by = $11,
+              audience_league = $8,
+              audience_team_code = $9,
+              audience_referrer = $10,
+              scheduled_at = $11,
+              delay_minutes = $12,
+              batch_size = $13,
+              updated_by = $14,
               updated_at = NOW()
           WHERE campaign_id = $1
           RETURNING *
@@ -560,6 +618,9 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           normalized.subject,
           normalized.bodyHtml,
           normalized.audienceStatus,
+          normalized.audienceLeague,
+          normalized.audienceTeamCode ?? null,
+          normalized.audienceReferrer ?? null,
           normalized.scheduledAt ?? null,
           normalized.delayMinutes,
           normalized.batchSize,
@@ -570,15 +631,28 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
       if (!row) {
         throw new Error('Campaign not found.')
       }
-      return mapCampaignRow(row, await this.getCampaignStats(row.campaign_id, row.audience_status))
+      return mapCampaignRow(row, await this.getCampaignStats(row))
     }
 
     const result = await this.pool.query<EmailCampaignRow>(
       `
         INSERT INTO email_campaigns (
-          kind, status, trigger_key, subject, body_html, audience_status, scheduled_at, delay_minutes, batch_size, created_by, updated_by
+          kind,
+          status,
+          trigger_key,
+          subject,
+          body_html,
+          audience_status,
+          audience_league,
+          audience_team_code,
+          audience_referrer,
+          scheduled_at,
+          delay_minutes,
+          batch_size,
+          created_by,
+          updated_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
         RETURNING *
       `,
       [
@@ -588,6 +662,9 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         normalized.subject,
         normalized.bodyHtml,
         normalized.audienceStatus,
+        normalized.audienceLeague,
+        normalized.audienceTeamCode ?? null,
+        normalized.audienceReferrer ?? null,
         normalized.scheduledAt ?? null,
         normalized.delayMinutes,
         normalized.batchSize,
@@ -595,7 +672,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
       ],
     )
     const row = result.rows[0]
-    return mapCampaignRow(row, await this.getCampaignStats(row.campaign_id, row.audience_status))
+    return mapCampaignRow(row, await this.getCampaignStats(row))
   }
 
   async deleteCampaign(campaignId: string) {
@@ -706,6 +783,10 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
 
     const summaries: EmailCampaignDispatchSummary[] = []
     for (const row of campaigns.rows) {
+      if (!campaignRowAudienceMatchesParticipant(row, participant)) {
+        continue
+      }
+
       const queuedAt = new Date(Date.now() + row.delay_minutes * 60 * 1000).toISOString()
       await this.insertRecipient(row.campaign_id, seedFromParticipant(participant), queuedAt)
       if (new Date(queuedAt).getTime() <= Date.now()) {
@@ -715,7 +796,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     return summaries
   }
 
-  private async getCampaignStats(campaignId: string, audienceStatus: EmailCampaignAudienceStatus): Promise<CampaignStats> {
+  private async getCampaignStats(campaign: EmailCampaignRow): Promise<CampaignStats> {
     const [previewResult, statsResult] = await Promise.all([
       this.pool.query<{ count: string }>(
         `
@@ -726,8 +807,16 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
             AND marketing_opt_in = TRUE
             AND marketing_unsubscribed_at IS NULL
             AND ($1 = 'all' OR status = $1)
+            AND ($2 = 'all' OR league_type = $2)
+            AND ($3::text IS NULL OR primary_team_code = $3 OR secondary_team_code = $3)
+            AND ($4::text IS NULL OR LOWER(referrer_soccerverse_username) = LOWER($4))
         `,
-        [audienceStatus],
+        [
+          campaign.audience_status,
+          campaign.audience_league ?? 'all',
+          campaign.audience_team_code,
+          campaign.audience_referrer,
+        ],
       ),
       this.pool.query<{
         queued_count: string
@@ -744,7 +833,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           FROM email_campaign_recipients
           WHERE campaign_id = $1
         `,
-        [campaignId],
+        [campaign.campaign_id],
       ),
     ])
 
@@ -785,9 +874,17 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           AND marketing_opt_in = TRUE
           AND marketing_unsubscribed_at IS NULL
           AND ($1 = 'all' OR status = $1)
+          AND ($2 = 'all' OR league_type = $2)
+          AND ($3::text IS NULL OR primary_team_code = $3 OR secondary_team_code = $3)
+          AND ($4::text IS NULL OR LOWER(referrer_soccerverse_username) = LOWER($4))
         ORDER BY created_at ASC
       `,
-      [campaign.audienceStatus],
+      [
+        campaign.audienceStatus,
+        campaign.audienceLeague ?? 'all',
+        campaign.audienceTeamCode ?? null,
+        campaign.audienceReferrer ?? null,
+      ],
     )
 
     for (const row of result.rows) {

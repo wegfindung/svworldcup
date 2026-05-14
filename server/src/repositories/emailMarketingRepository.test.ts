@@ -61,4 +61,30 @@ describe('MemoryEmailMarketingRepository', () => {
     expect(recipients).toHaveLength(1)
     expect(recipients[0]).toMatchObject({ email: 'manager@example.com', status: 'pending' })
   })
+
+  it('does not queue autoresponders outside the selected audience', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+    const campaign = await repository.saveCampaign(
+      {
+        kind: 'autoresponder',
+        status: 'active',
+        triggerKey: 'registration_verified',
+        subject: 'Veteran referrer note',
+        bodyHtml: 'Only a specific veteran audience should receive this.',
+        audienceStatus: 'active',
+        audienceLeague: 'veteran',
+        audienceReferrer: 'Libertaerx',
+      },
+      'admin@example.com',
+    )
+
+    const runs = await repository.queueAutoresponders('registration_verified', {
+      ...participant,
+      referrerSoccerverseUsername: 'Libertaerx',
+    })
+    const recipients = await repository.listRecipients(campaign.campaignId)
+
+    expect(runs).toHaveLength(0)
+    expect(recipients).toHaveLength(0)
+  })
 })

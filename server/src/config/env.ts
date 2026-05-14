@@ -44,6 +44,9 @@ const envSchema = z.object({
   ADMIN_BOOTSTRAP_EMAILS: z.string().default(''),
   ADMIN_BOOTSTRAP_PASSWORD: optionalString,
   ADMIN_API_TOKEN: optionalString,
+  SESSION_SECRET: optionalString,
+  SHARE_SNAPSHOT_SECRET: optionalString,
+  CSRF_TOKEN_SECRET: optionalString,
   TOURNAMENT_KICKOFF_AT: optionalString,
   RATE_LIMIT_TRUST_PROXY: booleanFromString,
 })

@@ -40,7 +40,13 @@ export function createApp() {
   const matchMappingRepository = createMatchMappingRepository()
   const auditRepository = createAuditRepository()
   const emailMarketingRepository = createEmailMarketingRepository()
-  const publicDirCandidates = [resolve(process.cwd(), 'public'), resolve(process.cwd(), 'web', 'dist')]
+  const cwd = process.cwd()
+  const publicDirCandidates = [
+    resolve(cwd, 'public'),
+    resolve(cwd, 'web', 'dist'),
+    resolve(cwd, '..', 'public'),
+    resolve(cwd, '..', 'web', 'dist'),
+  ]
   const publicDir = publicDirCandidates.find((candidate) => existsSync(candidate))
   const cspDirectives = helmet.contentSecurityPolicy.getDefaultDirectives()
   cspDirectives['img-src'] = ["'self'", 'data:', 'https://elrincondeldt.com', 'https://media.api-sports.io']

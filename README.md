@@ -46,6 +46,9 @@ Expected production env highlights:
 - `ADMIN_BOOTSTRAP_EMAILS`
 - `ADMIN_BOOTSTRAP_PASSWORD`
 - `ADMIN_API_TOKEN`
+- `SESSION_SECRET`
+- `SHARE_SNAPSHOT_SECRET`
+- `CSRF_TOKEN_SECRET`
 - `COMMUNITY_PACK_URL`
 - SMTP variables
 - either `DATABASE_URL` or the discrete `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASS`
@@ -62,6 +65,7 @@ Database initialization:
 
 - `db/init/01-schema.sql` creates the schema
 - `db/init/02-seed-tournament.sql` seeds scoring config, 48 teams, and 24 opening fixtures
+- `tools/apply-migrations.sh` records applied migration filenames and SHA-256 checksums in `schema_migrations`
 - `db/migrations/2026-05-08-session-and-team-pools.sql` upgrades an existing database with admin sessions, participant sessions, and team-pool tables
 - `db/migrations/2026-05-14-referrer-soccerverse-username.sql` stores optional `ref` campaign attribution on participant registrations
 - `db/migrations/2026-05-14-marketing-consent-and-referral-analytics.sql` adds marketing consent, unsubscribe tokens, delivery throttling logs, and referral click analytics
@@ -72,10 +76,12 @@ Database initialization:
 - `cd server && npx tsx ../tools/check-env.ts`
 - `cd server && npx tsx ../tools/check-soccerverse.ts`
 - `npx --prefix server tsx tools/check-deploy-readiness.ts`
+- `npm run test:e2e`
 
 ## Validation completed
 
 - `web`: `npm run build`
 - `web`: `npm run lint`
 - `server`: `npm run build`
+- `root`: `npm run test:e2e`
 - Integrated production-style smoke test passed locally for `/` and `/api/public/health`

@@ -1,6 +1,6 @@
 import type { LocaleCode, SlotClass, TeamPoolPlayer } from './types'
 
-const shareRenderVersion = '7'
+const shareRenderVersion = '9'
 
 export interface ShareSnapshotPlayer {
   playerId: number

@@ -8,6 +8,7 @@ import {
 import { env } from '../config/env.js'
 import { isKnownTeamCode } from '../data/worldCupSeed.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
+import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
 import { sendPasswordResetMail, sendVerificationMail } from '../lib/mailer.js'
 import { hashPassword } from '../lib/passwords.js'
 import { generatePlainToken } from '../lib/tokens.js'
@@ -115,6 +116,7 @@ export function createAuthRouter(
   emailMarketingRepository: EmailMarketingRepository,
 ) {
   const router = Router()
+  const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
 
   router.post('/register', async (req, res) => {
     const parsed = registrationSchema.parse(req.body)
@@ -161,11 +163,14 @@ export function createAuthRouter(
     }
 
     const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
-    res.setHeader('Set-Cookie', await issueParticipantSession(participant.participantId, participantSessionRepository))
+    const sessionCookie = await issueParticipantSession(participant.participantId, participantSessionRepository)
+    const sessionToken = sessionCookie.match(new RegExp(`${participantSessionCookieName}=([^;]+)`))?.[1] ?? ''
+    res.setHeader('Set-Cookie', sessionCookie)
     res.json({
       participant,
       budgetLimit: squadSummary.budgetLimit,
       squadSummary,
+      csrfToken: createCsrfToken(decodeURIComponent(sessionToken), 'participant'),
     })
   })
 
@@ -184,7 +189,9 @@ export function createAuthRouter(
     void emailMarketingRepository.queueAutoresponders('registration_verified', verified).catch((error) => {
       console.error('Failed to queue verification autoresponder', error)
     })
-    res.setHeader('Set-Cookie', await issueParticipantSession(verified.participantId, participantSessionRepository))
+    const sessionCookie = await issueParticipantSession(verified.participantId, participantSessionRepository)
+    const sessionToken = sessionCookie.match(new RegExp(`${participantSessionCookieName}=([^;]+)`))?.[1] ?? ''
+    res.setHeader('Set-Cookie', sessionCookie)
     res.json({
       participantId: verified.participantId,
       email: verified.email,
@@ -195,6 +202,7 @@ export function createAuthRouter(
       budgetLimit: squadSummary.budgetLimit,
       squadSummary,
       hasPassword: verified.hasPassword,
+      csrfToken: createCsrfToken(decodeURIComponent(sessionToken), 'participant'),
     })
   })
 
@@ -216,10 +224,11 @@ export function createAuthRouter(
       participant,
       budgetLimit: squadSummary.budgetLimit,
       squadSummary,
+      csrfToken: createCsrfToken(sessionToken, 'participant'),
     })
   })
 
-  router.post('/set-password', async (req, res) => {
+  router.post('/set-password', requireParticipantCsrf, async (req, res) => {
     const parsed = passwordSchema.parse(req.body)
     const cookies = parseCookies(req.header('cookie'))
     const sessionToken = cookies[participantSessionCookieName]
@@ -243,10 +252,11 @@ export function createAuthRouter(
       participant: updated,
       budgetLimit: squadSummary.budgetLimit,
       squadSummary,
+      csrfToken: createCsrfToken(sessionToken, 'participant'),
     })
   })
 
-  router.post('/logout', async (req, res) => {
+  router.post('/logout', requireParticipantCsrf, async (req, res) => {
     const cookies = parseCookies(req.header('cookie'))
     const sessionToken = cookies[participantSessionCookieName]
     if (sessionToken) {
@@ -311,11 +321,14 @@ export function createAuthRouter(
     }
 
     const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
-    res.setHeader('Set-Cookie', await issueParticipantSession(participant.participantId, participantSessionRepository))
+    const sessionCookie = await issueParticipantSession(participant.participantId, participantSessionRepository)
+    const sessionToken = sessionCookie.match(new RegExp(`${participantSessionCookieName}=([^;]+)`))?.[1] ?? ''
+    res.setHeader('Set-Cookie', sessionCookie)
     res.json({
       participant,
       budgetLimit: squadSummary.budgetLimit,
       squadSummary,
+      csrfToken: createCsrfToken(decodeURIComponent(sessionToken), 'participant'),
     })
   })
 

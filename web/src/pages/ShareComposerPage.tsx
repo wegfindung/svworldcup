@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
-import { fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
+import { createSignedShareSnapshot, fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
 import { buildReferralInvitationText, resolveShareReferrerSoccerverseUsername } from '../lib/referral'
 import { getShareComposerCopy, renderSharePreset } from '../lib/shareCopy'
-import { buildShareCardUrl, buildShareSnapshotUrl, createShareSnapshotPlayer, type ShareSnapshotPayload } from '../lib/sharePayload'
+import { createShareSnapshotPlayer, type ShareSnapshotPayload } from '../lib/sharePayload'
 import type { LocaleCode, ParticipantProfile, ParticipantSquad } from '../lib/types'
 
 interface ShareComposerPageProps {
@@ -52,6 +52,8 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const [playerNameOverrides, setPlayerNameOverrides] = useState<Record<number, string>>({})
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
   const [referralTextCopyState, setReferralTextCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
+  const [signedSharePaths, setSignedSharePaths] = useState<{ sharePath: string; cardPath: string; payloadKey: string } | null>(null)
+  const [signingError, setSigningError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -102,7 +104,10 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const isCompleteSquad = draftedPlayers.length === 15
   const effectivePresetId = copy.presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : (copy.presets[0]?.id ?? 'top-picks')
   const selectedPreset = copy.presets.find((preset) => preset.id === effectivePresetId) ?? copy.presets[0]
-  const normalizedFeaturedPlayerIds = normalizeFeaturedPlayerIds(featuredPlayerIds, draftedPlayerIds)
+  const normalizedFeaturedPlayerIds = useMemo(
+    () => normalizeFeaturedPlayerIds(featuredPlayerIds, draftedPlayerIds),
+    [featuredPlayerIds, draftedPlayerIds],
+  )
   const selectedPlayerCount = Math.max(2, Math.min(3, normalizedFeaturedPlayerIds.length || 3))
   const presetStatement = selectedPreset ? renderSharePreset(selectedPreset.template, selectedPlayerCount) : ''
   const statement = statementMode === 'custom' ? customStatement.trim().slice(0, maxCustomStatementLength) : presetStatement
@@ -112,18 +117,17 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   )
   const referralInvitationText = buildReferralInvitationText(referralUsername)
 
-  const featuredPlayers = draftedPlayers
-    .filter((entry) => normalizedFeaturedPlayerIds.includes(entry.player.playerId))
-    .slice()
-    .sort(
-      (left, right) =>
-        normalizedFeaturedPlayerIds.indexOf(left.player.playerId) - normalizedFeaturedPlayerIds.indexOf(right.player.playerId),
-    )
-
-  function resolveShareLabel(playerId: number, fallbackLabel: string) {
-    const override = sanitizeShareLabel(playerNameOverrides[playerId] ?? '')
-    return override || fallbackLabel
-  }
+  const featuredPlayers = useMemo(
+    () =>
+      draftedPlayers
+        .filter((entry) => normalizedFeaturedPlayerIds.includes(entry.player.playerId))
+        .slice()
+        .sort(
+          (left, right) =>
+            normalizedFeaturedPlayerIds.indexOf(left.player.playerId) - normalizedFeaturedPlayerIds.indexOf(right.player.playerId),
+        ),
+    [draftedPlayers, normalizedFeaturedPlayerIds],
+  )
 
   const sharePayload: ShareSnapshotPayload | null =
     participant && isCompleteSquad && statement && featuredPlayers.length >= 2 && featuredPlayers.length <= 3
@@ -133,15 +137,47 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
           managerName: participant.displayName,
           referrerUsername: referralUsername || undefined,
           statement,
-          featuredPlayers: featuredPlayers.map((entry) =>
-            createShareSnapshotPlayer(entry.player, entry.slotClass, resolveShareLabel(entry.player.playerId, entry.player.displayName)),
-          ),
+          featuredPlayers: featuredPlayers.map((entry) => {
+            const override = sanitizeShareLabel(playerNameOverrides[entry.player.playerId] ?? '')
+            return createShareSnapshotPlayer(entry.player, entry.slotClass, override || entry.player.displayName)
+          }),
         }
       : null
 
-  const sharePath = sharePayload ? buildShareSnapshotUrl(sharePayload) : null
-  const shareUrl = sharePayload ? buildAbsoluteUrl(sharePath!) : null
-  const cardUrl = sharePayload ? buildShareCardUrl(sharePayload) : null
+  const sharePayloadKey = sharePayload ? JSON.stringify(sharePayload) : ''
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!sharePayloadKey) {
+      return
+    }
+
+    const payloadForSigning = JSON.parse(sharePayloadKey) as ShareSnapshotPayload
+    void createSignedShareSnapshot(payloadForSigning)
+      .then((response) => {
+        if (!cancelled) {
+          setSignedSharePaths({ ...response, payloadKey: sharePayloadKey })
+          setSigningError(null)
+        }
+      })
+      .catch((signError) => {
+        if (!cancelled) {
+          setSignedSharePaths(null)
+          setSigningError(signError instanceof Error ? signError.message : 'Share preview could not be signed.')
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [sharePayloadKey])
+
+  const activeSignedSharePaths = signedSharePaths?.payloadKey === sharePayloadKey ? signedSharePaths : null
+  const activeSigningError = sharePayload ? signingError : null
+  const sharePath = activeSignedSharePaths?.sharePath ?? null
+  const shareUrl = sharePath ? buildAbsoluteUrl(sharePath) : null
+  const cardUrl = activeSignedSharePaths?.cardPath ?? null
 
   function toggleFeaturedPlayer(playerId: number) {
     setCopyState('idle')
@@ -472,6 +508,10 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
             {cardUrl ? (
               <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[rgba(6,12,11,0.92)] shadow-[0_24px_60px_-36px_rgba(0,0,0,0.95)]">
                 <img src={cardUrl} alt={statement || copy.previewLabel} className="block w-full" />
+              </div>
+            ) : activeSigningError ? (
+              <div className="mt-4">
+                <EmptyState title={copy.errorTitle} body={activeSigningError} />
               </div>
             ) : (
               <div className="mt-4">

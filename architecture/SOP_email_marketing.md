@@ -22,3 +22,7 @@ Admin email marketing must support autoresponders, scheduled newsletters, drafts
 - Every marketing email must include an unsubscribe URL; unsubscribed recipients are skipped before dispatch.
 - Dispatch runs sequentially and records accepted deliveries in `email_delivery_log`.
 - Runtime throttling must keep accepted deliveries below 95 per minute and 1,000 per 10 minutes. The lower per-minute guard gives the scheduler room to respect the official 10-minute limit without opening parallel SMTP connections.
+- Admins compose campaign bodies with the TipTap visual editor or the HTML mode. Both modes update the same stored `body_html` field.
+- Campaign segmentation can narrow the audience by participant status, league type, selected primary team, and stored Soccerverse referrer.
+- Recipient history should remain searchable by email, display name, status, and referrer so admins can audit delivery attempts after a campaign has run.
+- Campaign performance summaries should show queued, sent, failed, skipped, unsubscribed, and eligible-recipient counts before manual dispatch.

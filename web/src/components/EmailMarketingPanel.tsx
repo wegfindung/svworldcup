@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { eventTeams } from '../data/eventConfig'
 import {
   deleteEmailCampaign,
   fetchEmailCampaignRecipients,
@@ -21,6 +24,7 @@ const emptyDraft: EmailCampaignInput = {
   subject: '',
   bodyHtml: '',
   audienceStatus: 'active',
+  audienceLeague: 'all',
   batchSize: 50,
   delayMinutes: 0,
 }
@@ -61,6 +65,119 @@ function statusTone(status: string) {
   return 'border-white/10 bg-black/20 text-[var(--color-muted)]'
 }
 
+interface EmailBodyEditorProps {
+  value: string
+  onChange: (value: string) => void
+}
+
+function EmailBodyEditor({ value, onChange }: EmailBodyEditorProps) {
+  const [mode, setMode] = useState<'visual' | 'html'>('visual')
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: value || '<p></p>',
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class:
+          'min-h-64 rounded-[1rem] border border-white/10 bg-black/20 px-3 py-3 text-sm leading-relaxed text-white outline-none focus:border-[var(--color-accent)]',
+      },
+    },
+    onUpdate: ({ editor: nextEditor }) => {
+      onChange(nextEditor.getHTML())
+    },
+  })
+
+  useEffect(() => {
+    if (!editor || mode !== 'visual') {
+      return
+    }
+
+    const nextValue = value || '<p></p>'
+    if (nextValue !== editor.getHTML()) {
+      editor.commands.setContent(nextValue, { emitUpdate: false })
+    }
+  }, [editor, mode, value])
+
+  const toolbarButtons = [
+    {
+      label: 'B',
+      active: editor?.isActive('bold') ?? false,
+      action: () => editor?.chain().focus().toggleBold().run(),
+    },
+    {
+      label: 'I',
+      active: editor?.isActive('italic') ?? false,
+      action: () => editor?.chain().focus().toggleItalic().run(),
+    },
+    {
+      label: 'H2',
+      active: editor?.isActive('heading', { level: 2 }) ?? false,
+      action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run(),
+    },
+    {
+      label: 'List',
+      active: editor?.isActive('bulletList') ?? false,
+      action: () => editor?.chain().focus().toggleBulletList().run(),
+    },
+  ]
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Body</span>
+        <div className="flex flex-wrap gap-1 rounded-full border border-white/10 bg-black/20 p-1">
+          {(['visual', 'html'] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setMode(item)}
+              className={[
+                'rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition active:scale-[0.98]',
+                mode === item ? 'bg-[var(--color-accent)] text-[var(--color-ink)]' : 'text-white hover:bg-white/6',
+              ].join(' ')}
+            >
+              {item === 'visual' ? 'Editor' : 'HTML'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'visual' ? (
+        <>
+          <div className="flex flex-wrap gap-2 rounded-[1rem] border border-white/8 bg-black/18 p-2">
+            {toolbarButtons.map((button) => (
+              <button
+                key={button.label}
+                type="button"
+                onClick={button.action}
+                disabled={!editor}
+                className={[
+                  'min-h-9 rounded-full border px-3 text-xs font-semibold transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]',
+                  button.active
+                    ? 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 text-[var(--color-accent)]'
+                    : 'border-white/10 text-white hover:bg-white/6',
+                ].join(' ')}
+              >
+                {button.label}
+              </button>
+            ))}
+          </div>
+          <EditorContent editor={editor} />
+        </>
+      ) : (
+        <textarea
+          required
+          rows={12}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Hi {{display_name}}, ..."
+          className="min-h-64 resize-y rounded-[1rem] border border-white/10 bg-black/20 px-3 py-3 font-mono text-sm leading-relaxed text-white outline-none transition focus:border-[var(--color-accent)]"
+        />
+      )}
+    </div>
+  )
+}
+
 export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
   const [campaigns, setCampaigns] = useState<EmailCampaignRecord[]>([])
   const [recipients, setRecipients] = useState<EmailCampaignRecipient[]>([])
@@ -68,6 +185,8 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
   const [scheduledLocal, setScheduledLocal] = useState('')
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [testRecipient, setTestRecipient] = useState(adminEmail)
+  const [recipientSearch, setRecipientSearch] = useState('')
+  const [recipientStatusFilter, setRecipientStatusFilter] = useState<'all' | EmailCampaignRecipient['status']>('all')
   const [busy, setBusy] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -76,6 +195,21 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
     () => campaigns.find((campaign) => campaign.campaignId === selectedCampaignId) ?? null,
     [campaigns, selectedCampaignId],
   )
+
+  const selectedCampaignTotal = selectedCampaign ? Math.max(1, selectedCampaign.queuedCount) : 1
+
+  const filteredRecipients = useMemo(() => {
+    const search = recipientSearch.trim().toLowerCase()
+    return recipients.filter((recipient) => {
+      const matchesStatus = recipientStatusFilter === 'all' || recipient.status === recipientStatusFilter
+      const matchesSearch =
+        !search ||
+        recipient.email.toLowerCase().includes(search) ||
+        recipient.displayName.toLowerCase().includes(search) ||
+        recipient.referrerSoccerverseUsername?.toLowerCase().includes(search)
+      return matchesStatus && matchesSearch
+    })
+  }, [recipientSearch, recipientStatusFilter, recipients])
 
   useEffect(() => {
     let isMounted = true
@@ -97,6 +231,9 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
             subject: firstCampaign.subject,
             bodyHtml: firstCampaign.bodyHtml,
             audienceStatus: firstCampaign.audienceStatus,
+            audienceLeague: firstCampaign.audienceLeague ?? 'all',
+            audienceTeamCode: firstCampaign.audienceTeamCode,
+            audienceReferrer: firstCampaign.audienceReferrer,
             scheduledAt: firstCampaign.scheduledAt,
             delayMinutes: firstCampaign.delayMinutes,
             batchSize: firstCampaign.batchSize,
@@ -160,6 +297,9 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
       subject: campaign.subject,
       bodyHtml: campaign.bodyHtml,
       audienceStatus: campaign.audienceStatus,
+      audienceLeague: campaign.audienceLeague ?? 'all',
+      audienceTeamCode: campaign.audienceTeamCode,
+      audienceReferrer: campaign.audienceReferrer,
       scheduledAt: campaign.scheduledAt,
       delayMinutes: campaign.delayMinutes,
       batchSize: campaign.batchSize,
@@ -189,6 +329,9 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
     return {
       ...draft,
       triggerKey: draft.kind === 'newsletter' ? 'manual' : draft.triggerKey,
+      audienceLeague: draft.audienceLeague ?? 'all',
+      audienceTeamCode: draft.audienceTeamCode?.trim() || undefined,
+      audienceReferrer: draft.audienceReferrer?.trim() || undefined,
       scheduledAt: draft.kind === 'newsletter' ? fromLocalInputValue(scheduledLocal) : undefined,
       delayMinutes: draft.kind === 'autoresponder' ? Number(draft.delayMinutes ?? 0) : 0,
       batchSize: Number(draft.batchSize ?? 50),
@@ -395,6 +538,38 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
         </div>
 
         <form onSubmit={handleSave} className="rounded-[1.2rem] border border-white/8 bg-black/12 p-4">
+          {selectedCampaign ? (
+            <div className="mb-5 rounded-[1rem] border border-white/8 bg-black/18 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Performance</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{selectedCampaign.subject}</p>
+                </div>
+                <span className="mono rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                  {selectedCampaign.queuedCount} queued
+                </span>
+              </div>
+              <div className="mt-4 grid gap-2">
+                {[
+                  ['Sent', selectedCampaign.sentCount, 'bg-[var(--color-accent)]'],
+                  ['Pending', selectedCampaign.pendingCount, 'bg-white/35'],
+                  ['Failed', selectedCampaign.failedCount, 'bg-amber-300'],
+                ].map(([label, value, color]) => (
+                  <div key={label} className="grid grid-cols-[5.5rem_1fr_3rem] items-center gap-3 text-xs">
+                    <span className="text-[var(--color-muted)]">{label}</span>
+                    <span className="h-2 overflow-hidden rounded-full bg-white/7">
+                      <span
+                        className={['block h-full rounded-full', color].join(' ')}
+                        style={{ width: `${(Number(value) / selectedCampaignTotal) * 100}%` }}
+                      />
+                    </span>
+                    <span className="mono text-right text-white">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-3 md:grid-cols-4">
             <label className="grid gap-2">
               <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Type</span>
@@ -490,6 +665,45 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
             </label>
 
             <label className="grid gap-2">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">League</span>
+              <select
+                value={draft.audienceLeague ?? 'all'}
+                onChange={(event) => setDraft((current) => ({ ...current, audienceLeague: event.target.value as EmailCampaignInput['audienceLeague'] }))}
+                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+              >
+                <option value="all">All leagues</option>
+                <option value="rookie">Rookies</option>
+                <option value="veteran">Veterans</option>
+              </select>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Team</span>
+              <select
+                value={draft.audienceTeamCode ?? ''}
+                onChange={(event) => setDraft((current) => ({ ...current, audienceTeamCode: event.target.value || undefined }))}
+                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+              >
+                <option value="">Any team</option>
+                {eventTeams.map((team) => (
+                  <option key={team.code} value={team.code}>
+                    {team.nameEn}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Referrer</span>
+              <input
+                value={draft.audienceReferrer ?? ''}
+                onChange={(event) => setDraft((current) => ({ ...current, audienceReferrer: event.target.value }))}
+                placeholder="Optional Soccerverse username"
+                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+              />
+            </label>
+
+            <label className="grid gap-2">
               <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Batch size</span>
               <input
                 type="number"
@@ -518,17 +732,12 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
             />
           </label>
 
-          <label className="mt-4 grid gap-2">
-            <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Body</span>
-            <textarea
-              required
-              rows={10}
+          <div className="mt-4">
+            <EmailBodyEditor
               value={draft.bodyHtml}
-              onChange={(event) => setDraft((current) => ({ ...current, bodyHtml: event.target.value }))}
-              placeholder="Hi {{display_name}}, ..."
-              className="min-h-64 resize-y rounded-[1rem] border border-white/10 bg-black/20 px-3 py-3 text-sm leading-relaxed text-white outline-none transition focus:border-[var(--color-accent)]"
+              onChange={(bodyHtml) => setDraft((current) => ({ ...current, bodyHtml }))}
             />
-          </label>
+          </div>
 
           <div className="mt-4 rounded-[1rem] border border-white/8 bg-black/18 p-4">
             <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Preview</p>
@@ -583,12 +792,34 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
           </div>
 
           {recipients.length ? (
-            <div className="mt-5 overflow-hidden rounded-[1rem] border border-white/8">
-              {recipients.slice(0, 6).map((recipient) => (
+            <div className="mt-5 rounded-[1rem] border border-white/8">
+              <div className="grid gap-3 border-b border-white/8 bg-black/18 p-3 sm:grid-cols-[1fr_12rem]">
+                <input
+                  value={recipientSearch}
+                  onChange={(event) => setRecipientSearch(event.target.value)}
+                  placeholder="Search recipients"
+                  className="min-h-10 rounded-[0.85rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                />
+                <select
+                  value={recipientStatusFilter}
+                  onChange={(event) => setRecipientStatusFilter(event.target.value as typeof recipientStatusFilter)}
+                  className="h-10 rounded-[0.85rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="sent">Sent</option>
+                  <option value="failed">Failed</option>
+                  <option value="skipped">Skipped</option>
+                </select>
+              </div>
+              {filteredRecipients.slice(0, 10).map((recipient) => (
                 <div key={recipient.recipientId} className="grid gap-3 border-b border-white/8 bg-black/12 px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto]">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-white">{recipient.displayName || recipient.email}</p>
                     <p className="mt-1 truncate text-xs text-[var(--color-muted)]">{recipient.email}</p>
+                    {recipient.referrerSoccerverseUsername ? (
+                      <p className="mt-1 truncate text-xs text-[var(--color-muted)]">Referrer: {recipient.referrerSoccerverseUsername}</p>
+                    ) : null}
                     {recipient.error ? <p className="mt-1 text-xs text-amber-200">{recipient.error}</p> : null}
                   </div>
                   <span className={['mono h-fit rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em]', statusTone(recipient.status)].join(' ')}>
@@ -596,6 +827,9 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
                   </span>
                 </div>
               ))}
+              {filteredRecipients.length === 0 ? (
+                <div className="bg-black/12 px-4 py-5 text-sm text-[var(--color-muted)]">No recipients match the current filter.</div>
+              ) : null}
             </div>
           ) : null}
         </form>

@@ -242,6 +242,35 @@ textarea:focus-visible {
   background: rgba(3, 9, 8, 0.28);
 }
 
+.ProseMirror {
+  white-space: pre-wrap;
+}
+
+.ProseMirror p {
+  margin: 0 0 0.85rem;
+}
+
+.ProseMirror h2 {
+  margin: 0 0 1rem;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  margin: 0 0 1rem 1.25rem;
+  padding: 0;
+}
+
+.ProseMirror ul {
+  list-style: disc;
+}
+
+.ProseMirror ol {
+  list-style: decimal;
+}
+
 .reveal-in {
   animation: reveal-in 820ms var(--ease-premium) both;
 }

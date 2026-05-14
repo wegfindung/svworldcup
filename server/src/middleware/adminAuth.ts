@@ -13,6 +13,7 @@ export function createRequireAdmin(adminRepository: AdminRepository): RequestHan
       const admin = await adminRepository.getAdminBySessionToken(sessionToken)
       if (admin) {
         res.locals.admin = admin
+        res.locals.adminSessionToken = sessionToken
         return next()
       }
     }

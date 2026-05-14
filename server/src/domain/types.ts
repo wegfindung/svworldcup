@@ -211,6 +211,7 @@ export type EmailCampaignKind = 'newsletter' | 'autoresponder'
 export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
 export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'
 export type EmailCampaignAudienceStatus = 'all' | 'pending_verification' | 'active'
+export type EmailCampaignAudienceLeague = 'all' | 'rookie' | 'veteran'
 export type EmailRecipientStatus = 'pending' | 'sent' | 'failed' | 'skipped'
 
 export interface EmailCampaignInput {
@@ -221,6 +222,9 @@ export interface EmailCampaignInput {
   subject: string
   bodyHtml: string
   audienceStatus: EmailCampaignAudienceStatus
+  audienceLeague?: EmailCampaignAudienceLeague
+  audienceTeamCode?: string
+  audienceReferrer?: string
   scheduledAt?: string
   delayMinutes?: number
   batchSize?: number

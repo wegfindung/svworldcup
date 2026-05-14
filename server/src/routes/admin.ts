@@ -4,6 +4,7 @@ import { adminSessionCookieName, adminSessionTtlSeconds, shouldUseSecureCookies 
 import { env } from '../config/env.js'
 import { isKnownTeamCode, teams } from '../data/worldCupSeed.js'
 import { clearCookie, createCookie } from '../lib/cookies.js'
+import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
 import { sendVerificationMail } from '../lib/mailer.js'
 import { generatePlainToken } from '../lib/tokens.js'
 import { createRequireAdmin } from '../middleware/adminAuth.js'
@@ -80,6 +81,9 @@ const emailCampaignSchema = z.object({
   subject: z.string().trim().min(1).max(255),
   bodyHtml: z.string().trim().min(1).max(100_000),
   audienceStatus: z.enum(['all', 'pending_verification', 'active']).default('active'),
+  audienceLeague: z.enum(['all', 'rookie', 'veteran']).optional(),
+  audienceTeamCode: z.string().trim().toUpperCase().length(3).optional(),
+  audienceReferrer: z.string().trim().max(60).optional(),
   scheduledAt: z
     .string()
     .trim()
@@ -115,6 +119,7 @@ export function createAdminRouter(
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
+  const requireAdminCsrf = createRequireCookieCsrf(adminSessionCookieName, 'admin')
 
   router.post('/login', async (req, res) => {
     const parsed = loginSchema.parse(req.body)
@@ -140,14 +145,16 @@ export function createAdminRouter(
         adminId: admin.adminId,
         email: admin.email,
       },
+      csrfToken: createCsrfToken(sessionToken, 'admin'),
     })
   })
 
   router.get('/session', requireAdmin, async (_req, res) => {
-    res.json({ admin: res.locals.admin })
+    const csrfToken = res.locals.adminSessionToken ? createCsrfToken(res.locals.adminSessionToken, 'admin') : undefined
+    res.json({ admin: res.locals.admin, csrfToken })
   })
 
-  router.post('/logout', requireAdmin, async (req, res) => {
+  router.post('/logout', requireAdmin, requireAdminCsrf, async (req, res) => {
     const cookie = req.header('cookie') ?? ''
     const match = cookie
       .split(';')
@@ -170,6 +177,7 @@ export function createAdminRouter(
   })
 
   router.use(requireAdmin)
+  router.use(requireAdminCsrf)
 
   router.use(
     '/match-import',

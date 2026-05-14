@@ -1,5 +1,11 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    filename TEXT PRIMARY KEY,
+    checksum TEXT NOT NULL,
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS tournament_config (
     key TEXT PRIMARY KEY,
     value_json JSONB NOT NULL,
@@ -182,6 +188,9 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
     subject TEXT NOT NULL,
     body_html TEXT NOT NULL,
     audience_status TEXT NOT NULL DEFAULT 'active' CHECK (audience_status IN ('all', 'pending_verification', 'active')),
+    audience_league TEXT NOT NULL DEFAULT 'all' CHECK (audience_league IN ('all', 'rookie', 'veteran')),
+    audience_team_code CHAR(3),
+    audience_referrer TEXT,
     scheduled_at TIMESTAMPTZ,
     delay_minutes INTEGER NOT NULL DEFAULT 0 CHECK (delay_minutes >= 0 AND delay_minutes <= 43200),
     batch_size INTEGER NOT NULL DEFAULT 50 CHECK (batch_size >= 1 AND batch_size <= 500),
