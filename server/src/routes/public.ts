@@ -8,6 +8,7 @@ import type { RegistrationRepository } from '../repositories/registrationReposit
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
+import { handleShareCardImage } from './share.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
@@ -66,6 +67,8 @@ export function createPublicRouter({ configRepository, registrationRepository, t
   router.get('/fixtures', (_req, res) => {
     res.json({ items: fixtures })
   })
+
+  router.get('/share-card.png', handleShareCardImage)
 
   router.get('/team-players/:teamCode', async (req, res) => {
     const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()

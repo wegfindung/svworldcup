@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { TeamFlag } from './TeamFlag'
+import { compareTeamsByNameDesc } from '../lib/teamSorting'
 import type { TeamSeed } from '../lib/types'
 
 interface TeamSelectProps {
@@ -29,6 +30,7 @@ export function TeamSelect({ label, teams, value, placeholder, excludeTeamCode, 
   }, [])
 
   const selectedTeam = useMemo(() => teams.find((team) => team.code === value), [teams, value])
+  const sortedTeams = useMemo(() => [...teams].sort(compareTeamsByNameDesc), [teams])
 
   return (
     <label className="grid gap-2">
@@ -70,7 +72,7 @@ export function TeamSelect({ label, teams, value, placeholder, excludeTeamCode, 
             >
               Clear selection
             </button>
-            {teams.map((team) => {
+            {sortedTeams.map((team) => {
               const disabled = excludeTeamCode === team.code
               return (
                 <button

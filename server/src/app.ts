@@ -10,6 +10,7 @@ import { createAuthRouter } from './routes/auth.js'
 import { createAdminRouter } from './routes/admin.js'
 import { createParticipantRouter } from './routes/participant.js'
 import { createPublicRouter } from './routes/public.js'
+import { handleShareSnapshotPage } from './routes/share.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import {
   createAdminRepository,
@@ -78,6 +79,8 @@ export function createApp() {
     }),
   )
   app.use(express.json({ limit: '1mb' }))
+
+  app.get('/share/snapshot', handleShareSnapshotPage)
 
   if (publicDir) {
     app.use(

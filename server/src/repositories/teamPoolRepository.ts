@@ -2,6 +2,7 @@ import { Pool } from 'pg'
 import { getPositionClasses } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
 import type { SoccerversePlayerRecord, TeamPoolPlayer } from '../domain/types.js'
+import { compareTeamPoolPlayersForBuilder } from '../lib/teamPoolSort.js'
 
 function defaultPlayerImageUrl(playerId: number) {
   return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
@@ -36,9 +37,7 @@ export class MemoryTeamPoolRepository implements TeamPoolRepository {
   private readonly byTeam = new Map<string, TeamPoolPlayer[]>()
 
   async listByTeam(teamCode: string) {
-    return [...(this.byTeam.get(teamCode) ?? [])].sort(
-      (left, right) => right.rating - left.rating || left.displayName.localeCompare(right.displayName),
-    )
+    return [...(this.byTeam.get(teamCode) ?? [])].sort(compareTeamPoolPlayersForBuilder)
   }
 
   async getTeamPlayerById(playerId: number) {
@@ -95,18 +94,20 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
       [teamCode],
     )
 
-    return result.rows.map((row) =>
-      toTeamPoolPlayer(teamCode, {
-        playerId: Number(row.player_id),
-        displayName: row.display_name,
-        nationalityCode: row.nationality_code ?? teamCode,
-        rating: row.rating ?? 50,
-        clubId: 0,
-        positions: row.position_codes ?? [],
-        positionMain: row.position_main ?? undefined,
-        imageUrl: row.image_url ?? undefined,
-      }),
-    )
+    return result.rows
+      .map((row) =>
+        toTeamPoolPlayer(teamCode, {
+          playerId: Number(row.player_id),
+          displayName: row.display_name,
+          nationalityCode: row.nationality_code ?? teamCode,
+          rating: row.rating ?? 50,
+          clubId: 0,
+          positions: row.position_codes ?? [],
+          positionMain: row.position_main ?? undefined,
+          imageUrl: row.image_url ?? undefined,
+        }),
+      )
+      .sort(compareTeamPoolPlayersForBuilder)
   }
 
   async getTeamPlayerById(playerId: number) {

@@ -1,4 +1,4 @@
-import { startTransition, useMemo, useState, type FormEvent } from 'react'
+import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
@@ -27,6 +27,7 @@ import {
   writeParticipantReady,
   type ParticipantReadyState,
 } from '../lib/participantReady'
+import { playUnlockSound } from '../lib/unlockSound'
 import type { LeagueType, LocaleCode, ParticipantProfile, ParticipantSquad, TeamPoolPlayer } from '../lib/types'
 
 interface BuilderPageProps {
@@ -150,11 +151,39 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   }, [squad])
 
   const draftedCount = useMemo(() => squad?.slots.filter((slot) => slot.player).length ?? 0, [squad])
+  const draftedPlayerIds = useMemo(
+    () =>
+      new Set(
+        (squad?.slots ?? [])
+          .map((slot) => slot.player?.playerId)
+          .filter((playerId): playerId is number => typeof playerId === 'number'),
+      ),
+    [squad],
+  )
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
+  const socialSharingUnlocked = draftedCount === 15
+  const previousDraftedCountRef = useRef<number | null>(null)
 
   function getOpenEligibleSlots(player: TeamPoolPlayer) {
+    if (draftedPlayerIds.has(player.playerId)) {
+      return []
+    }
+
     return (squad?.slots ?? []).filter((slot) => !slot.player && player.positionClasses.includes(slot.slotClass))
   }
+
+  useEffect(() => {
+    if (!squad) {
+      previousDraftedCountRef.current = null
+      return
+    }
+
+    if (previousDraftedCountRef.current !== null && previousDraftedCountRef.current < 15 && draftedCount === 15) {
+      playUnlockSound()
+    }
+
+    previousDraftedCountRef.current = draftedCount
+  }, [draftedCount, squad])
 
   function persistReadyState(state: ParticipantReadyState) {
     writeParticipantReady(state)
@@ -1015,6 +1044,23 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                       <p className="mt-2 text-2xl font-semibold tracking-tight text-white">{draftedCount} / 15</p>
                     </div>
                   </div>
+                  {socialSharingUnlocked ? (
+                    <div className="mt-4 rounded-[1.4rem] border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-4 py-4">
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">share status</p>
+                      <p className="mt-2 text-base font-semibold text-white">Social sharing unlocked.</p>
+                      <p className="mt-1 text-sm text-[var(--color-muted)]">
+                        Your squad is complete. Open the share page, choose 2-3 featured players, and keep editing the squad afterwards if you want.
+                      </p>
+                      <div className="mt-4">
+                        <Link
+                          to="/builder/share"
+                          className="inline-flex rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+                        >
+                          Open share page
+                        </Link>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1101,6 +1147,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                 {teamPlayers.length > 0 ? (
                   <div className="mt-6 grid gap-3 md:grid-cols-2">
                     {teamPlayers.map((player) => {
+                      const isAlreadyDrafted = draftedPlayerIds.has(player.playerId)
                       const openSlots = getOpenEligibleSlots(player)
                       return (
                         <article
@@ -1143,6 +1190,10 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                             {squad.isLocked ? (
                               <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2 text-xs text-[var(--color-sand)]">
                                 Squad locked
+                              </span>
+                            ) : isAlreadyDrafted ? (
+                              <span className="rounded-full border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-[var(--color-accent)]">
+                                Already in squad
                               </span>
                             ) : openSlots.length === 0 ? (
                               <span className="rounded-full border border-white/10 px-3 py-2 text-xs text-[var(--color-muted)]">
