@@ -8,6 +8,7 @@ import type {
   ScoringConfig,
   ParticipantProfile,
   ParticipantSquad,
+  ParticipantSquadSummary,
   ParticipantScoreRow,
   PublicParticipantProfile,
   NationScoreRow,
@@ -15,6 +16,12 @@ import type {
   TeamPoolPlayer,
   TeamSeed,
 } from './types'
+
+interface AuthParticipantResponse {
+  participant: ParticipantProfile
+  budgetLimit: number
+  squadSummary: ParticipantSquadSummary
+}
 
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -81,6 +88,7 @@ export function verifyRegistration(token: string) {
     status: string
     verifiedAt?: string
     budgetLimit: number
+    squadSummary: ParticipantSquadSummary
     hasPassword: boolean
   }>(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
     method: 'GET',
@@ -89,21 +97,21 @@ export function verifyRegistration(token: string) {
 }
 
 export function loginParticipant(email: string, password: string) {
-  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/login', {
+  return getJson<AuthParticipantResponse>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
 }
 
 export function fetchParticipantSession() {
-  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/me', {
+  return getJson<AuthParticipantResponse>('/api/auth/me', {
     method: 'GET',
     headers: {},
   })
 }
 
 export function setParticipantPassword(password: string) {
-  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/set-password', {
+  return getJson<AuthParticipantResponse>('/api/auth/set-password', {
     method: 'POST',
     body: JSON.stringify({ password }),
   })
@@ -117,7 +125,7 @@ export function requestParticipantPasswordReset(email: string) {
 }
 
 export function resetParticipantPassword(token: string, password: string) {
-  return getJson<{ participant: ParticipantProfile; budgetLimit: number }>('/api/auth/reset-password', {
+  return getJson<AuthParticipantResponse>('/api/auth/reset-password', {
     method: 'POST',
     body: JSON.stringify({ token, password }),
   })

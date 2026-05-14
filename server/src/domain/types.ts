@@ -50,6 +50,7 @@ export interface ParticipantProfile {
 export interface RegistrationRecord extends ParticipantProfile {
   verificationTokenHash: string
   verificationTokenExpiresAt: string
+  createdAt?: string
 }
 
 export interface RegistrationCreationResult {
@@ -140,6 +141,14 @@ export interface ParticipantSquad {
   budgetRemaining: number
   isLocked: boolean
   slots: SquadSlotState[]
+}
+
+export interface ParticipantSquadSummary {
+  budgetLimit: number
+  budgetUsed: number
+  budgetRemaining: number
+  draftedCount: number
+  isLocked: boolean
 }
 
 export interface AssignPlayerInput {

@@ -146,6 +146,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       verificationTokenHash: tokenHash,
       verificationTokenExpiresAt: expiryIso(48),
       verifiedAt: existing?.verifiedAt,
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
       hasPassword: false,
     })
 

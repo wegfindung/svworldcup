@@ -100,7 +100,7 @@ export function createApp() {
   }
 
   app.use('/api/public', publicApiLimiter, createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, scoringRepository, squadRepository }))
-  app.use('/api/auth', authApiLimiter, createAuthRouter(registrationRepository, participantSessionRepository))
+  app.use('/api/auth', authApiLimiter, createAuthRouter(registrationRepository, participantSessionRepository, squadRepository))
   app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository))
   app.use('/api/admin', adminApiLimiter, createAdminRouter(adminRepository, registrationRepository, configRepository, teamPoolRepository, scoringRepository))
 

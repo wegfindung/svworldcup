@@ -103,6 +103,14 @@ export interface ParticipantSquad {
   slots: SquadSlotState[]
 }
 
+export interface ParticipantSquadSummary {
+  budgetLimit: number
+  budgetUsed: number
+  budgetRemaining: number
+  draftedCount: number
+  isLocked: boolean
+}
+
 export interface AdminProfile {
   adminId: string
   email: string
