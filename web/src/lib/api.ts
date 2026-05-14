@@ -1,6 +1,7 @@
 import type {
   AdminProfile,
   AdminOverview,
+  AdminParticipantRecord,
   BootstrapPayload,
   EmailCampaignDispatchSummary,
   EmailCampaignInput,
@@ -240,6 +241,13 @@ export function fetchPublicProfile(slug: string) {
 
 export function fetchAdminOverview() {
   return getJson<AdminOverview>('/api/admin/overview', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchAdminParticipants() {
+  return getJson<{ items: AdminParticipantRecord[] }>('/api/admin/participants', {
     method: 'GET',
     headers: {},
   })
