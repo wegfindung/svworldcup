@@ -175,3 +175,67 @@ export interface PublicParticipantProfile {
   score?: ParticipantScoreRow
   squad?: ParticipantSquad
 }
+
+// --- Match data import engine (see architecture/SOP_match_data_import.md) ---
+// Frontend mirrors of the server domain types in server/src/domain/types.ts.
+
+export type LineupStatus = 'starter' | 'substitute'
+
+export interface PendingMatchStatRow {
+  rowId: string
+  batchId: string
+  sourceName: string
+  teamCode: string
+  playerId: number | null
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating?: number
+  cleanSheetEligible: boolean
+}
+
+export interface PendingMatchConfirmation {
+  confirmationId: string
+  batchId: string
+  adminEmail: string
+  dataVersion: number
+  createdAt: string
+}
+
+export interface PendingMatchBatch {
+  batchId: string
+  fixtureId: string
+  sourceUrl: string
+  dataVersion: number
+  createdBy: string
+  lastEditedBy?: string
+  createdAt: string
+  updatedAt: string
+  rows: PendingMatchStatRow[]
+  confirmations: PendingMatchConfirmation[]
+}
+
+// Stat-only edit of a pending row (D17). playerId is excluded — remapping goes through the
+// dedicated resolve route so the D9 mapping write-back happens.
+export interface MatchImportRowEdit {
+  minutes?: number
+  goals?: number
+  assists?: number
+  rating?: number
+  lineupStatus?: LineupStatus
+  cleanSheetEligible?: boolean
+}
+
+export interface MatchImportPromotionResult {
+  promoted: boolean
+  promotedRowCount: number
+}
+
+export interface MatchImportSkipNameEntry {
+  skipId: string
+  teamCode: string
+  normalizedSourceName: string
+  createdBy: string
+  createdAt: string
+}

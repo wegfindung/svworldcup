@@ -5,6 +5,10 @@ import type {
   EventControls,
   MatchEntryInput,
   MatchEntryRecord,
+  MatchImportPromotionResult,
+  MatchImportRowEdit,
+  MatchImportSkipNameEntry,
+  PendingMatchBatch,
   ScoringConfig,
   ParticipantProfile,
   ParticipantSquad,
@@ -303,4 +307,69 @@ export function saveTeamSelections(teamCode: string, players: TeamPoolPlayer[] |
       })),
     }),
   })
+}
+
+// --- Match data import engine (mounted under /api/admin/match-import) ---
+
+export function fetchMatchImportBatches() {
+  return getJson<{ items: PendingMatchBatch[] }>('/api/admin/match-import/batches', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchMatchImportBatch(batchId: string) {
+  return getJson<{ batch: PendingMatchBatch }>(
+    `/api/admin/match-import/batches/${encodeURIComponent(batchId)}`,
+    { method: 'GET', headers: {} },
+  )
+}
+
+export function uploadMatchImport(payload: { fixtureId: string; json: unknown; replace?: boolean }) {
+  return getJson<{ batch: PendingMatchBatch; skippedNames: string[] }>('/api/admin/match-import/upload', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function confirmMatchImportBatch(batchId: string) {
+  return getJson<{ batch: PendingMatchBatch | null; promotion: MatchImportPromotionResult }>(
+    `/api/admin/match-import/batches/${encodeURIComponent(batchId)}/confirm`,
+    { method: 'POST', body: JSON.stringify({}) },
+  )
+}
+
+export function editMatchImportRow(batchId: string, rowId: string, edits: MatchImportRowEdit) {
+  return getJson<{ batch: PendingMatchBatch }>(
+    `/api/admin/match-import/batches/${encodeURIComponent(batchId)}/rows/${encodeURIComponent(rowId)}`,
+    { method: 'PUT', body: JSON.stringify(edits) },
+  )
+}
+
+export function resolveMatchImportRow(batchId: string, rowId: string, playerId: number) {
+  return getJson<{ batch: PendingMatchBatch }>(
+    `/api/admin/match-import/batches/${encodeURIComponent(batchId)}/rows/${encodeURIComponent(rowId)}/resolve`,
+    { method: 'POST', body: JSON.stringify({ playerId }) },
+  )
+}
+
+export function discardMatchImportBatch(batchId: string) {
+  return getJson<void>(`/api/admin/match-import/batches/${encodeURIComponent(batchId)}`, {
+    method: 'DELETE',
+    headers: {},
+  })
+}
+
+export function addMatchImportSkipName(teamCode: string, sourceName: string) {
+  return getJson<{ item: MatchImportSkipNameEntry }>('/api/admin/match-import/skip-names', {
+    method: 'POST',
+    body: JSON.stringify({ teamCode, sourceName }),
+  })
+}
+
+export function removeMatchImportSkipName(teamCode: string, sourceName: string) {
+  return getJson<void>(
+    `/api/admin/match-import/skip-names?teamCode=${encodeURIComponent(teamCode)}&sourceName=${encodeURIComponent(sourceName)}`,
+    { method: 'DELETE', headers: {} },
+  )
 }
