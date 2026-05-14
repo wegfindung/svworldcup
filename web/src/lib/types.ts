@@ -154,22 +154,6 @@ export interface EventControls {
   globalRevealSquads: boolean
 }
 
-export interface MatchEntryInput {
-  fixtureId: string
-  playerId: number
-  inOfficialSquad: boolean
-  minutes: number
-  goals: number
-  assists: number
-  cleanSheetEligible: boolean
-  performancePoints?: number
-  sourceNote?: string
-}
-
-export interface MatchEntryRecord extends MatchEntryInput {
-  entryId: string
-}
-
 export interface ParticipantScoreRow {
   participantId: string
   displayName: string

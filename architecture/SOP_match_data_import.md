@@ -15,7 +15,6 @@ In scope:
 
 - The JSON lifecycle inside the platform: upload, review, two-admin confirm, promote.
 - The screenshot/JSON adapter — the only concrete import source for now.
-- Manual single-row admin entry, routed through the same pending pipeline.
 
 Out of scope:
 
@@ -51,9 +50,8 @@ Out of scope:
 - The scoring engine continues to read `admin_match_entries` directly and is otherwise
   unaffected.
 - Promotion is a plain upsert keyed by `(fixture_id, player_id)`.
-- Exactly one path writes `admin_match_entries`: promotion after two confirmations. The
-  existing manual single-row admin entry route is repurposed to write into the pending
-  pipeline and no longer writes the confirmed table directly. No bypass exists.
+- Exactly one path writes `admin_match_entries`: promotion after two confirmations. No
+  bypass exists.
 
 ## JSON Contract
 

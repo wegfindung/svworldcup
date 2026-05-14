@@ -56,18 +56,6 @@ const teamPlayersSchema = z.object({
   ),
 })
 
-const matchEntrySchema = z.object({
-  fixtureId: z.string().trim().min(1).max(120),
-  playerId: z.coerce.number().int().positive(),
-  inOfficialSquad: z.boolean(),
-  minutes: z.coerce.number().int().min(0).max(130),
-  goals: z.coerce.number().int().min(0).max(20),
-  assists: z.coerce.number().int().min(0).max(20),
-  cleanSheetEligible: z.boolean().default(false),
-  performancePoints: z.coerce.number().min(0).max(5).optional(),
-  sourceNote: z.string().trim().max(200).optional(),
-})
-
 const globalRevealSchema = z.object({
   revealProfiles: z.boolean().default(true),
   revealSquads: z.boolean().default(true),
@@ -315,18 +303,6 @@ export function createAdminRouter(
     const parsed = scoringSchema.parse(req.body)
     const updated = await configRepository.updateScoringConfig(parsed)
     res.json({ item: updated })
-  })
-
-  router.get('/match-entries', async (req, res) => {
-    const fixtureId = typeof req.query.fixtureId === 'string' ? req.query.fixtureId.trim() : undefined
-    const items = await scoringRepository.listMatchEntries(fixtureId || undefined)
-    res.json({ items })
-  })
-
-  router.put('/match-entries', async (req, res) => {
-    const parsed = matchEntrySchema.parse(req.body)
-    const item = await scoringRepository.upsertMatchEntry(parsed)
-    res.json({ item })
   })
 
   router.post('/reveal/global', async (req, res) => {

@@ -8,8 +8,6 @@ import type {
   EmailCampaignRecipient,
   EmailCampaignRecord,
   EventControls,
-  MatchEntryInput,
-  MatchEntryRecord,
   MatchImportPromotionResult,
   MatchImportRowEdit,
   MatchImportSkipNameEntry,
@@ -324,21 +322,6 @@ export function updateAdminScoring(scoring: ScoringConfig) {
   return getJson<{ item: ScoringConfig }>('/api/admin/scoring', {
     method: 'PUT',
     body: JSON.stringify(scoring),
-  })
-}
-
-export function fetchAdminMatchEntries(fixtureId?: string) {
-  const query = fixtureId ? `?fixtureId=${encodeURIComponent(fixtureId)}` : ''
-  return getJson<{ items: MatchEntryRecord[] }>(`/api/admin/match-entries${query}`, {
-    method: 'GET',
-    headers: {},
-  })
-}
-
-export function saveAdminMatchEntry(entry: MatchEntryInput) {
-  return getJson<{ item: MatchEntryRecord }>('/api/admin/match-entries', {
-    method: 'PUT',
-    body: JSON.stringify(entry),
   })
 }
 
