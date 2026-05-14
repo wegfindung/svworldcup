@@ -10,7 +10,7 @@ import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '3'
+const shareRenderVersion = '4'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 
@@ -350,7 +350,7 @@ async function buildShareCardSvg(
   const [badgeTextUrl, bylineTextUrl, statementTextUrl, ctaTextUrl] = await Promise.all([
     renderTextDataUrl(fonts, {
       lines: [copy.bodyBadge.toUpperCase()],
-      width: 330,
+      width: 390,
       height: 40,
       fontSize: 18,
       lineHeight: 22,
@@ -480,8 +480,8 @@ async function buildShareCardSvg(
   <rect x="${panelX + 22}" y="${panelY + 24}" width="${panelWidth - 44}" height="2" rx="1" ry="1" fill="rgba(202,255,225,0.12)" />
   <rect x="${panelX + 22}" y="${panelY + panelHeight - 26}" width="${panelWidth - 44}" height="2" rx="1" ry="1" fill="rgba(202,255,225,0.1)" />
 
-  <rect x="72" y="48" width="370" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
-  <image href="${badgeTextUrl}" x="92" y="48" width="330" height="40" />
+  <rect x="72" y="48" width="430" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
+  <image href="${badgeTextUrl}" x="92" y="48" width="390" height="40" />
   <image href="${bylineTextUrl}" x="708" y="48" width="420" height="40" />
   <image href="${statementTextUrl}" x="72" y="102" width="820" height="108" />
 
