@@ -26,12 +26,11 @@ export interface ConfirmCheck {
   reason?: string
 }
 
-// D5/D7: any distinct admin may confirm, except the most recent editor of the current
-// state, and no admin may confirm the same data version twice.
+// Any distinct admin may confirm, as long as they have not already confirmed the current
+// data version. The most recent editor is not barred: submitting their edit already
+// recorded their confirmation on the new version, so this same check stops them from
+// double-counting — an edited batch still needs one other distinct admin to promote.
 export function canConfirm(batch: PendingMatchBatch, adminEmail: string): ConfirmCheck {
-  if (batch.lastEditedBy && batch.lastEditedBy === adminEmail) {
-    return { allowed: false, reason: 'The most recent editor of a batch cannot confirm it.' }
-  }
   if (validConfirmerEmails(batch).includes(adminEmail)) {
     return { allowed: false, reason: 'This admin has already confirmed the current data version.' }
   }

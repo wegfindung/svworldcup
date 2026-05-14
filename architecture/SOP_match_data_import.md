@@ -119,15 +119,16 @@ Out of scope:
 - Promotion requires two distinct admin confirmations on the fixture's current data state.
 - The admin who uploads the batch counts as confirmation number one. A fresh, untouched
   import already holds one confirmation; one more distinct admin must review and confirm.
-- Any edit to any row voids all confirmations on that batch, including the uploader's
-  implicit one. The batch returns to zero confirmations and must be re-confirmed on the
-  new state.
-- The most recent editor of a batch cannot be a confirmer of that state. The two
-  confirmations must come from two distinct admins, neither being that editor. The
-  original uploader remains eligible unless they are themselves the most recent editor.
+- Any edit to any row voids all prior confirmations on that batch, including the
+  uploader's implicit one — they no longer count toward the new data state.
+- Submitting an edit counts as the editor's confirmation number one on the new data
+  state. By submitting the edit, the editor asserts the data is what they believe is
+  correct. The editor cannot add a second confirmation on top of that, but they are not
+  barred — they are already counted. An edited batch therefore needs exactly one other
+  distinct admin to confirm.
 - Net effect: a clean import needs the uploader plus one other admin; an edited import
-  needs two non-editor admins. Either way, at least two distinct humans have signed off on
-  the exact data that gets promoted.
+  needs the editor (counted via the edit) plus one other admin. Either way, exactly two
+  distinct humans have signed off on the exact data that gets promoted — never three.
 - Confirmation state is tracked with a version counter on the pending batch. Every edit
   increments the version, and a confirmation counts toward promotion only if its recorded
   version equals the batch's current version. Confirmation rows are never destroyed, so

@@ -158,6 +158,14 @@ export class MemoryMatchImportRepository implements MatchImportRepository {
       batch.dataVersion += 1
       batch.lastEditedBy = editorEmail
       batch.updatedAt = new Date().toISOString()
+      // Submitting an edit counts as the editor's confirmation #1 on the new data version.
+      batch.confirmations.push({
+        confirmationId: randomUUID(),
+        batchId: batch.batchId,
+        adminEmail: editorEmail,
+        dataVersion: batch.dataVersion,
+        createdAt: batch.updatedAt,
+      })
       return this.snapshot(batch)
     }
     throw new MatchImportValidationError('Pending batch row not found.')
@@ -472,14 +480,23 @@ export class PostgresMatchImportRepository implements MatchImportRepository {
           next.cleanSheetEligible,
         ],
       )
-      // D17: every edit bumps the version, which staleness-voids all prior confirmations.
-      await client.query(
+      // Every edit bumps the version, which staleness-voids all prior confirmations.
+      const bumpResult = await client.query<{ data_version: number }>(
         `
           UPDATE pending_match_batches
           SET data_version = data_version + 1, last_edited_by = $2, updated_at = NOW()
           WHERE batch_id = $1
+          RETURNING data_version
         `,
         [row.batchId, editorEmail],
+      )
+      // Submitting an edit counts as the editor's confirmation #1 on the new data version.
+      await client.query(
+        `
+          INSERT INTO pending_match_confirmations (batch_id, admin_email, data_version)
+          VALUES ($1, $2, $3)
+        `,
+        [row.batchId, editorEmail, bumpResult.rows[0].data_version],
       )
       await client.query('COMMIT')
       return (await loadBatch(this.pool, row.batchId)) as PendingMatchBatch

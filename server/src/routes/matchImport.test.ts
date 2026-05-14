@@ -190,6 +190,43 @@ describe('match import routes — step 3a (edit, resolve, skip-list, re-submissi
     expect(auditActions).toContain('match_import.row_edit')
   })
 
+  it('counts an edit as the editor confirmation, so one other admin promotes the batch', async () => {
+    const { app, deps } = await setup()
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(uploadBody())
+    const { batchId } = upload.body.batch
+    const rowId = upload.body.batch.rows[0].rowId
+
+    // An edit by a different admin voids the importer's v1 confirmation and records the
+    // editor as confirmation #1 on v2.
+    const edit = await request(app)
+      .put(`/match-import/batches/${batchId}/rows/${rowId}`)
+      .set('x-test-admin-email', 'editor@example.com')
+      .send({ goals: 3 })
+    expect(edit.status).toBe(200)
+    expect(edit.body.batch.dataVersion).toBe(2)
+
+    // The editor cannot double-count their own edit.
+    const editorAgain = await request(app)
+      .post(`/match-import/batches/${batchId}/confirm`)
+      .set('x-test-admin-email', 'editor@example.com')
+      .send({})
+    expect(editorAgain.status).toBe(422)
+
+    // One other distinct admin is enough — no third admin needed.
+    const confirm = await request(app)
+      .post(`/match-import/batches/${batchId}/confirm`)
+      .set('x-test-admin-email', 'reviewer@example.com')
+      .send({})
+    expect(confirm.status).toBe(200)
+    expect(confirm.body.promotion.promoted).toBe(true)
+
+    const promoted = await deps.scoringRepository.listMatchEntries(BRA_MAR_FIXTURE)
+    expect(promoted).toHaveLength(2)
+  })
+
   it('resolves an unresolved row and writes the mapping table back', async () => {
     const { app, deps } = await setup()
     const body = uploadBody()
