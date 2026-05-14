@@ -10,7 +10,7 @@ import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '5'
+const shareRenderVersion = '6'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 
@@ -336,9 +336,9 @@ async function buildShareCardSvg(
 ) {
   const statementLines = wrapText(payload.statement, players.length === 2 ? 38 : 34, 2)
   const cardWidth = players.length === 2 ? 270 : 270
-  const cardHeight = 304
-  const namePlateHeight = 58
-  const namePlateY = cardHeight - 72
+  const cardHeight = 316
+  const namePlateHeight = 48
+  const namePlateY = cardHeight - 54
   const cardGap = players.length === 2 ? 52 : 28
   const totalCardsWidth = players.length * cardWidth + (players.length - 1) * cardGap
   const cardsStartX = Math.round((shareCardWidth - totalCardsWidth) / 2)
@@ -419,8 +419,8 @@ async function buildShareCardSvg(
         lines: playerNameLines,
         width: cardWidth - 36,
         height: namePlateHeight,
-        fontSize: players.length === 2 ? 24 : 22,
-        lineHeight: 21,
+        fontSize: 20,
+        lineHeight: 20,
         weight: 700,
         fill: '#f4f0e8',
         textAlign: 'center',
@@ -444,7 +444,7 @@ async function buildShareCardSvg(
             <circle cx="22" cy="22" r="24" fill="#f4f0e8" fill-opacity="0.96" />
             <image href="${player.flagDataUrl}" x="0" y="0" width="44" height="44" clip-path="url(#${flagClipId})" preserveAspectRatio="xMidYMid slice" />
           </g>
-          <rect x="18" y="${namePlateY}" width="${cardWidth - 36}" height="${namePlateHeight}" rx="20" ry="20" fill="rgba(4,10,8,0.86)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" />
+          <rect x="18" y="${namePlateY}" width="${cardWidth - 36}" height="${namePlateHeight}" rx="18" ry="18" fill="rgba(4,10,8,0.86)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" />
           <image href="${playerNameUrl}" x="18" y="${namePlateY}" width="${cardWidth - 36}" height="${namePlateHeight}" />
         </g>
       `
