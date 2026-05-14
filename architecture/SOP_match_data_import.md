@@ -175,6 +175,7 @@ Every import-path admin write produces an audit log entry in the same operation:
 - promotion to `admin_match_entries`
 - player-name mapping corrections
 - skip-list changes
+- pending batch discard
 
 Retrofitting audit coverage onto pre-existing un-audited admin writes is out of scope for
 this work.

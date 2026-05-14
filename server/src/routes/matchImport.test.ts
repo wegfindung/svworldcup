@@ -165,3 +165,129 @@ describe('match import routes', () => {
     expect(afterList.body.items).toHaveLength(0)
   })
 })
+
+describe('match import routes — step 3a (edit, resolve, skip-list, re-submission, discard)', () => {
+  it('edits a pending row, bumping the data version and auditing it', async () => {
+    const { app, deps } = await setup()
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(uploadBody())
+    const { batchId } = upload.body.batch
+    const rowId = upload.body.batch.rows[0].rowId
+
+    const edit = await request(app)
+      .put(`/match-import/batches/${batchId}/rows/${rowId}`)
+      .set('x-test-admin-email', 'editor@example.com')
+      .send({ goals: 3 })
+    expect(edit.status).toBe(200)
+    expect(edit.body.batch.dataVersion).toBe(2)
+    expect(edit.body.batch.lastEditedBy).toBe('editor@example.com')
+
+    const auditActions = (await deps.auditRepository.list()).map((entry) => entry.actionKey)
+    expect(auditActions).toContain('match_import.row_edit')
+  })
+
+  it('resolves an unresolved row and writes the mapping table back', async () => {
+    const { app, deps } = await setup()
+    const body = uploadBody()
+    body.json.players[0] = {
+      name: 'Newcomer Kid',
+      team: 'Brazil',
+      lineupStatus: 'starter',
+      minutes: 80,
+      goals: 0,
+      assists: 1,
+      rating: 7.1,
+    }
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(body)
+    const unresolved = upload.body.batch.rows.find((row: { playerId: number | null }) => row.playerId === null)
+    expect(unresolved).toBeDefined()
+
+    const resolve = await request(app)
+      .post(`/match-import/batches/${upload.body.batch.batchId}/rows/${unresolved.rowId}/resolve`)
+      .set('x-test-admin-email', 'editor@example.com')
+      .send({ playerId: 11 })
+    expect(resolve.status).toBe(200)
+
+    const mapping = await deps.matchMappingRepository.listPlayerMap('BRA')
+    expect(mapping).toHaveLength(1)
+    expect(mapping[0].playerId).toBe(11)
+
+    const auditActions = (await deps.auditRepository.list()).map((entry) => entry.actionKey)
+    expect(auditActions).toContain('match_import.player_map_correction')
+  })
+
+  it('adds a skip name that suppresses the player on the next upload, then removes it', async () => {
+    const { app, deps } = await setup()
+    const add = await request(app)
+      .post('/match-import/skip-names')
+      .set('x-test-admin-email', 'reviewer@example.com')
+      .send({ teamCode: 'BRA', sourceName: 'Team Doctor' })
+    expect(add.status).toBe(201)
+    expect(await deps.matchMappingRepository.listSkipNames('BRA')).toHaveLength(1)
+
+    const body = uploadBody()
+    body.json.players.push({
+      name: 'Team Doctor',
+      team: 'Brazil',
+      lineupStatus: 'substitute',
+      minutes: 0,
+      goals: 0,
+      assists: 0,
+      rating: 6,
+    })
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(body)
+    expect(upload.body.skippedNames).toContain('Team Doctor')
+    expect(upload.body.batch.rows).toHaveLength(2)
+
+    const remove = await request(app)
+      .delete('/match-import/skip-names')
+      .query({ teamCode: 'BRA', sourceName: 'Team Doctor' })
+      .set('x-test-admin-email', 'reviewer@example.com')
+    expect(remove.status).toBe(204)
+    expect(await deps.matchMappingRepository.listSkipNames('BRA')).toHaveLength(0)
+  })
+
+  it('rejects a re-upload without replace, and wholesale-replaces with replace=true', async () => {
+    const { app } = await setup()
+    await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(uploadBody())
+
+    const blocked = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(uploadBody())
+    expect(blocked.status).toBe(422)
+
+    const replaced = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer2@example.com')
+      .send(uploadBody({ replace: true }))
+    expect(replaced.status).toBe(201)
+    expect(replaced.body.batch.dataVersion).toBe(1)
+    expect(replaced.body.batch.createdBy).toBe('importer2@example.com')
+  })
+
+  it('audits a batch discard', async () => {
+    const { app, deps } = await setup()
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(uploadBody())
+    await request(app)
+      .delete(`/match-import/batches/${upload.body.batch.batchId}`)
+      .set('x-test-admin-email', 'importer@example.com')
+
+    const auditActions = (await deps.auditRepository.list()).map((entry) => entry.actionKey)
+    expect(auditActions).toContain('match_import.discard')
+  })
+})
