@@ -29,6 +29,16 @@ type RowChoice =
   | { kind: 'skip' }
   | { kind: 'skip-always' }
 
+// Fix A: the admin's local stat edits for one row — only the fields they touched. Applied
+// over the parsed values when the row's override is built on submit.
+type RowStatEdit = {
+  minutes?: number
+  goals?: number
+  assists?: number
+  rating?: number
+  lineupStatus?: LineupStatus
+}
+
 function rowKey(teamCode: string, sourceName: string): string {
   return `${teamCode}:${sourceName}`
 }
@@ -38,6 +48,10 @@ const pillButtonClass =
 
 // Fix 5: keep the native <option> popup on-theme in Chrome/Firefox.
 const optionClass = 'bg-[var(--color-ink-soft)] text-white'
+
+// Fix A: compact input for the pre-persist stat edits.
+const statInputClass =
+  'h-9 w-full rounded-[0.7rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50'
 
 // Fix 7: the pre-persist resolve stage. Nothing is persisted — the admin resolves or skips
 // every flagged row, then Submit calls /upload with the overrides.
@@ -53,6 +67,7 @@ export function MatchImportResolveStage({
   const [poolsLoaded, setPoolsLoaded] = useState(false)
   const [poolsError, setPoolsError] = useState<string | null>(null)
   const [choices, setChoices] = useState<Map<string, RowChoice>>(new Map())
+  const [statEdits, setStatEdits] = useState<Map<string, RowStatEdit>>(new Map())
   const [confirmOpen, setConfirmOpen] = useState(false)
   // Which row key has a skip-list write in flight, and the last skip-list error.
   const [skipBusyKey, setSkipBusyKey] = useState<string | null>(null)
@@ -84,6 +99,16 @@ export function MatchImportResolveStage({
       } else {
         next.set(key, choice)
       }
+      return next
+    })
+  }
+
+  // Fix A: record one stat-field edit for a row. Stores only touched fields; unedited fields
+  // fall back to the parsed value when the override is built on submit.
+  function setStatEdit(key: string, field: keyof RowStatEdit, value: number | LineupStatus) {
+    setStatEdits((current) => {
+      const next = new Map(current)
+      next.set(key, { ...(next.get(key) ?? {}), [field]: value })
       return next
     })
   }
@@ -126,20 +151,62 @@ export function MatchImportResolveStage({
     [resolution.rows, choices],
   )
 
+  // Fix A: effective starter count per team — parsed lineup status with resolve-stage edits
+  // applied, skipped rows excluded. Drives the live count display and the 11-starter guard.
+  const starterCountByTeam = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const row of resolution.rows) {
+      const key = rowKey(row.teamCode, row.sourceName)
+      const choice = choices.get(key)
+      if (choice?.kind === 'skip' || choice?.kind === 'skip-always') {
+        continue
+      }
+      const status = statEdits.get(key)?.lineupStatus ?? row.lineupStatus
+      if (status === 'starter') {
+        counts.set(row.teamCode, (counts.get(row.teamCode) ?? 0) + 1)
+      }
+    }
+    return counts
+  }, [resolution.rows, choices, statEdits])
+
+  const starterCapViolations = useMemo(
+    () => [...starterCountByTeam.entries()].filter(([, count]) => count > 11).map(([code]) => code),
+    [starterCountByTeam],
+  )
+
   function playerName(teamCode: string, playerId: number): string {
     return pools[teamCode]?.find((player) => player.playerId === playerId)?.displayName ?? `Player #${playerId}`
+  }
+
+  function teamName(teamCode: string): string {
+    if (teamCode === homeTeam.code) return homeTeam.nameEn
+    if (teamCode === awayTeam.code) return awayTeam.nameEn
+    return teamCode
   }
 
   function handleSubmit() {
     const overrides: ResolutionOverride[] = []
     for (const row of resolution.rows) {
-      const choice = choices.get(rowKey(row.teamCode, row.sourceName))
-      if (!choice) continue
-      overrides.push(
-        choice.kind === 'player'
-          ? { sourceName: row.sourceName, teamCode: row.teamCode, playerId: choice.playerId }
-          : { sourceName: row.sourceName, teamCode: row.teamCode, skip: true },
-      )
+      const key = rowKey(row.teamCode, row.sourceName)
+      const choice = choices.get(key)
+      const edit = statEdits.get(key)
+      if (!choice && !edit) continue
+
+      const override: ResolutionOverride = { sourceName: row.sourceName, teamCode: row.teamCode }
+      if (choice?.kind === 'player') {
+        override.playerId = choice.playerId
+      } else if (choice?.kind === 'skip' || choice?.kind === 'skip-always') {
+        override.skip = true
+      }
+      // Stat edits are meaningless on a skipped row — it is dropped from the batch.
+      if (edit && !override.skip) {
+        if (edit.minutes !== undefined) override.minutes = edit.minutes
+        if (edit.goals !== undefined) override.goals = edit.goals
+        if (edit.assists !== undefined) override.assists = edit.assists
+        if (edit.rating !== undefined) override.rating = edit.rating
+        if (edit.lineupStatus !== undefined) override.lineupStatus = edit.lineupStatus
+      }
+      overrides.push(override)
     }
     onSubmit(overrides)
   }
@@ -150,6 +217,13 @@ export function MatchImportResolveStage({
     const pool = pools[row.teamCode] ?? []
     const autoResolved = row.resolution.status === 'resolved'
     const needsAction = !choice && !autoResolved
+    const isSkipped = choice?.kind === 'skip' || choice?.kind === 'skip-always'
+    const edit = statEdits.get(key)
+    const effMinutes = edit?.minutes ?? row.minutes
+    const effGoals = edit?.goals ?? row.goals
+    const effAssists = edit?.assists ?? row.assists
+    const effRating = edit?.rating ?? row.rating
+    const effLineup = edit?.lineupStatus ?? row.lineupStatus
 
     return (
       <article
@@ -169,11 +243,92 @@ export function MatchImportResolveStage({
           <div className="min-w-0 flex-1">
             <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">source name</p>
             <p className="truncate text-sm font-semibold text-white">{row.sourceName}</p>
-            <p className="mono mt-0.5 text-[11px] text-[var(--color-muted)]">
-              {row.minutes}&apos; · {row.goals}G · {row.assists}A · {row.rating.toFixed(1)}
-            </p>
           </div>
         </div>
+
+        {/* Fix A: parsed stats are editable here, pre-persist. Edits stay local until Submit,
+            then ride out in this row's override. A skipped row is dropped, so it has no editor. */}
+        {isSkipped ? null : (
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+            <label className="grid gap-1">
+              <span className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">min</span>
+              <input
+                type="number"
+                min={0}
+                max={130}
+                value={effMinutes}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  if (Number.isFinite(next)) setStatEdit(key, 'minutes', next)
+                }}
+                className={statInputClass}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">goals</span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                value={effGoals}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  if (Number.isFinite(next)) setStatEdit(key, 'goals', next)
+                }}
+                className={statInputClass}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">assists</span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                value={effAssists}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  if (Number.isFinite(next)) setStatEdit(key, 'assists', next)
+                }}
+                className={statInputClass}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">rating</span>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                step={0.1}
+                value={effRating}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  if (Number.isFinite(next)) setStatEdit(key, 'rating', next)
+                }}
+                className={statInputClass}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">lineup</span>
+              <select
+                value={effLineup}
+                disabled={busy}
+                onChange={(event) => setStatEdit(key, 'lineupStatus', event.target.value as LineupStatus)}
+                className={statInputClass}
+              >
+                <option className={optionClass} value="starter">
+                  Starter
+                </option>
+                <option className={optionClass} value="substitute">
+                  Substitute
+                </option>
+              </select>
+            </label>
+          </div>
+        )}
 
         <div className="mt-3">
           {choice?.kind === 'skip' || choice?.kind === 'skip-always' ? (
@@ -270,7 +425,9 @@ export function MatchImportResolveStage({
           <TeamFlag teamCode={team.code} label={team.nameEn} size="md" />
           <div>
             <h4 className="text-lg font-semibold tracking-tight text-white">{team.nameEn}</h4>
-            <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{rows.length} players</p>
+            <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
+              {rows.length} players · {starterCountByTeam.get(team.code) ?? 0}/11 starting
+            </p>
           </div>
         </div>
         {groups.map((group) => {
@@ -343,7 +500,7 @@ export function MatchImportResolveStage({
           </div>
           <button
             type="button"
-            disabled={busy || unresolvedRemaining > 0 || !poolsLoaded}
+            disabled={busy || unresolvedRemaining > 0 || !poolsLoaded || starterCapViolations.length > 0}
             onClick={() => setConfirmOpen(true)}
             className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
           >
@@ -358,6 +515,15 @@ export function MatchImportResolveStage({
         {skipError ? (
           <div className="mt-3 rounded-[1.1rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
             {skipError}
+          </div>
+        ) : null}
+        {/* Fix A: client-side guard mirroring the server's post-override starter-cap re-check —
+            lineupStatus edits above can push a team over 11. */}
+        {starterCapViolations.length > 0 ? (
+          <div className="mt-3 rounded-[1.1rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+            {starterCapViolations.map(teamName).join(' and ')}{' '}
+            {starterCapViolations.length === 1 ? 'has' : 'have'} more than 11 starters. A starting
+            lineup is fixed at 11 — set the extra rows to “Substitute” before submitting.
           </div>
         ) : null}
       </div>

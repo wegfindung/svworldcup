@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { fixtures, teams } from '../data/worldCupSeed.js'
 import { parseMatchImportCsv } from '../lib/matchImportCsv.js'
 import { MatchImportValidationError } from '../lib/matchImportError.js'
-import { assertMatchImportSemantics, parseMatchImportJson } from '../lib/matchImportJson.js'
+import { assertMatchImportSemantics, assertStarterCap, parseMatchImportJson } from '../lib/matchImportJson.js'
 import { finalizeSubmission } from '../lib/matchImportSubmission.js'
 import { normalizeName } from '../lib/normalizeName.js'
 import { promoteBatchIfReady } from '../services/matchPromotion.js'
@@ -36,6 +36,10 @@ const csvInputSchema = z.object({
   awayGoals: z.coerce.number().int().min(0).max(99),
   sourceUrl: z.string().trim().url().max(500),
 })
+// Fix B (future): a third input mode will be added here — e.g. a 'feed-url' variant where
+// the server fetches the CSV from wcup.soccerverse.io (host hard-allowlisted) and parses it
+// via a dedicated feed parser. Blocked until the SV team confirms the feed format; see the
+// note in lib/matchImportCsv.ts.
 const matchInputSchema = z.discriminatedUnion('format', [jsonInputSchema, csvInputSchema])
 
 const parseSchema = z.object({
@@ -43,19 +47,21 @@ const parseSchema = z.object({
   input: matchInputSchema,
 })
 
-// Fix 7: the admin's pre-persist resolve-or-skip choice for one row.
-const overrideSchema = z.union([
-  z.object({
-    sourceName: z.string().trim().min(1).max(120),
-    teamCode: z.string().trim().length(3),
-    playerId: z.coerce.number().int().positive(),
-  }),
-  z.object({
-    sourceName: z.string().trim().min(1).max(120),
-    teamCode: z.string().trim().length(3),
-    skip: z.literal(true),
-  }),
-])
+// Fix 7 + Fix A: the admin's pre-persist choices for one row, keyed by (teamCode, sourceName)
+// — a resolve (playerId) or skip choice, plus optional stat edits. clean-sheet eligibility is
+// deliberately not here: it stays a review-screen judgement (D11). Stat field ranges mirror
+// matchImportJsonSchema / rowEditSchema.
+const overrideSchema = z.object({
+  sourceName: z.string().trim().min(1).max(120),
+  teamCode: z.string().trim().length(3),
+  playerId: z.coerce.number().int().positive().optional(),
+  skip: z.literal(true).optional(),
+  minutes: z.coerce.number().int().min(0).max(130).optional(),
+  goals: z.coerce.number().int().min(0).max(20).optional(),
+  assists: z.coerce.number().int().min(0).max(20).optional(),
+  rating: z.coerce.number().min(0).max(10).optional(),
+  lineupStatus: z.enum(['starter', 'substitute']).optional(),
+})
 
 const uploadSchema = z.object({
   fixtureId: z.string().trim().min(1).max(120),
@@ -140,6 +146,10 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
     const resolution = await importer.resolveMatch({ fixtureId: parsed.fixtureId, json })
     // Fix 7: rejects loudly if any row is still unresolved with no resolve/skip choice.
     const finalized = finalizeSubmission(resolution, parsed.overrides, adminEmail)
+    // Fix 8 + Fix A: re-assert the 11-starter cap on the finalized rows. assertMatchImportSemantics
+    // checked it at parse time, but resolve-stage lineupStatus edits are applied in
+    // finalizeSubmission, after that — so a substitute->starter edit could otherwise slip past.
+    assertStarterCap(finalized.batchInput.rows)
 
     // D9/D12: persist the admin's manual resolve/skip choices first. These are idempotent
     // ON CONFLICT upserts and are meant to persist regardless of the batch outcome, so an

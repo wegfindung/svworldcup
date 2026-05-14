@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ConfirmModalProps {
   open: boolean
@@ -47,7 +48,11 @@ export function ConfirmModal({
       : 'bg-[var(--color-accent)] text-[var(--color-ink)]',
   ].join(' ')
 
-  return (
+  // Fix D: rendered through a portal to document.body. The match-import screens sit inside
+  // glass-panel / hero-card containers that carry backdrop-filter, and a backdrop-filter
+  // ancestor captures position:fixed — so without the portal the overlay centres within the
+  // panel's box, not the viewport, forcing the user to scroll to the modal.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={onCancel}
@@ -74,6 +79,7 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

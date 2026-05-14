@@ -434,11 +434,21 @@ export interface MatchResolution {
   skippedNames: string[]
 }
 
-// An admin's resolve-or-skip choice for one row in the pre-persist stage, keyed by the
-// row's (teamCode, sourceName).
-export type ResolutionOverride =
-  | { sourceName: string; teamCode: string; playerId: number }
-  | { sourceName: string; teamCode: string; skip: true }
+// An admin's pre-persist choices for one row, keyed by the row's (teamCode, sourceName):
+// a resolve (playerId) or skip choice, plus optional stat edits (Fix A). A stat field, when
+// present, overrides the parsed value for that field; clean-sheet eligibility is deliberately
+// absent — it stays a review-screen judgement (D11).
+export interface ResolutionOverride {
+  sourceName: string
+  teamCode: string
+  playerId?: number
+  skip?: true
+  minutes?: number
+  goals?: number
+  assists?: number
+  rating?: number
+  lineupStatus?: LineupStatus
+}
 
 // --- Audit log (see architecture/SOP_match_data_import.md, audit logging) ---
 

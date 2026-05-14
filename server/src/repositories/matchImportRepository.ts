@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
 import { canConfirm } from '../lib/confirmationRules.js'
 import { MatchImportValidationError } from '../lib/matchImportError.js'
+import { assertStarterCap } from '../lib/matchImportJson.js'
 import type {
   CreateMatchBatchInput,
   PendingMatchBatch,
@@ -145,6 +146,16 @@ export class MemoryMatchImportRepository implements MatchImportRepository {
       const nextPlayerId = edits.playerId === undefined ? row.playerId : edits.playerId
       assertNoDuplicatePlayers(
         batch.rows.map((candidate) => (candidate.rowId === rowId ? nextPlayerId : candidate.playerId)),
+      )
+      // Fix A: re-assert the 11-starter cap on the would-be state. lineupStatus is editable
+      // here (the review screen) and was previously only capped at parse time.
+      const nextLineupStatus = edits.lineupStatus ?? row.lineupStatus
+      assertStarterCap(
+        batch.rows.map((candidate) =>
+          candidate.rowId === rowId
+            ? { teamCode: candidate.teamCode, lineupStatus: nextLineupStatus }
+            : { teamCode: candidate.teamCode, lineupStatus: candidate.lineupStatus },
+        ),
       )
 
       row.playerId = nextPlayerId
@@ -453,13 +464,26 @@ export class PostgresMatchImportRepository implements MatchImportRepository {
         cleanSheetEligible: edits.cleanSheetEligible ?? row.cleanSheetEligible,
       }
 
-      const siblingResult = await client.query<{ player_id: string | null }>(
-        'SELECT player_id FROM pending_match_stat_rows WHERE batch_id = $1 AND row_id <> $2',
+      const siblingResult = await client.query<{
+        player_id: string | null
+        team_code: string
+        lineup_status: 'starter' | 'substitute'
+      }>(
+        'SELECT player_id, team_code, lineup_status FROM pending_match_stat_rows WHERE batch_id = $1 AND row_id <> $2',
         [row.batchId, rowId],
       )
       assertNoDuplicatePlayers([
         next.playerId,
         ...siblingResult.rows.map((sibling) => (sibling.player_id === null ? null : Number(sibling.player_id))),
+      ])
+      // Fix A: re-assert the 11-starter cap on the would-be state. lineupStatus is editable
+      // here (the review screen) and was previously only capped at parse time.
+      assertStarterCap([
+        { teamCode: next.teamCode, lineupStatus: next.lineupStatus },
+        ...siblingResult.rows.map((sibling) => ({
+          teamCode: sibling.team_code,
+          lineupStatus: sibling.lineup_status,
+        })),
       ])
 
       await client.query(

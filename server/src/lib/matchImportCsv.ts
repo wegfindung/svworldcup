@@ -15,6 +15,17 @@ export interface CsvMatchOptions {
   sourceUrl: string
 }
 
+// Fix B (future — blocked on the SV team confirming the official data-feed format):
+// the official Soccerverse feed (wcup.soccerverse.io/downloads/matches/<id>.csv) is a
+// DIFFERENT column set from this manual-paste contract. Example observed so far:
+//   fixture_id,kickoff,round,team,player,position,minutes,goals,assists,shots,
+//   shots_on_target,passes,key_passes,tackles,saves,yellow_cards,red_cards,rating
+// Differences vs. this parser: `player` not `name`; a `position` column and NO
+// `lineupStatus`; several extra stat columns; an in-file `fixture_id`. When the format is
+// confirmed: add a SEPARATE parser (e.g. matchImportFeedCsv.ts) that maps the feed columns
+// into MatchImportJson, and keep THIS parser for the manual CSV/TSV paste contract. The
+// feed fetch is server-side, host-allowlisted to wcup.soccerverse.io.
+
 // The required per-player columns. A header row naming these is mandatory; order is free.
 const REQUIRED_COLUMNS = ['name', 'team', 'lineupstatus', 'minutes', 'goals', 'assists', 'rating']
 

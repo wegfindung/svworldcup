@@ -24,9 +24,10 @@ function overrideKey(teamCode: string, sourceName: string): string {
   return `${teamCode}:${normalizeName(sourceName)}`
 }
 
-// Fix 7: apply the admin's pre-persist resolve/skip choices, assert every row is now
-// resolved or skipped, and build the batch input plus the D9/D12 memory writes. A row that
-// is still unresolved with no override means the submission cannot be persisted.
+// Fix 7 + Fix A: apply the admin's pre-persist choices — resolve/skip plus optional stat
+// edits — assert every row is now resolved or skipped, and build the batch input plus the
+// D9/D12 memory writes. A row still unresolved with no override means the submission cannot
+// be persisted.
 export function finalizeSubmission(
   resolution: MatchResolution,
   overrides: ResolutionOverride[],
@@ -45,13 +46,13 @@ export function finalizeSubmission(
     const override = overrideByKey.get(overrideKey(row.teamCode, row.sourceName))
     const normalizedSourceName = normalizeName(row.sourceName)
 
-    if (override && 'skip' in override) {
+    if (override?.skip) {
       skipWrites.push({ teamCode: row.teamCode, normalizedSourceName })
       continue
     }
 
     let playerId: number
-    if (override) {
+    if (override?.playerId !== undefined) {
       playerId = override.playerId
       mappingWrites.push({ teamCode: row.teamCode, normalizedSourceName, playerId })
     } else if (row.resolution.status === 'resolved') {
@@ -66,11 +67,13 @@ export function finalizeSubmission(
       sourceName: row.sourceName,
       teamCode: row.teamCode,
       playerId,
-      lineupStatus: row.lineupStatus,
-      minutes: row.minutes,
-      goals: row.goals,
-      assists: row.assists,
-      rating: row.rating,
+      // Fix A: resolve-stage stat edits ride in on the override; each falls back to the
+      // parsed value when not edited (?? not ||, so an edited 0 is kept).
+      lineupStatus: override?.lineupStatus ?? row.lineupStatus,
+      minutes: override?.minutes ?? row.minutes,
+      goals: override?.goals ?? row.goals,
+      assists: override?.assists ?? row.assists,
+      rating: override?.rating ?? row.rating,
       // D11: clean-sheet eligibility is a review-UI judgement, defaulted false on import.
       cleanSheetEligible: false,
     })

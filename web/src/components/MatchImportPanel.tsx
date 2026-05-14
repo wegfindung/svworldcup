@@ -357,6 +357,10 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           </div>
         ) : null}
 
+        {/* Fix B (future): a third toggle option — a feed-URL mode — will be added here,
+            paired with a third `format` value. The server then fetches + parses the official
+            SV feed CSV. Blocked until the SV team confirms the feed format; see the note in
+            server/src/lib/matchImportCsv.ts. */}
         <div className="mt-4 flex items-center gap-2">
           {(['json', 'csv'] as const).map((value) => (
             <button

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { MatchImportJson } from '../domain/types.js'
+import type { LineupStatus, MatchImportJson } from '../domain/types.js'
 import { MatchImportValidationError } from './matchImportError.js'
 import { normalizeName } from './normalizeName.js'
 
@@ -33,6 +33,29 @@ export function parseMatchImportJson(raw: unknown): MatchImportJson {
   return matchImportJsonSchema.parse(raw)
 }
 
+// Fix 8: the starting lineup is fixed at 11 players (used substitutes are not capped).
+// Extracted as a standalone check because the cap must be re-asserted AFTER lineupStatus
+// edits — resolve-stage edits (Fix A, applied in finalizeSubmission) and review-screen edits
+// (updateRow) both happen after the parse-time check below has already run. Works on any rows
+// carrying a team key plus a lineup status.
+export function assertStarterCap(
+  rows: ReadonlyArray<{ teamCode: string; lineupStatus: LineupStatus }>,
+): void {
+  const starterCounts = new Map<string, number>()
+  for (const row of rows) {
+    if (row.lineupStatus !== 'starter') {
+      continue
+    }
+    const count = (starterCounts.get(row.teamCode) ?? 0) + 1
+    if (count > 11) {
+      throw new MatchImportValidationError(
+        `${row.teamCode} has more than 11 starters. The starting lineup is fixed at 11 players.`,
+      )
+    }
+    starterCounts.set(row.teamCode, count)
+  }
+}
+
 // Semantic checks beyond shape: every player's team must be one of the two match teams, and
 // D4 — no player may appear twice for the same team. The wrong-fixture guard (D10) needs the
 // selected fixture and lives in the importer adapter.
@@ -45,7 +68,6 @@ export function assertMatchImportSemantics(json: MatchImportJson): void {
   const matchTeams = new Set([homeTeam, awayTeam])
 
   const seen = new Set<string>()
-  const starterCounts = new Map<string, number>()
   for (const player of json.players) {
     const normalizedTeam = normalizeName(player.team)
     if (!matchTeams.has(normalizedTeam)) {
@@ -60,15 +82,12 @@ export function assertMatchImportSemantics(json: MatchImportJson): void {
       )
     }
     seen.add(key)
-
-    if (player.lineupStatus === 'starter') {
-      const count = (starterCounts.get(normalizedTeam) ?? 0) + 1
-      if (count > 11) {
-        throw new MatchImportValidationError(
-          `${player.team} has more than 11 starters. The starting lineup is fixed at 11 players.`,
-        )
-      }
-      starterCounts.set(normalizedTeam, count)
-    }
   }
+
+  assertStarterCap(
+    json.players.map((player) => ({
+      teamCode: normalizeName(player.team),
+      lineupStatus: player.lineupStatus,
+    })),
+  )
 }
