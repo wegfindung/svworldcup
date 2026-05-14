@@ -51,10 +51,10 @@ function App() {
             >
               <span className="block h-[3.35rem] w-[9.4rem] overflow-hidden sm:h-[5.25rem] sm:w-[14.5rem] lg:w-[15.5rem]">
                 <img
-                  src="/brand/logo.png"
+                  src="/brand/logo-nav.webp"
                   alt="Soccerverse World Cup Community Event"
-                  width={1536}
-                  height={1024}
+                  width={960}
+                  height={640}
                   className="h-auto w-[9.4rem] max-w-none -translate-y-[1.08rem] transition duration-500 group-hover:scale-[1.03] sm:w-[14.5rem] sm:-translate-y-7 lg:w-[15.5rem]"
                 />
               </span>
