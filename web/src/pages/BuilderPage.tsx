@@ -10,16 +10,13 @@ import {
   fetchParticipantSession,
   fetchParticipantSquad,
   fetchTeamPlayers,
-  loginParticipant,
   logoutParticipant,
   lockSquad,
   revealParticipantProfile,
   registerParticipant,
   removeSquadPlayer,
-  requestParticipantPasswordReset,
   resendVerificationEmail,
   resetSquad,
-  setParticipantPassword,
 } from '../lib/api'
 import {
   clearParticipantReady,
@@ -27,6 +24,7 @@ import {
   writeParticipantReady,
   type ParticipantReadyState,
 } from '../lib/participantReady'
+import { withReferral } from '../lib/referral'
 import { playUnlockSound } from '../lib/unlockSound'
 import type {
   LeagueType,
@@ -40,6 +38,7 @@ import type {
 interface BuilderPageProps {
   locale: LocaleCode
   referrerSoccerverseUsername?: string
+  mode?: 'builder' | 'register'
 }
 
 interface RegistrationFormState {
@@ -51,26 +50,11 @@ interface RegistrationFormState {
   secondaryTeamCode?: string
 }
 
-interface LoginFormState {
-  email: string
-  password: string
-}
-
-interface PasswordFormState {
-  password: string
-  confirmPassword: string
-}
-
 const initialRegistrationForm: RegistrationFormState = {
   mode: 'rookie',
   displayName: '',
   email: '',
   soccerverseUsername: '',
-}
-
-const initialPasswordForm: PasswordFormState = {
-  password: '',
-  confirmPassword: '',
 }
 
 function leagueLabel(mode: LeagueType) {
@@ -123,13 +107,13 @@ function buildPublicProfileUrl(participant: Pick<ParticipantProfile, 'displayNam
   return `/profiles/${slug || 'manager'}-${participant.participantId.slice(0, 8)}`
 }
 
-export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' }: BuilderPageProps) {
+export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '', mode = 'builder' }: BuilderPageProps) {
   void _locale
 
   const initialReadyState = readParticipantReady()
   const [dashboardSeed, setDashboardSeed] = useState<ParticipantReadyState | null>(initialReadyState)
-  const [accessState, setAccessState] = useState<'guest' | 'pending' | 'ready' | 'active'>(() =>
-    initialReadyState ? 'ready' : 'guest',
+  const [accessState, setAccessState] = useState<'locked' | 'guest' | 'pending' | 'registered' | 'ready' | 'active'>(() =>
+    initialReadyState ? (mode === 'register' ? 'registered' : 'ready') : mode === 'register' ? 'guest' : 'locked',
   )
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
   const [budgetLimit, setBudgetLimit] = useState(initialReadyState?.budgetLimit ?? defaultBudgetLimit)
@@ -146,23 +130,6 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
   const [registrationError, setRegistrationError] = useState<string | null>(null)
   const [submittedEmail, setSubmittedEmail] = useState('')
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle')
-
-  const [loginForm, setLoginForm] = useState<LoginFormState>({
-    email: initialReadyState?.email ?? '',
-    password: '',
-  })
-  const [loginBusy, setLoginBusy] = useState(false)
-  const [loginError, setLoginError] = useState<string | null>(null)
-
-  const [passwordForm, setPasswordForm] = useState<PasswordFormState>(initialPasswordForm)
-  const [passwordBusy, setPasswordBusy] = useState(false)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [passwordMessage, setPasswordMessage] = useState<string | null>(null)
-
-  const [passwordResetEmail, setPasswordResetEmail] = useState(initialReadyState?.email ?? '')
-  const [passwordResetBusy, setPasswordResetBusy] = useState(false)
-  const [passwordResetMessage, setPasswordResetMessage] = useState<string | null>(null)
-  const [passwordResetError, setPasswordResetError] = useState<string | null>(null)
 
   const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
@@ -225,12 +192,6 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
 
   function persistReadyState(state: ParticipantReadyState) {
     storeReadyState(state)
-    setLoginForm((current) => ({
-      ...current,
-      email: state.email,
-      password: '',
-    }))
-    setPasswordResetEmail(state.email)
   }
 
   function syncReadyStateWithSquad(nextParticipant: ParticipantProfile | null, nextSquad: ParticipantSquad | null) {
@@ -251,27 +212,16 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
     setBuilderError(null)
   }
 
-  function moveToGuestState(nextEmail?: string) {
-    const email = nextEmail ?? dashboardSeed?.email ?? loginForm.email ?? ''
+  function moveToGuestState() {
     clearParticipantReady()
     setDashboardSeed(null)
     clearBuilderState()
-    setAccessState('guest')
-    setPasswordForm(initialPasswordForm)
-    setPasswordMessage(null)
-    setPasswordError(null)
-    setLoginForm({
-      email,
-      password: '',
-    })
-    setPasswordResetEmail(email)
+    setAccessState(mode === 'register' ? 'guest' : 'locked')
   }
 
   async function handleOpenBuilder() {
     setSessionBusy(true)
     setSessionError(null)
-    setLoginError(null)
-    setPasswordError(null)
 
     try {
       const session = await fetchParticipantSession()
@@ -286,8 +236,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not open the protected builder.'
       if (/session/i.test(message)) {
-        moveToGuestState(dashboardSeed?.email)
-        setSessionError('Your browser session expired. Sign in again with email and password.')
+        moveToGuestState()
+        setSessionError('Your browser session expired. Restore access before opening the builder again.')
       } else {
         setSessionError(message)
       }
@@ -324,9 +274,6 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
     setRegistrationBusy(true)
     setRegistrationError(null)
     setSessionError(null)
-    setLoginError(null)
-    setPasswordResetError(null)
-    setPasswordResetMessage(null)
     setResendState('idle')
 
     try {
@@ -347,93 +294,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
       clearParticipantReady()
       setDashboardSeed(null)
       setSubmittedEmail(response.email)
-      setLoginForm({
-        email: response.email,
-        password: '',
-      })
-      setPasswordResetEmail(response.email)
       setAccessState('pending')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed.'
-      if (message.toLowerCase().includes('already active')) {
-        setSubmittedEmail(registrationForm.email)
-        setLoginForm((current) => ({
-          ...current,
-          email: registrationForm.email,
-        }))
-        setPasswordResetEmail(registrationForm.email)
-        setAccessState('pending')
-      }
       setRegistrationError(message)
     } finally {
       setRegistrationBusy(false)
-    }
-  }
-
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoginBusy(true)
-    setLoginError(null)
-    setSessionError(null)
-    setPasswordResetError(null)
-    setPasswordResetMessage(null)
-
-    try {
-      const response = await loginParticipant(loginForm.email, loginForm.password)
-      persistReadyState(buildReadyState(response.participant, response.budgetLimit, response.squadSummary))
-      clearBuilderState()
-      setAccessState('ready')
-      setSubmittedEmail('')
-    } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'Login failed.')
-    } finally {
-      setLoginBusy(false)
-    }
-  }
-
-  async function handleSetPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPasswordError(null)
-    setPasswordMessage(null)
-
-    if (passwordForm.password !== passwordForm.confirmPassword) {
-      setPasswordError('Passwords do not match.')
-      return
-    }
-
-    setPasswordBusy(true)
-    try {
-      const response = await setParticipantPassword(passwordForm.password)
-      persistReadyState(buildReadyState(response.participant, response.budgetLimit, response.squadSummary))
-      setParticipant((current) => (current ? response.participant : current))
-      setPasswordForm(initialPasswordForm)
-      setPasswordMessage('Password saved. You can now sign back in later with email and password.')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Password could not be saved.'
-      if (/session/i.test(message)) {
-        moveToGuestState(dashboardSeed?.email)
-        setSessionError('Your browser session expired. Sign in again, then set a password.')
-      } else {
-        setPasswordError(message)
-      }
-    } finally {
-      setPasswordBusy(false)
-    }
-  }
-
-  async function handlePasswordResetRequest(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPasswordResetBusy(true)
-    setPasswordResetError(null)
-    setPasswordResetMessage(null)
-
-    try {
-      await requestParticipantPasswordReset(passwordResetEmail)
-      setPasswordResetMessage('If an active account exists for that email, the recovery link is on its way.')
-    } catch (error) {
-      setPasswordResetError(error instanceof Error ? error.message : 'Password recovery could not be started.')
-    } finally {
-      setPasswordResetBusy(false)
     }
   }
 
@@ -527,7 +393,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
     try {
       await logoutParticipant()
     } finally {
-      moveToGuestState(participant?.email ?? dashboardSeed?.email ?? loginForm.email)
+      moveToGuestState()
       setSessionError(null)
       setSubmittedEmail('')
     }
@@ -535,8 +401,35 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
 
   return (
     <div className="space-y-4 pb-10">
+      {accessState === 'locked' ? (
+        <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+              Builder access
+            </span>
+            <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Verification required
+            </span>
+          </div>
+          <h2 className="mt-7 max-w-[11ch] text-[clamp(2.6rem,2.8vw+1rem,4.5rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
+            Builder opens after registration.
+          </h2>
+          <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
+            Create an entry first, confirm the email link, then return here to open your protected squad dashboard.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              to={withReferral('/register', referrerSoccerverseUsername)}
+              className="premium-button px-7 py-4 text-base font-semibold"
+            >
+              Register an entry
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       {accessState === 'guest' ? (
-        <section className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="grid gap-6">
           <div className="hero-card allow-dropdown-overflow rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
             <p className="eyebrow">registration workflow</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -694,106 +587,6 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
             </form>
           </div>
 
-          <div className="grid gap-4">
-            <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">returning participant</p>
-              <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">Sign in later with your password.</h3>
-              <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-[var(--color-muted)]">
-                No background session call runs here. The builder only opens after a direct login or after your dashboard CTA.
-              </p>
-
-              <form onSubmit={handleLogin} className="mt-6 grid gap-4">
-                <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Email address</span>
-                  <input
-                    required
-                    type="email"
-                    autoComplete="email"
-                    value={loginForm.email}
-                    onChange={(event) =>
-                      setLoginForm((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
-                    }
-                    className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
-                  />
-                </label>
-
-                <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Password</span>
-                  <input
-                    required
-                    type="password"
-                    autoComplete="current-password"
-                    value={loginForm.password}
-                    onChange={(event) =>
-                      setLoginForm((current) => ({
-                        ...current,
-                        password: event.target.value,
-                      }))
-                    }
-                    className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
-                  />
-                </label>
-
-                {loginError ? (
-                  <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
-                    {loginError}
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={loginBusy}
-                  className="inline-flex w-fit items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                >
-                  {loginBusy ? 'Signing in…' : 'Sign in to my dashboard'}
-                </button>
-              </form>
-            </div>
-
-            <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">password recovery</p>
-              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Request a new recovery link.</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                We only send the reset email after you press the button. Nothing is requested in the background.
-              </p>
-
-              <form onSubmit={handlePasswordResetRequest} className="mt-5 grid gap-4">
-                <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Recovery email</span>
-                  <input
-                    required
-                    type="email"
-                    autoComplete="email"
-                    value={passwordResetEmail}
-                    onChange={(event) => setPasswordResetEmail(event.target.value)}
-                    className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
-                  />
-                </label>
-
-                {passwordResetError ? (
-                  <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
-                    {passwordResetError}
-                  </div>
-                ) : null}
-                {passwordResetMessage ? (
-                  <div className="rounded-[1.3rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-4 py-3 text-sm text-[var(--color-paper)]">
-                    {passwordResetMessage}
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={passwordResetBusy}
-                  className="inline-flex w-fit items-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                >
-                  {passwordResetBusy ? 'Sending link…' : 'Send password recovery email'}
-                </button>
-              </form>
-            </div>
-          </div>
         </section>
       ) : null}
 
@@ -855,6 +648,40 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      {accessState === 'registered' && dashboardSeed ? (
+        <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Entry active
+            </span>
+            <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+              {leagueLabel(dashboardSeed.leagueType)}
+            </span>
+          </div>
+          <h2 className="mt-7 max-w-[12ch] text-[clamp(2.4rem,2.4vw+1rem,4rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
+            Your entry is already registered.
+          </h2>
+          <p className="mt-6 max-w-[56ch] text-lg leading-relaxed text-[var(--color-muted)]">
+            Continue to the Builder tab to open the protected squad dashboard for{' '}
+            <span className="font-semibold text-white">{dashboardSeed.displayName}</span>.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              to={withReferral('/builder', referrerSoccerverseUsername)}
+              className="premium-button px-7 py-4 text-base font-semibold"
+            >
+              Open builder
+            </Link>
+            <Link
+              to={withReferral('/tables', referrerSoccerverseUsername)}
+              className="inline-flex items-center rounded-full border border-white/12 px-6 py-4 text-base font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+            >
+              View public tables
+            </Link>
           </div>
         </section>
       ) : null}
@@ -927,7 +754,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
                 </div>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="grid gap-4">
                 <div className="surface-row rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">account snapshot</p>
                   <div className="mt-5 grid gap-3">
@@ -956,93 +783,6 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '' 
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="surface-row rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">security</p>
-                      <h3 className="mt-3 max-w-[16rem] text-xl font-semibold tracking-tight text-white">
-                        {dashboardSeed.hasPassword ? 'Password login is active' : 'Set a password for later sign-ins'}
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => void handleSignOut()}
-                      className="whitespace-nowrap rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-
-                  {!dashboardSeed.hasPassword ? (
-                    <form onSubmit={handleSetPassword} className="mt-5 grid gap-4">
-                      <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                        This browser session is already verified. Add a password now so you can come back later from a fresh device or a
-                        closed browser.
-                      </p>
-                      <div className="grid gap-3 2xl:grid-cols-2">
-                        <label className="grid gap-2">
-                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">New password</span>
-                          <input
-                            required
-                            type="password"
-                            autoComplete="new-password"
-                            value={passwordForm.password}
-                            onChange={(event) =>
-                              setPasswordForm((current) => ({
-                                ...current,
-                                password: event.target.value,
-                              }))
-                            }
-                            className="min-w-0 rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
-                          />
-                        </label>
-                        <label className="grid gap-2">
-                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Repeat password</span>
-                          <input
-                            required
-                            type="password"
-                            autoComplete="new-password"
-                            value={passwordForm.confirmPassword}
-                            onChange={(event) =>
-                              setPasswordForm((current) => ({
-                                ...current,
-                                confirmPassword: event.target.value,
-                              }))
-                            }
-                            className="min-w-0 rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
-                          />
-                        </label>
-                      </div>
-
-                      {passwordError ? (
-                        <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
-                          {passwordError}
-                        </div>
-                      ) : null}
-                      {passwordMessage ? (
-                        <div className="rounded-[1.3rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-4 py-3 text-sm text-[var(--color-paper)]">
-                          {passwordMessage}
-                        </div>
-                      ) : null}
-
-                      <button
-                        type="submit"
-                        disabled={passwordBusy}
-                        className="inline-flex w-fit items-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                      >
-                        {passwordBusy ? 'Saving password…' : 'Save password access'}
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="mt-5 rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
-                      <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                        You can sign in later from the builder page with your email and password, or request a recovery link if you lose
-                        access.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

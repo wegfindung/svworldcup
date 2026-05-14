@@ -12,16 +12,21 @@ import type { LocaleCode } from './lib/types'
 import { AdminPage } from './pages/AdminPage'
 import { BuilderPage } from './pages/BuilderPage'
 import { HomePage } from './pages/HomePage'
+import { PlayerLoginPage } from './pages/PlayerLoginPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { ShareComposerPage } from './pages/ShareComposerPage'
 import { TablesPage } from './pages/TablesPage'
 import { VerifyPage } from './pages/VerifyPage'
 
-const navigation = [
+const primaryNavigation = [
   { to: '/', label: 'Overview' },
   { to: '/builder', label: 'Builder' },
   { to: '/tables', label: 'Tables' },
+]
+
+const accountNavigation = [
+  { to: '/login', label: 'Login' },
   { to: '/admin', label: 'Admin' },
 ]
 
@@ -77,24 +82,59 @@ function App() {
             </NavLink>
 
             <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
-              <nav className="hidden flex-wrap justify-end rounded-full border border-white/8 bg-black/20 p-1 md:flex">
-                {navigation.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={withReferral(item.to, referrerSoccerverseUsername)}
-                    className={({ isActive }) =>
-                      [
-                        'rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em]',
-                        isActive
-                          ? 'bg-[var(--color-accent)] text-[var(--color-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]'
-                          : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
-                      ].join(' ')
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                ))}
-              </nav>
+              <div className="hidden items-center justify-end gap-2 lg:flex">
+                <nav className="flex items-center rounded-full border border-white/8 bg-black/20 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                  {primaryNavigation.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={withReferral(item.to, referrerSoccerverseUsername)}
+                      className={({ isActive }) =>
+                        [
+                          'rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.12em]',
+                          isActive
+                            ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
+                            : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                        ].join(' ')
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </nav>
+
+                <NavLink
+                  to={withReferral('/register', referrerSoccerverseUsername)}
+                  className={({ isActive }) =>
+                    [
+                      'rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] active:scale-[0.98]',
+                      isActive
+                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                        : 'border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-ink)]',
+                    ].join(' ')
+                  }
+                >
+                  Register
+                </NavLink>
+
+                <nav className="flex items-center rounded-full border border-white/8 bg-black/14 p-1">
+                  {accountNavigation.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={withReferral(item.to, referrerSoccerverseUsername)}
+                      className={({ isActive }) =>
+                        [
+                          'rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em]',
+                          isActive
+                            ? 'bg-[var(--color-sand)]/14 text-[var(--color-sand)]'
+                            : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                        ].join(' ')
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </nav>
+              </div>
 
               <LocaleRail
                 activeLocale={locale}
@@ -107,7 +147,7 @@ function App() {
                 aria-label="Toggle navigation"
                 aria-expanded={mobileNavOpen}
                 onClick={() => setMobileNavOpen((current) => !current)}
-                className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/4 transition duration-300 ease-out hover:bg-white/8 active:scale-[0.96] md:hidden"
+                className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/4 transition duration-300 ease-out hover:bg-white/8 active:scale-[0.96] lg:hidden"
               >
                 <span className="grid gap-1">
                   <span className={['block h-0.5 w-4 rounded-full bg-white transition', mobileNavOpen ? 'translate-y-1.5 rotate-45' : ''].join(' ')} />
@@ -119,24 +159,61 @@ function App() {
           </div>
 
           {mobileNavOpen ? (
-            <nav className="grid grid-cols-2 gap-2 border-t border-white/8 pt-3 md:hidden">
-              {navigation.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={withReferral(item.to, referrerSoccerverseUsername)}
-                  onClick={() => setMobileNavOpen(false)}
-                  className={({ isActive }) =>
-                    [
-                      'rounded-full px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em]',
-                      isActive
-                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]'
-                        : 'border border-white/8 bg-black/20 text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
-                    ].join(' ')
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
+            <nav className="grid gap-3 border-t border-white/8 pt-3 lg:hidden">
+              <NavLink
+                to={withReferral('/register', referrerSoccerverseUsername)}
+                onClick={() => setMobileNavOpen(false)}
+                className={({ isActive }) =>
+                  [
+                    'rounded-full px-3 py-2.5 text-center text-xs font-bold uppercase tracking-[0.14em]',
+                    isActive
+                      ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                      : 'border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+                  ].join(' ')
+                }
+              >
+                Register
+              </NavLink>
+
+              <div className="grid grid-cols-3 gap-2">
+                {primaryNavigation.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={withReferral(item.to, referrerSoccerverseUsername)}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={({ isActive }) =>
+                      [
+                        'rounded-full px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em]',
+                        isActive
+                          ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
+                          : 'border border-white/8 bg-black/20 text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                      ].join(' ')
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {accountNavigation.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={withReferral(item.to, referrerSoccerverseUsername)}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={({ isActive }) =>
+                      [
+                        'rounded-full px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em]',
+                        isActive
+                          ? 'bg-[var(--color-sand)]/14 text-[var(--color-sand)]'
+                          : 'border border-white/8 bg-black/20 text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                      ].join(' ')
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
             </nav>
           ) : null}
         </header>
@@ -145,9 +222,28 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
             <Route
-              path="/builder"
-              element={<BuilderPage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />}
+              path="/register"
+              element={
+                <BuilderPage
+                  key="register"
+                  locale={locale}
+                  referrerSoccerverseUsername={referrerSoccerverseUsername}
+                  mode="register"
+                />
+              }
             />
+            <Route
+              path="/builder"
+              element={
+                <BuilderPage
+                  key="builder"
+                  locale={locale}
+                  referrerSoccerverseUsername={referrerSoccerverseUsername}
+                  mode="builder"
+                />
+              }
+            />
+            <Route path="/login" element={<PlayerLoginPage referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
             <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage />} />
             <Route path="/verify" element={<VerifyPage />} />

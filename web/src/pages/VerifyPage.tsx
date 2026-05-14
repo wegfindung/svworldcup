@@ -104,7 +104,7 @@ export function VerifyPage() {
             <h2 className="section-title max-w-[12ch]">Verification did not complete.</h2>
             <p className="max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">{state.message}</p>
             <Link
-              to="/builder"
+              to="/register"
               className="inline-flex items-center rounded-full border border-white/12 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
             >
               Return to registration

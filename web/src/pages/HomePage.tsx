@@ -262,7 +262,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  to={withReferral('/builder', referrerSoccerverseUsername)}
+                  to={withReferral('/register', referrerSoccerverseUsername)}
                   className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
                 >
                   {t(locale, 'heroPrimary')}
