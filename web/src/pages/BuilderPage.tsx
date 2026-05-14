@@ -28,7 +28,14 @@ import {
   type ParticipantReadyState,
 } from '../lib/participantReady'
 import { playUnlockSound } from '../lib/unlockSound'
-import type { LeagueType, LocaleCode, ParticipantProfile, ParticipantSquad, TeamPoolPlayer } from '../lib/types'
+import type {
+  LeagueType,
+  LocaleCode,
+  ParticipantProfile,
+  ParticipantSquad,
+  ParticipantSquadSummary,
+  TeamPoolPlayer,
+} from '../lib/types'
 
 interface BuilderPageProps {
   locale: LocaleCode
@@ -77,12 +84,30 @@ function compactSlotLabel(label: string) {
   return label.replace('Starting ', '').replace('Reserve ', 'Sub ')
 }
 
-function buildReadyState(participant: ParticipantProfile, budgetLimit: number): ParticipantReadyState {
+function buildSquadSummaryFromSquad(squad: ParticipantSquad): ParticipantSquadSummary {
+  return {
+    budgetLimit: squad.budgetLimit,
+    budgetUsed: squad.budgetUsed,
+    budgetRemaining: squad.budgetRemaining,
+    draftedCount: squad.slots.filter((slot) => slot.player).length,
+    isLocked: squad.isLocked,
+  }
+}
+
+function buildReadyState(
+  participant: ParticipantProfile,
+  budgetLimit: number,
+  squadSummary?: ParticipantSquadSummary,
+): ParticipantReadyState {
   return {
     displayName: participant.displayName,
     email: participant.email,
     leagueType: participant.leagueType,
-    budgetLimit,
+    budgetLimit: squadSummary?.budgetLimit ?? budgetLimit,
+    budgetRemaining: squadSummary?.budgetRemaining,
+    budgetUsed: squadSummary?.budgetUsed,
+    draftedCount: squadSummary?.draftedCount,
+    isLocked: squadSummary?.isLocked,
     hasPassword: participant.hasPassword,
   }
 }
@@ -167,6 +192,8 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
   const socialSharingUnlocked = draftedCount === 15
   const previousDraftedCountRef = useRef<number | null>(null)
+  const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? 'Budget left' : 'Budget'
+  const readyBudgetValue = dashboardSeed?.budgetRemaining ?? dashboardSeed?.budgetLimit ?? budgetLimit
 
   function getOpenEligibleSlots(player: TeamPoolPlayer) {
     if (draftedPlayerIds.has(player.playerId)) {
@@ -189,16 +216,28 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     previousDraftedCountRef.current = draftedCount
   }, [draftedCount, squad])
 
-  function persistReadyState(state: ParticipantReadyState) {
+  function storeReadyState(state: ParticipantReadyState) {
     writeParticipantReady(state)
     setDashboardSeed(state)
     setBudgetLimit(state.budgetLimit)
+  }
+
+  function persistReadyState(state: ParticipantReadyState) {
+    storeReadyState(state)
     setLoginForm((current) => ({
       ...current,
       email: state.email,
       password: '',
     }))
     setPasswordResetEmail(state.email)
+  }
+
+  function syncReadyStateWithSquad(nextParticipant: ParticipantProfile | null, nextSquad: ParticipantSquad | null) {
+    if (!nextParticipant || !nextSquad) {
+      return
+    }
+
+    storeReadyState(buildReadyState(nextParticipant, nextSquad.budgetLimit, buildSquadSummaryFromSquad(nextSquad)))
   }
 
   function clearBuilderState() {
@@ -236,7 +275,8 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     try {
       const session = await fetchParticipantSession()
       const squadResponse = await fetchParticipantSquad()
-      persistReadyState(buildReadyState(session.participant, session.budgetLimit))
+      persistReadyState(buildReadyState(session.participant, session.budgetLimit, session.squadSummary))
+      syncReadyStateWithSquad(session.participant, squadResponse.squad)
       setParticipant(session.participant)
       setSquad(squadResponse.squad)
       setPublicProfileUrl(session.participant.revealProfile ? buildPublicProfileUrl(session.participant) : null)
@@ -338,7 +378,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
 
     try {
       const response = await loginParticipant(loginForm.email, loginForm.password)
-      persistReadyState(buildReadyState(response.participant, response.budgetLimit))
+      persistReadyState(buildReadyState(response.participant, response.budgetLimit, response.squadSummary))
       clearBuilderState()
       setAccessState('ready')
       setSubmittedEmail('')
@@ -362,7 +402,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     setPasswordBusy(true)
     try {
       const response = await setParticipantPassword(passwordForm.password)
-      persistReadyState(buildReadyState(response.participant, response.budgetLimit))
+      persistReadyState(buildReadyState(response.participant, response.budgetLimit, response.squadSummary))
       setParticipant((current) => (current ? response.participant : current))
       setPasswordForm(initialPasswordForm)
       setPasswordMessage('Password saved. You can now sign back in later with email and password.')
@@ -415,6 +455,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     setBuilderError(null)
     try {
       const response = await assignSquadPlayer(slotKey, playerId)
+      syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Player could not be assigned.')
@@ -425,6 +466,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     setBuilderError(null)
     try {
       const response = await removeSquadPlayer(slotKey)
+      syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Player could not be removed.')
@@ -440,6 +482,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     setBuilderError(null)
     try {
       const response = await resetSquad()
+      syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
@@ -455,6 +498,7 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
     setBuilderError(null)
     try {
       const response = await lockSquad()
+      syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad could not be locked.')
@@ -872,8 +916,11 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                     <p className="mt-2 text-sm font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
                   </div>
                   <div>
-                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Budget</p>
-                    <p className="mono mt-2 text-sm font-semibold text-[var(--color-accent)]">{formatBudget(dashboardSeed.budgetLimit)}</p>
+                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{readyBudgetLabel}</p>
+                    <p className="mono mt-2 text-sm font-semibold text-[var(--color-accent)]">{formatBudget(readyBudgetValue)}</p>
+                    {dashboardSeed.budgetUsed !== undefined ? (
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">{formatBudget(dashboardSeed.budgetUsed)} used</p>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -896,8 +943,14 @@ export function BuilderPage({ locale: _locale }: BuilderPageProps) {
                         <p className="mt-2 text-base font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
                       </div>
                       <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
-                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Budget</p>
-                        <p className="mt-2 text-base font-semibold text-[var(--color-accent)]">{formatBudget(dashboardSeed.budgetLimit)}</p>
+                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{readyBudgetLabel}</p>
+                        <p className="mt-2 text-base font-semibold text-[var(--color-accent)]">{formatBudget(readyBudgetValue)}</p>
+                        {dashboardSeed.budgetUsed !== undefined ? (
+                          <p className="mt-1 text-xs text-[var(--color-muted)]">
+                            {formatBudget(dashboardSeed.budgetUsed)} used
+                            {dashboardSeed.draftedCount !== undefined ? ` · ${dashboardSeed.draftedCount}/15 filled` : ''}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </div>

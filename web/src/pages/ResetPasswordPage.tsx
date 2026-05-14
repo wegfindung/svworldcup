@@ -37,6 +37,10 @@ export function ResetPasswordPage() {
         email: response.participant.email,
         leagueType: response.participant.leagueType,
         budgetLimit: response.budgetLimit,
+        budgetRemaining: response.squadSummary.budgetRemaining,
+        budgetUsed: response.squadSummary.budgetUsed,
+        draftedCount: response.squadSummary.draftedCount,
+        isLocked: response.squadSummary.isLocked,
         hasPassword: response.participant.hasPassword,
       })
       setState({

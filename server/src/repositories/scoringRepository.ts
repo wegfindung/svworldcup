@@ -19,6 +19,7 @@ interface ScoreParticipant {
   leagueType: LeagueType
   primaryTeamCode: string
   secondaryTeamCode?: string
+  registeredAt: string
 }
 
 interface ScoreSlot {
@@ -27,6 +28,10 @@ interface ScoreSlot {
   slotGroup: 'starter' | 'sub'
   slotClass: SlotClass
   playerId: number
+}
+
+type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
+  registeredAt: string
 }
 
 export interface ScoringRepository {
@@ -43,6 +48,11 @@ function clampPerformancePoints(value: number | undefined, scoring: ScoringConfi
   }
 
   return Math.min(scoring.performancePointsMax, Math.max(scoring.performancePointsMin, value))
+}
+
+function toTimestamp(value: string) {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : Number.MAX_SAFE_INTEGER
 }
 
 function scoreEntry(entry: MatchEntryRecord, scoring: ScoringConfig) {
@@ -76,7 +86,7 @@ function calculateParticipantRows(
   slots: ScoreSlot[],
   entries: MatchEntryRecord[],
   scoring: ScoringConfig,
-) {
+): RankableParticipantRow[] {
   const fixtureEntryScores = buildFixtureEntryScoreMap(entries, scoring)
   const slotsByParticipant = new Map<string, ScoreSlot[]>()
 
@@ -135,15 +145,20 @@ function calculateParticipantRows(
       baseScore,
       bonusPercent,
       totalScore,
-      rank: 0,
+      registeredAt: participant.registeredAt,
     }
   })
 }
 
-function rankParticipants(rows: Omit<ParticipantScoreRow, 'rank'>[]): ParticipantScoreRow[] {
+function rankParticipants(rows: RankableParticipantRow[]): ParticipantScoreRow[] {
   return rows
-    .sort((left, right) => right.totalScore - left.totalScore || left.displayName.localeCompare(right.displayName))
-    .map((row, index) => ({ ...row, rank: index + 1 }))
+    .sort(
+      (left, right) =>
+        right.totalScore - left.totalScore ||
+        toTimestamp(left.registeredAt) - toTimestamp(right.registeredAt) ||
+        left.displayName.localeCompare(right.displayName),
+    )
+    .map(({ registeredAt: _registeredAt, ...row }, index) => ({ ...row, rank: index + 1 }))
 }
 
 function rankNations(rows: Omit<NationScoreRow, 'rank'>[]): NationScoreRow[] {
@@ -219,7 +234,19 @@ export class MemoryScoringRepository implements ScoringRepository {
 
   private async listMemoryParticipants(): Promise<ScoreParticipant[]> {
     const anyRepository = this.registrationRepository as unknown as {
-      byEmail?: Map<string, { participantId: string; displayName: string; leagueType: LeagueType; primaryTeamCode: string; secondaryTeamCode?: string; status: string }>
+      byEmail?: Map<
+        string,
+        {
+          participantId: string
+          displayName: string
+          leagueType: LeagueType
+          primaryTeamCode: string
+          secondaryTeamCode?: string
+          status: string
+          createdAt?: string
+          verifiedAt?: string
+        }
+      >
     }
     const records = anyRepository.byEmail ? [...anyRepository.byEmail.values()] : []
     return records
@@ -230,6 +257,7 @@ export class MemoryScoringRepository implements ScoringRepository {
         leagueType: record.leagueType,
         primaryTeamCode: record.primaryTeamCode,
         secondaryTeamCode: record.secondaryTeamCode,
+        registeredAt: record.createdAt ?? record.verifiedAt ?? '9999-12-31T23:59:59.999Z',
       }))
   }
 
@@ -257,9 +285,7 @@ export class MemoryScoringRepository implements ScoringRepository {
       }
     }
 
-    return calculateParticipantRows(participants, slots, entries, scoring).filter((row) =>
-      slots.some((slot) => slot.participantId === row.participantId),
-    )
+    return calculateParticipantRows(participants, slots, entries, scoring)
   }
 }
 
@@ -386,13 +412,12 @@ export class PostgresScoringRepository implements ScoringRepository {
       league_type: LeagueType
       primary_team_code: string
       secondary_team_code: string | null
+      created_at: string
     }>(
       `
-        SELECT p.participant_id, p.display_name, p.league_type, p.primary_team_code, p.secondary_team_code
+        SELECT p.participant_id, p.display_name, p.league_type, p.primary_team_code, p.secondary_team_code, p.created_at
         FROM participants p
-        JOIN squads s ON s.participant_id = p.participant_id
         WHERE p.status = 'active'
-          AND s.is_locked = TRUE
       `,
     )
     return result.rows.map((row) => ({
@@ -401,6 +426,7 @@ export class PostgresScoringRepository implements ScoringRepository {
       leagueType: row.league_type,
       primaryTeamCode: row.primary_team_code,
       secondaryTeamCode: row.secondary_team_code ?? undefined,
+      registeredAt: row.created_at,
     }))
   }
 

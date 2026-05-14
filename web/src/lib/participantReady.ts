@@ -7,6 +7,10 @@ export interface ParticipantReadyState {
   email: string
   leagueType: LeagueType
   budgetLimit: number
+  budgetRemaining?: number
+  budgetUsed?: number
+  draftedCount?: number
+  isLocked?: boolean
   hasPassword: boolean
 }
 
@@ -27,6 +31,10 @@ export function readParticipantReady(): ParticipantReadyState | null {
       typeof parsed.email !== 'string' ||
       (parsed.leagueType !== 'rookie' && parsed.leagueType !== 'veteran') ||
       typeof parsed.budgetLimit !== 'number' ||
+      (parsed.budgetRemaining !== undefined && typeof parsed.budgetRemaining !== 'number') ||
+      (parsed.budgetUsed !== undefined && typeof parsed.budgetUsed !== 'number') ||
+      (parsed.draftedCount !== undefined && typeof parsed.draftedCount !== 'number') ||
+      (parsed.isLocked !== undefined && typeof parsed.isLocked !== 'boolean') ||
       typeof parsed.hasPassword !== 'boolean'
     ) {
       return null
@@ -37,6 +45,10 @@ export function readParticipantReady(): ParticipantReadyState | null {
       email: parsed.email,
       leagueType: parsed.leagueType,
       budgetLimit: parsed.budgetLimit,
+      budgetRemaining: parsed.budgetRemaining,
+      budgetUsed: parsed.budgetUsed,
+      draftedCount: parsed.draftedCount,
+      isLocked: parsed.isLocked,
       hasPassword: parsed.hasPassword,
     }
   } catch {

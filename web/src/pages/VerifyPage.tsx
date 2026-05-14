@@ -30,6 +30,10 @@ export function VerifyPage() {
         email: response.email,
         leagueType: response.leagueType,
         budgetLimit: response.budgetLimit,
+        budgetRemaining: response.squadSummary.budgetRemaining,
+        budgetUsed: response.squadSummary.budgetUsed,
+        draftedCount: response.squadSummary.draftedCount,
+        isLocked: response.squadSummary.isLocked,
         hasPassword: response.hasPassword,
       })
       setState({

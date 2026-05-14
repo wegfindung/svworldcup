@@ -452,15 +452,9 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
               </Link>
             </div>
 
-            <div className="mt-4 rounded-[1rem] border border-white/8 bg-[rgba(6,12,11,0.86)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{participant.displayName}</p>
-              <p className="mt-2 text-lg font-semibold leading-tight text-white">{statement || copy.selectionHint}</p>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">{copy.prizeCta}</p>
-            </div>
-
             {cardUrl ? (
               <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[rgba(6,12,11,0.92)] shadow-[0_24px_60px_-36px_rgba(0,0,0,0.95)]">
-                <img src={cardUrl} alt={statement} className="block w-full" />
+                <img src={cardUrl} alt={statement || copy.previewLabel} className="block w-full" />
               </div>
             ) : (
               <div className="mt-4">

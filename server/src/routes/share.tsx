@@ -3,11 +3,14 @@ import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { Request, Response } from 'express'
 import { Resvg } from '@resvg/resvg-js'
+import React from 'react'
+import satori from 'satori'
 import { decodeShareSnapshotPayload, type ShareSnapshotPayload } from '../lib/sharePayload.js'
 import { getShareCopy } from '../lib/shareCopy.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
+const shareRenderVersion = '4'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 
@@ -230,36 +233,6 @@ function truncateText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, Math.max(0, maxLength - 1)).trim()}…` : value
 }
 
-function renderMultilineText(lines: string[], x: number, y: number, lineHeight: number, fontSize: number, weight: 500 | 700, fill: string) {
-  return lines
-    .map(
-      (line, index) =>
-        `<text x="${x}" y="${y + index * lineHeight}" fill="${fill}" font-family="Outfit" font-size="${fontSize}" font-weight="${weight}">${escapeXml(
-          line,
-        )}</text>`,
-    )
-    .join('')
-}
-
-function renderCenteredMultilineText(
-  lines: string[],
-  x: number,
-  y: number,
-  lineHeight: number,
-  fontSize: number,
-  weight: 500 | 700,
-  fill: string,
-) {
-  return lines
-    .map(
-      (line, index) =>
-        `<text x="${x}" y="${y + index * lineHeight}" text-anchor="middle" fill="${fill}" font-family="Outfit" font-size="${fontSize}" font-weight="${weight}">${escapeXml(
-          line,
-        )}</text>`,
-    )
-    .join('')
-}
-
 function buildEmbeddedFontCss(fonts: LoadedFont[]) {
   return fonts
     .map(
@@ -269,7 +242,87 @@ function buildEmbeddedFontCss(fonts: LoadedFont[]) {
     .join('')
 }
 
-function buildShareCardSvg(
+function createShareRenderer(svg: string) {
+  return new Resvg(svg, {
+    fitTo: {
+      mode: 'width',
+      value: shareCardWidth,
+    },
+  })
+}
+
+function encodeSvgDataUrl(svg: string) {
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+}
+
+async function renderTextDataUrl(
+  fonts: LoadedFont[],
+  options: {
+    lines: string[]
+    width: number
+    height: number
+    fontSize: number
+    lineHeight: number
+    weight: 500 | 700
+    fill: string
+    textAlign?: 'left' | 'center' | 'right'
+    justifyContent?: 'flex-start' | 'center'
+    letterSpacing?: number
+  },
+) {
+  const svg = await satori(
+    React.createElement(
+      'div',
+      {
+        style: {
+          color: options.fill,
+          display: 'flex',
+          flexDirection: 'column',
+          fontFamily: 'Outfit',
+          fontSize: `${options.fontSize}px`,
+          fontWeight: options.weight,
+          height: `${options.height}px`,
+          justifyContent: options.justifyContent ?? 'flex-start',
+          lineHeight: `${options.lineHeight}px`,
+          width: `${options.width}px`,
+        },
+      },
+      options.lines.map((line, index) =>
+        React.createElement(
+          'div',
+          {
+            key: `${line}-${index}`,
+            style: {
+              display: 'flex',
+              justifyContent:
+                options.textAlign === 'center' ? 'center' : options.textAlign === 'right' ? 'flex-end' : 'flex-start',
+              letterSpacing: options.letterSpacing ? `${options.letterSpacing}px` : '0px',
+              lineHeight: `${options.lineHeight}px`,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            },
+          },
+          line,
+        ),
+      ),
+    ),
+    {
+      width: options.width,
+      height: options.height,
+      fonts: fonts.map((font) => ({
+        name: font.name,
+        data: Buffer.from(font.data),
+        weight: font.weight,
+        style: font.style,
+      })),
+    },
+  )
+
+  return encodeSvgDataUrl(svg)
+}
+
+async function buildShareCardSvg(
   payload: ShareSnapshotPayload,
   players: Array<
     ShareSnapshotPayload['featuredPlayers'][number] & {
@@ -281,27 +334,84 @@ function buildShareCardSvg(
   copy: ShareRenderCopy,
   fonts: LoadedFont[],
 ) {
-  const statementLines = wrapText(payload.statement, players.length === 2 ? 24 : 27, 3)
-  const cardWidth = players.length === 2 ? 334 : 270
+  const statementLines = wrapText(payload.statement, players.length === 2 ? 38 : 34, 2)
+  const cardWidth = players.length === 2 ? 270 : 270
   const cardHeight = 284
-  const cardGap = 28
+  const cardGap = players.length === 2 ? 52 : 28
   const totalCardsWidth = players.length * cardWidth + (players.length - 1) * cardGap
   const cardsStartX = Math.round((shareCardWidth - totalCardsWidth) / 2)
   const panelX = 58
-  const panelY = 126
+  const panelY = 210
   const panelWidth = 1084
-  const panelHeight = 406
-  const cardsTopY = 238
+  const panelHeight = 318
+  const cardsTopY = 230
   const ctaY = 548
+  const ctaText = truncateText(copy.cta, 76)
+  const [badgeTextUrl, bylineTextUrl, statementTextUrl, ctaTextUrl] = await Promise.all([
+    renderTextDataUrl(fonts, {
+      lines: [copy.bodyBadge.toUpperCase()],
+      width: 390,
+      height: 40,
+      fontSize: 18,
+      lineHeight: 22,
+      weight: 700,
+      fill: '#f4f0e8',
+      justifyContent: 'center',
+      letterSpacing: 2,
+    }),
+    renderTextDataUrl(fonts, {
+      lines: [`${copy.bodyBylinePrefix} ${payload.managerName}`],
+      width: 420,
+      height: 40,
+      fontSize: 18,
+      lineHeight: 22,
+      weight: 500,
+      fill: 'rgba(255,255,255,0.74)',
+      textAlign: 'right',
+      justifyContent: 'center',
+    }),
+    renderTextDataUrl(fonts, {
+      lines: statementLines,
+      width: 820,
+      height: 108,
+      fontSize: 46,
+      lineHeight: 48,
+      weight: 700,
+      fill: '#f4f0e8',
+    }),
+    renderTextDataUrl(fonts, {
+      lines: [ctaText],
+      width: 1056,
+      height: 58,
+      fontSize: 27,
+      lineHeight: 31,
+      weight: 700,
+      fill: '#07120f',
+      textAlign: 'center',
+      justifyContent: 'center',
+    }),
+  ])
 
-  const playerCardsSvg = players
-    .map((player, index) => {
+  const playerCardsSvg = (
+    await Promise.all(
+      players.map(async (player, index) => {
       const x = cardsStartX + index * (cardWidth + cardGap)
       const y = cardsTopY
       const playerClipId = `player-clip-${player.playerId}-${index}`
       const flagClipId = `flag-clip-${player.playerId}-${index}`
-      const playerNameLines = wrapText(truncateText(player.renderLabel, 26), players.length === 2 ? 16 : 14, 2)
+      const playerNameLines = wrapText(truncateText(player.renderLabel, 30), players.length === 2 ? 18 : 15, 2)
       const flagX = cardWidth - 68
+      const playerNameUrl = await renderTextDataUrl(fonts, {
+        lines: playerNameLines,
+        width: cardWidth - 36,
+        height: 64,
+        fontSize: players.length === 2 ? 24 : 22,
+        lineHeight: 22,
+        weight: 700,
+        fill: '#f4f0e8',
+        textAlign: 'center',
+        justifyContent: 'center',
+      })
 
       return `
         <g transform="translate(${x}, ${y})">
@@ -313,19 +423,20 @@ function buildShareCardSvg(
               <circle cx="22" cy="22" r="22" />
             </clipPath>
           </defs>
-          <rect x="0" y="0" width="${cardWidth}" height="${cardHeight}" rx="32" ry="32" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+          <rect x="0" y="0" width="${cardWidth}" height="${cardHeight}" rx="32" ry="32" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.22)" stroke-width="2" />
           <image href="${player.portraitDataUrl}" x="0" y="0" width="${cardWidth}" height="${cardHeight}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${playerClipId})" />
-          <rect x="0" y="${cardHeight - 120}" width="${cardWidth}" height="120" fill="url(#card-bottom-shade)" clip-path="url(#${playerClipId})" />
+          <rect x="0" y="${cardHeight - 132}" width="${cardWidth}" height="132" fill="url(#card-bottom-shade)" clip-path="url(#${playerClipId})" />
           <g transform="translate(${flagX}, 18)">
             <circle cx="22" cy="22" r="24" fill="#f4f0e8" fill-opacity="0.96" />
             <image href="${player.flagDataUrl}" x="0" y="0" width="44" height="44" clip-path="url(#${flagClipId})" preserveAspectRatio="xMidYMid slice" />
           </g>
-          <rect x="18" y="${cardHeight - 70}" width="${cardWidth - 36}" height="52" rx="18" ry="18" fill="rgba(4,10,8,0.78)" stroke="rgba(255,255,255,0.08)" stroke-width="1.2" />
-          ${renderCenteredMultilineText(playerNameLines, Math.round(cardWidth / 2), cardHeight - 38, 18, players.length === 2 ? 24 : 22, 700, '#f4f0e8')}
+          <rect x="18" y="${cardHeight - 82}" width="${cardWidth - 36}" height="64" rx="20" ry="20" fill="rgba(4,10,8,0.86)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" />
+          <image href="${playerNameUrl}" x="18" y="${cardHeight - 82}" width="${cardWidth - 36}" height="64" />
         </g>
       `
-    })
-    .join('')
+      }),
+    )
+  ).join('')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${shareCardWidth}" height="${shareCardHeight}" viewBox="0 0 ${shareCardWidth} ${shareCardHeight}" role="img" aria-label="${escapeXml(
@@ -334,7 +445,7 @@ function buildShareCardSvg(
   <defs>
     <style>
       ${buildEmbeddedFontCss(fonts)}
-      text { font-family: 'Outfit'; }
+      text { font-family: 'Outfit', sans-serif; }
     </style>
     <linearGradient id="share-bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#071410" />
@@ -365,26 +476,20 @@ function buildShareCardSvg(
   <rect width="${shareCardWidth}" height="${shareCardHeight}" fill="url(#floodlight-left)" />
   <rect width="${shareCardWidth}" height="${shareCardHeight}" fill="url(#floodlight-right)" />
 
-  <rect x="${panelX}" y="${panelY}" width="${panelWidth}" height="${panelHeight}" rx="38" ry="38" fill="rgba(1,14,10,0.42)" stroke="rgba(150,255,205,0.14)" stroke-width="2" />
-  <rect x="84" y="154" width="220" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
-  <line x1="58" y1="340" x2="1142" y2="340" stroke="rgba(202,255,225,0.16)" stroke-width="2" />
-  <line x1="600" y1="214" x2="600" y2="492" stroke="rgba(202,255,225,0.14)" stroke-width="2" />
-  <circle cx="600" cy="340" r="62" fill="none" stroke="rgba(202,255,225,0.14)" stroke-width="2" />
-  <rect x="58" y="286" width="112" height="156" rx="28" ry="28" fill="none" stroke="rgba(202,255,225,0.11)" stroke-width="2" />
-  <rect x="1030" y="286" width="112" height="156" rx="28" ry="28" fill="none" stroke="rgba(202,255,225,0.11)" stroke-width="2" />
+  <rect x="${panelX}" y="${panelY}" width="${panelWidth}" height="${panelHeight}" rx="38" ry="38" fill="rgba(1,14,10,0.48)" stroke="rgba(150,255,205,0.14)" stroke-width="2" />
+  <rect x="${panelX + 22}" y="${panelY + 24}" width="${panelWidth - 44}" height="2" rx="1" ry="1" fill="rgba(202,255,225,0.12)" />
+  <rect x="${panelX + 22}" y="${panelY + panelHeight - 26}" width="${panelWidth - 44}" height="2" rx="1" ry="1" fill="rgba(202,255,225,0.1)" />
 
-  <rect x="72" y="48" width="286" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
-  <text x="92" y="73" fill="#f4f0e8" font-size="18" font-weight="700" letter-spacing="2">${escapeXml(copy.bodyBadge.toUpperCase())}</text>
-  <text x="1128" y="74" text-anchor="end" fill="rgba(255,255,255,0.74)" font-size="18" font-weight="500">${escapeXml(
-    `${copy.bodyBylinePrefix} ${payload.managerName}`,
-  )}</text>
-  ${renderMultilineText(statementLines, 84, 230, 52, 48, 700, '#f4f0e8')}
+  <rect x="72" y="48" width="430" height="40" rx="20" ry="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
+  <image href="${badgeTextUrl}" x="92" y="48" width="390" height="40" />
+  <image href="${bylineTextUrl}" x="708" y="48" width="420" height="40" />
+  <image href="${statementTextUrl}" x="72" y="102" width="820" height="108" />
 
   ${playerCardsSvg}
 
   <g transform="translate(72, ${ctaY})">
     <rect x="0" y="0" width="1056" height="58" rx="29" ry="29" fill="url(#cta-fill)" />
-    <text x="528" y="38" text-anchor="middle" fill="#07120f" font-size="28" font-weight="700">${escapeXml(copy.cta)}</text>
+    <image href="${ctaTextUrl}" x="0" y="0" width="1056" height="58" />
   </g>
 </svg>`
 }
@@ -392,14 +497,8 @@ function buildShareCardSvg(
 async function renderShareCardPng(payload: ShareSnapshotPayload) {
   const [fonts, renderData] = await Promise.all([loadShareFonts(), buildShareRenderData(payload)])
   const { players, copy } = renderData
-  const svg = buildShareCardSvg(payload, players, copy, fonts)
-
-  const resvg = new Resvg(svg, {
-    fitTo: {
-      mode: 'width',
-      value: shareCardWidth,
-    },
-  })
+  const svg = await buildShareCardSvg(payload, players, copy, fonts)
+  const resvg = createShareRenderer(svg)
 
   return resvg.render().asPng()
 }
@@ -407,12 +506,36 @@ async function renderShareCardPng(payload: ShareSnapshotPayload) {
 async function renderFallbackShareCardPng() {
   const fonts = await loadShareFonts()
   const copy = getShareCopy('en')
+  const [titleTextUrl, ctaTextUrl] = await Promise.all([
+    renderTextDataUrl(fonts, {
+      lines: ['Soccerverse World Cup'],
+      width: 980,
+      height: 76,
+      fontSize: 58,
+      lineHeight: 64,
+      weight: 700,
+      fill: '#f4f0e8',
+      textAlign: 'center',
+      justifyContent: 'center',
+    }),
+    renderTextDataUrl(fonts, {
+      lines: [copy.cta],
+      width: 980,
+      height: 44,
+      fontSize: 28,
+      lineHeight: 32,
+      weight: 500,
+      fill: '#f4f0e8',
+      textAlign: 'center',
+      justifyContent: 'center',
+    }),
+  ])
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${shareCardWidth}" height="${shareCardHeight}" viewBox="0 0 ${shareCardWidth} ${shareCardHeight}">
   <defs>
     <style>
       ${buildEmbeddedFontCss(fonts)}
-      text { font-family: 'Outfit'; }
+      text { font-family: 'Outfit', sans-serif; }
     </style>
     <linearGradient id="fallback-bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#07120f" />
@@ -420,15 +543,10 @@ async function renderFallbackShareCardPng() {
     </linearGradient>
   </defs>
   <rect width="${shareCardWidth}" height="${shareCardHeight}" fill="url(#fallback-bg)" />
-  <text x="600" y="262" text-anchor="middle" fill="#f4f0e8" font-size="58" font-weight="700">Soccerverse World Cup</text>
-  <text x="600" y="330" text-anchor="middle" fill="#f4f0e8" font-size="28" font-weight="500">${escapeXml(copy.cta)}</text>
+  <image href="${titleTextUrl}" x="110" y="214" width="980" height="76" />
+  <image href="${ctaTextUrl}" x="110" y="304" width="980" height="44" />
 </svg>`
-  const resvg = new Resvg(svg, {
-    fitTo: {
-      mode: 'width',
-      value: shareCardWidth,
-    },
-  })
+  const resvg = createShareRenderer(svg)
   return resvg.render().asPng()
 }
 
@@ -608,8 +726,8 @@ export async function handleShareSnapshotPage(req: Request, res: Response) {
     const payload = decodeShareSnapshotPayload(rawPayload)
     const copy = getShareCopy(payload.locale)
     const origin = buildOrigin(req)
-    const pageUrl = `${origin}/share/snapshot?data=${encodeURIComponent(rawPayload)}`
-    const imageUrl = `${origin}/api/public/share-card.png?data=${encodeURIComponent(rawPayload)}`
+    const pageUrl = `${origin}/share/snapshot?data=${encodeURIComponent(rawPayload)}&v=${shareRenderVersion}`
+    const imageUrl = `${origin}/api/public/share-card.png?data=${encodeURIComponent(rawPayload)}&v=${shareRenderVersion}`
 
     res.setHeader('Cache-Control', immutableCacheControl)
     res.type('html').send(buildShareSnapshotHtml(payload, copy, origin, pageUrl, imageUrl))

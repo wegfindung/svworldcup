@@ -6,17 +6,18 @@ import {
   shouldUseSecureCookies,
 } from '../config/auth.js'
 import { env } from '../config/env.js'
-import { STARTING_BUDGET } from '../data/formation.js'
 import { isKnownTeamCode } from '../data/worldCupSeed.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
 import { sendPasswordResetMail, sendVerificationMail } from '../lib/mailer.js'
 import { hashPassword } from '../lib/passwords.js'
 import { generatePlainToken } from '../lib/tokens.js'
+import type { ParticipantSquadSummary } from '../domain/types.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
 import {
   ActiveRegistrationExistsError,
   type RegistrationRepository,
 } from '../repositories/registrationRepository.js'
+import type { SquadRepository } from '../repositories/squadRepository.js'
 
 const registrationSchema = z
   .object({
@@ -83,9 +84,22 @@ async function issueParticipantSession(participantId: string, participantSession
   return buildSessionCookie(sessionToken)
 }
 
+async function buildSquadSummary(participantId: string, squadRepository: SquadRepository): Promise<ParticipantSquadSummary> {
+  const squad = await squadRepository.getOrCreate(participantId)
+
+  return {
+    budgetLimit: squad.budgetLimit,
+    budgetUsed: squad.budgetUsed,
+    budgetRemaining: squad.budgetRemaining,
+    draftedCount: squad.slots.filter((slot) => slot.player).length,
+    isLocked: squad.isLocked,
+  }
+}
+
 export function createAuthRouter(
   registrationRepository: RegistrationRepository,
   participantSessionRepository: ParticipantSessionRepository,
+  squadRepository: SquadRepository,
 ) {
   const router = Router()
 
@@ -126,10 +140,12 @@ export function createAuthRouter(
       return res.status(401).json({ error: 'Email or password is invalid.' })
     }
 
+    const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
     res.setHeader('Set-Cookie', await issueParticipantSession(participant.participantId, participantSessionRepository))
     res.json({
       participant,
-      budgetLimit: STARTING_BUDGET,
+      budgetLimit: squadSummary.budgetLimit,
+      squadSummary,
     })
   })
 
@@ -144,6 +160,7 @@ export function createAuthRouter(
       return res.status(404).json({ error: 'Verification token is invalid or expired.' })
     }
 
+    const squadSummary = await buildSquadSummary(verified.participantId, squadRepository)
     res.setHeader('Set-Cookie', await issueParticipantSession(verified.participantId, participantSessionRepository))
     res.json({
       participantId: verified.participantId,
@@ -152,7 +169,8 @@ export function createAuthRouter(
       leagueType: verified.leagueType,
       status: verified.status,
       verifiedAt: verified.verifiedAt,
-      budgetLimit: STARTING_BUDGET,
+      budgetLimit: squadSummary.budgetLimit,
+      squadSummary,
       hasPassword: verified.hasPassword,
     })
   })
@@ -170,9 +188,11 @@ export function createAuthRouter(
       return res.status(401).json({ error: 'Participant session is invalid or expired.' })
     }
 
+    const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
     res.json({
       participant,
-      budgetLimit: STARTING_BUDGET,
+      budgetLimit: squadSummary.budgetLimit,
+      squadSummary,
     })
   })
 
@@ -195,9 +215,11 @@ export function createAuthRouter(
       return res.status(404).json({ error: 'Participant not found.' })
     }
 
+    const squadSummary = await buildSquadSummary(updated.participantId, squadRepository)
     res.json({
       participant: updated,
-      budgetLimit: STARTING_BUDGET,
+      budgetLimit: squadSummary.budgetLimit,
+      squadSummary,
     })
   })
 
@@ -265,10 +287,12 @@ export function createAuthRouter(
       return res.status(404).json({ error: 'Reset token is invalid or expired.' })
     }
 
+    const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
     res.setHeader('Set-Cookie', await issueParticipantSession(participant.participantId, participantSessionRepository))
     res.json({
       participant,
-      budgetLimit: STARTING_BUDGET,
+      budgetLimit: squadSummary.budgetLimit,
+      squadSummary,
     })
   })
 
