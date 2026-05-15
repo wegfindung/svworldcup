@@ -22,14 +22,18 @@ export interface FixtureSeed {
   awayTeamCode: string
 }
 
+export interface PerformanceCurveAnchor {
+  rating: number
+  points: number
+}
+
 export interface ScoringConfig {
   goal: number
   assist: number
-  cleanSheet: number
   appearance: number
   minutes: number
-  performancePointsMin: number
-  performancePointsMax: number
+  cleanSheet: Record<SlotClass, number>
+  performanceCurve: PerformanceCurveAnchor[]
 }
 
 export interface BootstrapPayload {
