@@ -6,6 +6,7 @@ import type {
   MatchEntryRecord,
   NationScoreRow,
   ParticipantScoreRow,
+  PerformanceCurveAnchor,
   ScoringConfig,
   SlotClass,
 } from '../domain/types.js'
@@ -42,12 +43,30 @@ export interface ScoringRepository {
   getNationLeaderboard(): Promise<NationScoreRow[]>
 }
 
-function clampPerformancePoints(value: number | undefined, scoring: ScoringConfig) {
-  if (value === undefined || Number.isNaN(value)) {
+function derivePerformancePoints(rating: number | undefined, curve: PerformanceCurveAnchor[]) {
+  if (rating === undefined || Number.isNaN(rating)) {
     return 0
   }
-
-  return Math.min(scoring.performancePointsMax, Math.max(scoring.performancePointsMin, value))
+  if (curve.length === 0) {
+    return 0
+  }
+  if (rating < curve[0].rating) {
+    return 0
+  }
+  const lastIndex = curve.length - 1
+  if (rating >= curve[lastIndex].rating) {
+    return curve[lastIndex].points
+  }
+  for (let i = 0; i < lastIndex; i += 1) {
+    const lower = curve[i]
+    const upper = curve[i + 1]
+    if (rating >= lower.rating && rating <= upper.rating) {
+      const span = upper.rating - lower.rating
+      const t = span === 0 ? 0 : (rating - lower.rating) / span
+      return lower.points + t * (upper.points - lower.points)
+    }
+  }
+  return 0
 }
 
 function toTimestamp(value: string) {
@@ -59,21 +78,27 @@ function scoreEntry(entry: MatchEntryRecord, scoring: ScoringConfig) {
   return (
     entry.goals * scoring.goal +
     entry.assists * scoring.assist +
-    (entry.cleanSheetEligible ? scoring.cleanSheet : 0) +
     (entry.minutes > 0 ? scoring.appearance : 0) +
-    (entry.minutes > 0 ? scoring.minutes : 0) +
-    clampPerformancePoints(entry.performancePoints, scoring)
+    (entry.minutes >= 60 ? scoring.minutes : 0) +
+    derivePerformancePoints(entry.rating, scoring.performanceCurve)
   )
 }
 
+interface FixtureEntryScore {
+  score: number
+  inOfficialSquad: boolean
+  cleanSheetEligible: boolean
+}
+
 function buildFixtureEntryScoreMap(entries: MatchEntryRecord[], scoring: ScoringConfig) {
-  const fixtures = new Map<string, Map<number, { score: number; inOfficialSquad: boolean }>>()
+  const fixtures = new Map<string, Map<number, FixtureEntryScore>>()
 
   for (const entry of entries) {
-    const fixtureEntries = fixtures.get(entry.fixtureId) ?? new Map<number, { score: number; inOfficialSquad: boolean }>()
+    const fixtureEntries = fixtures.get(entry.fixtureId) ?? new Map<number, FixtureEntryScore>()
     fixtureEntries.set(entry.playerId, {
       score: scoreEntry(entry, scoring),
       inOfficialSquad: entry.inOfficialSquad,
+      cleanSheetEligible: entry.cleanSheetEligible,
     })
     fixtures.set(entry.fixtureId, fixtureEntries)
   }
@@ -116,6 +141,9 @@ function calculateParticipantRows(
         }
 
         baseScore += playerState.score
+        if (playerState.cleanSheetEligible) {
+          baseScore += scoring.cleanSheet[slot.slotClass]
+        }
       }
 
       for (const slot of subSlots) {
@@ -127,6 +155,9 @@ function calculateParticipantRows(
         const playerState = entryScores.get(slot.playerId)
         if (playerState) {
           baseScore += playerState.score
+          if (playerState.cleanSheetEligible) {
+            baseScore += scoring.cleanSheet[slot.slotClass]
+          }
         }
 
         starterAbsences.set(slot.slotClass, missingStarters - 1)

@@ -25,11 +25,26 @@ import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerv
 const scoringSchema = z.object({
   goal: z.coerce.number().min(0).max(20),
   assist: z.coerce.number().min(0).max(20),
-  cleanSheet: z.coerce.number().min(0).max(20),
   appearance: z.coerce.number().min(0).max(20),
   minutes: z.coerce.number().min(0).max(20),
-  performancePointsMin: z.coerce.number().min(0).max(5),
-  performancePointsMax: z.coerce.number().min(0).max(5),
+  cleanSheet: z.object({
+    GK: z.coerce.number().min(0).max(20),
+    DEF: z.coerce.number().min(0).max(20),
+    MID: z.coerce.number().min(0).max(20),
+    FWD: z.coerce.number().min(0).max(20),
+  }),
+  performanceCurve: z
+    .array(
+      z.object({
+        rating: z.coerce.number().min(0).max(10),
+        points: z.coerce.number().min(0).max(5),
+      }),
+    )
+    .length(4)
+    .refine(
+      (curve) => curve.every((anchor, i) => i === 0 || curve[i - 1].rating < anchor.rating),
+      { message: 'Performance curve anchors must be in strictly ascending order by rating' },
+    ),
 })
 
 const resendSchema = z.object({
