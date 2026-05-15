@@ -25,11 +25,26 @@ import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerv
 const scoringSchema = z.object({
   goal: z.coerce.number().min(0).max(20),
   assist: z.coerce.number().min(0).max(20),
-  cleanSheet: z.coerce.number().min(0).max(20),
   appearance: z.coerce.number().min(0).max(20),
   minutes: z.coerce.number().min(0).max(20),
-  performancePointsMin: z.coerce.number().min(0).max(5),
-  performancePointsMax: z.coerce.number().min(0).max(5),
+  cleanSheet: z.object({
+    GK: z.coerce.number().min(0).max(20),
+    DEF: z.coerce.number().min(0).max(20),
+    MID: z.coerce.number().min(0).max(20),
+    FWD: z.coerce.number().min(0).max(20),
+  }),
+  performanceCurve: z
+    .array(
+      z.object({
+        rating: z.coerce.number().min(0).max(10),
+        points: z.coerce.number().min(0).max(5),
+      }),
+    )
+    .length(4)
+    .refine(
+      (curve) => curve.every((anchor, i) => i === 0 || curve[i - 1].rating < anchor.rating),
+      { message: 'Performance curve anchors must be in strictly ascending order by rating' },
+    ),
 })
 
 const resendSchema = z.object({
@@ -54,18 +69,6 @@ const teamPlayersSchema = z.object({
       imageUrl: z.string().trim().url().optional(),
     }),
   ),
-})
-
-const matchEntrySchema = z.object({
-  fixtureId: z.string().trim().min(1).max(120),
-  playerId: z.coerce.number().int().positive(),
-  inOfficialSquad: z.boolean(),
-  minutes: z.coerce.number().int().min(0).max(130),
-  goals: z.coerce.number().int().min(0).max(20),
-  assists: z.coerce.number().int().min(0).max(20),
-  cleanSheetEligible: z.boolean().default(false),
-  performancePoints: z.coerce.number().min(0).max(5).optional(),
-  sourceNote: z.string().trim().max(200).optional(),
 })
 
 const globalRevealSchema = z.object({
@@ -315,18 +318,6 @@ export function createAdminRouter(
     const parsed = scoringSchema.parse(req.body)
     const updated = await configRepository.updateScoringConfig(parsed)
     res.json({ item: updated })
-  })
-
-  router.get('/match-entries', async (req, res) => {
-    const fixtureId = typeof req.query.fixtureId === 'string' ? req.query.fixtureId.trim() : undefined
-    const items = await scoringRepository.listMatchEntries(fixtureId || undefined)
-    res.json({ items })
-  })
-
-  router.put('/match-entries', async (req, res) => {
-    const parsed = matchEntrySchema.parse(req.body)
-    const item = await scoringRepository.upsertMatchEntry(parsed)
-    res.json({ item })
   })
 
   router.post('/reveal/global', async (req, res) => {

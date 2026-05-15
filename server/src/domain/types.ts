@@ -102,14 +102,18 @@ export interface AdminSessionRecord {
   expiresAt: string
 }
 
+export interface PerformanceCurveAnchor {
+  rating: number
+  points: number
+}
+
 export interface ScoringConfig {
   goal: number
   assist: number
-  cleanSheet: number
   appearance: number
   minutes: number
-  performancePointsMin: number
-  performancePointsMax: number
+  cleanSheet: Record<SlotClass, number>
+  performanceCurve: PerformanceCurveAnchor[]
 }
 
 export interface EventControls {
@@ -283,7 +287,9 @@ export interface MatchImportJsonMatch {
   awayTeam: string
   homeGoals: number
   awayGoals: number
-  sourceUrl: string
+  // Optional in a raw paste — it may be supplied via the import panel's source URL form
+  // field instead. buildMatchImportJson resolves the two before the pipeline runs.
+  sourceUrl?: string
 }
 
 export interface MatchImportJsonPlayer {
@@ -407,11 +413,47 @@ export interface AddSkipNameInput {
   createdBy: string
 }
 
-// Output of a MatchStatsImporter adapter: a batch ready to create, plus the names the
-// adapter deliberately skipped (D12 skip list) for the review summary.
-export interface ImportedMatch {
-  batchInput: CreateMatchBatchInput
+// One parsed player row plus its resolution outcome. Produced by a MatchStatsImporter
+// adapter for the pre-persist resolve stage; skipped names are reported separately, so a
+// row here is always 'resolved' or 'unresolved' at parse time (an override can later make
+// it 'skipped').
+export interface ResolvedMatchRow {
+  sourceName: string
+  teamCode: string
+  lineupStatus: LineupStatus
+  minutes: number
+  goals: number
+  assists: number
+  rating: number
+  resolution: PlayerResolution
+}
+
+// Output of a MatchStatsImporter adapter: the parsed + auto-resolved match, before any
+// persistence. The admin resolves or skips every unresolved row, then it is finalized
+// into a CreateMatchBatchInput.
+export interface MatchResolution {
+  fixtureId: string
+  sourceUrl: string
+  homeGoals: number
+  awayGoals: number
+  rows: ResolvedMatchRow[]
   skippedNames: string[]
+}
+
+// An admin's pre-persist choices for one row, keyed by the row's (teamCode, sourceName):
+// a resolve (playerId) or skip choice, plus optional stat edits (Fix A). A stat field, when
+// present, overrides the parsed value for that field; clean-sheet eligibility is deliberately
+// absent — it stays a review-screen judgement (D11).
+export interface ResolutionOverride {
+  sourceName: string
+  teamCode: string
+  playerId?: number
+  skip?: true
+  minutes?: number
+  goals?: number
+  assists?: number
+  rating?: number
+  lineupStatus?: LineupStatus
 }
 
 // --- Audit log (see architecture/SOP_match_data_import.md, audit logging) ---

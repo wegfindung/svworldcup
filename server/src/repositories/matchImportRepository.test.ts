@@ -83,7 +83,7 @@ describe('MemoryMatchImportRepository lookups', () => {
 })
 
 describe('MemoryMatchImportRepository.updateRow', () => {
-  it('bumps the version, records the editor, and voids prior confirmations', async () => {
+  it('bumps the version, voids prior confirmations, and records the editor as confirmer #1', async () => {
     const repo = new MemoryMatchImportRepository()
     let batch = await repo.createBatch(batchInput())
     batch = await repo.addConfirmation(batch.batchId, 'reviewer@example.com')
@@ -93,8 +93,14 @@ describe('MemoryMatchImportRepository.updateRow', () => {
 
     expect(batch.dataVersion).toBe(2)
     expect(batch.lastEditedBy).toBe('editor@example.com')
-    expect(validConfirmerEmails(batch)).toEqual([])
+    // The edit voids the v1 confirmations but counts as the editor's confirmation on v2.
+    expect(validConfirmerEmails(batch)).toEqual(['editor@example.com'])
     expect(isPromotable(batch)).toBe(false)
+
+    // One other distinct admin is enough to promote — never a third.
+    batch = await repo.addConfirmation(batch.batchId, 'reviewer@example.com')
+    expect(validConfirmerEmails(batch).sort()).toEqual(['editor@example.com', 'reviewer@example.com'])
+    expect(isPromotable(batch)).toBe(true)
   })
 
   it('rejects an edit that would duplicate a resolved player', async () => {
@@ -122,10 +128,11 @@ describe('MemoryMatchImportRepository.addConfirmation', () => {
     ).rejects.toBeInstanceOf(MatchImportValidationError)
   })
 
-  it('blocks the most recent editor from confirming their own edit', async () => {
+  it('blocks the editor from adding a second confirmation on their own edit', async () => {
     const repo = new MemoryMatchImportRepository()
     let batch = await repo.createBatch(batchInput())
     batch = await repo.updateRow(batch.rows[0].rowId, { goals: 2 }, 'editor@example.com')
+    // The edit already counts as the editor's confirmation — they cannot double-count.
     await expect(
       repo.addConfirmation(batch.batchId, 'editor@example.com'),
     ).rejects.toBeInstanceOf(MatchImportValidationError)

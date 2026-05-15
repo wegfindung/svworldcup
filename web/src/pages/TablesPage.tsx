@@ -119,7 +119,9 @@ export function TablesPage() {
             </div>
             <div className="surface-row rounded-[0.85rem] p-3">
               <p className="text-[var(--color-muted)]">Clean sheet</p>
-              <p className="mono mt-2 text-xl text-white">{defaultScoring.cleanSheet}</p>
+              <p className="mono mt-2 text-sm text-white">
+                GK {defaultScoring.cleanSheet.GK} · DEF {defaultScoring.cleanSheet.DEF} · MID {defaultScoring.cleanSheet.MID} · FWD {defaultScoring.cleanSheet.FWD}
+              </p>
             </div>
           </div>
         </div>

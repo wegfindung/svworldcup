@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ConfirmModal } from './ConfirmModal'
+import { InfoTip } from './InfoTip'
 import { MatchImportPlayerRow } from './MatchImportPlayerRow'
 import { TeamFlag } from './TeamFlag'
 import {
-  addMatchImportSkipName,
   confirmMatchImportBatch,
   discardMatchImportBatch,
   editMatchImportRow,
@@ -23,13 +24,17 @@ interface MatchImportReviewProps {
   homeTeam: TeamSeed
   awayTeam: TeamSeed
   adminEmail: string
-  preview?: boolean
-  // Supplied only in preview mode — the static curated pools for the demo batch.
-  previewPools?: Record<string, TeamPoolPlayer[]>
   onBatchUpdated: (batch: PendingMatchBatch) => void
   onBatchRemoved: (reason: 'promoted' | 'discarded', promotedRowCount?: number) => void
   onClose: () => void
 }
+
+// Fix 4: every consequential action is gated by a themed confirmation modal.
+type ModalState =
+  | { kind: 'confirm' }
+  | { kind: 'discard' }
+  | { kind: 'edit'; rowId: string; edits: MatchImportRowEdit }
+  | null
 
 // D17: a confirmation only counts toward promotion if it matches the batch's current data
 // version. Mirrors server lib/confirmationRules.ts so the review shows accurate status.
@@ -51,7 +56,6 @@ function TeamColumn({
   busy,
   onSaveEdits,
   onResolve,
-  onSkipName,
   dataVersion,
 }: {
   team: TeamSeed
@@ -61,7 +65,6 @@ function TeamColumn({
   busy: boolean
   onSaveEdits: (rowId: string, edits: MatchImportRowEdit) => void
   onResolve: (rowId: string, playerId: number) => void
-  onSkipName: (teamCode: string, sourceName: string) => void
   dataVersion: number
 }) {
   const groups: Array<{ key: LineupStatus; label: string }> = [
@@ -104,7 +107,6 @@ function TeamColumn({
                     busy={busy}
                     onSaveEdits={onSaveEdits}
                     onResolve={onResolve}
-                    onSkipName={onSkipName}
                   />
                 ))
               )}
@@ -121,26 +123,22 @@ export function MatchImportReview({
   homeTeam,
   awayTeam,
   adminEmail,
-  preview = false,
-  previewPools,
   onBatchUpdated,
   onBatchRemoved,
   onClose,
 }: MatchImportReviewProps) {
-  const poolsRequestKey = preview ? 'preview' : `${homeTeam.code}:${awayTeam.code}`
-  const [pools, setPools] = useState<Record<string, TeamPoolPlayer[]>>(preview ? previewPools ?? {} : {})
+  const poolsRequestKey = `${homeTeam.code}:${awayTeam.code}`
+  const [pools, setPools] = useState<Record<string, TeamPoolPlayer[]>>({})
   const [poolsLoadResult, setPoolsLoadResult] = useState<{ key: string; error: string | null }>({
-    key: preview ? poolsRequestKey : '',
+    key: '',
     error: null,
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [modal, setModal] = useState<ModalState>(null)
 
   useEffect(() => {
-    if (preview) {
-      return
-    }
     let cancelled = false
     Promise.all([fetchTeamSelections(homeTeam.code), fetchTeamSelections(awayTeam.code)])
       .then(([home, away]) => {
@@ -161,21 +159,20 @@ export function MatchImportReview({
     return () => {
       cancelled = true
     }
-  }, [preview, homeTeam.code, awayTeam.code, poolsRequestKey])
+  }, [homeTeam.code, awayTeam.code, poolsRequestKey])
 
   const validConfirmers = useMemo(() => validConfirmerEmails(batch), [batch])
   const homeRows = batch.rows.filter((row) => row.teamCode === homeTeam.code)
   const awayRows = batch.rows.filter((row) => row.teamCode === awayTeam.code)
   const unresolvedCount = batch.rows.filter((row) => row.playerId === null).length
-  const poolsLoading = !preview && poolsLoadResult.key !== poolsRequestKey
-  const visibleError = error ?? (!preview && poolsLoadResult.key === poolsRequestKey ? poolsLoadResult.error : null)
+  const poolsLoading = poolsLoadResult.key !== poolsRequestKey
+  const visibleError = error ?? (poolsLoadResult.key === poolsRequestKey ? poolsLoadResult.error : null)
 
   const alreadyConfirmed = validConfirmers.includes(adminEmail)
   const isLastEditor = batch.lastEditedBy === adminEmail
-  const confirmDisabled = preview || busy || alreadyConfirmed || isLastEditor
+  const confirmDisabled = busy || alreadyConfirmed || isLastEditor
 
   function confirmBlockedReason(): string | null {
-    if (preview) return 'Preview mode — not connected to the backend.'
     if (isLastEditor) return 'You were the most recent editor — a different admin must confirm.'
     if (alreadyConfirmed) return 'You have already confirmed this data version.'
     return null
@@ -195,7 +192,7 @@ export function MatchImportReview({
     }
   }
 
-  async function handleSaveEdits(rowId: string, edits: MatchImportRowEdit) {
+  async function runSaveEdits(rowId: string, edits: MatchImportRowEdit) {
     const result = await runAction(() => editMatchImportRow(batch.batchId, rowId, edits))
     if (result) {
       setMessage('Row saved — data version bumped, prior confirmations voided.')
@@ -211,14 +208,7 @@ export function MatchImportReview({
     }
   }
 
-  async function handleSkipName(teamCode: string, sourceName: string) {
-    const result = await runAction(() => addMatchImportSkipName(teamCode, sourceName))
-    if (result) {
-      setMessage(`"${sourceName}" added to the ${teamCode} skip list.`)
-    }
-  }
-
-  async function handleConfirm() {
+  async function runConfirm() {
     const result = await runAction(() => confirmMatchImportBatch(batch.batchId))
     if (!result) {
       return
@@ -231,10 +221,7 @@ export function MatchImportReview({
     }
   }
 
-  async function handleDiscard() {
-    if (!window.confirm('Discard this pending batch? All review progress is lost.')) {
-      return
-    }
+  async function runDiscard() {
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -246,6 +233,41 @@ export function MatchImportReview({
     } finally {
       setBusy(false)
     }
+  }
+
+  // The modal sits between the button click and the run* worker (Fix 4).
+  function handleModalConfirm() {
+    const current = modal
+    setModal(null)
+    if (!current) {
+      return
+    }
+    if (current.kind === 'confirm') {
+      void runConfirm()
+    } else if (current.kind === 'discard') {
+      void runDiscard()
+    } else {
+      void runSaveEdits(current.rowId, current.edits)
+    }
+  }
+
+  const modalCopy: Record<Exclude<ModalState, null>['kind'], { title: string; body: string; confirmLabel: string; tone?: 'danger' }> = {
+    confirm: {
+      title: 'Confirm this fixture?',
+      body: 'You are confirming the current data version. If this is the second distinct confirmation, the fixture is promoted into the scoring tables immediately.',
+      confirmLabel: 'Confirm fixture',
+    },
+    discard: {
+      title: 'Discard this pending batch?',
+      body: 'All review progress on this fixture is lost. The fixture can be re-uploaded afterwards.',
+      confirmLabel: 'Discard batch',
+      tone: 'danger',
+    },
+    edit: {
+      title: 'Submit the edit?',
+      body: 'Saving this row bumps the data version and voids all prior confirmations. The edit counts as your confirmation #1 on the new version.',
+      confirmLabel: 'Submit edit',
+    },
   }
 
   return (
@@ -287,18 +309,18 @@ export function MatchImportReview({
           </button>
         </div>
 
-        {preview ? (
-          <div className="mt-4 rounded-[1.1rem] border border-amber-300/25 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
-            Preview — not connected. This static demo batch cannot be confirmed, promoted or scored. Interactive
-            actions are disabled.
-          </div>
-        ) : null}
       </div>
 
       <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="eyebrow">confirmation status</p>
+            <p className="eyebrow flex items-center gap-1.5">
+              confirmation status
+              <InfoTip
+                label="About confirmations"
+                content="Promotion needs two distinct admins confirming the current data version. The uploader counts as #1; an edit voids all prior confirmations, bumps the version, and counts as the editor's #1 on the new version."
+              />
+            </p>
             <p className="mt-3 text-lg font-semibold text-white">
               {validConfirmers.length} of 2 confirmations on v{batch.dataVersion}
             </p>
@@ -317,15 +339,15 @@ export function MatchImportReview({
             <button
               type="button"
               disabled={confirmDisabled}
-              onClick={() => void handleConfirm()}
+              onClick={() => setModal({ kind: 'confirm' })}
               className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
             >
               {busy ? 'Working…' : 'Confirm fixture'}
             </button>
             <button
               type="button"
-              disabled={preview || busy}
-              onClick={() => void handleDiscard()}
+              disabled={busy}
+              onClick={() => setModal({ kind: 'discard' })}
               className="rounded-full border border-white/12 px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
             >
               Discard batch
@@ -354,26 +376,34 @@ export function MatchImportReview({
             team={homeTeam}
             rows={homeRows}
             pool={pools[homeTeam.code] ?? []}
-            disabled={preview || busy}
+            disabled={busy}
             busy={busy}
-            onSaveEdits={handleSaveEdits}
+            onSaveEdits={(rowId, edits) => setModal({ kind: 'edit', rowId, edits })}
             onResolve={handleResolve}
-            onSkipName={handleSkipName}
             dataVersion={batch.dataVersion}
           />
           <TeamColumn
             team={awayTeam}
             rows={awayRows}
             pool={pools[awayTeam.code] ?? []}
-            disabled={preview || busy}
+            disabled={busy}
             busy={busy}
-            onSaveEdits={handleSaveEdits}
+            onSaveEdits={(rowId, edits) => setModal({ kind: 'edit', rowId, edits })}
             onResolve={handleResolve}
-            onSkipName={handleSkipName}
             dataVersion={batch.dataVersion}
           />
         </div>
       )}
+
+      <ConfirmModal
+        open={modal !== null}
+        title={modal ? modalCopy[modal.kind].title : ''}
+        body={modal ? modalCopy[modal.kind].body : ''}
+        confirmLabel={modal ? modalCopy[modal.kind].confirmLabel : ''}
+        tone={modal ? modalCopy[modal.kind].tone : undefined}
+        onConfirm={handleModalConfirm}
+        onCancel={() => setModal(null)}
+      />
     </div>
   )
 }

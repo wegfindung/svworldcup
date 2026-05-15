@@ -52,9 +52,22 @@ describe('canConfirm', () => {
     expect(canConfirm(batch, 'reviewer@example.com')).toEqual({ allowed: true })
   })
 
-  it('blocks the most recent editor of the current state', () => {
-    const batch = makeBatch({ dataVersion: 2, lastEditedBy: 'editor@example.com' })
+  it('blocks the editor of the current state — they are already counted via the edit', () => {
+    const batch = makeBatch({
+      dataVersion: 2,
+      lastEditedBy: 'editor@example.com',
+      confirmations: [conf('editor@example.com', 2)],
+    })
     expect(canConfirm(batch, 'editor@example.com').allowed).toBe(false)
+  })
+
+  it('allows one other distinct admin to confirm an edited batch — no third admin needed', () => {
+    const batch = makeBatch({
+      dataVersion: 2,
+      lastEditedBy: 'editor@example.com',
+      confirmations: [conf('editor@example.com', 2)],
+    })
+    expect(canConfirm(batch, 'reviewer@example.com')).toEqual({ allowed: true })
   })
 
   it('blocks an admin who already confirmed the current version', () => {

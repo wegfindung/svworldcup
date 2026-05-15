@@ -26,8 +26,16 @@ describe('parseMatchImportJson', () => {
 
   it('rejects a malformed payload with a ZodError', () => {
     const bad = validJson()
-    delete (bad.match as Partial<typeof bad.match>).sourceUrl
+    // sourceUrl is optional in the schema (it may come from the import panel's form field);
+    // homeTeam is still required, so dropping it is a genuine schema violation.
+    delete (bad.match as Partial<typeof bad.match>).homeTeam
     expect(() => parseMatchImportJson(bad)).toThrow(ZodError)
+  })
+
+  it('accepts a payload with no sourceUrl (it may come from the form field)', () => {
+    const ok = validJson()
+    delete (ok.match as Partial<typeof ok.match>).sourceUrl
+    expect(() => parseMatchImportJson(ok)).not.toThrow()
   })
 
   it('rejects an unknown lineupStatus', () => {
@@ -59,5 +67,39 @@ describe('assertMatchImportSemantics', () => {
     json.match.awayTeam = 'Brazil'
     json.players[1].team = 'Brazil'
     expect(() => assertMatchImportSemantics(json)).toThrow(MatchImportValidationError)
+  })
+
+  it('rejects more than 11 starters for one team (Fix 8)', () => {
+    const raw = validJson()
+    for (let i = 0; i < 11; i += 1) {
+      raw.players.push({
+        name: `Brazil starter ${i}`,
+        team: 'Brazil',
+        lineupStatus: 'starter',
+        minutes: 90,
+        goals: 0,
+        assists: 0,
+        rating: 6.5,
+      })
+    }
+    expect(() => assertMatchImportSemantics(parseMatchImportJson(raw))).toThrow(
+      MatchImportValidationError,
+    )
+  })
+
+  it('accepts exactly 11 starters for one team (Fix 8)', () => {
+    const raw = validJson()
+    for (let i = 0; i < 10; i += 1) {
+      raw.players.push({
+        name: `Brazil starter ${i}`,
+        team: 'Brazil',
+        lineupStatus: 'starter',
+        minutes: 90,
+        goals: 0,
+        assists: 0,
+        rating: 6.5,
+      })
+    }
+    expect(() => assertMatchImportSemantics(parseMatchImportJson(raw))).not.toThrow()
   })
 })

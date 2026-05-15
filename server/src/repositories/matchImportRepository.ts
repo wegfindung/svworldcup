@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
 import { canConfirm } from '../lib/confirmationRules.js'
 import { MatchImportValidationError } from '../lib/matchImportError.js'
+import { assertStarterCap } from '../lib/matchImportJson.js'
 import type {
   CreateMatchBatchInput,
   PendingMatchBatch,
@@ -146,6 +147,16 @@ export class MemoryMatchImportRepository implements MatchImportRepository {
       assertNoDuplicatePlayers(
         batch.rows.map((candidate) => (candidate.rowId === rowId ? nextPlayerId : candidate.playerId)),
       )
+      // Fix A: re-assert the 11-starter cap on the would-be state. lineupStatus is editable
+      // here (the review screen) and was previously only capped at parse time.
+      const nextLineupStatus = edits.lineupStatus ?? row.lineupStatus
+      assertStarterCap(
+        batch.rows.map((candidate) =>
+          candidate.rowId === rowId
+            ? { teamCode: candidate.teamCode, lineupStatus: nextLineupStatus }
+            : { teamCode: candidate.teamCode, lineupStatus: candidate.lineupStatus },
+        ),
+      )
 
       row.playerId = nextPlayerId
       if (edits.lineupStatus !== undefined) row.lineupStatus = edits.lineupStatus
@@ -158,6 +169,14 @@ export class MemoryMatchImportRepository implements MatchImportRepository {
       batch.dataVersion += 1
       batch.lastEditedBy = editorEmail
       batch.updatedAt = new Date().toISOString()
+      // Submitting an edit counts as the editor's confirmation #1 on the new data version.
+      batch.confirmations.push({
+        confirmationId: randomUUID(),
+        batchId: batch.batchId,
+        adminEmail: editorEmail,
+        dataVersion: batch.dataVersion,
+        createdAt: batch.updatedAt,
+      })
       return this.snapshot(batch)
     }
     throw new MatchImportValidationError('Pending batch row not found.')
@@ -445,13 +464,26 @@ export class PostgresMatchImportRepository implements MatchImportRepository {
         cleanSheetEligible: edits.cleanSheetEligible ?? row.cleanSheetEligible,
       }
 
-      const siblingResult = await client.query<{ player_id: string | null }>(
-        'SELECT player_id FROM pending_match_stat_rows WHERE batch_id = $1 AND row_id <> $2',
+      const siblingResult = await client.query<{
+        player_id: string | null
+        team_code: string
+        lineup_status: 'starter' | 'substitute'
+      }>(
+        'SELECT player_id, team_code, lineup_status FROM pending_match_stat_rows WHERE batch_id = $1 AND row_id <> $2',
         [row.batchId, rowId],
       )
       assertNoDuplicatePlayers([
         next.playerId,
         ...siblingResult.rows.map((sibling) => (sibling.player_id === null ? null : Number(sibling.player_id))),
+      ])
+      // Fix A: re-assert the 11-starter cap on the would-be state. lineupStatus is editable
+      // here (the review screen) and was previously only capped at parse time.
+      assertStarterCap([
+        { teamCode: next.teamCode, lineupStatus: next.lineupStatus },
+        ...siblingResult.rows.map((sibling) => ({
+          teamCode: sibling.team_code,
+          lineupStatus: sibling.lineup_status,
+        })),
       ])
 
       await client.query(
@@ -472,14 +504,23 @@ export class PostgresMatchImportRepository implements MatchImportRepository {
           next.cleanSheetEligible,
         ],
       )
-      // D17: every edit bumps the version, which staleness-voids all prior confirmations.
-      await client.query(
+      // Every edit bumps the version, which staleness-voids all prior confirmations.
+      const bumpResult = await client.query<{ data_version: number }>(
         `
           UPDATE pending_match_batches
           SET data_version = data_version + 1, last_edited_by = $2, updated_at = NOW()
           WHERE batch_id = $1
+          RETURNING data_version
         `,
         [row.batchId, editorEmail],
+      )
+      // Submitting an edit counts as the editor's confirmation #1 on the new data version.
+      await client.query(
+        `
+          INSERT INTO pending_match_confirmations (batch_id, admin_email, data_version)
+          VALUES ($1, $2, $3)
+        `,
+        [row.batchId, editorEmail, bumpResult.rows[0].data_version],
       )
       await client.query('COMMIT')
       return (await loadBatch(this.pool, row.batchId)) as PendingMatchBatch

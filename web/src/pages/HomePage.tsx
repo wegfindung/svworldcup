@@ -340,12 +340,14 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[var(--color-muted)]">Clean sheet</dt>
-                  <dd className="mono text-white">{scoring.cleanSheet}</dd>
+                  <dd className="mono text-white">
+                    GK {scoring.cleanSheet.GK} · DEF {scoring.cleanSheet.DEF} · MID {scoring.cleanSheet.MID} · FWD {scoring.cleanSheet.FWD}
+                  </dd>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[var(--color-muted)]">Performance</dt>
                   <dd className="mono text-white">
-                    {scoring.performancePointsMin}-{scoring.performancePointsMax} Points
+                    Up to {scoring.performanceCurve[scoring.performanceCurve.length - 1]?.points ?? 0} Points
                   </dd>
                 </div>
               </dl>

@@ -8,12 +8,13 @@ import type {
   EmailCampaignRecipient,
   EmailCampaignRecord,
   EventControls,
-  MatchEntryInput,
-  MatchEntryRecord,
+  MatchImportInput,
   MatchImportPromotionResult,
   MatchImportRowEdit,
   MatchImportSkipNameEntry,
+  MatchResolution,
   PendingMatchBatch,
+  ResolutionOverride,
   ScoringConfig,
   ParticipantProfile,
   ParticipantSquad,
@@ -327,21 +328,6 @@ export function updateAdminScoring(scoring: ScoringConfig) {
   })
 }
 
-export function fetchAdminMatchEntries(fixtureId?: string) {
-  const query = fixtureId ? `?fixtureId=${encodeURIComponent(fixtureId)}` : ''
-  return getJson<{ items: MatchEntryRecord[] }>(`/api/admin/match-entries${query}`, {
-    method: 'GET',
-    headers: {},
-  })
-}
-
-export function saveAdminMatchEntry(entry: MatchEntryInput) {
-  return getJson<{ item: MatchEntryRecord }>('/api/admin/match-entries', {
-    method: 'PUT',
-    body: JSON.stringify(entry),
-  })
-}
-
 export function triggerGlobalReveal(payload: { revealProfiles: boolean; revealSquads: boolean }) {
   return getJson<{ eventControls: EventControls }>('/api/admin/reveal/global', {
     method: 'POST',
@@ -470,7 +456,21 @@ export function fetchMatchImportBatch(batchId: string) {
   )
 }
 
-export function uploadMatchImport(payload: { fixtureId: string; json: unknown; replace?: boolean }) {
+// Fix 7: parse + resolve without persisting. The admin resolves/skips every unresolved row
+// from the returned resolution, then calls uploadMatchImport with the overrides.
+export function parseMatchImport(payload: { fixtureId: string; input: MatchImportInput }) {
+  return getJson<{ resolution: MatchResolution }>('/api/admin/match-import/parse', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function uploadMatchImport(payload: {
+  fixtureId: string
+  input: MatchImportInput
+  overrides: ResolutionOverride[]
+  replace?: boolean
+}) {
   return getJson<{ batch: PendingMatchBatch; skippedNames: string[] }>('/api/admin/match-import/upload', {
     method: 'POST',
     body: JSON.stringify(payload),

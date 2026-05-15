@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { InfoTip } from './InfoTip'
 import { PlayerPortrait } from './PlayerPortrait'
 import type { LineupStatus, MatchImportRowEdit, PendingMatchStatRow, TeamPoolPlayer } from '../lib/types'
 
@@ -13,11 +14,14 @@ interface MatchImportPlayerRowProps {
   busy: boolean
   onSaveEdits: (rowId: string, edits: MatchImportRowEdit) => void
   onResolve: (rowId: string, playerId: number) => void
-  onSkipName: (teamCode: string, sourceName: string) => void
 }
 
 const numberFieldClass =
   'h-10 w-full rounded-[0.85rem] border border-white/10 bg-black/15 px-2.5 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50'
+
+// Fix 5: native <option> popups otherwise render with OS colours. Chrome/Firefox honour an
+// explicit option background + text colour.
+const optionClass = 'bg-[var(--color-ink-soft)] text-white'
 
 export function MatchImportPlayerRow({
   row,
@@ -27,7 +31,6 @@ export function MatchImportPlayerRow({
   busy,
   onSaveEdits,
   onResolve,
-  onSkipName,
 }: MatchImportPlayerRowProps) {
   const [minutes, setMinutes] = useState(row.minutes)
   const [goals, setGoals] = useState(row.goals)
@@ -75,9 +78,22 @@ export function MatchImportPlayerRow({
               unresolved — pick a player
             </span>
           ) : (
-            <p className="mt-0.5 truncate text-sm text-[var(--color-accent)]">
-              → {resolvedPlayer?.displayName ?? `Player #${row.playerId}`}
-            </p>
+            <>
+              <p className="mt-0.5 truncate text-sm text-[var(--color-accent)]">
+                → {resolvedPlayer?.displayName ?? `Player #${row.playerId}`}
+              </p>
+              <p className="mono mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                <span>player #{row.playerId}</span>
+                <a
+                  href={`https://play.soccerverse.com/player/${row.playerId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[var(--color-accent)] underline-offset-2 transition hover:underline"
+                >
+                  Soccerverse profile ↗
+                </a>
+              </p>
+            </>
           )}
         </div>
         <label className="grid gap-1">
@@ -88,8 +104,8 @@ export function MatchImportPlayerRow({
             onChange={(event) => setLineupStatus(event.target.value as LineupStatus)}
             className="h-10 rounded-[0.85rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50"
           >
-            <option value="starter">Starter</option>
-            <option value="substitute">Substitute</option>
+            <option className={optionClass} value="starter">Starter</option>
+            <option className={optionClass} value="substitute">Substitute</option>
           </select>
         </label>
       </div>
@@ -132,7 +148,13 @@ export function MatchImportPlayerRow({
           />
         </label>
         <label className="grid gap-1">
-          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">rating</span>
+          <span className="mono flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            rating
+            <InfoTip
+              label="About the rating field"
+              content="The source match rating (e.g. SofaScore), 0–10. Stored as a raw fact; performance points are derived from it later by the scoring engine — you do not type points here."
+            />
+          </span>
           <input
             type="number"
             min={0}
@@ -156,6 +178,10 @@ export function MatchImportPlayerRow({
             className="h-4 w-4 accent-[var(--color-accent)]"
           />
           Clean sheet eligible
+          <InfoTip
+            label="About clean sheet eligible"
+            content="A review-UI judgement, never in the submission. Tick it when this player's team conceded no goals and the player qualifies under the clean-sheet rule. Use the final score shown above to decide."
+          />
         </label>
 
         <button
@@ -166,17 +192,6 @@ export function MatchImportPlayerRow({
         >
           {unresolved ? 'Resolve player' : 'Remap'}
         </button>
-
-        {unresolved ? (
-          <button
-            type="button"
-            disabled={disabled || busy}
-            onClick={() => onSkipName(row.teamCode, row.sourceName)}
-            className="rounded-full border border-white/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-          >
-            Always skip this name
-          </button>
-        ) : null}
 
         {dirty ? (
           <button
@@ -212,9 +227,9 @@ export function MatchImportPlayerRow({
               }}
               className="mt-2 h-10 w-full rounded-[0.85rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50"
             >
-              <option value="">Select a player…</option>
+              <option className={optionClass} value="">Select a player…</option>
               {candidates.map((candidate) => (
-                <option key={candidate.playerId} value={candidate.playerId}>
+                <option className={optionClass} key={candidate.playerId} value={candidate.playerId}>
                   {candidate.displayName}
                 </option>
               ))}

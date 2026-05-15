@@ -6,18 +6,36 @@ Apply deterministic event scoring with clear separation between rookie/veteran l
 
 ## Base Scoring
 
-- goal: `2`
-- assist: `2`
-- clean sheet: `3`
-- appearance: `0`
-- minutes: `0`
-- optional admin-entered performance points: `0.5` to `1.0`
+All values listed below are stored in scoring configuration; the defaults shown are the team-locked starting values.
+
+Flat values, all positions:
+
+- goal: `5`
+- assist: `3`
+- appearance: `1` — awarded when `minutes > 0`
+- minutes: `1` — awarded when `minutes >= 60`
+
+Clean sheet — per lineup slot class (the slot the player is placed in, not their listed position):
+
+- GK: `4`
+- DEF: `4`
+- MID: `1`
+- FWD: `0`
+
+Performance points — derived from the admin-entered match rating via a continuous piecewise-linear curve:
+
+- anchors: `(6.0 → 0.5)`, `(8.0 → 1.0)`, `(9.5 → 1.5)`, `(10.0 → 2.0)`
+- rating below `6.0` → `0`
+- rating null / unrated → `0`
+- maximum: `2.0`
+
+The admin enters the raw match rating on each player entry; performance points are computed from that rating on every score calculation, so a curve-config change propagates automatically.
 
 ## Scoring Slice V1
 
 - Admins can upsert one player match entry per `(fixtureId, playerId)`.
 - Player match entries reach `admin_match_entries` only through the match-data import lifecycle (upload, review, two-admin confirm, promote) — see `SOP_match_data_import.md`. The scoring engine reads `admin_match_entries` and is otherwise unaffected by that lifecycle.
-- A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, optional performance points, and a source note.
+- A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, the match rating, and a source note. Performance points are not stored on the entry; they are derived from the rating via the performance curve at calculation time.
 - Public league leaderboards are calculated from locked squads only.
 - Starter slots score from their player match entries.
 - Substitute slots score only when at least one starter in the same slot class is marked absent from the official squad.
@@ -72,5 +90,5 @@ Apply deterministic event scoring with clear separation between rookie/veteran l
 
 - Rookie entries must always have `ownershipBoostPercent = 0`.
 - Veteran entries without Soccerverse username are invalid.
-- Performance points are optional and admin-supplied only.
+- The match rating is optional. A player entry with no rating yields zero performance points but still earns appearance/minutes/goals/assists/clean-sheet contributions normally.
 - All score calculations must be reproducible from stored match input and scoring config snapshots.
