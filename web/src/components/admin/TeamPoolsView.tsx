@@ -13,7 +13,7 @@ export function TeamPoolsView() {
       selectedCount: 0,
     })),
   )
-  const [teamsBusy, setTeamsBusy] = useState(false)
+  const [teamsBusy, setTeamsBusy] = useState(true)
   const [selectedTeamCode, setSelectedTeamCode] = useState<string>('GER')
   const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [selections, setSelections] = useState<TeamPoolPlayer[]>([])
@@ -30,7 +30,6 @@ export function TeamPoolsView() {
 
   useEffect(() => {
     let active = true
-    setTeamsBusy(true)
     void (async () => {
       try {
         const response = await fetchAdminTeams()
@@ -38,9 +37,9 @@ export function TeamPoolsView() {
           return
         }
         setTeams(response.items)
-        if (!response.items.some((team) => team.code === selectedTeamCode)) {
-          setSelectedTeamCode(response.items[0]?.code ?? 'GER')
-        }
+        setSelectedTeamCode((current) =>
+          response.items.some((team) => team.code === current) ? current : response.items[0]?.code ?? 'GER',
+        )
       } catch (err) {
         if (active) {
           setError(err instanceof Error ? err.message : 'Could not load teams.')

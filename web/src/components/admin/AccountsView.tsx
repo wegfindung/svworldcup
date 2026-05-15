@@ -28,7 +28,7 @@ function teamLabel(teamCode?: string) {
 
 export function AccountsView() {
   const [participants, setParticipants] = useState<AdminParticipantRecord[]>([])
-  const [participantsBusy, setParticipantsBusy] = useState(false)
+  const [participantsBusy, setParticipantsBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const participantCounts = useMemo(
@@ -67,7 +67,26 @@ export function AccountsView() {
   }
 
   useEffect(() => {
-    void handleRefreshParticipants()
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetchAdminParticipants()
+        if (active) {
+          setParticipants(response.items)
+        }
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : 'Could not load registered accounts.')
+        }
+      } finally {
+        if (active) {
+          setParticipantsBusy(false)
+        }
+      }
+    })()
+    return () => {
+      active = false
+    }
   }, [])
 
   return (

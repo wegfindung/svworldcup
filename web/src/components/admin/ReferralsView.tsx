@@ -5,7 +5,7 @@ import type { ReferralAnalyticsRow } from '../../lib/types'
 
 export function ReferralsView() {
   const [referralAnalytics, setReferralAnalytics] = useState<ReferralAnalyticsRow[]>([])
-  const [referralAnalyticsBusy, setReferralAnalyticsBusy] = useState(false)
+  const [referralAnalyticsBusy, setReferralAnalyticsBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   async function handleRefreshReferralAnalytics() {
@@ -22,7 +22,26 @@ export function ReferralsView() {
   }
 
   useEffect(() => {
-    void handleRefreshReferralAnalytics()
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetchAdminReferralAnalytics()
+        if (active) {
+          setReferralAnalytics(response.items)
+        }
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : 'Could not load referral analytics.')
+        }
+      } finally {
+        if (active) {
+          setReferralAnalyticsBusy(false)
+        }
+      }
+    })()
+    return () => {
+      active = false
+    }
   }, [])
 
   return (
