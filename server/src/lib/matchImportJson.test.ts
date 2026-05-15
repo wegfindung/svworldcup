@@ -26,8 +26,16 @@ describe('parseMatchImportJson', () => {
 
   it('rejects a malformed payload with a ZodError', () => {
     const bad = validJson()
-    delete (bad.match as Partial<typeof bad.match>).sourceUrl
+    // sourceUrl is optional in the schema (it may come from the import panel's form field);
+    // homeTeam is still required, so dropping it is a genuine schema violation.
+    delete (bad.match as Partial<typeof bad.match>).homeTeam
     expect(() => parseMatchImportJson(bad)).toThrow(ZodError)
+  })
+
+  it('accepts a payload with no sourceUrl (it may come from the form field)', () => {
+    const ok = validJson()
+    delete (ok.match as Partial<typeof ok.match>).sourceUrl
+    expect(() => parseMatchImportJson(ok)).not.toThrow()
   })
 
   it('rejects an unknown lineupStatus', () => {

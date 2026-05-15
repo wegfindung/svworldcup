@@ -11,7 +11,10 @@ export const matchImportJsonSchema = z.object({
     awayTeam: z.string().trim().min(1).max(120),
     homeGoals: z.coerce.number().int().min(0).max(99),
     awayGoals: z.coerce.number().int().min(0).max(99),
-    sourceUrl: z.string().trim().url().max(500),
+    // Optional in the JSON itself: the source URL may instead be supplied via the import
+    // panel's form field. buildMatchImportJson resolves the two and rejects if neither is
+    // present, so a source URL is still always recorded.
+    sourceUrl: z.string().trim().url().max(500).optional(),
   }),
   players: z
     .array(

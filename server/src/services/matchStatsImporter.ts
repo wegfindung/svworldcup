@@ -39,6 +39,12 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
     if (!fixture) {
       throw new MatchImportValidationError('Unknown fixture.')
     }
+    // buildMatchImportJson guarantees a source URL (from the JSON or the panel's form field);
+    // this guard makes that invariant explicit and narrows the type for the return below.
+    if (!json.match.sourceUrl) {
+      throw new MatchImportValidationError('The submission is missing a source URL.')
+    }
+    const sourceUrl = json.match.sourceUrl
 
     // D10 wrong-fixture guard: the submission's two teams must be the selected fixture's.
     const homeCode = resolveTeamCode(json.match.homeTeam)
@@ -101,7 +107,7 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
 
     return {
       fixtureId,
-      sourceUrl: json.match.sourceUrl,
+      sourceUrl,
       homeGoals: json.match.homeGoals,
       awayGoals: json.match.awayGoals,
       rows,

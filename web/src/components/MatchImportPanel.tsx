@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EmptyState } from './EmptyState'
 import { InfoTip } from './InfoTip'
 import { MatchImportResolveStage } from './MatchImportResolveStage'
@@ -56,12 +56,15 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
   const [csvHomeGoals, setCsvHomeGoals] = useState('')
   const [csvAwayGoals, setCsvAwayGoals] = useState('')
   const [csvSourceUrl, setCsvSourceUrl] = useState('')
+  const [jsonSourceUrl, setJsonSourceUrl] = useState('')
+  const [csvFileName, setCsvFileName] = useState('')
   const [replaceExisting, setReplaceExisting] = useState(false)
   const [resolution, setResolution] = useState<MatchResolution | null>(null)
   const [pendingInput, setPendingInput] = useState<MatchImportInput | null>(null)
   const [uploadBusy, setUploadBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const csvFileInputRef = useRef<HTMLInputElement>(null)
 
   const teamByCode = useMemo(() => {
     const map = new Map<string, TeamSeed>()
@@ -145,11 +148,26 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
     setCsvHomeGoals('')
     setCsvAwayGoals('')
     setCsvSourceUrl('')
+    setJsonSourceUrl('')
+    setCsvFileName('')
     setReplaceExisting(false)
     setResolution(null)
     setPendingInput(null)
     setError(null)
     setMessage(null)
+  }
+
+  // Read a dropped or picked CSV/TSV file into the paste box — a file is an alternative to
+  // pasting, not a separate path: the file content just becomes the paste text.
+  async function handleCsvFile(file: File) {
+    try {
+      const text = await file.text()
+      setPasteText(text)
+      setCsvFileName(file.name)
+      setError(null)
+    } catch {
+      setError('Could not read that file.')
+    }
   }
 
   function buildInput(): MatchImportInput | null {
@@ -161,7 +179,9 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
         setError('The pasted text is not valid JSON.')
         return null
       }
-      return { format: 'json', json: parsed }
+      // Optional source URL form field — falls back to the JSON's own match.sourceUrl
+      // server-side; the server rejects if neither is present.
+      return { format: 'json', json: parsed, sourceUrl: jsonSourceUrl.trim() || undefined }
     }
     const homeGoals = Number(csvHomeGoals)
     const awayGoals = Number(csvAwayGoals)
@@ -379,9 +399,23 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           ))}
           <InfoTip
             label="About the input formats"
-            content="JSON carries its own match block (teams, score, source URL). CSV/TSV is a pure player-rows table with a header row — you enter the score and source URL in the fields above the paste box."
+            content="JSON carries its own match block (teams and score); the source URL can come from the JSON or the field below. CSV/TSV is a pure player-rows table with a header row — you enter the score and source URL in the fields above the paste box."
           />
         </div>
+
+        {format === 'json' ? (
+          <label className="mt-4 grid gap-2">
+            <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
+              source URL (optional — falls back to the JSON&apos;s own)
+            </span>
+            <input
+              value={jsonSourceUrl}
+              onChange={(event) => setJsonSourceUrl(event.target.value)}
+              placeholder="https://wcup.soccerverse.io/..."
+              className={inputClass}
+            />
+          </label>
+        ) : null}
 
         {format === 'csv' ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -410,10 +444,38 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
               <input
                 value={csvSourceUrl}
                 onChange={(event) => setCsvSourceUrl(event.target.value)}
-                placeholder="https://www.sofascore.com/..."
+                placeholder="https://wcup.soccerverse.io/..."
                 className={inputClass}
               />
             </label>
+          </div>
+        ) : null}
+
+        {format === 'csv' ? (
+          <div
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault()
+              const file = event.dataTransfer.files[0]
+              if (file) void handleCsvFile(file)
+            }}
+            onClick={() => csvFileInputRef.current?.click()}
+            className="mt-4 cursor-pointer rounded-[1rem] border border-dashed border-white/15 bg-black/10 px-4 py-6 text-center text-sm text-[var(--color-muted)] transition hover:border-[var(--color-accent)]/50 hover:bg-white/4"
+          >
+            <input
+              ref={csvFileInputRef}
+              type="file"
+              accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void handleCsvFile(file)
+                event.target.value = ''
+              }}
+            />
+            {csvFileName
+              ? `Loaded "${csvFileName}" — drop another file, or edit it in the box below.`
+              : 'Drag a CSV/TSV file here, or click to browse. You can also paste directly below.'}
           </div>
         ) : null}
 

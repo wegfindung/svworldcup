@@ -283,7 +283,9 @@ export interface MatchImportJsonMatch {
   awayTeam: string
   homeGoals: number
   awayGoals: number
-  sourceUrl: string
+  // Optional in a raw paste — it may be supplied via the import panel's source URL form
+  // field instead. buildMatchImportJson resolves the two before the pipeline runs.
+  sourceUrl?: string
 }
 
 export interface MatchImportJsonPlayer {

@@ -219,12 +219,37 @@ describe('match import routes', () => {
   it('rejects a malformed JSON payload with 400', async () => {
     const { app } = await setup()
     const body = uploadBody()
-    delete (body.input.json.match as Partial<typeof body.input.json.match>).sourceUrl
+    delete (body.input.json.match as Partial<typeof body.input.json.match>).homeTeam
     const upload = await request(app)
       .post('/match-import/upload')
       .set('x-test-admin-email', 'importer@example.com')
       .send(body)
     expect(upload.status).toBe(400)
+  })
+
+  it('rejects a JSON payload with no source URL anywhere with 422', async () => {
+    const { app } = await setup()
+    const body = uploadBody()
+    delete (body.input.json.match as Partial<typeof body.input.json.match>).sourceUrl
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(body)
+    expect(upload.status).toBe(422)
+  })
+
+  it('accepts a JSON payload whose source URL comes from the form field', async () => {
+    const { app } = await setup()
+    const body = uploadBody()
+    delete (body.input.json.match as Partial<typeof body.input.json.match>).sourceUrl
+    ;(body.input as { sourceUrl?: string }).sourceUrl =
+      'https://wcup.soccerverse.io/downloads/matches/1.csv'
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send(body)
+    expect(upload.status).toBe(201)
+    expect(upload.body.batch.sourceUrl).toBe('https://wcup.soccerverse.io/downloads/matches/1.csv')
   })
 
   it('lists, fetches, and discards a pending batch', async () => {

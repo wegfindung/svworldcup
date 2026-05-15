@@ -367,5 +367,5 @@ export interface ResolutionOverride {
 // What the import panel submits — structured JSON, or a CSV/TSV player-rows paste whose
 // match-level fields come from form inputs (Fix 12).
 export type MatchImportInput =
-  | { format: 'json'; json: unknown }
+  | { format: 'json'; json: unknown; sourceUrl?: string }
   | { format: 'csv'; text: string; homeGoals: number; awayGoals: number; sourceUrl: string }

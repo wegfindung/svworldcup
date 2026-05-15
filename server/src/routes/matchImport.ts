@@ -28,6 +28,9 @@ export interface MatchImportRouterDeps {
 const jsonInputSchema = z.object({
   format: z.literal('json'),
   json: z.unknown(),
+  // Optional: a source URL supplied via the import panel's form field — an alternative to
+  // putting it in the JSON's match block. Resolved in buildMatchImportJson.
+  sourceUrl: z.string().trim().url().max(500).optional(),
 })
 const csvInputSchema = z.object({
   format: z.literal('csv'),
@@ -99,7 +102,17 @@ type MatchInput = z.infer<typeof matchInputSchema>
 // the form values and the selected fixture's two teams.
 function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImportJson {
   if (input.format === 'json') {
-    return parseMatchImportJson(input.json)
+    const json = parseMatchImportJson(input.json)
+    // The source URL may come from the JSON's match block or the panel's form field; the
+    // form field wins when both are present. A source URL is still always required — it is
+    // the provenance link the second confirming admin checks the data against.
+    const sourceUrl = input.sourceUrl ?? json.match.sourceUrl
+    if (!sourceUrl) {
+      throw new MatchImportValidationError(
+        'A source URL is required — provide it in the JSON or in the source URL field.',
+      )
+    }
+    return { ...json, match: { ...json.match, sourceUrl } }
   }
   const fixture = fixtures.find((candidate) => candidate.fixtureId === fixtureId)
   if (!fixture) {

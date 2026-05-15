@@ -94,9 +94,13 @@ Common to both:
 
 ## Source URL
 
-- Every import records the source URL the data was taken from. For a JSON submission it is
-  part of the `match` block; for a CSV/TSV submission the admin supplies it in a form field.
-  It is stored with the pending batch and shown as a clickable link in the review UI.
+- Every import records the source URL the data was taken from — the provenance link the
+  second confirming admin checks the data against. It is stored with the pending batch and
+  shown as a clickable link in the review UI.
+- For a JSON submission the source URL may be given either in the JSON's `match` block or
+  in a source URL form field; the form field takes precedence when both are present, and a
+  submission with neither is rejected. For a CSV/TSV submission the admin supplies it in a
+  form field.
 - The platform stores and links the URL only; it never fetches it server-side.
 
 ## Player-ID Resolution
