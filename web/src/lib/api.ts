@@ -17,6 +17,7 @@ import type {
   ResolutionOverride,
   ScoringConfig,
   ParticipantProfile,
+  ParticipantLineup,
   ParticipantSquad,
   ParticipantSquadSummary,
   ParticipantScoreRow,
@@ -253,6 +254,44 @@ export function resetSquad() {
 
 export function lockSquad() {
   return getJson<{ squad: ParticipantSquad }>('/api/participant/squad/lock', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
+export function fetchParticipantLineup(fixtureId: string) {
+  return getJson<{ lineup: ParticipantLineup }>(`/api/participant/lineups/${encodeURIComponent(fixtureId)}`, {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function assignLineupPlayer(fixtureId: string, slotKey: string, playerId: number) {
+  return getJson<{ lineup: ParticipantLineup }>(`/api/participant/lineups/${encodeURIComponent(fixtureId)}/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ slotKey, playerId }),
+  })
+}
+
+export function removeLineupPlayer(fixtureId: string, slotKey: string) {
+  return getJson<{ lineup: ParticipantLineup }>(
+    `/api/participant/lineups/${encodeURIComponent(fixtureId)}/slots/${encodeURIComponent(slotKey)}`,
+    {
+      method: 'DELETE',
+      headers: {},
+    },
+  )
+}
+
+export function resetLineup(fixtureId: string) {
+  return getJson<{ lineup: ParticipantLineup }>(`/api/participant/lineups/${encodeURIComponent(fixtureId)}/reset`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
+export function lockLineup(fixtureId: string) {
+  return getJson<{ lineup: ParticipantLineup }>(`/api/participant/lineups/${encodeURIComponent(fixtureId)}/lock`, {
     method: 'POST',
     body: JSON.stringify({}),
   })
