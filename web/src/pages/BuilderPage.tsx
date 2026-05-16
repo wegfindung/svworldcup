@@ -33,6 +33,8 @@ import type {
   ParticipantProfile,
   ParticipantSquad,
   ParticipantSquadSummary,
+  SlotClass,
+  SquadSlotState,
   TeamPoolPlayer,
 } from '../lib/types'
 
@@ -80,6 +82,46 @@ function formatBudget(value: number) {
 
 function compactSlotLabel(label: string) {
   return label.replace('Starting ', '').replace('Reserve ', 'Sub ')
+}
+
+const slotClassOrder: SlotClass[] = ['GK', 'DEF', 'MID', 'FWD']
+
+const slotClassCopy: Record<SlotClass, { label: string; pickLabel: string }> = {
+  GK: { label: 'Goalkeepers', pickLabel: 'Pick a goalkeeper' },
+  DEF: { label: 'Defenders', pickLabel: 'Pick a defender' },
+  MID: { label: 'Midfielders', pickLabel: 'Pick a midfielder' },
+  FWD: { label: 'Forwards', pickLabel: 'Pick a forward' },
+}
+
+function getNextDraftSlotKey(squad: ParticipantSquad, currentSlotKey?: string | null) {
+  const slots = squad.slots
+  if (currentSlotKey) {
+    const currentIndex = slots.findIndex((slot) => slot.key === currentSlotKey)
+    const nextEmptySlot = slots.slice(Math.max(0, currentIndex + 1)).find((slot) => !slot.player) ?? slots.find((slot) => !slot.player)
+    if (nextEmptySlot) {
+      return nextEmptySlot.key
+    }
+  }
+
+  return slots.find((slot) => !slot.player)?.key ?? slots[0]?.key ?? null
+}
+
+function getSlotKeyForClass(squad: ParticipantSquad, slotClass: SlotClass) {
+  const classSlots = squad.slots.filter((slot) => slot.slotClass === slotClass)
+  return classSlots.find((slot) => !slot.player)?.key ?? classSlots[0]?.key ?? null
+}
+
+function playerMatchesSearch(player: TeamPoolPlayer, searchTerm: string) {
+  const query = searchTerm.trim().toLowerCase()
+  if (!query) {
+    return true
+  }
+
+  return (
+    player.displayName.toLowerCase().includes(query) ||
+    String(player.playerId).includes(query) ||
+    player.positions.some((position) => position.toLowerCase().includes(query))
+  )
 }
 
 function buildSquadSummaryFromSquad(squad: Pick<ParticipantSquad, 'budgetLimit' | 'budgetUsed' | 'budgetRemaining' | 'isLocked' | 'slots'>): ParticipantSquadSummary {
@@ -135,6 +177,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
   const [teamPlayersLoading, setTeamPlayersLoading] = useState(false)
+  const [selectedSlotKey, setSelectedSlotKey] = useState<string | null>(null)
+  const [playerSearch, setPlayerSearch] = useState('')
   const [builderError, setBuilderError] = useState<string | null>(null)
   const [publicProfileUrl, setPublicProfileUrl] = useState<string | null>(null)
 
@@ -156,14 +200,6 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     () => eventTeams.find((team) => team.code === selectedTeamCode) ?? null,
     [selectedTeamCode],
   )
-  const groupedSquadSlots = useMemo(() => {
-    const slots = squad?.slots ?? []
-    return {
-      starters: slots.filter((slot) => slot.slotGroup === 'starter'),
-      subs: slots.filter((slot) => slot.slotGroup === 'sub'),
-    }
-  }, [squad])
-
   const draftedCount = useMemo(() => squad?.slots.filter((slot) => slot.player).length ?? 0, [squad])
   const draftedPlayerIds = useMemo(
     () =>
@@ -174,19 +210,39 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       ),
     [squad],
   )
+  const selectedSlot = useMemo(() => {
+    const slots = squad?.slots ?? []
+    return slots.find((slot) => slot.key === selectedSlotKey) ?? slots.find((slot) => !slot.player) ?? slots[0] ?? null
+  }, [selectedSlotKey, squad])
+  const squadSlotBuckets = useMemo(
+    () =>
+      slotClassOrder
+        .map((slotClass) => ({
+          slotClass,
+          ...slotClassCopy[slotClass],
+          slots: (squad?.slots ?? []).filter((slot) => slot.slotClass === slotClass),
+        }))
+        .filter((bucket) => bucket.slots.length > 0),
+    [squad],
+  )
+  const visibleTeamPlayers = useMemo(() => {
+    return teamPlayers.filter((player) => {
+      if (selectedSlot && !player.positionClasses.includes(selectedSlot.slotClass)) {
+        return false
+      }
+
+      if (draftedPlayerIds.has(player.playerId)) {
+        return false
+      }
+
+      return playerMatchesSearch(player, playerSearch)
+    })
+  }, [draftedPlayerIds, playerSearch, selectedSlot, teamPlayers])
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
   const socialSharingUnlocked = draftedCount === 15
   const previousDraftedCountRef = useRef<number | null>(null)
   const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? 'Budget left' : 'Budget'
   const readyBudgetValue = dashboardSeed?.budgetRemaining ?? dashboardSeed?.budgetLimit ?? budgetLimit
-
-  function getOpenEligibleSlots(player: TeamPoolPlayer) {
-    if (draftedPlayerIds.has(player.playerId)) {
-      return []
-    }
-
-    return (squad?.slots ?? []).filter((slot) => !slot.player && player.positionClasses.includes(slot.slotClass))
-  }
 
   useEffect(() => {
     if (!squad) {
@@ -225,6 +281,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     setSelectedTeamCode(undefined)
     setLoadedTeamCode(null)
     setTeamPlayers([])
+    setSelectedSlotKey(null)
+    setPlayerSearch('')
     setPublicProfileUrl(null)
     setBuilderError(null)
   }
@@ -250,6 +308,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       syncReadyStateWithSquad(session.participant, squadResponse.squad)
       setParticipant(session.participant)
       setSquad(squadResponse.squad)
+      setSelectedSlotKey(getNextDraftSlotKey(squadResponse.squad))
       setPublicProfileUrl(session.participant.revealProfile ? buildPublicProfileUrl(session.participant) : null)
       setSelectedTeamCode(session.participant.primaryTeamCode)
       setAccessState('active')
@@ -280,6 +339,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
         setTeamPlayers(response.items)
       })
       setLoadedTeamCode(selectedTeamCode)
+      setPlayerSearch('')
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Could not load the team pool.')
       setTeamPlayers([])
@@ -376,6 +436,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       const response = await assignSquadPlayer(slotKey, playerId)
       syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
+      setSelectedSlotKey(getNextDraftSlotKey(response.squad, slotKey))
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Player could not be assigned.')
     }
@@ -387,6 +448,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       const response = await removeSquadPlayer(slotKey)
       syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
+      setSelectedSlotKey(slotKey)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Player could not be removed.')
     }
@@ -403,6 +465,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       const response = await resetSquad()
       syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
+      setSelectedSlotKey(getNextDraftSlotKey(response.squad))
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
     }
@@ -448,6 +511,77 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSessionError(null)
       setSubmittedEmail('')
     }
+  }
+
+  function handleSelectSlotClass(slotClass: SlotClass) {
+    if (!squad) {
+      return
+    }
+
+    setSelectedSlotKey(getSlotKeyForClass(squad, slotClass))
+  }
+
+  function renderSquadSlot(slot: SquadSlotState) {
+    const isSelected = selectedSlot?.key === slot.key
+
+    return (
+      <article
+        key={slot.key}
+        className={[
+          'group rounded-[0.95rem] border px-3 py-3 transition hover:-translate-y-[1px]',
+          isSelected
+            ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 shadow-[0_0_0_1px_rgba(35,201,163,0.1)]'
+            : 'border-white/8 bg-[rgba(8,13,12,0.74)] hover:border-white/14 hover:bg-white/5',
+        ].join(' ')}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <button type="button" onClick={() => setSelectedSlotKey(slot.key)} className="min-w-0 flex-1 text-left">
+            <p className="truncate text-xs font-semibold text-white">{compactSlotLabel(slot.label)}</p>
+            <p className="mono mt-1 text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
+          </button>
+          <span
+            className={[
+              'mono shrink-0 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]',
+              slot.player
+                ? 'border-[var(--color-accent)]/22 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                : 'border-white/10 text-[var(--color-muted)]',
+            ].join(' ')}
+          >
+            {slot.player ? 'Filled' : 'Open'}
+          </span>
+        </div>
+
+        {slot.player ? (
+          <div className="mt-3 flex items-center gap-2.5">
+            <PlayerPortrait
+              src={slot.player.imageUrl}
+              alt={slot.player.displayName}
+              width={42}
+              height={42}
+              className="h-10 w-10 shrink-0 rounded-[0.75rem] border border-white/10 object-cover"
+            />
+            <button type="button" onClick={() => setSelectedSlotKey(slot.key)} className="min-w-0 flex-1 text-left">
+              <p className="truncate text-xs font-medium text-white">{slot.player.displayName}</p>
+              <p className="mt-1 text-[11px] text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setSelectedSlotKey(slot.key)} className="mt-3 text-left text-xs text-[var(--color-muted)]">
+            Select this slot, then pick a compatible player.
+          </button>
+        )}
+
+        {slot.player && !squad?.isLocked ? (
+          <button
+            type="button"
+            onClick={() => void handleRemove(slot.key)}
+            className="mt-3 inline-flex rounded-full border border-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/6"
+          >
+            Remove
+          </button>
+        ) : null}
+      </article>
+    )
   }
 
   return (
@@ -1043,7 +1177,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="eyebrow">team pool</p>
-                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">Scouting board</h3>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                      {selectedSlot ? slotClassCopy[selectedSlot.slotClass].pickLabel : 'Scouting board'}
+                    </h3>
+                    <p className="mt-2 text-sm text-[var(--color-muted)]">
+                      {selectedSlot
+                        ? `${compactSlotLabel(selectedSlot.label)} is active. Only compatible players are shown.`
+                        : 'Select a squad slot to filter the pool by position.'}
+                    </p>
                   </div>
                   {selectedTeam ? (
                     <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[rgba(8,13,12,0.7)] px-3 py-1.5">
@@ -1063,6 +1204,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       setSelectedTeamCode(teamCode)
                       setLoadedTeamCode(null)
                       setTeamPlayers([])
+                      setPlayerSearch('')
                       setBuilderError(null)
                     }}
                   />
@@ -1079,6 +1221,57 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   </button>
                   <p className="self-center text-xs text-[var(--color-muted)]">No request is sent until you load the team.</p>
                 </div>
+
+                <div className="mt-5 grid gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {squadSlotBuckets.map((bucket) => {
+                      const filledCount = bucket.slots.filter((slot) => slot.player).length
+                      const isActive = selectedSlot?.slotClass === bucket.slotClass
+
+                      return (
+                        <button
+                          key={bucket.slotClass}
+                          type="button"
+                          onClick={() => handleSelectSlotClass(bucket.slotClass)}
+                          className={[
+                            'rounded-[0.85rem] border px-3 py-2.5 text-left transition hover:-translate-y-[1px] active:scale-[0.98]',
+                            isActive
+                              ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white'
+                              : 'border-white/8 bg-white/[0.03] text-[var(--color-muted)] hover:border-white/14 hover:text-white',
+                          ].join(' ')}
+                        >
+                          <span className="mono text-[10px] uppercase tracking-[0.18em]">{bucket.slotClass}</span>
+                          <span className="mt-1 block text-xs font-semibold">
+                            {filledCount} / {bucket.slots.length}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                    <label className="block">
+                      <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Search players</span>
+                      <input
+                        type="search"
+                        value={playerSearch}
+                        onChange={(event) => setPlayerSearch(event.target.value)}
+                        placeholder="Name, ID, position..."
+                        className="mt-2 w-full rounded-[0.9rem] border border-white/10 bg-[rgba(8,13,12,0.78)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]/45"
+                      />
+                    </label>
+                    <div className="rounded-[0.9rem] border border-white/8 bg-white/[0.03] px-4 py-3">
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Shown</p>
+                      <p className="mt-1 text-sm font-semibold text-white">{visibleTeamPlayers.length} players</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedSlot?.player ? (
+                  <div className="mt-4 rounded-[0.9rem] border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2.5 text-sm text-[var(--color-paper)]">
+                    This slot is already filled. Remove {selectedSlot.player.displayName} from the squad panel before assigning another player here.
+                  </div>
+                ) : null}
 
                 {builderError ? (
                   <div className="mt-4 rounded-[0.9rem] border border-amber-300/20 bg-amber-300/8 px-3 py-2.5 text-sm text-[var(--color-paper)]">
@@ -1115,11 +1308,27 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   </div>
                 ) : null}
 
-                {teamPlayers.length > 0 ? (
-                  <div className="mt-4 max-h-[44rem] space-y-2 overflow-y-auto pr-1">
-                    {teamPlayers.map((player) => {
-                      const isAlreadyDrafted = draftedPlayerIds.has(player.playerId)
-                      const openSlots = getOpenEligibleSlots(player)
+                {!teamPlayersLoading && teamPlayers.length > 0 && visibleTeamPlayers.length === 0 ? (
+                  <div className="mt-6">
+                    <EmptyState title="No compatible players" body="Try another slot, clear the search, or free budget by removing a drafted player." />
+                  </div>
+                ) : null}
+
+                {visibleTeamPlayers.length > 0 ? (
+                  <div className="mt-4 max-h-[54rem] space-y-2 overflow-y-auto pr-1">
+                    {visibleTeamPlayers.map((player) => {
+                      const selectedSlotIsOpen = Boolean(selectedSlot && !selectedSlot.player)
+                      const isOverBudget = selectedSlotIsOpen && player.capCost > squad.budgetRemaining
+                      const actionDisabled = squad.isLocked || !selectedSlotIsOpen || isOverBudget
+                      const actionLabel = squad.isLocked
+                        ? 'Squad locked'
+                        : !selectedSlot
+                          ? 'Select a slot'
+                          : selectedSlot.player
+                            ? 'Clear slot first'
+                            : isOverBudget
+                              ? 'Over budget'
+                              : `Add to ${compactSlotLabel(selectedSlot.label)}`
                       return (
                         <article
                           key={player.playerId}
@@ -1163,32 +1372,18 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                             </div>
 
                             <div className="flex min-w-0 flex-wrap gap-1.5 xl:justify-end">
-                              {squad.isLocked ? (
-                                <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-2.5 py-1.5 text-[11px] text-[var(--color-sand)]">
-                                  Squad locked
-                                </span>
-                              ) : isAlreadyDrafted ? (
-                                <span className="rounded-full border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-2.5 py-1.5 text-[11px] text-[var(--color-accent)]">
-                                  Already in squad
-                                </span>
-                              ) : openSlots.length === 0 ? (
-                                <span className="rounded-full border border-white/10 px-2.5 py-1.5 text-[11px] text-[var(--color-muted)]">
-                                  No eligible slot
-                                </span>
-                              ) : (
-                                openSlots.map((slot) => (
-                                  <button
-                                    key={`${player.playerId}-${slot.key}`}
-                                    type="button"
-                                    aria-label={`Add ${player.displayName} to ${slot.label}`}
-                                    title={`Add to ${slot.label}`}
-                                    onClick={() => void handleAssign(slot.key, player.playerId)}
-                                    className="rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-accent)] transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-accent)]/15 active:scale-[0.98]"
-                                  >
-                                    + {compactSlotLabel(slot.label)}
-                                  </button>
-                                ))
-                              )}
+                              <button
+                                type="button"
+                                disabled={actionDisabled}
+                                onClick={() => {
+                                  if (selectedSlot) {
+                                    void handleAssign(selectedSlot.key, player.playerId)
+                                  }
+                                }}
+                                className="rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-4 py-2 text-xs font-semibold text-[var(--color-accent)] transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-accent)]/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-[var(--color-muted)] active:scale-[0.98]"
+                              >
+                                {actionLabel}
+                              </button>
                             </div>
                           </div>
                         </article>
@@ -1223,7 +1418,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">current squad</p>
-                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 starters + 4 locked subs</h3>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 + bench</h3>
                   </div>
                   <button
                     type="button"
@@ -1298,86 +1493,22 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   </div>
                 ) : null}
 
-                <div className="mt-5 space-y-4">
-                  <div className="space-y-2">
-                    <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">starters</p>
-                    {groupedSquadSlots.starters.map((slot) => (
-                      <div key={slot.key} className="rounded-[0.85rem] border border-white/8 bg-[rgba(8,13,12,0.74)] px-3 py-2.5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold text-white">{slot.label}</p>
-                            <p className="mono mt-1 text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
-                          </div>
-                          {slot.player && !squad.isLocked ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleRemove(slot.key)}
-                              className="rounded-full border border-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                            >
-                              Delete
-                            </button>
-                          ) : null}
-                        </div>
-                        {slot.player ? (
-                          <div className="mt-2 flex items-center gap-2.5">
-                            <PlayerPortrait
-                              src={slot.player.imageUrl}
-                              alt={slot.player.displayName}
-                              width={44}
-                              height={44}
-                              className="h-11 w-11 rounded-[0.75rem] border border-white/10 object-cover"
-                            />
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-medium text-white">{slot.player.displayName}</p>
-                              <p className="mt-1 text-[11px] text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="mt-2 text-xs text-[var(--color-muted)]">Empty slot</p>
-                        )}
+                <div className="mt-5 space-y-5">
+                  {squadSlotBuckets.map((bucket) => (
+                    <div key={bucket.slotClass} className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{bucket.label}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSlotClass(bucket.slotClass)}
+                          className="text-xs font-semibold text-[var(--color-accent)] transition hover:text-white"
+                        >
+                          Find {bucket.slotClass}
+                        </button>
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">subs</p>
-                    {groupedSquadSlots.subs.map((slot) => (
-                      <div key={slot.key} className="rounded-[0.85rem] border border-white/8 bg-[rgba(8,13,12,0.74)] px-3 py-2.5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold text-white">{slot.label}</p>
-                            <p className="mono mt-1 text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
-                          </div>
-                          {slot.player && !squad.isLocked ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleRemove(slot.key)}
-                              className="rounded-full border border-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                            >
-                              Delete
-                            </button>
-                          ) : null}
-                        </div>
-                        {slot.player ? (
-                          <div className="mt-2 flex items-center gap-2.5">
-                            <PlayerPortrait
-                              src={slot.player.imageUrl}
-                              alt={slot.player.displayName}
-                              width={44}
-                              height={44}
-                              className="h-11 w-11 rounded-[0.75rem] border border-white/10 object-cover"
-                            />
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-medium text-white">{slot.player.displayName}</p>
-                              <p className="mt-1 text-[11px] text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="mt-2 text-xs text-[var(--color-muted)]">Empty slot</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{bucket.slots.map((slot) => renderSquadSlot(slot))}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
