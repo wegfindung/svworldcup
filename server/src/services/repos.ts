@@ -78,6 +78,13 @@ function getPool(): Pool | null {
   return pool
 }
 
+export async function closeRepositoryPool() {
+  if (pool) {
+    await pool.end()
+    pool = null
+  }
+}
+
 export function createRegistrationRepository(): RegistrationRepository {
   if (!registrationRepository) {
     const existingPool = getPool()
