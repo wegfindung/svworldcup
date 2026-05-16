@@ -5,11 +5,9 @@ import { participantSessionCookieName } from '../config/auth.js'
 import { createRequireCookieCsrf } from '../lib/csrf.js'
 import { parseShareSnapshotPayload } from '../lib/sharePayload.js'
 import { createSignedShareSnapshot } from '../lib/shareSignature.js'
-import { fixtures } from '../data/worldCupSeed.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
 import { publicProfileSlug, type RegistrationRepository } from '../repositories/registrationRepository.js'
 import { SquadValidationError, type SquadRepository } from '../repositories/squadRepository.js'
-import { LineupValidationError, type LineupRepository } from '../repositories/lineupRepository.js'
 
 const assignPlayerSchema = z.object({
   slotKey: z.string().trim().min(1),
@@ -20,7 +18,6 @@ export function createParticipantRouter(
   participantSessionRepository: ParticipantSessionRepository,
   squadRepository: SquadRepository,
   registrationRepository: RegistrationRepository,
-  lineupRepository: LineupRepository,
 ) {
   const router = Router()
   const requireParticipant = createRequireParticipant(participantSessionRepository)
@@ -83,98 +80,6 @@ export function createParticipantRouter(
       res.json({ squad })
     } catch (error) {
       if (error instanceof SquadValidationError) {
-        return res.status(422).json({ error: error.message })
-      }
-      throw error
-    }
-  })
-
-  function assertKnownFixture(fixtureId: string, res: Parameters<Parameters<typeof router.get>[1]>[1]) {
-    if (!fixtures.some((fixture) => fixture.fixtureId === fixtureId)) {
-      res.status(404).json({ error: 'Unknown fixture.' })
-      return false
-    }
-    return true
-  }
-
-  router.get('/lineups/:fixtureId', async (req, res) => {
-    const participantId = res.locals.participant.participantId as string
-    const fixtureId = String(req.params.fixtureId ?? '').trim()
-    if (!assertKnownFixture(fixtureId, res)) {
-      return
-    }
-
-    const lineup = await lineupRepository.getOrCreate(participantId, fixtureId)
-    res.json({ lineup })
-  })
-
-  router.post('/lineups/:fixtureId/assign', async (req, res) => {
-    const participantId = res.locals.participant.participantId as string
-    const fixtureId = String(req.params.fixtureId ?? '').trim()
-    if (!assertKnownFixture(fixtureId, res)) {
-      return
-    }
-    const parsed = assignPlayerSchema.parse(req.body)
-
-    try {
-      const lineup = await lineupRepository.assignPlayer(participantId, fixtureId, parsed)
-      res.json({ lineup })
-    } catch (error) {
-      if (error instanceof LineupValidationError) {
-        return res.status(422).json({ error: error.message })
-      }
-      throw error
-    }
-  })
-
-  router.delete('/lineups/:fixtureId/slots/:slotKey', async (req, res) => {
-    const participantId = res.locals.participant.participantId as string
-    const fixtureId = String(req.params.fixtureId ?? '').trim()
-    if (!assertKnownFixture(fixtureId, res)) {
-      return
-    }
-
-    try {
-      const lineup = await lineupRepository.removePlayer(participantId, fixtureId, String(req.params.slotKey ?? ''))
-      res.json({ lineup })
-    } catch (error) {
-      if (error instanceof LineupValidationError) {
-        return res.status(422).json({ error: error.message })
-      }
-      throw error
-    }
-  })
-
-  router.post('/lineups/:fixtureId/reset', async (req, res) => {
-    const participantId = res.locals.participant.participantId as string
-    const fixtureId = String(req.params.fixtureId ?? '').trim()
-    if (!assertKnownFixture(fixtureId, res)) {
-      return
-    }
-
-    try {
-      const lineup = await lineupRepository.resetLineup(participantId, fixtureId)
-      res.json({ lineup })
-    } catch (error) {
-      if (error instanceof LineupValidationError) {
-        return res.status(422).json({ error: error.message })
-      }
-      throw error
-    }
-  })
-
-  router.post('/lineups/:fixtureId/lock', async (req, res) => {
-    const participantId = res.locals.participant.participantId as string
-    const fixtureId = String(req.params.fixtureId ?? '').trim()
-    if (!assertKnownFixture(fixtureId, res)) {
-      return
-    }
-
-    try {
-      const lineup = await lineupRepository.lockLineup(participantId, fixtureId)
-      res.json({ lineup })
-    } catch (error) {
-      if (error instanceof LineupValidationError) {
         return res.status(422).json({ error: error.message })
       }
       throw error

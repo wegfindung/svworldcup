@@ -18,7 +18,6 @@ import {
   createAuditRepository,
   createConfigRepository,
   createEmailMarketingRepository,
-  createLineupRepository,
   createMatchImportRepository,
   createMatchMappingRepository,
   createParticipantSessionRepository,
@@ -36,7 +35,6 @@ export function createApp() {
   const adminRepository = createAdminRepository()
   const teamPoolRepository = createTeamPoolRepository()
   const squadRepository = createSquadRepository()
-  const lineupRepository = createLineupRepository()
   const scoringRepository = createScoringRepository()
   const matchImportRepository = createMatchImportRepository()
   const matchMappingRepository = createMatchMappingRepository()
@@ -123,7 +121,7 @@ export function createApp() {
     authApiLimiter,
     createAuthRouter(registrationRepository, participantSessionRepository, squadRepository, emailMarketingRepository),
   )
-  app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository, lineupRepository))
+  app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository))
   app.use(
     '/api/admin',
     adminApiLimiter,

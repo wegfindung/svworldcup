@@ -144,8 +144,8 @@ export function createScoringRepository(): ScoringRepository {
   if (!scoringRepository) {
     const existingPool = getPool()
     scoringRepository = existingPool
-      ? new PostgresScoringRepository(existingPool, createConfigRepository(), createLineupRepository())
-      : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository(), createLineupRepository())
+      ? new PostgresScoringRepository(existingPool, createConfigRepository())
+      : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository())
   }
   return scoringRepository
 }
