@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { MemoryConfigRepository } from './configRepository.js'
-import { MemoryLineupRepository } from './lineupRepository.js'
 import { MemoryRegistrationRepository } from './registrationRepository.js'
 import { MemoryScoringRepository } from './scoringRepository.js'
 import { MemorySquadRepository } from './squadRepository.js'
@@ -37,8 +36,8 @@ function player(playerId: number, position: string): SoccerversePlayerRecord {
   }
 }
 
-describe('MemoryScoringRepository fixture lineups', () => {
-  it('scores locked fixture-specific lineups instead of requiring one static locked squad', async () => {
+describe('MemoryScoringRepository competition squad scoring', () => {
+  it('scores the one locked competition squad across fixtures', async () => {
     const pools = new MemoryTeamPoolRepository()
     await pools.replaceTeamPlayers(
       'FRA',
@@ -61,15 +60,12 @@ describe('MemoryScoringRepository fixture lineups', () => {
     expect(participant).not.toBeNull()
 
     const squads = new MemorySquadRepository(pools)
-    const lineups = new MemoryLineupRepository(pools)
     for (const slotPlayer of slotPlayers) {
-      await lineups.assignPlayer(created.record.participantId, 'fixture-1', { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
-      await lineups.assignPlayer(created.record.participantId, 'fixture-2', { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId + 100 })
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
     }
-    await lineups.lockLineup(created.record.participantId, 'fixture-1')
-    await lineups.lockLineup(created.record.participantId, 'fixture-2')
+    await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, lineups)
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
     await scoring.upsertMatchEntry({
       fixtureId: 'fixture-1',
       playerId: 101,
@@ -81,7 +77,7 @@ describe('MemoryScoringRepository fixture lineups', () => {
     })
     await scoring.upsertMatchEntry({
       fixtureId: 'fixture-2',
-      playerId: 201,
+      playerId: 102,
       inOfficialSquad: true,
       minutes: 90,
       goals: 0,
