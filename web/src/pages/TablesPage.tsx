@@ -14,6 +14,16 @@ function formatScore(value: number) {
   })
 }
 
+function BreakdownPill({ label, count, points }: { label: string; count?: number; points: number }) {
+  return (
+    <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[11px] text-[var(--color-muted)]">
+      <span className="font-medium text-white">{label}</span>{' '}
+      {count !== undefined ? <span>{count} · </span> : null}
+      <span className="mono text-[var(--color-accent)]">{formatScore(points)}</span>
+    </span>
+  )
+}
+
 function ParticipantTable({ title, rows }: { title: string; rows: ParticipantScoreRow[] }) {
   return (
     <section className="glass-panel rounded-[1.15rem] p-4">
@@ -29,7 +39,7 @@ function ParticipantTable({ title, rows }: { title: string; rows: ParticipantSco
         {rows.length ? (
           <div className="divide-y divide-white/8">
             {rows.map((row) => (
-              <div key={row.participantId} className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 bg-black/12 px-3.5 py-2.5 transition hover:bg-white/5">
+              <div key={row.participantId} className="grid grid-cols-[3.25rem_1fr] gap-3 bg-black/12 px-3.5 py-3 transition hover:bg-white/5 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
                 <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{row.displayName}</p>
@@ -44,9 +54,18 @@ function ParticipantTable({ title, rows }: { title: string; rows: ParticipantSco
                       </>
                     ) : null}
                   </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <BreakdownPill label="G" count={row.breakdown.goals.count} points={row.breakdown.goals.points} />
+                    <BreakdownPill label="A" count={row.breakdown.assists.count} points={row.breakdown.assists.points} />
+                    <BreakdownPill label="Apps" count={row.breakdown.appearances.count} points={row.breakdown.appearances.points} />
+                    <BreakdownPill label="60+" count={row.breakdown.minutes.count} points={row.breakdown.minutes.points} />
+                    <BreakdownPill label="CS" count={row.breakdown.cleanSheets.count} points={row.breakdown.cleanSheets.points} />
+                    <BreakdownPill label="Perf" points={row.breakdown.performance.points} />
+                  </div>
                 </div>
-                <div className="text-right">
+                <div className="col-span-2 text-right sm:col-span-1">
                   <p className="mono text-lg text-white">{formatScore(row.totalScore)}</p>
+                  <p className="mt-1 text-[11px] text-[var(--color-muted)]">base {formatScore(row.baseScore)}</p>
                   {row.bonusPercent > 0 ? <p className="text-xs text-[var(--color-accent)]">+{row.bonusPercent}%</p> : null}
                 </div>
               </div>

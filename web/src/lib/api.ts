@@ -21,6 +21,7 @@ import type {
   ParticipantSquad,
   ParticipantSquadSummary,
   ParticipantScoreRow,
+  PublicFixtureResult,
   PublicParticipantProfile,
   NationScoreRow,
   ReferralAnalyticsRow,
@@ -219,6 +220,20 @@ export function fetchVeteranLeaderboard() {
 
 export function fetchNationLeaderboard() {
   return getJson<{ items: NationScoreRow[] }>('/api/public/leaderboards/nations', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchMatchResults() {
+  return getJson<{
+    items: PublicFixtureResult[]
+    summary: {
+      totalFixtures: number
+      finalFixtures: number
+      pendingFixtures: number
+    }
+  }>('/api/public/match-results', {
     method: 'GET',
     headers: {},
   })

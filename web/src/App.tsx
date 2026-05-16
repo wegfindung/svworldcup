@@ -16,6 +16,7 @@ import { HomePage } from './pages/HomePage'
 import { PlayerLoginPage } from './pages/PlayerLoginPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { ResultsPage } from './pages/ResultsPage'
 import { ShareComposerPage } from './pages/ShareComposerPage'
 import { TablesPage } from './pages/TablesPage'
 import { VerifyPage } from './pages/VerifyPage'
@@ -23,6 +24,7 @@ import { VerifyPage } from './pages/VerifyPage'
 const primaryNavigation = [
   { to: '/', label: 'Overview' },
   { to: '/builder', label: 'Builder' },
+  { to: '/results', label: 'Results' },
   { to: '/tables', label: 'Tables' },
 ]
 
@@ -181,7 +183,7 @@ function App() {
                 Register
               </NavLink>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {primaryNavigation.map((item) => (
                   <NavLink
                     key={item.to}
@@ -251,6 +253,7 @@ function App() {
             />
             <Route path="/login" element={<PlayerLoginPage referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
             <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
+            <Route path="/results" element={<ResultsPage />} />
             <Route path="/tables" element={<TablesPage />} />
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

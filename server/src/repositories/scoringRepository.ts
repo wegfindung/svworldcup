@@ -5,6 +5,7 @@ import type {
   MatchEntryInput,
   MatchEntryRecord,
   NationScoreRow,
+  ParticipantScoreBreakdown,
   ParticipantScoreRow,
   PerformanceCurveAnchor,
   ScoringConfig,
@@ -75,19 +76,42 @@ function toTimestamp(value: string) {
 }
 
 function scoreEntry(entry: MatchEntryRecord, scoring: ScoringConfig) {
-  return (
-    entry.goals * scoring.goal +
-    entry.assists * scoring.assist +
-    (entry.minutes > 0 ? scoring.appearance : 0) +
-    (entry.minutes >= 60 ? scoring.minutes : 0) +
-    derivePerformancePoints(entry.rating, scoring.performanceCurve)
-  )
+  return scoreEntryComponents(entry, scoring).total
+}
+
+function scoreEntryComponents(entry: MatchEntryRecord, scoring: ScoringConfig) {
+  const goals = entry.goals * scoring.goal
+  const assists = entry.assists * scoring.assist
+  const appearance = entry.minutes > 0 ? scoring.appearance : 0
+  const minutes = entry.minutes >= 60 ? scoring.minutes : 0
+  const performance = derivePerformancePoints(entry.rating, scoring.performanceCurve)
+
+  return {
+    goals,
+    assists,
+    appearance,
+    minutes,
+    performance,
+    total: goals + assists + appearance + minutes + performance,
+  }
+}
+
+function createEmptyBreakdown(): ParticipantScoreBreakdown {
+  return {
+    goals: { count: 0, points: 0 },
+    assists: { count: 0, points: 0 },
+    appearances: { count: 0, points: 0 },
+    minutes: { count: 0, points: 0 },
+    cleanSheets: { count: 0, points: 0 },
+    performance: { points: 0 },
+  }
 }
 
 interface FixtureEntryScore {
   score: number
   inOfficialSquad: boolean
   cleanSheetEligible: boolean
+  entry: MatchEntryRecord
 }
 
 function buildFixtureEntryScoreMap(entries: MatchEntryRecord[], scoring: ScoringConfig) {
@@ -99,6 +123,7 @@ function buildFixtureEntryScoreMap(entries: MatchEntryRecord[], scoring: Scoring
       score: scoreEntry(entry, scoring),
       inOfficialSquad: entry.inOfficialSquad,
       cleanSheetEligible: entry.cleanSheetEligible,
+      entry,
     })
     fixtures.set(entry.fixtureId, fixtureEntries)
   }
@@ -125,6 +150,33 @@ function calculateParticipantRows(
     const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
 
     let baseScore = 0
+    const breakdown = createEmptyBreakdown()
+
+    function addPlayerState(slotClass: SlotClass, playerState: FixtureEntryScore) {
+      const components = scoreEntryComponents(playerState.entry, scoring)
+      baseScore += components.total
+      breakdown.goals.count += playerState.entry.goals
+      breakdown.goals.points += components.goals
+      breakdown.assists.count += playerState.entry.assists
+      breakdown.assists.points += components.assists
+      if (playerState.entry.minutes > 0) {
+        breakdown.appearances.count += 1
+        breakdown.appearances.points += components.appearance
+      }
+      if (playerState.entry.minutes >= 60) {
+        breakdown.minutes.count += 1
+        breakdown.minutes.points += components.minutes
+      }
+      breakdown.performance.points += components.performance
+
+      if (playerState.cleanSheetEligible) {
+        const cleanSheetPoints = scoring.cleanSheet[slotClass]
+        baseScore += cleanSheetPoints
+        breakdown.cleanSheets.count += 1
+        breakdown.cleanSheets.points += cleanSheetPoints
+      }
+    }
+
     for (const entryScores of fixtureEntryScores.values()) {
       const starterSlots = participantSlots.filter((slot) => slot.slotGroup === 'starter')
       const subSlots = participantSlots.filter((slot) => slot.slotGroup === 'sub')
@@ -140,10 +192,7 @@ function calculateParticipantRows(
           starterAbsences.set(slot.slotClass, (starterAbsences.get(slot.slotClass) ?? 0) + 1)
         }
 
-        baseScore += playerState.score
-        if (playerState.cleanSheetEligible) {
-          baseScore += scoring.cleanSheet[slot.slotClass]
-        }
+        addPlayerState(slot.slotClass, playerState)
       }
 
       for (const slot of subSlots) {
@@ -154,10 +203,7 @@ function calculateParticipantRows(
 
         const playerState = entryScores.get(slot.playerId)
         if (playerState) {
-          baseScore += playerState.score
-          if (playerState.cleanSheetEligible) {
-            baseScore += scoring.cleanSheet[slot.slotClass]
-          }
+          addPlayerState(slot.slotClass, playerState)
         }
 
         starterAbsences.set(slot.slotClass, missingStarters - 1)
@@ -176,6 +222,7 @@ function calculateParticipantRows(
       baseScore,
       bonusPercent,
       totalScore,
+      breakdown,
       registeredAt: participant.registeredAt,
     }
   })
