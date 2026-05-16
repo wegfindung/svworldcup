@@ -127,6 +127,17 @@ export interface ParticipantSquad {
   slots: SquadSlotState[]
 }
 
+export interface ParticipantLineup {
+  lineupId: string
+  participantId: string
+  fixtureId: string
+  budgetLimit: number
+  budgetUsed: number
+  budgetRemaining: number
+  isLocked: boolean
+  slots: SquadSlotState[]
+}
+
 export interface ParticipantSquadSummary {
   budgetLimit: number
   budgetUsed: number

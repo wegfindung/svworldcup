@@ -11,6 +11,7 @@ import type {
   SlotClass,
 } from '../domain/types.js'
 import type { ConfigRepository } from './configRepository.js'
+import type { LineupRepository } from './lineupRepository.js'
 import type { RegistrationRepository } from './registrationRepository.js'
 import type { SquadRepository } from './squadRepository.js'
 
@@ -25,6 +26,7 @@ interface ScoreParticipant {
 
 interface ScoreSlot {
   participantId: string
+  fixtureId?: string
   slotKey: string
   slotGroup: 'starter' | 'sub'
   slotClass: SlotClass
@@ -121,13 +123,15 @@ function calculateParticipantRows(
     slotsByParticipant.set(slot.participantId, current)
   }
 
-  return participants.map((participant) => {
-    const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
-    const starterSlots = participantSlots.filter((slot) => slot.slotGroup === 'starter')
-    const subSlots = participantSlots.filter((slot) => slot.slotGroup === 'sub')
+    return participants.map((participant) => {
+      const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
 
-    let baseScore = 0
-    for (const entryScores of fixtureEntryScores.values()) {
+      let baseScore = 0
+    for (const [fixtureId, entryScores] of fixtureEntryScores.entries()) {
+      const fixtureSlots = participantSlots.filter((slot) => slot.fixtureId === fixtureId)
+      const activeSlots = fixtureSlots.length > 0 ? fixtureSlots : participantSlots.filter((slot) => !slot.fixtureId)
+      const starterSlots = activeSlots.filter((slot) => slot.slotGroup === 'starter')
+      const subSlots = activeSlots.filter((slot) => slot.slotGroup === 'sub')
       const starterAbsences = new Map<SlotClass, number>()
 
       for (const slot of starterSlots) {
@@ -206,6 +210,7 @@ export class MemoryScoringRepository implements ScoringRepository {
     private readonly configRepository: ConfigRepository,
     private readonly registrationRepository: RegistrationRepository,
     private readonly squadRepository: SquadRepository,
+    private readonly lineupRepository?: LineupRepository,
   ) {}
 
   async upsertMatchEntry(input: MatchEntryInput) {
@@ -316,6 +321,10 @@ export class MemoryScoringRepository implements ScoringRepository {
       }
     }
 
+    if (this.lineupRepository) {
+      slots.push(...(await this.lineupRepository.listScoringSlots()))
+    }
+
     return calculateParticipantRows(participants, slots, entries, scoring)
   }
 }
@@ -326,6 +335,7 @@ export class PostgresScoringRepository implements ScoringRepository {
   constructor(
     private readonly pool: Pool,
     private readonly configRepository: ConfigRepository,
+    private readonly lineupRepository?: LineupRepository,
   ) {}
 
   async upsertMatchEntry(input: MatchEntryInput) {
@@ -432,8 +442,13 @@ export class PostgresScoringRepository implements ScoringRepository {
 
   private async calculateRows() {
     const scoring = await this.configRepository.getScoringConfig()
-    const [participants, slots, entries] = await Promise.all([this.listParticipants(), this.listSlots(), this.listMatchEntries()])
-    return calculateParticipantRows(participants, slots, entries, scoring)
+    const [participants, legacySlots, entries, lineupSlots] = await Promise.all([
+      this.listParticipants(),
+      this.listSlots(),
+      this.listMatchEntries(),
+      this.lineupRepository?.listScoringSlots() ?? Promise.resolve([]),
+    ])
+    return calculateParticipantRows(participants, [...legacySlots, ...lineupSlots], entries, scoring)
   }
 
   private async listParticipants(): Promise<ScoreParticipant[]> {

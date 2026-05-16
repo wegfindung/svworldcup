@@ -17,6 +17,7 @@ import {
   type ConfigRepository,
 } from '../repositories/configRepository.js'
 import { MemorySquadRepository, PostgresSquadRepository, type SquadRepository } from '../repositories/squadRepository.js'
+import { MemoryLineupRepository, PostgresLineupRepository, type LineupRepository } from '../repositories/lineupRepository.js'
 import { MemoryTeamPoolRepository, PostgresTeamPoolRepository, type TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { MemoryScoringRepository, PostgresScoringRepository, type ScoringRepository } from '../repositories/scoringRepository.js'
 import {
@@ -43,6 +44,7 @@ let adminRepository: AdminRepository | null = null
 let participantSessionRepository: ParticipantSessionRepository | null = null
 let teamPoolRepository: TeamPoolRepository | null = null
 let squadRepository: SquadRepository | null = null
+let lineupRepository: LineupRepository | null = null
 let scoringRepository: ScoringRepository | null = null
 let matchImportRepository: MatchImportRepository | null = null
 let matchMappingRepository: MatchMappingRepository | null = null
@@ -128,12 +130,22 @@ export function createSquadRepository(): SquadRepository {
   return squadRepository
 }
 
+export function createLineupRepository(): LineupRepository {
+  if (!lineupRepository) {
+    const existingPool = getPool()
+    lineupRepository = existingPool
+      ? new PostgresLineupRepository(existingPool, createTeamPoolRepository())
+      : new MemoryLineupRepository(createTeamPoolRepository())
+  }
+  return lineupRepository
+}
+
 export function createScoringRepository(): ScoringRepository {
   if (!scoringRepository) {
     const existingPool = getPool()
     scoringRepository = existingPool
-      ? new PostgresScoringRepository(existingPool, createConfigRepository())
-      : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository())
+      ? new PostgresScoringRepository(existingPool, createConfigRepository(), createLineupRepository())
+      : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository(), createLineupRepository())
   }
   return scoringRepository
 }

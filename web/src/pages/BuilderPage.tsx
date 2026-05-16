@@ -6,19 +6,25 @@ import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, eventTeams, leagueCopy } from '../data/eventConfig'
 import {
+  assignLineupPlayer,
   assignSquadPlayer,
+  fetchParticipantLineup,
   fetchParticipantSession,
   fetchParticipantSquad,
   fetchTeamPlayers,
+  lockLineup,
   logoutParticipant,
   lockSquad,
   revealParticipantProfile,
   registerParticipant,
+  removeLineupPlayer,
   removeSquadPlayer,
   resendVerificationEmail,
+  resetLineup,
   resetSquad,
   setParticipantPassword,
 } from '../lib/api'
+import { eventFixtures } from '../data/eventConfig'
 import {
   clearParticipantReady,
   readParticipantReady,
@@ -30,9 +36,11 @@ import { playUnlockSound } from '../lib/unlockSound'
 import type {
   LeagueType,
   LocaleCode,
+  ParticipantLineup,
   ParticipantProfile,
   ParticipantSquad,
   ParticipantSquadSummary,
+  FixtureSeed,
   TeamPoolPlayer,
 } from '../lib/types'
 
@@ -82,7 +90,7 @@ function compactSlotLabel(label: string) {
   return label.replace('Starting ', '').replace('Reserve ', 'Sub ')
 }
 
-function buildSquadSummaryFromSquad(squad: ParticipantSquad): ParticipantSquadSummary {
+function buildSquadSummaryFromSquad(squad: Pick<EditableLineup, 'budgetLimit' | 'budgetUsed' | 'budgetRemaining' | 'isLocked' | 'slots'>): ParticipantSquadSummary {
   return {
     budgetLimit: squad.budgetLimit,
     budgetUsed: squad.budgetUsed,
@@ -90,6 +98,32 @@ function buildSquadSummaryFromSquad(squad: ParticipantSquad): ParticipantSquadSu
     draftedCount: squad.slots.filter((slot) => slot.player).length,
     isLocked: squad.isLocked,
   }
+}
+
+type EditableLineup = ParticipantSquad | ParticipantLineup
+
+function isParticipantLineup(value: EditableLineup): value is ParticipantLineup {
+  return 'fixtureId' in value
+}
+
+function fixtureTeamLabel(teamCode: string) {
+  return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
+}
+
+function fixtureLabel(fixture: FixtureSeed) {
+  return `${fixture.kickoffDate} ${fixture.kickoffTimeLocal.slice(0, 5)} · ${fixtureTeamLabel(fixture.homeTeamCode)} vs ${fixtureTeamLabel(fixture.awayTeamCode)}`
+}
+
+function defaultFixtureForParticipant(participant: ParticipantProfile) {
+  return (
+    eventFixtures.find(
+      (fixture) =>
+        fixture.homeTeamCode === participant.primaryTeamCode ||
+        fixture.awayTeamCode === participant.primaryTeamCode ||
+        fixture.homeTeamCode === participant.secondaryTeamCode ||
+        fixture.awayTeamCode === participant.secondaryTeamCode,
+    ) ?? eventFixtures[0]
+  )
 }
 
 function buildReadyState(
@@ -130,7 +164,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   )
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
   const [budgetLimit, setBudgetLimit] = useState(initialReadyState?.budgetLimit ?? defaultBudgetLimit)
-  const [squad, setSquad] = useState<ParticipantSquad | null>(null)
+  const [squad, setSquad] = useState<EditableLineup | null>(null)
+  const [selectedFixtureId, setSelectedFixtureId] = useState<string>(eventFixtures[0]?.fixtureId ?? '')
+  const [lineupLoading, setLineupLoading] = useState(false)
   const [selectedTeamCode, setSelectedTeamCode] = useState<string | undefined>()
   const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
@@ -155,6 +191,10 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const selectedTeam = useMemo(
     () => eventTeams.find((team) => team.code === selectedTeamCode) ?? null,
     [selectedTeamCode],
+  )
+  const selectedFixture = useMemo(
+    () => eventFixtures.find((fixture) => fixture.fixtureId === selectedFixtureId) ?? null,
+    [selectedFixtureId],
   )
 
   const groupedSquadSlots = useMemo(() => {
@@ -212,7 +252,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     storeReadyState(state)
   }
 
-  function syncReadyStateWithSquad(nextParticipant: ParticipantProfile | null, nextSquad: ParticipantSquad | null) {
+  function syncReadyStateWithSquad(nextParticipant: ParticipantProfile | null, nextSquad: EditableLineup | null) {
     if (!nextParticipant || !nextSquad) {
       return
     }
@@ -223,6 +263,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   function clearBuilderState() {
     setParticipant(null)
     setSquad(null)
+    setSelectedFixtureId(eventFixtures[0]?.fixtureId ?? '')
     setSelectedTeamCode(undefined)
     setLoadedTeamCode(null)
     setTeamPlayers([])
@@ -240,20 +281,44 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     setAccessState(mode === 'register' ? 'guest' : 'locked')
   }
 
+  async function loadFixtureLineup(fixtureId: string, nextParticipant = participant) {
+    if (!fixtureId) {
+      return
+    }
+
+    setLineupLoading(true)
+    setBuilderError(null)
+    try {
+      const response = await fetchParticipantLineup(fixtureId)
+      syncReadyStateWithSquad(nextParticipant, response.lineup)
+      setSquad(response.lineup)
+    } catch (error) {
+      setBuilderError(error instanceof Error ? error.message : 'Could not load the matchday lineup.')
+    } finally {
+      setLineupLoading(false)
+    }
+  }
+
   async function handleOpenBuilder() {
     setSessionBusy(true)
     setSessionError(null)
 
     try {
       const session = await fetchParticipantSession()
-      const squadResponse = await fetchParticipantSquad()
+      const defaultFixture = defaultFixtureForParticipant(session.participant)
+      const [squadResponse, lineupResponse] = await Promise.all([
+        fetchParticipantSquad(),
+        fetchParticipantLineup(defaultFixture.fixtureId),
+      ])
       persistReadyState(buildReadyState(session.participant, session.budgetLimit, session.squadSummary))
-      syncReadyStateWithSquad(session.participant, squadResponse.squad)
+      syncReadyStateWithSquad(session.participant, lineupResponse.lineup)
       setParticipant(session.participant)
-      setSquad(squadResponse.squad)
+      setSquad(lineupResponse.lineup)
       setPublicProfileUrl(session.participant.revealProfile ? buildPublicProfileUrl(session.participant) : null)
       setSelectedTeamCode(session.participant.primaryTeamCode)
+      setSelectedFixtureId(defaultFixture.fixtureId)
       setAccessState('active')
+      void squadResponse
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not open the protected builder.'
       if (/session/i.test(message)) {
@@ -374,9 +439,15 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   async function handleAssign(slotKey: string, playerId: number) {
     setBuilderError(null)
     try {
-      const response = await assignSquadPlayer(slotKey, playerId)
-      syncReadyStateWithSquad(participant, response.squad)
-      setSquad(response.squad)
+      if (selectedFixtureId) {
+        const response = await assignLineupPlayer(selectedFixtureId, slotKey, playerId)
+        syncReadyStateWithSquad(participant, response.lineup)
+        setSquad(response.lineup)
+      } else {
+        const response = await assignSquadPlayer(slotKey, playerId)
+        syncReadyStateWithSquad(participant, response.squad)
+        setSquad(response.squad)
+      }
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Player could not be assigned.')
     }
@@ -385,43 +456,61 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   async function handleRemove(slotKey: string) {
     setBuilderError(null)
     try {
-      const response = await removeSquadPlayer(slotKey)
-      syncReadyStateWithSquad(participant, response.squad)
-      setSquad(response.squad)
+      if (selectedFixtureId) {
+        const response = await removeLineupPlayer(selectedFixtureId, slotKey)
+        syncReadyStateWithSquad(participant, response.lineup)
+        setSquad(response.lineup)
+      } else {
+        const response = await removeSquadPlayer(slotKey)
+        syncReadyStateWithSquad(participant, response.squad)
+        setSquad(response.squad)
+      }
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Player could not be removed.')
     }
   }
 
   async function handleReset() {
-    const approved = window.confirm('Reset the full squad and restore the full budget?')
+    const approved = window.confirm('Reset this matchday lineup and restore the full budget?')
     if (!approved) {
       return
     }
 
     setBuilderError(null)
     try {
-      const response = await resetSquad()
-      syncReadyStateWithSquad(participant, response.squad)
-      setSquad(response.squad)
+      if (selectedFixtureId) {
+        const response = await resetLineup(selectedFixtureId)
+        syncReadyStateWithSquad(participant, response.lineup)
+        setSquad(response.lineup)
+      } else {
+        const response = await resetSquad()
+        syncReadyStateWithSquad(participant, response.squad)
+        setSquad(response.squad)
+      }
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
+      setBuilderError(error instanceof Error ? error.message : 'Lineup reset failed.')
     }
   }
 
   async function handleLockSquad() {
-    const approved = window.confirm('Final submit this squad? You will not be able to edit it afterwards.')
+    const approved = window.confirm('Lock this matchday lineup? You will not be able to edit it afterwards.')
     if (!approved) {
       return
     }
 
     setBuilderError(null)
     try {
-      const response = await lockSquad()
-      syncReadyStateWithSquad(participant, response.squad)
-      setSquad(response.squad)
+      if (selectedFixtureId) {
+        const response = await lockLineup(selectedFixtureId)
+        syncReadyStateWithSquad(participant, response.lineup)
+        setSquad(response.lineup)
+      } else {
+        const response = await lockSquad()
+        syncReadyStateWithSquad(participant, response.squad)
+        setSquad(response.squad)
+      }
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Squad could not be locked.')
+      setBuilderError(error instanceof Error ? error.message : 'Lineup could not be locked.')
     }
   }
 
@@ -961,23 +1050,23 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     {leagueLabel(participant.leagueType)}
                   </span>
                   <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                    {draftedCount}/15 locked in
+                    {draftedCount}/15 in lineup
                   </span>
                   {squad.isLocked ? (
                     <span className="rounded-full border border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
-                      Final submitted
+                      Matchday locked
                     </span>
                   ) : null}
                 </div>
 
                 <p className="eyebrow mt-5">step 3 · squad builder</p>
                 <h2 className="mt-3 max-w-[13ch] text-[clamp(2rem,1.7vw+1rem,3.25rem)] font-semibold leading-[0.96] tracking-[-0.045em] text-white">
-                  Draft the one hidden squad that counts.
+                  Set the XI that counts next.
                 </h2>
                 <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[var(--color-muted)]">
                   Verified as <span className="font-medium text-white">{participant.displayName}</span>. Load one team pool at a time,
-                  draft only if the slot qualifies, and stay under the fixed {formatBudget(squad.budgetLimit)} cap.
-                  {squad.isLocked ? ' This squad is now locked and cannot be edited.' : ''}
+                  build the selected matchday lineup, and stay under the fixed {formatBudget(squad.budgetLimit)} cap.
+                  {squad.isLocked ? ' This lineup is now locked and cannot be edited.' : ''}
                 </p>
               </div>
 
@@ -1021,7 +1110,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">share status</p>
                       <p className="mt-2 text-base font-semibold text-white">Social sharing unlocked.</p>
                       <p className="mt-1 text-sm text-[var(--color-muted)]">
-                        Your squad is complete. Open the share page, choose 2-3 featured players, and keep editing the squad afterwards if you want.
+                        This matchday lineup is complete. Lock it before kickoff, then update the next fixture when it opens.
                       </p>
                       <div className="mt-4">
                         <Link
@@ -1051,6 +1140,34 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       <TeamFlag teamCode={selectedTeam.code} label={selectedTeam.nameEn} size="sm" />
                       <span className="text-xs font-medium text-white">{selectedTeam.nameEn}</span>
                     </div>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 max-w-xl">
+                  <label className="grid gap-2">
+                    <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Matchday fixture</span>
+                    <select
+                      value={selectedFixtureId}
+                      disabled={lineupLoading}
+                      onChange={(event) => {
+                        const fixtureId = event.target.value
+                        setSelectedFixtureId(fixtureId)
+                        void loadFixtureLineup(fixtureId)
+                      }}
+                      className="min-h-14 rounded-[1.3rem] border border-white/10 bg-[rgba(8,13,12,0.78)] px-4 py-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {eventFixtures.map((fixture) => (
+                        <option key={fixture.fixtureId} value={fixture.fixtureId} className="bg-[var(--color-ink)] text-white">
+                          {fixtureLabel(fixture)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {selectedFixture ? (
+                    <p className="mt-2 text-xs leading-6 text-[var(--color-muted)]">
+                      Active lineup: {fixtureTeamLabel(selectedFixture.homeTeamCode)} vs {fixtureTeamLabel(selectedFixture.awayTeamCode)}
+                      {lineupLoading ? ' · loading...' : ''}
+                    </p>
                   ) : null}
                 </div>
 
@@ -1166,11 +1283,11 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                             <div className="flex flex-wrap gap-1.5 xl:justify-end">
                               {squad.isLocked ? (
                                 <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-2.5 py-1.5 text-[11px] text-[var(--color-sand)]">
-                                  Squad locked
+                                  Lineup locked
                                 </span>
                               ) : isAlreadyDrafted ? (
                                 <span className="rounded-full border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-2.5 py-1.5 text-[11px] text-[var(--color-accent)]">
-                                  Already in squad
+                                  Already in lineup
                                 </span>
                               ) : openSlots.length === 0 ? (
                                 <span className="rounded-full border border-white/10 px-2.5 py-1.5 text-[11px] text-[var(--color-muted)]">
@@ -1223,7 +1340,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               <div className="glass-panel rounded-[1.15rem] p-4">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">current squad</p>
+                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">current lineup</p>
                     <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 starters + 4 locked subs</h3>
                   </div>
                   <button
@@ -1240,12 +1357,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-white">
-                        {squad.isLocked ? 'Squad submitted' : 'Ready for final submission?'}
+                        {squad.isLocked ? 'Lineup locked' : 'Ready to lock this matchday?'}
                       </p>
                       <p className="mt-1 text-xs leading-6 text-[var(--color-muted)]">
                         {squad.isLocked
-                          ? 'This squad is immutable unless an admin unlock flow is added later.'
-                          : 'Fill all 15 slots, then lock the squad as your one official entry.'}
+                          ? 'This matchday lineup is immutable unless an admin unlock flow is added later.'
+                          : 'Fill all 15 slots, then lock the lineup for the selected fixture.'}
                       </p>
                     </div>
                     <button
@@ -1254,12 +1371,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       disabled={squad.isLocked || draftedCount !== 15}
                       className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                     >
-                      {squad.isLocked ? 'Locked' : 'Final submit'}
+                      {squad.isLocked ? 'Locked' : 'Lock lineup'}
                     </button>
                   </div>
                 </div>
 
-                {squad.isLocked ? (
+                {squad.isLocked && !isParticipantLineup(squad) ? (
                   <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-black/15 px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
