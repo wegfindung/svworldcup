@@ -15,6 +15,6 @@ export async function bootstrapInitialTeamPools(teamPoolRepository: TeamPoolRepo
       continue
     }
 
-    await teamPoolRepository.seedTeamPlayersIfEmpty(teamCode, players)
+    await teamPoolRepository.replaceTeamPlayers(teamCode, players)
   }
 }

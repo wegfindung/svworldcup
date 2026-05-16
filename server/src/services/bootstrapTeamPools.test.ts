@@ -27,24 +27,26 @@ function player(playerId: number, nationalityCode: string): SoccerversePlayerRec
 }
 
 describe('bootstrapInitialTeamPools', () => {
-  it('seeds explicitly curated team selections with their Soccerverse country id', async () => {
-    const seededTeams: string[] = []
+  it('syncs explicitly curated team selections with their Soccerverse country id', async () => {
+    const syncedTeams: string[] = []
     const repository: TeamPoolRepository = {
       storageKind: 'memory',
       listByTeam: vi.fn(async () => []),
       getTeamPlayerById: vi.fn(async () => null),
       getTeamSelectionCounts: vi.fn(async () => ({})),
-      replaceTeamPlayers: vi.fn(async () => []),
-      seedTeamPlayersIfEmpty: vi.fn(async (teamCode) => {
-        seededTeams.push(teamCode)
+      replaceTeamPlayers: vi.fn(async (teamCode) => {
+        syncedTeams.push(teamCode)
+        return []
       }),
+      seedTeamPlayersIfEmpty: vi.fn(async () => {}),
     }
 
     await bootstrapInitialTeamPools(repository)
 
     const curatedTeamCodes = Object.keys(initialTeamSelections)
-    expect(seededTeams).toEqual(curatedTeamCodes)
+    expect(syncedTeams).toEqual(curatedTeamCodes)
     expect(fetchPlayersByIds).toHaveBeenCalledTimes(curatedTeamCodes.length)
+    expect(repository.seedTeamPlayersIfEmpty).not.toHaveBeenCalled()
     for (const [index, teamCode] of curatedTeamCodes.entries()) {
       expect(fetchPlayersByIds.mock.calls[index][0]).toEqual(initialTeamSelections[teamCode])
       expect(fetchPlayersByIds.mock.calls[index][1]).toBe(getSoccerverseCountryId(teamCode))
