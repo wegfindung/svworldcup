@@ -496,7 +496,17 @@ export interface ParticipantScoreRow {
   totalScore: number
   baseScore: number
   bonusPercent: number
+  breakdown: ParticipantScoreBreakdown
   rank: number
+}
+
+export interface ParticipantScoreBreakdown {
+  goals: { count: number; points: number }
+  assists: { count: number; points: number }
+  appearances: { count: number; points: number }
+  minutes: { count: number; points: number }
+  cleanSheets: { count: number; points: number }
+  performance: { points: number }
 }
 
 export interface NationScoreRow {

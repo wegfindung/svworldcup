@@ -10,6 +10,7 @@ import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
 import { handleShareCardImage } from './share.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
+import { buildPublicFixtureResults } from '../services/matchResults.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
 const playerSearchSchema = z.object({
@@ -76,6 +77,25 @@ export function createPublicRouter({ configRepository, registrationRepository, t
 
   router.get('/fixtures', (_req, res) => {
     res.json({ items: fixtures })
+  })
+
+  router.get('/match-results', async (_req, res) => {
+    const teamCodes = [...new Set(fixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
+    const playersByTeam = new Map<string, Awaited<ReturnType<typeof teamPoolRepository.listByTeam>>>()
+    const [entries] = await Promise.all([
+      scoringRepository.listMatchEntries(),
+      Promise.all(teamCodes.map(async (teamCode) => playersByTeam.set(teamCode, await teamPoolRepository.listByTeam(teamCode)))),
+    ])
+    const items = buildPublicFixtureResults(fixtures, playersByTeam, entries)
+
+    res.json({
+      items,
+      summary: {
+        totalFixtures: items.length,
+        finalFixtures: items.filter((item) => item.status === 'final').length,
+        pendingFixtures: items.filter((item) => item.status === 'pending').length,
+      },
+    })
   })
 
   router.get('/share-card.png', handleShareCardImage)

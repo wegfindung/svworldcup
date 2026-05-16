@@ -22,6 +22,13 @@ export interface FixtureSeed {
   awayTeamCode: string
 }
 
+export interface PublicFixtureResult extends FixtureSeed {
+  homeGoals: number | null
+  awayGoals: number | null
+  status: 'final' | 'pending'
+  entryCount: number
+}
+
 export interface PerformanceCurveAnchor {
   rating: number
   points: number
@@ -178,7 +185,17 @@ export interface ParticipantScoreRow {
   totalScore: number
   baseScore: number
   bonusPercent: number
+  breakdown: ParticipantScoreBreakdown
   rank: number
+}
+
+export interface ParticipantScoreBreakdown {
+  goals: { count: number; points: number }
+  assists: { count: number; points: number }
+  appearances: { count: number; points: number }
+  minutes: { count: number; points: number }
+  cleanSheets: { count: number; points: number }
+  performance: { points: number }
 }
 
 export interface NationScoreRow {
