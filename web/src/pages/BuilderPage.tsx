@@ -1243,7 +1243,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                           key={player.playerId}
                           className="surface-row rounded-[0.85rem] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/5"
                         >
-                          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,auto)] xl:items-center">
+                          <div className="grid gap-3 xl:grid-cols-[minmax(16rem,1fr)_minmax(0,35rem)] xl:items-center">
                             <div className="flex min-w-0 items-center gap-3">
                               <PlayerPortrait
                                 src={player.imageUrl}
@@ -1280,7 +1280,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-1.5 xl:justify-end">
+                            <div className="flex min-w-0 flex-wrap gap-1.5 xl:justify-end">
                               {squad.isLocked ? (
                                 <span className="rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-2.5 py-1.5 text-[11px] text-[var(--color-sand)]">
                                   Lineup locked
