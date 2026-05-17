@@ -80,7 +80,7 @@ export function createApp() {
   })
   startEmailMarketingScheduler(emailMarketingRepository)
 
-  app.set('trust proxy', env.RATE_LIMIT_TRUST_PROXY)
+  app.set('trust proxy', env.RATE_LIMIT_TRUST_PROXY ? 1 : false)
   app.use(
     helmet({
       contentSecurityPolicy: {
