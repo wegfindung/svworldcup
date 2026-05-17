@@ -669,13 +669,23 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
         </span>
         {slot.player ? (
           <span className="mt-2 flex min-w-0 items-center gap-2.5">
-            <PlayerPortrait
-              src={slot.player.imageUrl}
-              alt={slot.player.displayName}
-              width={42}
-              height={42}
-              className="h-11 w-11 shrink-0 rounded-[0.8rem] border border-white/10 bg-black/20 object-cover"
-            />
+            <span className="pitch-player-portrait">
+              <PlayerPortrait
+                src={slot.player.imageUrl}
+                alt={slot.player.displayName}
+                width={42}
+                height={42}
+                className="h-11 w-11 rounded-[0.8rem] border border-white/10 bg-black/20 object-cover"
+              />
+              <img
+                src={`/team-flags/${slot.player.teamCode || slot.player.nationalityCode}.svg`}
+                alt={`${slot.player.displayName} country flag`}
+                loading="lazy"
+                width={22}
+                height={22}
+                className="pitch-player-flag"
+              />
+            </span>
             <span className="min-w-0 flex-1 text-left">
               <span className="block truncate text-xs font-semibold text-white">{slot.player.displayName}</span>
               <span className="mono mt-1 block text-[9px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
