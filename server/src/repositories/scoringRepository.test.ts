@@ -241,6 +241,53 @@ describe('MemoryScoringRepository competition squad scoring', () => {
       }),
     ])
   })
+
+  it('includes countries with a single active manager', async () => {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      {
+        email: 'solo-france@example.com',
+        displayName: 'Solo France',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'solo-france-token',
+    )
+    await registrations.verifyByPlainToken('solo-france-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fixture-1',
+      playerId: 109,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const nationRows = await scoring.getNationLeaderboard()
+
+    expect(nationRows).toEqual([
+      expect.objectContaining({
+        teamCode: 'FRA',
+        participantCount: 1,
+        averageScore: 7,
+        topScore: 7,
+      }),
+    ])
+  })
 })
 
 describe('MemoryScoringRepository late-entry rule', () => {

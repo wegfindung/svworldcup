@@ -306,7 +306,7 @@ function NationTable({ rows }: { rows: NationScoreRow[] }) {
           </div>
         ) : (
           <div className="bg-black/12 p-5">
-            <EmptyState title="No nation ranking yet" body="A country enters the table once at least two active managers are attached to it." />
+            <EmptyState title="No nation ranking yet" body="A country enters the table as soon as one active manager is attached to it." />
           </div>
         )}
       </div>
