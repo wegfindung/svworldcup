@@ -344,6 +344,42 @@ function rankNations(rows: Omit<NationScoreRow, 'rank'>[]): NationScoreRow[] {
     .map((row, index) => ({ ...row, rank: index + 1 }))
 }
 
+function buildNationLeaderboard(rows: ParticipantScoreRow[]) {
+  const contributorsByNation = new Map<string, NationScoreRow['contributors']>()
+
+  for (const row of rows) {
+    for (const teamCode of [row.primaryTeamCode, row.secondaryTeamCode].filter(Boolean) as string[]) {
+      const contributors = contributorsByNation.get(teamCode) ?? []
+      contributors.push({
+        participantId: row.participantId,
+        displayName: row.displayName,
+        leagueType: row.leagueType,
+        primaryTeamCode: row.primaryTeamCode,
+        secondaryTeamCode: row.secondaryTeamCode,
+        totalScore: row.totalScore,
+        rank: row.rank,
+      })
+      contributorsByNation.set(teamCode, contributors)
+    }
+  }
+
+  return rankNations(
+    [...contributorsByNation.entries()]
+      .filter(([, contributors]) => contributors.length >= 2)
+      .map(([teamCode, contributors]) => {
+        const sortedContributors = contributors.sort((left, right) => right.totalScore - left.totalScore || left.displayName.localeCompare(right.displayName))
+        const scores = sortedContributors.map((contributor) => contributor.totalScore)
+        return {
+          teamCode,
+          participantCount: sortedContributors.length,
+          averageScore: scores.reduce((sum, score) => sum + score, 0) / scores.length,
+          topScore: Math.max(...scores),
+          contributors: sortedContributors,
+        }
+      }),
+  )
+}
+
 export class MemoryScoringRepository implements ScoringRepository {
   storageKind: 'memory' = 'memory'
   private readonly entries = new Map<string, MatchEntryRecord>()
@@ -387,27 +423,7 @@ export class MemoryScoringRepository implements ScoringRepository {
   }
 
   async getNationLeaderboard() {
-    const rows = await this.calculateRows(await this.listMemoryParticipants())
-    const nationScores = new Map<string, number[]>()
-
-    for (const row of rows) {
-      for (const teamCode of [row.primaryTeamCode, row.secondaryTeamCode].filter(Boolean) as string[]) {
-        const scores = nationScores.get(teamCode) ?? []
-        scores.push(row.totalScore)
-        nationScores.set(teamCode, scores)
-      }
-    }
-
-    return rankNations(
-      [...nationScores.entries()]
-        .filter(([, scores]) => scores.length >= 2)
-        .map(([teamCode, scores]) => ({
-          teamCode,
-          participantCount: scores.length,
-          averageScore: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-          topScore: Math.max(...scores),
-        })),
-    )
+    return buildNationLeaderboard(rankParticipants(await this.calculateRows(await this.listMemoryParticipants())))
   }
 
   private async listMemoryParticipants(): Promise<ScoreParticipant[]> {
@@ -581,27 +597,7 @@ export class PostgresScoringRepository implements ScoringRepository {
   }
 
   async getNationLeaderboard() {
-    const rows = await this.calculateRows()
-    const nationScores = new Map<string, number[]>()
-
-    for (const row of rows) {
-      for (const teamCode of [row.primaryTeamCode, row.secondaryTeamCode].filter(Boolean) as string[]) {
-        const scores = nationScores.get(teamCode) ?? []
-        scores.push(row.totalScore)
-        nationScores.set(teamCode, scores)
-      }
-    }
-
-    return rankNations(
-      [...nationScores.entries()]
-        .filter(([, scores]) => scores.length >= 2)
-        .map(([teamCode, scores]) => ({
-          teamCode,
-          participantCount: scores.length,
-          averageScore: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-          topScore: Math.max(...scores),
-        })),
-    )
+    return buildNationLeaderboard(rankParticipants(await this.calculateRows()))
   }
 
   private async calculateRows() {

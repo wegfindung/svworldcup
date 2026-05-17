@@ -1,11 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
-import { fetchMatchResults, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
-import type { ParticipantScoreFixtureDetail, ParticipantScorePlayerDetail, ParticipantScoreRow, PublicFixtureResult } from '../lib/types'
+import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import type {
+  NationScoreRow,
+  ParticipantScoreFixtureDetail,
+  ParticipantScorePlayerDetail,
+  ParticipantScoreRow,
+  PublicFixtureResult,
+} from '../lib/types'
 
-type LoadState = 'idle' | 'loading' | 'ready' | 'error'
+interface TablesPayload {
+  rookies: ParticipantScoreRow[]
+  veterans: ParticipantScoreRow[]
+  nations: NationScoreRow[]
+  fixtureLookup: Map<string, PublicFixtureResult>
+}
+
+async function loadTablesPayload(): Promise<TablesPayload> {
+  const [rookieResponse, veteranResponse, nationResponse, matchResponse] = await Promise.all([
+    fetchRookieLeaderboard(),
+    fetchVeteranLeaderboard(),
+    fetchNationLeaderboard(),
+    fetchMatchResults(),
+  ])
+  return {
+    rookies: rookieResponse.items,
+    veterans: veteranResponse.items,
+    nations: nationResponse.items,
+    fixtureLookup: new Map(matchResponse.items.map((result) => [result.fixtureId, result])),
+  }
+}
 
 function formatScore(value: number) {
   return value.toLocaleString(undefined, {
@@ -183,31 +209,145 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
   )
 }
 
+function NationTable({ rows }: { rows: NationScoreRow[] }) {
+  const [openTeamCodes, setOpenTeamCodes] = useState<Set<string>>(new Set())
+
+  function toggleTeam(teamCode: string) {
+    setOpenTeamCodes((current) => {
+      const next = new Set(current)
+      if (next.has(teamCode)) {
+        next.delete(teamCode)
+      } else {
+        next.add(teamCode)
+      }
+      return next
+    })
+  }
+
+  return (
+    <section className="glass-panel rounded-[1.15rem] p-4">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-[10px]">country ranking</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">Nation ranking</h3>
+        </div>
+        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} nations</span>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
+        {rows.length ? (
+          <div className="divide-y divide-white/8">
+            {rows.map((row) => {
+              const isOpen = openTeamCodes.has(row.teamCode)
+              return (
+                <div key={row.teamCode} className="bg-black/12 px-3.5 py-3 transition hover:bg-white/5">
+                  <div className="grid grid-cols-[3.25rem_1fr] gap-3 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
+                    <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <TeamFlag teamCode={row.teamCode} label={teamName(row.teamCode)} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-white">{teamName(row.teamCode)}</p>
+                          <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                            {row.teamCode} - {row.participantCount} managers
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        <BreakdownPill label="Avg" points={row.averageScore} />
+                        <BreakdownPill label="Top" points={row.topScore} />
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-right sm:col-span-1">
+                      <p className="mono text-lg text-white">{formatScore(row.averageScore)}</p>
+                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">average score</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleTeam(row.teamCode)}
+                        className="mt-2 rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
+                      >
+                        {isOpen ? 'Hide managers' : 'Managers'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isOpen ? (
+                    <div className="mt-3 grid gap-1.5 border-t border-white/8 pt-3">
+                      {row.contributors.map((contributor) => (
+                        <div
+                          key={`${row.teamCode}-${contributor.participantId}`}
+                          className="grid gap-2 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-white">
+                              #{contributor.rank} {contributor.displayName}
+                            </p>
+                            <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--color-muted)]">
+                              <TeamFlag teamCode={contributor.primaryTeamCode} label={contributor.primaryTeamCode} size="sm" />
+                              <span>{contributor.primaryTeamCode}</span>
+                              {contributor.secondaryTeamCode ? (
+                                <>
+                                  <span className="text-white/25">+</span>
+                                  <TeamFlag teamCode={contributor.secondaryTeamCode} label={contributor.secondaryTeamCode} size="sm" />
+                                  <span>{contributor.secondaryTeamCode}</span>
+                                </>
+                              ) : null}
+                              <span className="rounded-full border border-white/8 px-2 py-0.5 uppercase">{contributor.leagueType}</span>
+                            </div>
+                          </div>
+                          <span className="mono text-sm text-white">{formatScore(contributor.totalScore)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-black/12 p-5">
+            <EmptyState title="No nation ranking yet" body="A country enters the table once at least two active managers are attached to it." />
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 export function TablesPage() {
-  const [loadState, setLoadState] = useState<LoadState>('idle')
-  const [rookies, setRookies] = useState<ParticipantScoreRow[]>([])
-  const [veterans, setVeterans] = useState<ParticipantScoreRow[]>([])
-  const [fixtureLookup, setFixtureLookup] = useState<Map<string, PublicFixtureResult>>(new Map())
+  const [tablesPromise, setTablesPromise] = useState<Promise<TablesPayload> | null>(() => loadTablesPayload())
+  const [tables, setTables] = useState<TablesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleLoadTables() {
-    setLoadState('loading')
-    setError(null)
-
-    try {
-      const [rookieResponse, veteranResponse, matchResponse] = await Promise.all([
-        fetchRookieLeaderboard(),
-        fetchVeteranLeaderboard(),
-        fetchMatchResults(),
-      ])
-      setRookies(rookieResponse.items)
-      setVeterans(veteranResponse.items)
-      setFixtureLookup(new Map(matchResponse.items.map((result) => [result.fixtureId, result])))
-      setLoadState('ready')
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load public tables.')
-      setLoadState('error')
+  useEffect(() => {
+    const promise = tablesPromise
+    if (!promise) {
+      return
     }
+
+    let active = true
+    promise
+      .then((payload) => {
+        if (active) {
+          setTables(payload)
+          setError(null)
+        }
+      })
+      .catch((loadError) => {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : 'Could not load public tables.')
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [tablesPromise])
+
+  function refreshTables() {
+    setTables(null)
+    setError(null)
+    setTablesPromise(loadTablesPayload())
   }
 
   return (
@@ -223,11 +363,10 @@ export function TablesPage() {
           </div>
           <button
             type="button"
-            onClick={handleLoadTables}
-            disabled={loadState === 'loading'}
-            className="premium-button h-11 px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={refreshTables}
+            className="premium-button h-11 px-6 text-sm font-semibold"
           >
-            {loadState === 'loading' ? 'Loading tables...' : loadState === 'ready' ? 'Refresh tables' : 'Load public tables'}
+            Refresh tables
           </button>
         </div>
       </section>
@@ -268,23 +407,22 @@ export function TablesPage() {
         </div>
       </section>
 
-      {loadState === 'idle' ? (
+      {error ? (
         <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title="Tables are ready" body="Load the current rookie and veteran standings from the scoring engine." />
+          <EmptyState title="Could not load standings" body={error} />
         </section>
       ) : null}
 
-      {loadState === 'error' ? (
-        <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title="Could not load standings" body={error ?? 'The backend returned an unexpected response.'} />
-        </section>
-      ) : null}
+      {!tables && !error ? <div className="skeleton h-40 rounded-[1.15rem]" /> : null}
 
-      {loadState === 'ready' ? (
-        <section className="grid gap-4 xl:grid-cols-2">
-          <ParticipantTable title="Rookie" rows={rookies} fixtureLookup={fixtureLookup} />
-          <ParticipantTable title="Veteran" rows={veterans} fixtureLookup={fixtureLookup} />
-        </section>
+      {tables ? (
+        <>
+          <NationTable rows={tables.nations} />
+          <section className="grid gap-4 xl:grid-cols-2">
+            <ParticipantTable title="Rookie" rows={tables.rookies} fixtureLookup={tables.fixtureLookup} />
+            <ParticipantTable title="Veteran" rows={tables.veterans} fixtureLookup={tables.fixtureLookup} />
+          </section>
+        </>
       ) : null}
     </div>
   )

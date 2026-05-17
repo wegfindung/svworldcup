@@ -168,6 +168,84 @@ describe('MemoryScoringRepository competition squad scoring', () => {
       ]),
     )
   })
+
+  it('exposes nation leaderboard contributors for country rankings', async () => {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const first = await registrations.createPending(
+      {
+        email: 'nation-one@example.com',
+        displayName: 'Nation One',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'nation-one-token',
+    )
+    const second = await registrations.createPending(
+      {
+        email: 'nation-two@example.com',
+        displayName: 'Nation Two',
+        primaryTeamCode: 'FRA',
+        secondaryTeamCode: 'BRA',
+        marketingOptIn: false,
+      },
+      'nation-two-token',
+    )
+    await registrations.verifyByPlainToken('nation-one-token')
+    await registrations.verifyByPlainToken('nation-two-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const participantId of [first.record.participantId, second.record.participantId]) {
+      for (const slotPlayer of slotPlayers) {
+        await squads.assignPlayer(participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+      }
+      await squads.lockSquad(participantId)
+    }
+
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository())
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fixture-1',
+      playerId: 109,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const nationRows = await scoring.getNationLeaderboard()
+    const france = nationRows.find((row) => row.teamCode === 'FRA')
+    expect(france).toBeDefined()
+    if (!france) {
+      throw new Error('Expected FRA to be present in the nation leaderboard.')
+    }
+
+    expect(france).toMatchObject({
+      teamCode: 'FRA',
+      participantCount: 2,
+      averageScore: 7,
+      topScore: 7,
+    })
+    expect(france.contributors).toEqual([
+      expect.objectContaining({
+        participantId: first.record.participantId,
+        displayName: 'Nation One',
+        primaryTeamCode: 'FRA',
+        totalScore: 7,
+      }),
+      expect.objectContaining({
+        participantId: second.record.participantId,
+        displayName: 'Nation Two',
+        primaryTeamCode: 'FRA',
+        secondaryTeamCode: 'BRA',
+        totalScore: 7,
+      }),
+    ])
+  })
 })
 
 describe('MemoryScoringRepository late-entry rule', () => {
