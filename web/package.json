@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/geist-mono": "^5.2.8",
     "@fontsource/outfit": "^5.2.8",
     "@tiptap/react": "^3.23.4",
     "@tiptap/starter-kit": "^3.23.4",

@@ -12,7 +12,7 @@
   --color-line: rgba(234, 225, 205, 0.1);
   --ease-premium: cubic-bezier(0.32, 0.72, 0, 1);
   --font-sans: "Outfit", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", monospace;
+  --font-mono: "Geist Mono", "SFMono-Regular", monospace;
 }
 
 html {
@@ -154,6 +154,8 @@ textarea:focus-visible {
 
 .mono {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: "tnum" 1, "zero" 1;
 }
 
 .table-grid {
