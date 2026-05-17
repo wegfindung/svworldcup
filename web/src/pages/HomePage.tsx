@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
-import { groupStageMatchPlan } from '../data/worldCupMatchPlan'
 import { t } from '../i18n/messages'
-import { defaultScoring } from '../data/eventConfig'
+import { budgetLimit as defaultBudgetLimit, defaultScoring, eventTeams } from '../data/eventConfig'
+import { useBootstrap } from '../hooks/useBootstrap'
 import { withReferral } from '../lib/referral'
-import type { LocaleCode } from '../lib/types'
+import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
 
 const superstarPlayers = [
   { playerId: 133609, name: 'Pedri', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png' },
@@ -31,148 +31,159 @@ const footballNations = [
   { code: 'uy', label: 'Uruguay' },
 ] as const
 
-const matchTeamCodes: Record<string, string> = {
-  Algeria: 'ALG',
-  Argentina: 'ARG',
-  Australia: 'AUS',
-  Austria: 'AUT',
-  Belgium: 'BEL',
-  'Bosnia and Herzegovina': 'BIH',
-  Brazil: 'BRA',
-  Canada: 'CAN',
-  'Cape Verde': 'CPV',
-  Colombia: 'COL',
-  Croatia: 'CRO',
-  Curacao: 'CUW',
-  Czechia: 'CZE',
-  'DR Congo': 'COD',
-  Ecuador: 'ECU',
-  Egypt: 'EGY',
-  England: 'ENG',
-  France: 'FRA',
-  Germany: 'GER',
-  Ghana: 'GHA',
-  Haiti: 'HAI',
-  Iran: 'IRN',
-  Iraq: 'IRQ',
-  'Ivory Coast': 'CIV',
-  Japan: 'JPN',
-  Jordan: 'JOR',
-  Mexico: 'MEX',
-  Morocco: 'MAR',
-  Netherlands: 'NED',
-  'New Zealand': 'NZL',
-  Norway: 'NOR',
-  Panama: 'PAN',
-  Paraguay: 'PAR',
-  Portugal: 'POR',
-  Qatar: 'QAT',
-  'Saudi Arabia': 'KSA',
-  Scotland: 'SCO',
-  Senegal: 'SEN',
-  'South Africa': 'RSA',
-  'South Korea': 'KOR',
-  Spain: 'ESP',
-  Sweden: 'SWE',
-  Switzerland: 'SUI',
-  Tunisia: 'TUN',
-  Turkiye: 'TUR',
-  Uruguay: 'URU',
-  USA: 'USA',
-  Uzbekistan: 'UZB',
+const heroMechanics = [
+  { step: '01', title: 'Draft hidden', body: 'Pick 15 players under the live SVC cap before the first whistle.' },
+  { step: '02', title: 'Lock once', body: 'Your squad stays fixed for the whole competition. No matchday tinkering.' },
+  { step: '03', title: 'Climb tables', body: 'Every goal, assist, clean sheet, and performance point hits the public race.' },
+] as const
+
+const squadShape = [
+  { label: 'GK', value: '1' },
+  { label: 'DEF', value: '4' },
+  { label: 'MID', value: '3' },
+  { label: 'FWD', value: '3' },
+  { label: 'SUB', value: '4' },
+] as const
+
+function getFixtureKickoffMs(fixture: FixtureSeed) {
+  return new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeUtc}Z`).getTime()
 }
 
-function getMatchTeamCode(teamName: string) {
-  return matchTeamCodes[teamName] ?? teamName.slice(0, 3).toUpperCase()
+function getNextKickoffSlot(fixtures: FixtureSeed[], teams: TeamSeed[], now = new Date()) {
+  const teamByCode = new Map(teams.map((team) => [team.code, team]))
+  const scheduledMatches = fixtures
+    .map((fixture) => ({
+      ...fixture,
+      homeName: teamByCode.get(fixture.homeTeamCode)?.nameEn ?? fixture.homeTeamCode,
+      awayName: teamByCode.get(fixture.awayTeamCode)?.nameEn ?? fixture.awayTeamCode,
+      kickoffMs: getFixtureKickoffMs(fixture),
+    }))
+    .filter((fixture) => Number.isFinite(fixture.kickoffMs))
+    .sort((a, b) => a.kickoffMs - b.kickoffMs)
+  const nextMatch = scheduledMatches.find((match) => match.kickoffMs >= now.getTime()) ?? scheduledMatches.at(-1)
+  const nextMatches = nextMatch ? scheduledMatches.filter((match) => match.kickoffMs === nextMatch.kickoffMs) : []
+  const kickoffDate = nextMatch ? new Date(nextMatch.kickoffMs) : null
+
+  return {
+    day:
+      kickoffDate?.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'Europe/London',
+      }) ?? 'Schedule pending',
+    time:
+      kickoffDate?.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/London',
+      }) ?? '',
+    matches: nextMatches,
+  }
 }
 
-function DiscordIcon() {
+function HeroPlayerWall() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 fill-current">
-      <path d="M19.7 5.03a16.4 16.4 0 0 0-4.09-1.27 11.4 11.4 0 0 0-.52 1.08 15.2 15.2 0 0 0-6.17 0 11.5 11.5 0 0 0-.52-1.08A16.48 16.48 0 0 0 4.3 5.03C1.71 8.9 1.01 12.67 1.36 16.39a16.54 16.54 0 0 0 5.03 2.56c.41-.56.78-1.16 1.1-1.79-.6-.23-1.18-.5-1.72-.81.14-.1.27-.2.4-.31 3.32 1.56 6.92 1.56 10.2 0 .13.11.26.21.4.31-.55.32-1.13.59-1.73.81.32.63.69 1.23 1.11 1.79a16.44 16.44 0 0 0 5.03-2.56c.42-4.31-.72-8.04-2.49-11.36Zm-8.31 9.06c-.98 0-1.79-.91-1.79-2.02 0-1.12.79-2.02 1.79-2.02 1 0 1.8.91 1.79 2.02 0 1.12-.79 2.02-1.79 2.02Zm6.22 0c-.98 0-1.79-.91-1.79-2.02 0-1.12.79-2.02 1.79-2.02 1 0 1.8.91 1.79 2.02 0 1.12-.79 2.02-1.79 2.02Z" />
-    </svg>
+    <div className="hero-player-wall" aria-label="Featured Soccerverse players">
+      {superstarPlayers.slice(0, 6).map((player, index) => (
+        <div key={player.playerId} className="hero-player-tile" style={{ ['--tile-delay' as string]: `${index * 60}ms` }}>
+          <PlayerPortrait
+            src={player.imageUrl}
+            alt={player.name}
+            width={150}
+            height={150}
+            className="h-full w-full object-cover"
+          />
+          <span>{player.name}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
-function MatchPlanCard() {
+function SquadBlueprint() {
   return (
-    <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">group stage match plan</p>
-          <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">All 72 World Cup group games</h3>
-        </div>
-        <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">BST schedule</span>
+    <div className="squad-blueprint">
+      <div className="flex items-center justify-between gap-3">
+        <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">locked squad</p>
+        <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+          15 players
+        </span>
       </div>
-
-      <div className="mt-5 max-h-[29rem] space-y-3 overflow-y-auto pr-2">
-        {groupStageMatchPlan.map((day) => (
-          <section key={day.day} className="space-y-3">
-            <div className="sticky top-0 z-10 -mx-1 rounded-full border border-white/8 bg-[rgba(11,17,16,0.92)] px-4 py-2 backdrop-blur">
-              <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)]">{day.day}</p>
-            </div>
-
-            <div className="space-y-2">
-              {day.matches.map((match, index) => (
-                <div
-                  key={`${day.day}-${match.group}-${match.home}-${match.away}-${index}`}
-                  className="surface-row rounded-[0.9rem] px-3 py-2.5 transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/20"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                        Group {match.group}
-                      </span>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <TeamFlag teamCode={getMatchTeamCode(match.home)} label={match.home} size="sm" />
-                        <p className="min-w-0 text-sm font-medium text-white sm:text-base">
-                          <span className="whitespace-nowrap">{match.home}</span>{' '}
-                          <span className="text-[var(--color-muted)]">vs</span>{' '}
-                          <span className="whitespace-nowrap">{match.away}</span>
-                        </p>
-                        <TeamFlag teamCode={getMatchTeamCode(match.away)} label={match.away} size="sm" />
-                      </div>
-                    </div>
-                    <span className="mono text-xs uppercase tracking-[0.16em] text-[var(--color-muted)]">{match.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+      <div className="mt-4 grid grid-cols-5 gap-1.5">
+        {squadShape.map((slot) => (
+          <div key={slot.label} className="squad-slot">
+            <span>{slot.label}</span>
+            <strong>{slot.value}</strong>
+          </div>
         ))}
       </div>
-
-      <p className="mt-5 text-sm leading-relaxed text-[var(--color-muted)]">
-        Times shown in BST from the published day-by-day 2026 World Cup schedule.
+      <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">
+        One entry, one cap, one squad for the full tournament.
       </p>
     </div>
   )
 }
 
-function SuperstarCard() {
+function NextKickoffCard({
+  fixtures,
+  referrerSoccerverseUsername,
+  teams,
+}: {
+  fixtures: FixtureSeed[]
+  referrerSoccerverseUsername: string
+  teams: TeamSeed[]
+}) {
+  const nextKickoff = getNextKickoffSlot(fixtures, teams)
+  const hasMatches = nextKickoff.matches.length > 0
+
   return (
-    <div className="glass-panel overflow-hidden rounded-[1.15rem] p-3.5">
-      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Add a superstar</p>
-      <div className="mt-3 grid grid-cols-4 gap-1.5">
-        {superstarPlayers.map((player, index) => (
-          <div
-            key={player.playerId}
-            className="group overflow-hidden rounded-[0.75rem] border border-white/10 bg-black/20 transition hover:-translate-y-[2px] hover:border-[var(--color-accent)]/25"
-            style={{ animationDelay: `${index * 70}ms` }}
-          >
-            <PlayerPortrait
-              src={player.imageUrl}
-              alt={player.name}
-              width={120}
-              height={120}
-              className="aspect-square w-full object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
-            />
-            <p className="px-2 py-1.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-[var(--color-paper)]">
-              {player.name}
-            </p>
-          </div>
-        ))}
+    <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">next live window</p>
+          <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">Next kickoff</h3>
+        </div>
+        <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">BST schedule</span>
       </div>
+
+      <div className="mt-5 rounded-[1rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 p-4">
+        <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)]">{nextKickoff.day}</p>
+        <p className="mono mt-2 text-3xl text-white">{nextKickoff.time || 'TBC'}</p>
+      </div>
+
+      <div className="mt-4 space-y-2.5">
+        {hasMatches ? nextKickoff.matches.map((match, index) => (
+          <div
+            key={`${match.fixtureId}-${index}`}
+            className="surface-row rounded-[0.95rem] p-3 transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/20"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                Group {match.groupKey}
+              </span>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
+                <TeamFlag teamCode={match.homeTeamCode} label={match.homeName} size="sm" />
+                <p className="min-w-0 text-sm font-semibold text-white sm:text-base">
+                  <span>{match.homeName}</span> <span className="text-[var(--color-muted)]">vs</span> <span>{match.awayName}</span>
+                </p>
+                <TeamFlag teamCode={match.awayTeamCode} label={match.awayName} size="sm" />
+              </div>
+            </div>
+          </div>
+        )) : (
+          <div className="surface-row rounded-[0.95rem] p-3 text-sm leading-relaxed text-[var(--color-muted)]">
+            Match schedule will appear here once the public bootstrap is available.
+          </div>
+        )}
+      </div>
+
+      <Link
+        to={withReferral('/results', referrerSoccerverseUsername)}
+        className="mt-5 inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+      >
+        Open results centre
+      </Link>
     </div>
   )
 }
@@ -205,9 +216,42 @@ function NationFlagsCard() {
   )
 }
 
+function RankingTracksCard() {
+  return (
+    <div className="glass-panel rounded-[1.15rem] p-4">
+      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">three races at once</p>
+      <div className="mt-4 space-y-2.5">
+        {[
+          ['Rookie', 'New managers fight the open table from day one.'],
+          ['Veteran', 'Established accounts get their own pressure lane.'],
+          ['Nation', 'Every selected country carries its managers into a country ranking.'],
+        ].map(([title, body], index) => (
+          <div key={title} className="surface-row rounded-[0.9rem] p-3">
+            <div className="flex items-start gap-3">
+              <span className="mono text-[0.72rem] text-[var(--color-accent)]">0{index + 1}</span>
+              <div>
+                <p className="font-semibold text-white">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DiscordIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 fill-current">
+      <path d="M19.7 5.03a16.4 16.4 0 0 0-4.09-1.27 11.4 11.4 0 0 0-.52 1.08 15.2 15.2 0 0 0-6.17 0 11.5 11.5 0 0 0-.52-1.08A16.48 16.48 0 0 0 4.3 5.03C1.71 8.9 1.01 12.67 1.36 16.39a16.54 16.54 0 0 0 5.03 2.56c.41-.56.78-1.16 1.1-1.79-.6-.23-1.18-.5-1.72-.81.14-.1.27-.2.4-.31 3.32 1.56 6.92 1.56 10.2 0 .13.11.26.21.4.31-.55.32-1.13.59-1.73.81.32.63.69 1.23 1.11 1.79a16.44 16.44 0 0 0 5.03-2.56c.42-4.31-.72-8.04-2.49-11.36Zm-8.31 9.06c-.98 0-1.79-.91-1.79-2.02 0-1.12.79-2.02 1.79-2.02 1 0 1.8.91 1.79 2.02 0 1.12-.79 2.02-1.79 2.02Zm6.22 0c-.98 0-1.79-.91-1.79-2.02 0-1.12.79-2.02 1.79-2.02 1 0 1.8.91 1.79 2.02 0 1.12-.79 2.02-1.79 2.02Z" />
+    </svg>
+  )
+}
+
 function DiscordCard() {
   return (
-    <div className="glass-panel rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-3.5">
+    <div className="glass-panel rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Join Discord</p>
       <div className="mt-4 flex items-start gap-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/12 bg-black/20 text-[var(--color-paper)]">
@@ -233,67 +277,119 @@ function DiscordCard() {
   )
 }
 
+function LandingProofCard({ scoring }: { scoring: ScoringConfig }) {
+  return (
+    <div className="glass-panel rounded-[1.15rem] p-4">
+      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">what moves the table</p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+        {[
+          ['Goal', `+${scoring.goal}`],
+          ['Assist', `+${scoring.assist}`],
+          ['Clean sheet', `GK +${scoring.cleanSheet.GK}`],
+        ].map(([label, value]) => (
+          <div key={label} className="surface-row rounded-[0.85rem] p-3">
+            <p className="text-sm text-[var(--color-muted)]">{label}</p>
+            <p className="mono mt-2 text-xl text-white">{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 interface HomePageProps {
   locale: LocaleCode
   referrerSoccerverseUsername?: string
 }
 
 export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageProps) {
-  const scoring = defaultScoring
+  const { data: bootstrap } = useBootstrap()
+  const scoring = bootstrap?.scoring ?? defaultScoring
+  const budgetLimit = bootstrap?.budgetLimit ?? defaultBudgetLimit
+  const teams = bootstrap?.teams ?? eventTeams
+  const fixtures = bootstrap?.fixtures ?? []
+  const fixtureCount = bootstrap?.fixtures.length ?? 104
 
   return (
     <div className="space-y-4 pb-10">
-      <section className="table-grid">
-        <div className="hero-card rounded-[1.35rem] px-4 py-5 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="eyebrow">{t(locale, 'heroEyebrow')}</p>
-            <span className="mono rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)]">
-              Community event 2026
-            </span>
-          </div>
-          <div className="mt-7 grid gap-7 xl:grid-cols-[minmax(0,1fr)_17rem]">
-            <div className="max-w-[56rem]">
-              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
-                Hidden squads. Shared reveals. One locked draft.
-              </p>
-              <h2 className="section-title mt-3 max-w-[13ch]">{t(locale, 'heroTitle')}</h2>
-              <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">
-                {t(locale, 'heroBody')}
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  to={withReferral('/register', referrerSoccerverseUsername)}
-                  className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
-                >
-                  {t(locale, 'heroPrimary')}
-                </Link>
-                <Link
-                  to={withReferral('/tables', referrerSoccerverseUsername)}
-                  className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
-                >
-                  View live tables
-                </Link>
+      <section className="landing-hero">
+        <div className="landing-main-stack">
+          <div className="hero-card rounded-[1.35rem] p-4 sm:p-6 lg:p-7">
+            <div className="hero-composition">
+              <div className="hero-copy">
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="eyebrow">{t(locale, 'heroEyebrow')}</p>
+                  <span className="mono rounded-full border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)]">
+                    one locked entry
+                  </span>
+                </div>
+                <p className="mt-7 mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
+                  Hidden squads. Public pressure. Nation pride.
+                </p>
+                <h2 className="section-title hero-title mt-3">
+                  Draft 15.
+                  <br />
+                  Hide the squad.
+                  <br />
+                  Beat your nation.
+                </h2>
+                <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">
+                  Build one Soccerverse World Cup squad under the cap, lock it for the full competition, then watch every
+                  official match swing the rookie, veteran, and nation rankings.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    to={withReferral('/register', referrerSoccerverseUsername)}
+                    className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
+                  >
+                    {t(locale, 'heroPrimary')}
+                  </Link>
+                  <Link
+                    to={withReferral('/builder', referrerSoccerverseUsername)}
+                    className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+                  >
+                    Start building
+                  </Link>
+                </div>
+              </div>
+
+              <div className="hero-stage">
+                <HeroPlayerWall />
+                <SquadBlueprint />
               </div>
             </div>
-            <div className="data-strip self-end">
-              <div>
-                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Teams</p>
-                <p className="mono mt-2 text-2xl text-white">48</p>
-              </div>
-              <div>
-                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Squad</p>
-                <p className="mono mt-2 text-2xl text-white">15</p>
-              </div>
-              <div>
-                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Games</p>
-                <p className="mono mt-2 text-2xl text-white">72</p>
-              </div>
+
+            <div className="hero-mechanics">
+              {heroMechanics.map((item) => (
+                <article key={item.step} className="hero-mechanic">
+                  <span>{item.step}</span>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.body}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
+          <LandingProofCard scoring={scoring} />
         </div>
 
-        <div className="grid gap-3">
-          <SuperstarCard />
+        <div className="landing-side-stack">
+          <div className="data-strip">
+            <div>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Teams</p>
+              <p className="mono mt-2 text-2xl text-white">{teams.length}</p>
+            </div>
+            <div>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Squad</p>
+              <p className="mono mt-2 text-2xl text-white">15</p>
+            </div>
+            <div>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Matches</p>
+              <p className="mono mt-2 text-2xl text-white">{fixtureCount}</p>
+            </div>
+          </div>
+          <RankingTracksCard />
           <NationFlagsCard />
           <DiscordCard />
         </div>
@@ -305,6 +401,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
             <div>
               <p className="eyebrow">{t(locale, 'scoringTitle')}</p>
               <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">Lock the event logic before kickoff</h3>
+              <p className="mt-3 max-w-[58ch] text-sm leading-relaxed text-[var(--color-muted)]">
+                These values are loaded from the current public event configuration.
+              </p>
             </div>
             <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">scroll</span>
           </div>
@@ -321,7 +420,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
 
             <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">salary budget</p>
-              <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">3,000,000 SVC</p>
+              <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">
+                {budgetLimit.toLocaleString('en-US')} SVC
+              </p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
                 Every participant drafts under the same cap using Soccerverse wage logic.
               </p>
@@ -337,6 +438,14 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[var(--color-muted)]">Assist</dt>
                   <dd className="mono text-white">{scoring.assist}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-[var(--color-muted)]">Appearance</dt>
+                  <dd className="mono text-white">{scoring.appearance}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-[var(--color-muted)]">60+ minutes</dt>
+                  <dd className="mono text-white">{scoring.minutes}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[var(--color-muted)]">Clean sheet</dt>
@@ -366,7 +475,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
           </div>
         </div>
 
-        <MatchPlanCard />
+        <NextKickoffCard fixtures={fixtures} referrerSoccerverseUsername={referrerSoccerverseUsername} teams={teams} />
       </section>
     </div>
   )
