@@ -28,6 +28,21 @@ export interface PublicFixtureResult extends FixtureSeed {
   awayGoals: number | null
   status: 'final' | 'pending'
   entryCount: number
+  homePlayers: PublicFixturePlayerResult[]
+  awayPlayers: PublicFixturePlayerResult[]
+}
+
+export interface PublicFixturePlayerResult {
+  playerId: number
+  displayName: string
+  teamCode: string
+  imageUrl?: string
+  minutes: number
+  goals: number
+  assists: number
+  cleanSheetEligible: boolean
+  rating?: number
+  sourceNote?: string
 }
 
 export interface PerformanceCurveAnchor {
@@ -189,6 +204,7 @@ export interface ParticipantScoreRow {
   baseScore: number
   bonusPercent: number
   breakdown: ParticipantScoreBreakdown
+  fixtures: ParticipantScoreFixtureDetail[]
   rank: number
 }
 
@@ -199,6 +215,36 @@ export interface ParticipantScoreBreakdown {
   minutes: { count: number; points: number }
   cleanSheets: { count: number; points: number }
   performance: { points: number }
+}
+
+export interface ParticipantScoreFixtureDetail {
+  fixtureId: string
+  totalPoints: number
+  players: ParticipantScorePlayerDetail[]
+}
+
+export interface ParticipantScorePlayerDetail {
+  fixtureId: string
+  playerId: number
+  displayName: string
+  teamCode: string
+  imageUrl?: string
+  slotKey: string
+  slotGroup: SlotGroup
+  slotClass: SlotClass
+  minutes: number
+  goals: number
+  assists: number
+  cleanSheetEligible: boolean
+  rating?: number
+  sourceNote?: string
+  goalPoints: number
+  assistPoints: number
+  appearancePoints: number
+  minutesPoints: number
+  cleanSheetPoints: number
+  performancePoints: number
+  totalPoints: number
 }
 
 export interface NationScoreRow {

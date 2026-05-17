@@ -8,10 +8,13 @@ import type {
   MatchEntryRecord,
   NationScoreRow,
   ParticipantScoreBreakdown,
+  ParticipantScoreFixtureDetail,
+  ParticipantScorePlayerDetail,
   ParticipantScoreRow,
   PerformanceCurveAnchor,
   ScoringConfig,
   SlotClass,
+  SlotGroup,
 } from '../domain/types.js'
 import type { ConfigRepository } from './configRepository.js'
 import type { RegistrationRepository } from './registrationRepository.js'
@@ -48,9 +51,12 @@ function buildKickoffByFixture(fixtures: Array<Pick<FixtureSeed, 'fixtureId' | '
 interface ScoreSlot {
   participantId: string
   slotKey: string
-  slotGroup: 'starter' | 'sub'
+  slotGroup: SlotGroup
   slotClass: SlotClass
   playerId: number
+  displayName: string
+  teamCode: string
+  imageUrl?: string
 }
 
 type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
@@ -128,6 +134,22 @@ function createEmptyBreakdown(): ParticipantScoreBreakdown {
   }
 }
 
+function sortFixtureDetails(fixtures: ParticipantScoreFixtureDetail[]) {
+  return fixtures
+    .map((fixture) => ({
+      ...fixture,
+      players: [...fixture.players].sort(
+        (left, right) =>
+          right.totalPoints - left.totalPoints ||
+          right.goals - left.goals ||
+          right.assists - left.assists ||
+          right.minutes - left.minutes ||
+          left.displayName.localeCompare(right.displayName),
+      ),
+    }))
+    .sort((left, right) => left.fixtureId.localeCompare(right.fixtureId))
+}
+
 interface FixtureEntryScore {
   score: number
   inOfficialSquad: boolean
@@ -175,8 +197,9 @@ function calculateParticipantRows(
 
     let baseScore = 0
     const breakdown = createEmptyBreakdown()
+    const fixtureDetailsById = new Map<string, ParticipantScoreFixtureDetail>()
 
-    function addPlayerState(slotClass: SlotClass, playerState: FixtureEntryScore) {
+    function addPlayerState(fixtureId: string, slot: ScoreSlot, playerState: FixtureEntryScore) {
       const components = scoreEntryComponents(playerState.entry, scoring)
       baseScore += components.total
       breakdown.goals.count += playerState.entry.goals
@@ -193,11 +216,43 @@ function calculateParticipantRows(
       }
       breakdown.performance.points += components.performance
 
+      let cleanSheetPoints = 0
       if (playerState.cleanSheetEligible) {
-        const cleanSheetPoints = scoring.cleanSheet[slotClass]
+        cleanSheetPoints = scoring.cleanSheet[slot.slotClass]
         baseScore += cleanSheetPoints
         breakdown.cleanSheets.count += 1
         breakdown.cleanSheets.points += cleanSheetPoints
+      }
+
+      const totalPoints = components.total + cleanSheetPoints
+      if (totalPoints !== 0 || playerState.entry.minutes > 0 || playerState.entry.goals > 0 || playerState.entry.assists > 0) {
+        const fixtureDetail = fixtureDetailsById.get(fixtureId) ?? { fixtureId, totalPoints: 0, players: [] }
+        const playerDetail: ParticipantScorePlayerDetail = {
+          fixtureId,
+          playerId: slot.playerId,
+          displayName: slot.displayName,
+          teamCode: slot.teamCode,
+          imageUrl: slot.imageUrl,
+          slotKey: slot.slotKey,
+          slotGroup: slot.slotGroup,
+          slotClass: slot.slotClass,
+          minutes: playerState.entry.minutes,
+          goals: playerState.entry.goals,
+          assists: playerState.entry.assists,
+          cleanSheetEligible: playerState.cleanSheetEligible,
+          rating: playerState.entry.rating,
+          sourceNote: playerState.entry.sourceNote,
+          goalPoints: components.goals,
+          assistPoints: components.assists,
+          appearancePoints: components.appearance,
+          minutesPoints: components.minutes,
+          cleanSheetPoints,
+          performancePoints: components.performance,
+          totalPoints,
+        }
+        fixtureDetail.players.push(playerDetail)
+        fixtureDetail.totalPoints += totalPoints
+        fixtureDetailsById.set(fixtureId, fixtureDetail)
       }
     }
 
@@ -222,7 +277,7 @@ function calculateParticipantRows(
           starterAbsences.set(slot.slotClass, (starterAbsences.get(slot.slotClass) ?? 0) + 1)
         }
 
-        addPlayerState(slot.slotClass, playerState)
+        addPlayerState(fixtureId, slot, playerState)
       }
 
       for (const slot of subSlots) {
@@ -233,7 +288,7 @@ function calculateParticipantRows(
 
         const playerState = entryScores.get(slot.playerId)
         if (playerState) {
-          addPlayerState(slot.slotClass, playerState)
+          addPlayerState(fixtureId, slot, playerState)
         }
 
         starterAbsences.set(slot.slotClass, missingStarters - 1)
@@ -253,6 +308,7 @@ function calculateParticipantRows(
       bonusPercent,
       totalScore,
       breakdown,
+      fixtures: sortFixtureDetails([...fixtureDetailsById.values()]),
       registeredAt: participant.registeredAt,
     }
   })
@@ -392,6 +448,9 @@ export class MemoryScoringRepository implements ScoringRepository {
             slotGroup: slot.slotGroup,
             slotClass: slot.slotClass,
             playerId: slot.player.playerId,
+            displayName: slot.player.displayName,
+            teamCode: slot.player.teamCode,
+            imageUrl: slot.player.imageUrl,
           })
         }
       }
@@ -574,11 +633,17 @@ export class PostgresScoringRepository implements ScoringRepository {
       slot_group: 'starter' | 'sub'
       slot_class: SlotClass
       player_id: string
+      display_name: string
+      team_code: string | null
+      image_url: string | null
     }>(
       `
-        SELECT s.participant_id, ss.slot_key, ss.slot_group, ss.slot_class, ss.player_id
+        SELECT s.participant_id, ss.slot_key, ss.slot_group, ss.slot_class, ss.player_id,
+               p.display_name, COALESCE(ts.team_code, p.nationality_code) AS team_code, p.image_url
         FROM squads s
         JOIN squad_slots ss ON ss.squad_id = s.squad_id
+        JOIN world_cup_players p ON p.player_id = ss.player_id
+        LEFT JOIN world_cup_team_selections ts ON ts.player_id = ss.player_id
         WHERE s.is_locked = TRUE
       `,
     )
@@ -588,6 +653,9 @@ export class PostgresScoringRepository implements ScoringRepository {
       slotGroup: row.slot_group,
       slotClass: row.slot_class,
       playerId: Number(row.player_id),
+      displayName: row.display_name,
+      teamCode: row.team_code ?? '',
+      imageUrl: row.image_url ?? undefined,
     }))
   }
 }

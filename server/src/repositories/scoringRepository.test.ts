@@ -89,6 +89,84 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     const leaderboard = await scoring.getLeagueLeaderboard('rookie')
     expect(leaderboard[0].baseScore).toBe(4)
   })
+
+  it('exposes fixture and player scoring details for public table drilldowns', async () => {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      {
+        email: 'details@example.com',
+        displayName: 'Details Manager',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'details-token',
+    )
+    await registrations.verifyByPlainToken('details-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fixture-1',
+      playerId: 109,
+      inOfficialSquad: true,
+      minutes: 88,
+      goals: 2,
+      assists: 1,
+      cleanSheetEligible: false,
+      rating: 8,
+    })
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fixture-1',
+      playerId: 101,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 0,
+      assists: 0,
+      cleanSheetEligible: true,
+    })
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    const row = leaderboard[0] as any
+
+    expect(row.fixtures).toHaveLength(1)
+    expect(row.fixtures[0]).toMatchObject({
+      fixtureId: 'fixture-1',
+      totalPoints: 22,
+    })
+    expect(row.fixtures[0].players).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          playerId: 109,
+          displayName: 'Player 109',
+          teamCode: 'FRA',
+          slotKey: 'starter-fwd-1',
+          goals: 2,
+          assists: 1,
+          minutes: 88,
+          performancePoints: 1,
+          totalPoints: 16,
+        }),
+        expect.objectContaining({
+          playerId: 101,
+          displayName: 'Player 101',
+          teamCode: 'FRA',
+          slotKey: 'starter-gk-1',
+          cleanSheetPoints: 4,
+          totalPoints: 6,
+        }),
+      ]),
+    )
+  })
 })
 
 describe('MemoryScoringRepository late-entry rule', () => {

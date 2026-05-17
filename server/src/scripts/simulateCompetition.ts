@@ -1,6 +1,6 @@
 import { fixtures } from '../data/worldCupSeed.js'
-import { simulateConfiguredCompetition, simulationTeamStrengthFloor } from '../services/competitionSimulation.js'
-import { closeRepositoryPool, createScoringRepository, createTeamPoolRepository } from '../services/repos.js'
+import { simulateCompleteCompetition, simulateConfiguredCompetition, simulationTeamStrengthFloor } from '../services/competitionSimulation.js'
+import { closeRepositoryPool, createFixtureRepository, createScoringRepository, createTeamPoolRepository } from '../services/repos.js'
 
 interface CliOptions {
   dryRun: boolean
@@ -80,6 +80,7 @@ async function main() {
 
   const teamCodes = [...new Set(selectedFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
   const teamPoolRepository = createTeamPoolRepository()
+  const fixtureRepository = createFixtureRepository()
   const scoringRepository = createScoringRepository()
   const playersByTeam = new Map<string, Awaited<ReturnType<typeof teamPoolRepository.listByTeam>>>()
 
@@ -94,10 +95,23 @@ async function main() {
   }
 
   const missingTeams = teamCodes.filter((teamCode) => (playersByTeam.get(teamCode)?.length ?? 0) === 0)
-  const simulatedFixtures = simulateConfiguredCompetition(selectedFixtures, playersByTeam, { seed: options.seed })
+  const simulatedCompetition = options.fixtureId ? null : simulateCompleteCompetition(selectedFixtures, playersByTeam, { seed: options.seed })
+  const simulatedFixtures = options.fixtureId
+    ? simulateConfiguredCompetition(selectedFixtures, playersByTeam, { seed: options.seed })
+    : simulatedCompetition?.fixtures ?? []
   const entries = simulatedFixtures.flatMap((fixture) => fixture.entries)
 
   if (!options.dryRun) {
+    await fixtureRepository.upsertFixtures(
+      simulatedFixtures.map((fixture) => ({
+        fixtureId: fixture.fixtureId,
+        groupKey: fixture.groupKey,
+        kickoffDate: fixture.kickoffDate,
+        kickoffTimeUtc: fixture.kickoffTimeUtc,
+        homeTeamCode: fixture.homeTeamCode,
+        awayTeamCode: fixture.awayTeamCode,
+      })),
+    )
     for (const entry of entries) {
       await scoringRepository.upsertMatchEntry(entry)
     }
@@ -105,8 +119,12 @@ async function main() {
 
   console.log(options.dryRun ? 'Dry run only. No scoring entries were written.' : 'Simulation written to scoring entries.')
   console.log(`Storage: ${scoringRepository.storageKind}`)
-  console.log(`Fixtures simulated: ${simulatedFixtures.length}/${selectedFixtures.length}`)
+  console.log(`Fixtures simulated: ${simulatedFixtures.length}/${options.fixtureId ? selectedFixtures.length : 104}`)
   console.log(`Player entries ${options.dryRun ? 'generated' : 'upserted'}: ${entries.length}`)
+  if (simulatedCompetition) {
+    console.log(`Champion: ${simulatedCompetition.champion}`)
+    console.log(`Final: ${formatResult(simulatedCompetition.final)}`)
+  }
   if (options.seedFakePoolsIfEmpty) {
     console.log('Fake team pools were seeded only for teams that were empty.')
   }

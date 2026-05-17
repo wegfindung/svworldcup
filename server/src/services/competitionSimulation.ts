@@ -9,11 +9,43 @@ interface SimulationOptions {
 
 export interface SimulatedFixture {
   fixtureId: string
+  groupKey: string
+  kickoffDate: string
+  kickoffTimeUtc: string
   homeTeamCode: string
   awayTeamCode: string
   homeGoals: number
   awayGoals: number
   entries: MatchEntryInput[]
+}
+
+interface GroupStanding {
+  teamCode: string
+  groupKey: string
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDifference: number
+  points: number
+}
+
+interface KnockoutTeam {
+  teamCode: string
+  groupKey: string
+  rank: number
+  standing: GroupStanding
+}
+
+export interface SimulatedCompetition {
+  fixtures: SimulatedFixture[]
+  standings: GroupStanding[]
+  champion: string
+  runnerUp: string
+  thirdPlace: string
+  final: SimulatedFixture
 }
 
 interface SimulatedPlayerState {
@@ -86,6 +118,77 @@ export const simulationTeamStrengthFloor: Record<string, number> = {
   UZB: 73,
 }
 
+const knockoutSchedule: Record<number, { groupKey: string; kickoffDate: string; kickoffTimeUtc: string }> = {
+  73: { groupKey: 'R32', kickoffDate: '2026-06-28', kickoffTimeUtc: '19:00:00' },
+  74: { groupKey: 'R32', kickoffDate: '2026-06-29', kickoffTimeUtc: '20:30:00' },
+  75: { groupKey: 'R32', kickoffDate: '2026-06-30', kickoffTimeUtc: '01:00:00' },
+  76: { groupKey: 'R32', kickoffDate: '2026-06-29', kickoffTimeUtc: '17:00:00' },
+  77: { groupKey: 'R32', kickoffDate: '2026-06-30', kickoffTimeUtc: '21:00:00' },
+  78: { groupKey: 'R32', kickoffDate: '2026-06-30', kickoffTimeUtc: '17:00:00' },
+  79: { groupKey: 'R32', kickoffDate: '2026-07-01', kickoffTimeUtc: '01:00:00' },
+  80: { groupKey: 'R32', kickoffDate: '2026-07-01', kickoffTimeUtc: '16:00:00' },
+  81: { groupKey: 'R32', kickoffDate: '2026-07-02', kickoffTimeUtc: '00:00:00' },
+  82: { groupKey: 'R32', kickoffDate: '2026-07-01', kickoffTimeUtc: '20:00:00' },
+  83: { groupKey: 'R32', kickoffDate: '2026-07-02', kickoffTimeUtc: '23:00:00' },
+  84: { groupKey: 'R32', kickoffDate: '2026-07-02', kickoffTimeUtc: '19:00:00' },
+  85: { groupKey: 'R32', kickoffDate: '2026-07-03', kickoffTimeUtc: '03:00:00' },
+  86: { groupKey: 'R32', kickoffDate: '2026-07-03', kickoffTimeUtc: '22:00:00' },
+  87: { groupKey: 'R32', kickoffDate: '2026-07-04', kickoffTimeUtc: '01:30:00' },
+  88: { groupKey: 'R32', kickoffDate: '2026-07-03', kickoffTimeUtc: '18:00:00' },
+  89: { groupKey: 'R16', kickoffDate: '2026-07-04', kickoffTimeUtc: '21:00:00' },
+  90: { groupKey: 'R16', kickoffDate: '2026-07-04', kickoffTimeUtc: '17:00:00' },
+  91: { groupKey: 'R16', kickoffDate: '2026-07-05', kickoffTimeUtc: '20:00:00' },
+  92: { groupKey: 'R16', kickoffDate: '2026-07-06', kickoffTimeUtc: '00:00:00' },
+  93: { groupKey: 'R16', kickoffDate: '2026-07-06', kickoffTimeUtc: '19:00:00' },
+  94: { groupKey: 'R16', kickoffDate: '2026-07-07', kickoffTimeUtc: '00:00:00' },
+  95: { groupKey: 'R16', kickoffDate: '2026-07-07', kickoffTimeUtc: '22:00:00' },
+  96: { groupKey: 'R16', kickoffDate: '2026-07-08', kickoffTimeUtc: '01:00:00' },
+  97: { groupKey: 'QF', kickoffDate: '2026-07-10', kickoffTimeUtc: '01:00:00' },
+  98: { groupKey: 'QF', kickoffDate: '2026-07-10', kickoffTimeUtc: '19:00:00' },
+  99: { groupKey: 'QF', kickoffDate: '2026-07-11', kickoffTimeUtc: '22:00:00' },
+  100: { groupKey: 'QF', kickoffDate: '2026-07-11', kickoffTimeUtc: '19:00:00' },
+  101: { groupKey: 'SF', kickoffDate: '2026-07-15', kickoffTimeUtc: '01:00:00' },
+  102: { groupKey: 'SF', kickoffDate: '2026-07-15', kickoffTimeUtc: '22:00:00' },
+  103: { groupKey: '3P', kickoffDate: '2026-07-18', kickoffTimeUtc: '22:00:00' },
+  104: { groupKey: 'FINAL', kickoffDate: '2026-07-19', kickoffTimeUtc: '19:00:00' },
+}
+
+const roundOf32Templates = [
+  { match: 73, home: { rank: 2, group: 'A' }, away: { rank: 2, group: 'B' } },
+  { match: 74, home: { rank: 1, group: 'E' }, thirdAway: ['A', 'B', 'C', 'D', 'F'] },
+  { match: 75, home: { rank: 1, group: 'F' }, away: { rank: 2, group: 'C' } },
+  { match: 76, home: { rank: 1, group: 'C' }, away: { rank: 2, group: 'F' } },
+  { match: 77, home: { rank: 1, group: 'I' }, thirdAway: ['C', 'D', 'F', 'G', 'H'] },
+  { match: 78, home: { rank: 2, group: 'E' }, away: { rank: 2, group: 'I' } },
+  { match: 79, home: { rank: 1, group: 'A' }, thirdAway: ['C', 'E', 'F', 'H', 'I'] },
+  { match: 80, home: { rank: 1, group: 'L' }, thirdAway: ['E', 'H', 'I', 'J', 'K'] },
+  { match: 81, home: { rank: 1, group: 'D' }, thirdAway: ['B', 'E', 'F', 'I', 'J'] },
+  { match: 82, home: { rank: 1, group: 'G' }, thirdAway: ['A', 'E', 'H', 'I', 'J'] },
+  { match: 83, home: { rank: 2, group: 'K' }, away: { rank: 2, group: 'L' } },
+  { match: 84, home: { rank: 1, group: 'H' }, away: { rank: 2, group: 'J' } },
+  { match: 85, home: { rank: 1, group: 'B' }, thirdAway: ['E', 'F', 'G', 'I', 'J'] },
+  { match: 86, home: { rank: 1, group: 'J' }, away: { rank: 2, group: 'H' } },
+  { match: 87, home: { rank: 1, group: 'K' }, thirdAway: ['D', 'E', 'I', 'J', 'L'] },
+  { match: 88, home: { rank: 2, group: 'D' }, away: { rank: 2, group: 'G' } },
+] as const
+
+const winnerBracket = [
+  { match: 89, home: 74, away: 77 },
+  { match: 90, home: 73, away: 75 },
+  { match: 91, home: 76, away: 78 },
+  { match: 92, home: 79, away: 80 },
+  { match: 93, home: 83, away: 84 },
+  { match: 94, home: 81, away: 82 },
+  { match: 95, home: 86, away: 88 },
+  { match: 96, home: 85, away: 87 },
+  { match: 97, home: 89, away: 90 },
+  { match: 98, home: 93, away: 94 },
+  { match: 99, home: 91, away: 92 },
+  { match: 100, home: 95, away: 96 },
+  { match: 101, home: 97, away: 98 },
+  { match: 102, home: 99, away: 100 },
+] as const
+
 function hashString(input: string) {
   let hash = 2166136261
   for (const char of input) {
@@ -140,6 +243,132 @@ function teamStrength(teamCode: string, players: TeamPoolPlayer[]) {
   const playerAverage = topPlayers.length > 0 ? topPlayers.reduce((sum, player) => sum + player.rating, 0) / topPlayers.length : 70
   const floor = simulationTeamStrengthFloor[teamCode] ?? 76
   return playerAverage * 0.45 + floor * 0.55
+}
+
+function compareStandings(left: GroupStanding, right: GroupStanding) {
+  return (
+    right.points - left.points ||
+    right.goalDifference - left.goalDifference ||
+    right.goalsFor - left.goalsFor ||
+    (simulationTeamStrengthFloor[right.teamCode] ?? 0) - (simulationTeamStrengthFloor[left.teamCode] ?? 0) ||
+    left.teamCode.localeCompare(right.teamCode)
+  )
+}
+
+function buildInitialStandings(fixtures: FixtureSeed[]) {
+  const standings = new Map<string, GroupStanding>()
+  for (const fixture of fixtures) {
+    for (const teamCode of [fixture.homeTeamCode, fixture.awayTeamCode]) {
+      if (!standings.has(teamCode)) {
+        standings.set(teamCode, {
+          teamCode,
+          groupKey: fixture.groupKey,
+          played: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          goalDifference: 0,
+          points: 0,
+        })
+      }
+    }
+  }
+  return standings
+}
+
+function applyStandingResult(standings: Map<string, GroupStanding>, homeTeamCode: string, awayTeamCode: string, homeGoals: number, awayGoals: number) {
+  const home = standings.get(homeTeamCode)
+  const away = standings.get(awayTeamCode)
+  if (!home || !away) {
+    return
+  }
+
+  home.played += 1
+  away.played += 1
+  home.goalsFor += homeGoals
+  home.goalsAgainst += awayGoals
+  away.goalsFor += awayGoals
+  away.goalsAgainst += homeGoals
+  home.goalDifference = home.goalsFor - home.goalsAgainst
+  away.goalDifference = away.goalsFor - away.goalsAgainst
+
+  if (homeGoals > awayGoals) {
+    home.wins += 1
+    away.losses += 1
+    home.points += 3
+  } else if (awayGoals > homeGoals) {
+    away.wins += 1
+    home.losses += 1
+    away.points += 3
+  } else {
+    home.draws += 1
+    away.draws += 1
+    home.points += 1
+    away.points += 1
+  }
+}
+
+function rankGroupStandings(standings: GroupStanding[]) {
+  const byGroup = new Map<string, GroupStanding[]>()
+  for (const standing of standings) {
+    const current = byGroup.get(standing.groupKey) ?? []
+    current.push(standing)
+    byGroup.set(standing.groupKey, current)
+  }
+  return new Map([...byGroup.entries()].map(([groupKey, rows]) => [groupKey, [...rows].sort(compareStandings)]))
+}
+
+function selectThirdPlaceTeam(availableThirds: KnockoutTeam[], allowedGroups: readonly string[]) {
+  const selected = availableThirds.find((team) => allowedGroups.includes(team.groupKey)) ?? availableThirds[0]
+  if (!selected) {
+    throw new Error(`Could not resolve third-place selector for groups ${allowedGroups.join('/')}`)
+  }
+  availableThirds.splice(availableThirds.indexOf(selected), 1)
+  return selected
+}
+
+function knockoutFixture(matchNumber: number, homeTeamCode: string, awayTeamCode: string): FixtureSeed {
+  const schedule = knockoutSchedule[matchNumber]
+  if (!schedule) {
+    throw new Error(`Missing knockout schedule for match ${matchNumber}`)
+  }
+
+  return {
+    fixtureId: `${schedule.kickoffDate}-${schedule.groupKey.toLowerCase()}-${matchNumber}`,
+    groupKey: schedule.groupKey,
+    kickoffDate: schedule.kickoffDate,
+    kickoffTimeUtc: schedule.kickoffTimeUtc,
+    homeTeamCode,
+    awayTeamCode,
+  }
+}
+
+function winnerOf(fixture: SimulatedFixture) {
+  if (fixture.homeGoals > fixture.awayGoals) return fixture.homeTeamCode
+  if (fixture.awayGoals > fixture.homeGoals) return fixture.awayTeamCode
+  return (simulationTeamStrengthFloor[fixture.homeTeamCode] ?? 0) >= (simulationTeamStrengthFloor[fixture.awayTeamCode] ?? 0)
+    ? fixture.homeTeamCode
+    : fixture.awayTeamCode
+}
+
+function loserOf(fixture: SimulatedFixture) {
+  const winner = winnerOf(fixture)
+  return winner === fixture.homeTeamCode ? fixture.awayTeamCode : fixture.homeTeamCode
+}
+
+function forceKnockoutWinner(fixture: SimulatedFixture) {
+  if (fixture.homeGoals !== fixture.awayGoals) {
+    return fixture
+  }
+
+  const homeStrength = simulationTeamStrengthFloor[fixture.homeTeamCode] ?? 0
+  const awayStrength = simulationTeamStrengthFloor[fixture.awayTeamCode] ?? 0
+  if (homeStrength >= awayStrength) {
+    return { ...fixture, homeGoals: fixture.homeGoals + 1 }
+  }
+  return { ...fixture, awayGoals: fixture.awayGoals + 1 }
 }
 
 function drawPoisson(lambda: number, rng: () => number) {
@@ -317,6 +546,9 @@ export function simulateFixture(fixture: FixtureSeed, homePlayers: TeamPoolPlaye
 
   return {
     fixtureId: fixture.fixtureId,
+    groupKey: fixture.groupKey,
+    kickoffDate: fixture.kickoffDate,
+    kickoffTimeUtc: fixture.kickoffTimeUtc,
     homeTeamCode: fixture.homeTeamCode,
     awayTeamCode: fixture.awayTeamCode,
     homeGoals,
@@ -332,4 +564,87 @@ export function simulateConfiguredCompetition(fixtures: FixtureSeed[], playersBy
   return fixtures
     .filter((fixture) => (playersByTeam.get(fixture.homeTeamCode)?.length ?? 0) > 0 && (playersByTeam.get(fixture.awayTeamCode)?.length ?? 0) > 0)
     .map((fixture) => simulateFixture(fixture, playersByTeam.get(fixture.homeTeamCode) ?? [], playersByTeam.get(fixture.awayTeamCode) ?? [], options))
+}
+
+export function simulateCompleteCompetition(groupFixtures: FixtureSeed[], playersByTeam: TeamPlayersByCode, options: SimulationOptions = {}): SimulatedCompetition {
+  const simulatedGroupFixtures = simulateConfiguredCompetition(groupFixtures, playersByTeam, options)
+  const standingsByTeam = buildInitialStandings(groupFixtures)
+  for (const fixture of simulatedGroupFixtures) {
+    applyStandingResult(standingsByTeam, fixture.homeTeamCode, fixture.awayTeamCode, fixture.homeGoals, fixture.awayGoals)
+  }
+
+  const standings = [...standingsByTeam.values()]
+  const rankedGroups = rankGroupStandings(standings)
+  const qualifierBySeed = new Map<string, KnockoutTeam>()
+  const thirdPlaceTeams: KnockoutTeam[] = []
+
+  for (const [groupKey, groupRows] of rankedGroups) {
+    groupRows.forEach((standing, index) => {
+      const team: KnockoutTeam = { teamCode: standing.teamCode, groupKey, rank: index + 1, standing }
+      if (index < 2) {
+        qualifierBySeed.set(`${index + 1}${groupKey}`, team)
+      } else if (index === 2) {
+        thirdPlaceTeams.push(team)
+      }
+    })
+  }
+
+  const availableThirds = thirdPlaceTeams.sort((left, right) => compareStandings(left.standing, right.standing)).slice(0, 8)
+  const simulatedByMatch = new Map<number, SimulatedFixture>()
+  const allFixtures = [...simulatedGroupFixtures]
+
+  for (const template of roundOf32Templates) {
+    const home = qualifierBySeed.get(`${template.home.rank}${template.home.group}`)
+    const away = 'away' in template ? qualifierBySeed.get(`${template.away.rank}${template.away.group}`) : selectThirdPlaceTeam(availableThirds, template.thirdAway)
+    if (!home || !away) {
+      throw new Error(`Could not resolve round-of-32 match ${template.match}`)
+    }
+    const fixture = knockoutFixture(template.match, home.teamCode, away.teamCode)
+    const simulated = forceKnockoutWinner(
+      simulateFixture(fixture, playersByTeam.get(fixture.homeTeamCode) ?? [], playersByTeam.get(fixture.awayTeamCode) ?? [], options),
+    )
+    simulatedByMatch.set(template.match, simulated)
+    allFixtures.push(simulated)
+  }
+
+  for (const template of winnerBracket) {
+    const homeSource = simulatedByMatch.get(template.home)
+    const awaySource = simulatedByMatch.get(template.away)
+    if (!homeSource || !awaySource) {
+      throw new Error(`Could not resolve knockout match ${template.match}`)
+    }
+    const fixture = knockoutFixture(template.match, winnerOf(homeSource), winnerOf(awaySource))
+    const simulated = forceKnockoutWinner(
+      simulateFixture(fixture, playersByTeam.get(fixture.homeTeamCode) ?? [], playersByTeam.get(fixture.awayTeamCode) ?? [], options),
+    )
+    simulatedByMatch.set(template.match, simulated)
+    allFixtures.push(simulated)
+  }
+
+  const firstSemi = simulatedByMatch.get(101)
+  const secondSemi = simulatedByMatch.get(102)
+  if (!firstSemi || !secondSemi) {
+    throw new Error('Could not resolve semi-final winners.')
+  }
+
+  const thirdPlaceFixture = forceKnockoutWinner(
+    simulateFixture(knockoutFixture(103, loserOf(firstSemi), loserOf(secondSemi)), playersByTeam.get(loserOf(firstSemi)) ?? [], playersByTeam.get(loserOf(secondSemi)) ?? [], options),
+  )
+  simulatedByMatch.set(103, thirdPlaceFixture)
+  allFixtures.push(thirdPlaceFixture)
+
+  const final = forceKnockoutWinner(
+    simulateFixture(knockoutFixture(104, winnerOf(firstSemi), winnerOf(secondSemi)), playersByTeam.get(winnerOf(firstSemi)) ?? [], playersByTeam.get(winnerOf(secondSemi)) ?? [], options),
+  )
+  simulatedByMatch.set(104, final)
+  allFixtures.push(final)
+
+  return {
+    fixtures: allFixtures,
+    standings,
+    champion: winnerOf(final),
+    runnerUp: loserOf(final),
+    thirdPlace: winnerOf(thirdPlaceFixture),
+    final,
+  }
 }

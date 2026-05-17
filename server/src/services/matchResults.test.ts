@@ -17,7 +17,7 @@ function player(playerId: number, teamCode: string): TeamPoolPlayer {
   }
 }
 
-function entry(fixtureId: string, playerId: number, goals: number): MatchEntryRecord {
+function entry(fixtureId: string, playerId: number, goals: number, assists = 0): MatchEntryRecord {
   return {
     entryId: `${fixtureId}-${playerId}`,
     fixtureId,
@@ -25,7 +25,7 @@ function entry(fixtureId: string, playerId: number, goals: number): MatchEntryRe
     inOfficialSquad: true,
     minutes: 90,
     goals,
-    assists: 0,
+    assists,
     cleanSheetEligible: false,
     rating: 7,
     sourceNote: 'test',
@@ -76,5 +76,44 @@ describe('buildPublicFixtureResults', () => {
       status: 'pending',
       entryCount: 0,
     })
+  })
+
+  it('includes player-level match details for scorers and assists', () => {
+    const results = buildPublicFixtureResults(
+      fixtures,
+      new Map([
+        ['FRA', [player(10, 'FRA'), player(11, 'FRA')]],
+        ['SEN', [player(20, 'SEN')]],
+      ]),
+      [entry('fixture-1', 10, 2, 1), entry('fixture-1', 11, 0, 1), entry('fixture-1', 20, 1)],
+    )
+    const result = results[0] as any
+
+    expect(result.homePlayers).toEqual([
+      expect.objectContaining({
+        playerId: 10,
+        displayName: 'FRA 10',
+        teamCode: 'FRA',
+        goals: 2,
+        assists: 1,
+        minutes: 90,
+        rating: 7,
+      }),
+      expect.objectContaining({
+        playerId: 11,
+        displayName: 'FRA 11',
+        teamCode: 'FRA',
+        goals: 0,
+        assists: 1,
+      }),
+    ])
+    expect(result.awayPlayers).toEqual([
+      expect.objectContaining({
+        playerId: 20,
+        displayName: 'SEN 20',
+        teamCode: 'SEN',
+        goals: 1,
+      }),
+    ])
   })
 })

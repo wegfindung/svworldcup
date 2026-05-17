@@ -2,8 +2,9 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { STARTING_BUDGET } from '../data/formation.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
-import { defaultLocale, fixtures, isKnownTeamCode, supportedLocales, teams } from '../data/worldCupSeed.js'
+import { defaultLocale, isKnownTeamCode, supportedLocales, teams } from '../data/worldCupSeed.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
+import type { FixtureRepository } from '../repositories/fixtureRepository.js'
 import type { RegistrationRepository } from '../repositories/registrationRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
@@ -33,12 +34,13 @@ function normalizeReferrerSoccerverseUsername(value: string) {
 interface Dependencies {
   configRepository: ConfigRepository
   registrationRepository: RegistrationRepository
+  fixtureRepository: FixtureRepository
   teamPoolRepository: TeamPoolRepository
   scoringRepository: ScoringRepository
   squadRepository: SquadRepository
 }
 
-export function createPublicRouter({ configRepository, registrationRepository, teamPoolRepository, scoringRepository, squadRepository }: Dependencies) {
+export function createPublicRouter({ configRepository, registrationRepository, fixtureRepository, teamPoolRepository, scoringRepository, squadRepository }: Dependencies) {
   const router = Router()
 
   router.get('/health', async (_req, res) => {
@@ -56,14 +58,14 @@ export function createPublicRouter({ configRepository, registrationRepository, t
   })
 
   router.get('/bootstrap', async (_req, res) => {
-    const scoring = await configRepository.getScoringConfig()
+    const [scoring, currentFixtures] = await Promise.all([configRepository.getScoringConfig(), fixtureRepository.listFixtures()])
     res.json({
       supportedLocales,
       defaultLocale,
       scoring,
       budgetLimit: STARTING_BUDGET,
       teams,
-      fixtures,
+      fixtures: currentFixtures,
       leagues: {
         rookie: 'No ownership bonus',
         veteran: '1% for every 10 influence on drafted players, capped at 10%',
@@ -75,18 +77,19 @@ export function createPublicRouter({ configRepository, registrationRepository, t
     res.json({ items: teams })
   })
 
-  router.get('/fixtures', (_req, res) => {
-    res.json({ items: fixtures })
+  router.get('/fixtures', async (_req, res) => {
+    res.json({ items: await fixtureRepository.listFixtures() })
   })
 
   router.get('/match-results', async (_req, res) => {
-    const teamCodes = [...new Set(fixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
+    const currentFixtures = await fixtureRepository.listFixtures()
+    const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
     const playersByTeam = new Map<string, Awaited<ReturnType<typeof teamPoolRepository.listByTeam>>>()
     const [entries] = await Promise.all([
       scoringRepository.listMatchEntries(),
       Promise.all(teamCodes.map(async (teamCode) => playersByTeam.set(teamCode, await teamPoolRepository.listByTeam(teamCode)))),
     ])
-    const items = buildPublicFixtureResults(fixtures, playersByTeam, entries)
+    const items = buildPublicFixtureResults(currentFixtures, playersByTeam, entries)
 
     res.json({
       items,

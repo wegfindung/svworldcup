@@ -3,12 +3,29 @@ import { EmptyState } from '../components/EmptyState'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { fetchMatchResults } from '../lib/api'
-import type { PublicFixtureResult } from '../lib/types'
+import type { PublicFixturePlayerResult, PublicFixtureResult } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
 function teamName(teamCode: string) {
   return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
+}
+
+const stageOrder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3P', 'FINAL']
+
+function stageTitle(groupKey: string) {
+  if (/^[A-L]$/.test(groupKey)) return `Group ${groupKey}`
+  if (groupKey === 'R32') return 'Round of 32'
+  if (groupKey === 'R16') return 'Round of 16'
+  if (groupKey === 'QF') return 'Quarter-finals'
+  if (groupKey === 'SF') return 'Semi-finals'
+  if (groupKey === '3P') return 'Third place'
+  if (groupKey === 'FINAL') return 'Final'
+  return groupKey
+}
+
+function stageEyebrow(groupKey: string) {
+  return /^[A-L]$/.test(groupKey) ? 'group stage' : 'knockout stage'
 }
 
 // Fixtures are stored as UTC; render in the viewer's browser timezone + locale so a fan in
@@ -26,10 +43,65 @@ function formatKickoff(result: PublicFixtureResult) {
   return kickoffFormatter.format(epoch)
 }
 
-function ResultCard({ result }: { result: PublicFixtureResult }) {
+function formatPlayerList(players: PublicFixturePlayerResult[], stat: 'goals' | 'assists') {
+  const contributors = players.filter((player) => player[stat] > 0)
+  if (!contributors.length) {
+    return 'None'
+  }
+  return contributors
+    .map((player) => `${player.displayName}${player[stat] > 1 ? ` (${player[stat]})` : ''}`)
+    .join(', ')
+}
+
+function PlayerDetailRow({ player }: { player: PublicFixturePlayerResult }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-[0.75rem] border border-white/8 bg-black/16 px-3 py-2">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold text-white">{player.displayName}</p>
+        <p className="mono mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+          {player.minutes}' - ID {player.playerId}
+          {player.rating !== undefined ? ` - Rating ${player.rating}` : ''}
+        </p>
+      </div>
+      <div className="flex flex-wrap justify-end gap-1 text-[10px]">
+        <span className="rounded-full border border-white/8 px-2 py-1 text-white">G {player.goals}</span>
+        <span className="rounded-full border border-white/8 px-2 py-1 text-white">A {player.assists}</span>
+        {player.cleanSheetEligible ? (
+          <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[var(--color-accent)]">
+            CS
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function TeamPlayerDetails({ title, teamCode, players }: { title: string; teamCode: string; players: PublicFixturePlayerResult[] }) {
+  return (
+    <div className="min-w-0">
+      <div className="mb-2 flex items-center gap-2">
+        <TeamFlag teamCode={teamCode} label={title} size="sm" />
+        <p className="truncate text-sm font-semibold text-white">{title}</p>
+      </div>
+      <div className="grid gap-1.5">
+        {players.length ? (
+          players.map((player) => <PlayerDetailRow key={player.playerId} player={player} />)
+        ) : (
+          <p className="rounded-[0.75rem] border border-white/8 bg-black/16 px-3 py-2 text-xs text-[var(--color-muted)]">
+            No player stats entered yet.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ResultCard({ result, isOpen, onToggle }: { result: PublicFixtureResult; isOpen: boolean; onToggle: () => void }) {
   const isFinal = result.status === 'final'
   const homeWon = isFinal && (result.homeGoals ?? 0) > (result.awayGoals ?? 0)
   const awayWon = isFinal && (result.awayGoals ?? 0) > (result.homeGoals ?? 0)
+  const homeName = teamName(result.homeTeamCode)
+  const awayName = teamName(result.awayTeamCode)
 
   return (
     <article className="surface-row rounded-[0.95rem] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
@@ -51,10 +123,10 @@ function ResultCard({ result }: { result: PublicFixtureResult }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <TeamFlag teamCode={result.homeTeamCode} label={teamName(result.homeTeamCode)} size="sm" />
+          <TeamFlag teamCode={result.homeTeamCode} label={homeName} size="sm" />
           <div className="min-w-0">
             <p className={['truncate text-sm font-semibold', homeWon ? 'text-white' : 'text-[var(--color-paper)]'].join(' ')}>
-              {teamName(result.homeTeamCode)}
+              {homeName}
             </p>
             <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{result.homeTeamCode}</p>
           </div>
@@ -69,18 +141,47 @@ function ResultCard({ result }: { result: PublicFixtureResult }) {
         <div className="flex min-w-0 items-center justify-end gap-2.5 text-right">
           <div className="min-w-0">
             <p className={['truncate text-sm font-semibold', awayWon ? 'text-white' : 'text-[var(--color-paper)]'].join(' ')}>
-              {teamName(result.awayTeamCode)}
+              {awayName}
             </p>
             <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{result.awayTeamCode}</p>
           </div>
-          <TeamFlag teamCode={result.awayTeamCode} label={teamName(result.awayTeamCode)} size="sm" />
+          <TeamFlag teamCode={result.awayTeamCode} label={awayName} size="sm" />
         </div>
       </div>
 
+      {isFinal ? (
+        <div className="mt-3 grid gap-2 rounded-[0.8rem] border border-white/8 bg-black/12 p-3 text-xs text-[var(--color-muted)]">
+          <p>
+            <span className="font-semibold text-white">Scorers:</span> {result.homeTeamCode} {formatPlayerList(result.homePlayers, 'goals')} -{' '}
+            {result.awayTeamCode} {formatPlayerList(result.awayPlayers, 'goals')}
+          </p>
+          <p>
+            <span className="font-semibold text-white">Assists:</span> {result.homeTeamCode} {formatPlayerList(result.homePlayers, 'assists')} -{' '}
+            {result.awayTeamCode} {formatPlayerList(result.awayPlayers, 'assists')}
+          </p>
+        </div>
+      ) : null}
+
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--color-muted)]">
         <span>{formatKickoff(result)}</span>
-        {isFinal ? <span>{result.entryCount} player entries</span> : null}
+        <div className="flex items-center gap-2">
+          {isFinal ? <span>{result.entryCount} player entries</span> : null}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
+          >
+            {isOpen ? 'Hide details' : 'Match details'}
+          </button>
+        </div>
       </div>
+
+      {isOpen ? (
+        <div className="mt-3 grid gap-3 border-t border-white/8 pt-3 md:grid-cols-2">
+          <TeamPlayerDetails title={homeName} teamCode={result.homeTeamCode} players={result.homePlayers} />
+          <TeamPlayerDetails title={awayName} teamCode={result.awayTeamCode} players={result.awayPlayers} />
+        </div>
+      ) : null}
     </article>
   )
 }
@@ -89,6 +190,19 @@ export function ResultsPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [results, setResults] = useState<PublicFixtureResult[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [openFixtureIds, setOpenFixtureIds] = useState<Set<string>>(new Set())
+
+  function toggleFixtureDetails(fixtureId: string) {
+    setOpenFixtureIds((current) => {
+      const next = new Set(current)
+      if (next.has(fixtureId)) {
+        next.delete(fixtureId)
+      } else {
+        next.add(fixtureId)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     let active = true
@@ -119,7 +233,11 @@ export function ResultsPage() {
       current.push(result)
       groups.set(result.groupKey, current)
     }
-    return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right))
+    return [...groups.entries()].sort(([left], [right]) => {
+      const leftIndex = stageOrder.indexOf(left)
+      const rightIndex = stageOrder.indexOf(right)
+      return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex) || left.localeCompare(right)
+    })
   }, [results])
 
   const finalCount = results.filter((result) => result.status === 'final').length
@@ -168,14 +286,23 @@ export function ResultsPage() {
             <div key={groupKey} className="glass-panel rounded-[1.15rem] p-4">
               <div className="mb-4 flex items-end justify-between gap-4">
                 <div>
-                  <p className="eyebrow text-[10px]">group stage</p>
-                  <h3 className="mt-2 text-2xl font-semibold text-white">Group {groupKey}</h3>
+                  <p className="eyebrow text-[10px]">{stageEyebrow(groupKey)}</p>
+                  <h3 className="mt-2 text-2xl font-semibold text-white">{stageTitle(groupKey)}</h3>
                 </div>
                 <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
                   {groupResults.filter((result) => result.status === 'final').length}/{groupResults.length} final
                 </span>
               </div>
-              <div className="grid gap-2">{groupResults.map((result) => <ResultCard key={result.fixtureId} result={result} />)}</div>
+              <div className="grid gap-2">
+                {groupResults.map((result) => (
+                  <ResultCard
+                    key={result.fixtureId}
+                    result={result}
+                    isOpen={openFixtureIds.has(result.fixtureId)}
+                    onToggle={() => toggleFixtureDetails(result.fixtureId)}
+                  />
+                ))}
+              </div>
             </div>
           ))}
         </section>
