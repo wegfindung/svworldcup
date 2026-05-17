@@ -16,6 +16,7 @@ import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
+import { LeagueChangeError } from '../repositories/registrationRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
@@ -252,6 +253,36 @@ export function createAdminRouter(
   router.get('/participants', async (_req, res) => {
     const items = await registrationRepository.listForAdmin()
     res.json({ items })
+  })
+
+  const participantLeagueSchema = z.object({
+    leagueType: z.enum(['rookie', 'veteran']),
+  })
+
+  router.post('/participants/:participantId/league', async (req, res) => {
+    const participantId = String(req.params.participantId ?? '').trim()
+    const parsed = participantLeagueSchema.parse(req.body)
+    const before = await registrationRepository.getByParticipantId(participantId)
+    if (!before) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+    try {
+      const profile = await registrationRepository.setParticipantLeague(participantId, parsed.leagueType)
+      await auditRepository.record({
+        actorEmail: res.locals.admin.email,
+        actionKey: 'admin.participant_league_change',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: { from: before.leagueType, to: profile.leagueType },
+      })
+      res.json({ participant: profile })
+    } catch (error) {
+      if (error instanceof LeagueChangeError) {
+        const status = error.reason === 'invalid_league' ? 422 : error.reason === 'not_found' ? 404 : 409
+        return res.status(status).json({ error: error.message, reason: error.reason })
+      }
+      throw error
+    }
   })
 
   router.get('/referrals', async (_req, res) => {

@@ -68,9 +68,11 @@ The admin enters the raw match rating on each player entry; performance points a
 
 ### Veteran
 
-- Requires Soccerverse username at registration.
+- Requires a linked Soccerverse account (`soccerverse_username IS NOT NULL`).
+- A participant becomes a Veteran either by registering as one (Soccerverse username provided at signup) or by being moved into the Veteran league by an admin after linking their account post-registration. See `SOP_registration_and_auth.md` "Account Linking and League Membership".
 - Gets `1%` score bonus for each `10` influence held in a drafted `playerId`.
 - Bonus cap: `10%`.
+- A linked Rookie (a Rookie who has linked a Soccerverse account but has not been moved into the Veteran league) earns no boost — they remain in the Rookie league and the Rookie "no ownership bonus" rule applies.
 
 ## National Tables
 

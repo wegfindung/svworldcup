@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { MemoryRegistrationRepository, RookieUpgradeError } from './registrationRepository.js'
+import {
+  LeagueChangeError,
+  MemoryRegistrationRepository,
+  SoccerverseLinkError,
+} from './registrationRepository.js'
 
 async function createActiveRookie(email = 'rookie@example.com', token = 'rookie-token') {
   const repo = new MemoryRegistrationRepository()
@@ -31,31 +35,31 @@ async function createActiveVeteran(repo: MemoryRegistrationRepository, email: st
   return record.participantId
 }
 
-describe('MemoryRegistrationRepository.upgradeRookieToVeteran', () => {
-  it('promotes a rookie to veteran and stamps veteranSince', async () => {
+describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
+  it('links a Soccerverse account without changing league_type', async () => {
     const { repo, participantId } = await createActiveRookie()
     const before = await repo.getByParticipantId(participantId)
     expect(before?.leagueType).toBe('rookie')
     expect(before?.soccerverseUsername).toBeUndefined()
-    expect(before?.veteranSince).toBeUndefined()
+    expect(before?.soccerverseLinkedAt).toBeUndefined()
 
-    const upgraded = await repo.upgradeRookieToVeteran(participantId, 'rookie-sv')
-    expect(upgraded.leagueType).toBe('veteran')
-    expect(upgraded.soccerverseUsername).toBe('rookie-sv')
-    expect(upgraded.veteranSince).toBeDefined()
-    expect(new Date(upgraded.veteranSince ?? '').getTime()).toBeLessThanOrEqual(Date.now())
+    const linked = await repo.linkSoccerverseAccount(participantId, 'rookie-sv')
+    expect(linked.leagueType).toBe('rookie') // unchanged — admin moves them later
+    expect(linked.soccerverseUsername).toBe('rookie-sv')
+    expect(linked.soccerverseLinkedAt).toBeDefined()
+    expect(new Date(linked.soccerverseLinkedAt ?? '').getTime()).toBeLessThanOrEqual(Date.now())
   })
 
-  it('rejects an already-Veteran caller', async () => {
+  it('rejects a participant who already has a linked Soccerverse account', async () => {
     const repo = new MemoryRegistrationRepository()
-    const veteranId = await createActiveVeteran(repo, 'veteran@example.com', 'vet-token', 'already-vet')
-    await expect(repo.upgradeRookieToVeteran(veteranId, 'something-else')).rejects.toMatchObject({
-      name: 'RookieUpgradeError',
-      reason: 'not_rookie',
+    const veteranId = await createActiveVeteran(repo, 'veteran@example.com', 'vet-token', 'already-linked')
+    await expect(repo.linkSoccerverseAccount(veteranId, 'something-else')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
+      reason: 'already_linked',
     })
   })
 
-  it('rejects a username already in use by another participant', async () => {
+  it('rejects a rookie who tries to link a username already in use', async () => {
     const repo = new MemoryRegistrationRepository()
     await createActiveVeteran(repo, 'veteran@example.com', 'vet-token', 'taken-name')
     const { record } = await repo.createPending(
@@ -69,37 +73,97 @@ describe('MemoryRegistrationRepository.upgradeRookieToVeteran', () => {
     )
     await repo.verifyByPlainToken('rookie-token')
 
-    await expect(repo.upgradeRookieToVeteran(record.participantId, 'taken-name')).rejects.toMatchObject({
-      name: 'RookieUpgradeError',
+    await expect(repo.linkSoccerverseAccount(record.participantId, 'taken-name')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
       reason: 'username_taken',
     })
   })
 
-  it('rejects an empty or oversized username', async () => {
+  it('rejects empty or oversized usernames', async () => {
     const { repo, participantId } = await createActiveRookie()
-    await expect(repo.upgradeRookieToVeteran(participantId, '   ')).rejects.toMatchObject({
-      name: 'RookieUpgradeError',
+    await expect(repo.linkSoccerverseAccount(participantId, '   ')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
       reason: 'invalid_username',
     })
-    await expect(repo.upgradeRookieToVeteran(participantId, 'x'.repeat(61))).rejects.toMatchObject({
-      name: 'RookieUpgradeError',
+    await expect(repo.linkSoccerverseAccount(participantId, 'x'.repeat(61))).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
       reason: 'invalid_username',
     })
   })
 
-  it('throws RookieUpgradeError when participant does not exist', async () => {
+  it('throws when participant does not exist', async () => {
     const repo = new MemoryRegistrationRepository()
-    await expect(repo.upgradeRookieToVeteran('00000000-0000-4000-8000-000000000000', 'whatever')).rejects.toMatchObject({
-      name: 'RookieUpgradeError',
+    await expect(repo.linkSoccerverseAccount('00000000-0000-4000-8000-000000000000', 'whatever')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
       reason: 'not_found',
     })
   })
 })
 
-describe('RookieUpgradeError', () => {
+describe('MemoryRegistrationRepository.setParticipantLeague', () => {
+  it('moves a linked Rookie into the Veteran league', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await repo.linkSoccerverseAccount(participantId, 'now-vet')
+
+    const moved = await repo.setParticipantLeague(participantId, 'veteran')
+    expect(moved.leagueType).toBe('veteran')
+    expect(moved.soccerverseUsername).toBe('now-vet')
+    expect(moved.soccerverseLinkedAt).toBeDefined()
+  })
+
+  it('refuses to move an unlinked Rookie into Veteran', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await expect(repo.setParticipantLeague(participantId, 'veteran')).rejects.toMatchObject({
+      name: 'LeagueChangeError',
+      reason: 'requires_soccerverse_username',
+    })
+  })
+
+  it('lets admin move a Veteran back to Rookie', async () => {
+    const repo = new MemoryRegistrationRepository()
+    const veteranId = await createActiveVeteran(repo, 'veteran@example.com', 'vet-token', 'still-linked')
+    const moved = await repo.setParticipantLeague(veteranId, 'rookie')
+    expect(moved.leagueType).toBe('rookie')
+    expect(moved.soccerverseUsername).toBe('still-linked')
+  })
+
+  it('is a no-op when target league equals current', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    const same = await repo.setParticipantLeague(participantId, 'rookie')
+    expect(same.leagueType).toBe('rookie')
+  })
+
+  it('rejects an unknown participant', async () => {
+    const repo = new MemoryRegistrationRepository()
+    await expect(repo.setParticipantLeague('00000000-0000-4000-8000-000000000000', 'veteran')).rejects.toMatchObject({
+      name: 'LeagueChangeError',
+      reason: 'not_found',
+    })
+  })
+
+  it('rejects an invalid league value', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await expect(
+      repo.setParticipantLeague(participantId, 'pro' as unknown as 'rookie'),
+    ).rejects.toMatchObject({
+      name: 'LeagueChangeError',
+      reason: 'invalid_league',
+    })
+  })
+})
+
+describe('SoccerverseLinkError', () => {
   it('preserves the failure reason', () => {
-    const error = new RookieUpgradeError('username_taken', 'duplicate')
+    const error = new SoccerverseLinkError('username_taken', 'duplicate')
     expect(error.reason).toBe('username_taken')
     expect(error.message).toBe('duplicate')
+  })
+})
+
+describe('LeagueChangeError', () => {
+  it('preserves the failure reason', () => {
+    const error = new LeagueChangeError('requires_soccerverse_username', 'needs link')
+    expect(error.reason).toBe('requires_soccerverse_username')
+    expect(error.message).toBe('needs link')
   })
 })

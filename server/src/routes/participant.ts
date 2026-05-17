@@ -8,7 +8,7 @@ import { createSignedShareSnapshot } from '../lib/shareSignature.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
 import {
-  RookieUpgradeError,
+  SoccerverseLinkError,
   publicProfileSlug,
   type RegistrationRepository,
 } from '../repositories/registrationRepository.js'
@@ -101,17 +101,17 @@ export function createParticipantRouter(
     const parsed = linkSoccerverseSchema.parse(req.body)
 
     try {
-      const profile = await registrationRepository.upgradeRookieToVeteran(participantId, parsed.soccerverseUsername)
+      const profile = await registrationRepository.linkSoccerverseAccount(participantId, parsed.soccerverseUsername)
       await auditRepository.record({
         actorEmail: profile.email,
-        actionKey: 'participant.upgrade_to_veteran',
+        actionKey: 'participant.link_soccerverse',
         entityType: 'participant',
         entityId: participantId,
         detail: { soccerverseUsername: profile.soccerverseUsername },
       })
       res.json({ participant: profile })
     } catch (error) {
-      if (error instanceof RookieUpgradeError) {
+      if (error instanceof SoccerverseLinkError) {
         const status = error.reason === 'invalid_username' ? 422 : error.reason === 'not_found' ? 404 : 409
         return res.status(status).json({ error: error.message, reason: error.reason })
       }

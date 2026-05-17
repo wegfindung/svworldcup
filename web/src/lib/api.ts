@@ -346,6 +346,16 @@ export function linkSoccerverseAccount(soccerverseUsername: string) {
   })
 }
 
+export function adminSetParticipantLeague(participantId: string, leagueType: 'rookie' | 'veteran') {
+  return getJson<{ participant: ParticipantProfile }>(
+    `/api/admin/participants/${encodeURIComponent(participantId)}/league`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ leagueType }),
+    },
+  )
+}
+
 export function revealParticipantProfile(revealSquad: boolean) {
   return getJson<{ participant: ParticipantProfile; publicProfileUrl: string }>('/api/participant/reveal', {
     method: 'POST',

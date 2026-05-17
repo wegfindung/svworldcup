@@ -50,7 +50,7 @@ export interface ParticipantProfile {
   secondaryTeamCode?: string
   status: ParticipantStatus
   verifiedAt?: string
-  veteranSince?: string
+  soccerverseLinkedAt?: string
   hasPassword: boolean
   revealProfile?: boolean
   revealSquad?: boolean

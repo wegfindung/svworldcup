@@ -445,8 +445,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
           return 'Soccerverse username must be 1–60 characters.'
         case 'username_taken':
           return 'That Soccerverse username is already linked to another participant.'
-        case 'not_rookie':
-          return 'This account is already a Veteran.'
+        case 'already_linked':
+          return 'A Soccerverse account is already linked to this participant.'
         case 'not_found':
           return 'Participant not found. Please sign out and back in.'
       }
@@ -468,9 +468,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     try {
       const response = await linkSoccerverseAccount(trimmed)
       setParticipant((current) => (current ? { ...current, ...response.participant } : response.participant))
-      setDashboardSeed((current) => (current ? { ...current, leagueType: response.participant.leagueType } : current))
       setLinkUsername('')
-      setLinkMessage('Account linked — you are now a Veteran. The ownership boost will activate when the snapshot lands.')
+      setLinkMessage('Soccerverse account linked. An admin can move you into the Veteran league when ready.')
     } catch (error) {
       setLinkError(linkSoccerverseErrorMessage(error))
     } finally {
@@ -1052,12 +1051,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     </button>
                   </div>
 
-                  {dashboardSeed.leagueType === 'rookie' ? (
+                  {!participant?.soccerverseUsername ? (
                     <form onSubmit={handleLinkSoccerverse} className="mt-5 grid gap-3 rounded-[1rem] border border-[var(--color-accent)]/15 bg-[var(--color-accent)]/5 p-4">
                       <div>
-                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">Optional · become a Veteran</p>
+                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">Optional · link your Soccerverse account</p>
                         <p className="mt-2 text-sm leading-relaxed text-[var(--color-paper)]">
-                          Link a Soccerverse account to move to the Veteran league. The ownership boost (+1% per 10 influence on a drafted player, capped at 10%) activates when the next snapshot lands.
+                          Link your Soccerverse account to keep it associated with this entry. You stay in the {leagueLabel(dashboardSeed.leagueType)} league for now — an admin can move you to the Veteran league later if you want to compete for the bigger prize pool.
                         </p>
                       </div>
                       <label className="grid gap-2">
