@@ -9,7 +9,7 @@ function formatAdminDate(value?: string) {
     return 'Not set'
   }
 
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(undefined, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

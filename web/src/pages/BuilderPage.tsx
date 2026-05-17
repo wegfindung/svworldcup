@@ -6,6 +6,7 @@ import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, eventTeams, leagueCopy } from '../data/eventConfig'
 import {
+  ApiError,
   assignSquadPlayer,
   fetchParticipantSession,
   fetchParticipantSquad,
@@ -78,7 +79,7 @@ function leagueLabel(mode: LeagueType) {
 }
 
 function formatBudget(value: number) {
-  return `${value.toLocaleString('en-US')} SVC`
+  return `${value.toLocaleString(undefined)} SVC`
 }
 
 function compactSlotLabel(label: string) {
@@ -436,6 +437,24 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     }
   }
 
+  function linkSoccerverseErrorMessage(error: unknown): string {
+    if (error instanceof ApiError) {
+      const reason = typeof error.payload?.reason === 'string' ? (error.payload.reason as string) : null
+      switch (reason) {
+        case 'invalid_username':
+          return 'Soccerverse username must be 1–60 characters.'
+        case 'username_taken':
+          return 'That Soccerverse username is already linked to another participant.'
+        case 'not_rookie':
+          return 'This account is already a Veteran.'
+        case 'not_found':
+          return 'Participant not found. Please sign out and back in.'
+      }
+      return error.message
+    }
+    return error instanceof Error ? error.message : 'Could not link the Soccerverse account.'
+  }
+
   async function handleLinkSoccerverse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLinkError(null)
@@ -453,7 +472,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setLinkUsername('')
       setLinkMessage('Account linked — you are now a Veteran. The ownership boost will activate when the snapshot lands.')
     } catch (error) {
-      setLinkError(error instanceof Error ? error.message : 'Could not link the Soccerverse account.')
+      setLinkError(linkSoccerverseErrorMessage(error))
     } finally {
       setLinkBusy(false)
     }

@@ -74,6 +74,18 @@ function storeCsrfToken(path: string, payload: unknown) {
   }
 }
 
+export class ApiError extends Error {
+  readonly payload: Record<string, unknown> | null
+  readonly status: number
+
+  constructor(message: string, payload: Record<string, unknown> | null, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.payload = payload
+    this.status = status
+  }
+}
+
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const csrfToken = isUnsafeMethod(init?.method) ? csrfTokenForPath(path) : ''
   const response = await fetch(path, {
@@ -87,8 +99,9 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null
-    throw new Error(payload?.error ?? `Request failed with status ${response.status}`)
+    const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null
+    const serverMessage = typeof payload?.error === 'string' ? payload.error : null
+    throw new ApiError(serverMessage ?? `Request failed with status ${response.status}`, payload, response.status)
   }
 
   if (response.status === 204) {
