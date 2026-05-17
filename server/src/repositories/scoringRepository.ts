@@ -365,7 +365,6 @@ function buildNationLeaderboard(rows: ParticipantScoreRow[]) {
 
   return rankNations(
     [...contributorsByNation.entries()]
-      .filter(([, contributors]) => contributors.length >= 2)
       .map(([teamCode, contributors]) => {
         const sortedContributors = contributors.sort((left, right) => right.totalScore - left.totalScore || left.displayName.localeCompare(right.displayName))
         const scores = sortedContributors.map((contributor) => contributor.totalScore)
