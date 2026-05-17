@@ -252,6 +252,17 @@ export interface NationScoreRow {
   participantCount: number
   averageScore: number
   topScore: number
+  contributors: NationScoreContributor[]
+  rank: number
+}
+
+export interface NationScoreContributor {
+  participantId: string
+  displayName: string
+  leagueType: LeagueType
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  totalScore: number
   rank: number
 }
 
