@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
+import { hasCompetitionStarted } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, formationSlots, getBudgetOption, getScoreMultiplierForBudget, getSlotDefinition } from '../data/formation.js'
 import { getPositionClasses, isEligibleForSlot } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
@@ -14,6 +15,12 @@ export class SquadValidationError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'SquadValidationError'
+  }
+}
+
+function assertSquadEditable(isLocked: boolean, now = Date.now()) {
+  if (isLocked && hasCompetitionStarted(now)) {
+    throw new SquadValidationError('Squad is locked because the competition has started.')
   }
 }
 
@@ -57,7 +64,10 @@ export class MemorySquadRepository implements SquadRepository {
   storageKind: 'memory' = 'memory'
   private readonly squads = new Map<string, ParticipantSquad>()
 
-  constructor(private readonly teamPoolRepository: TeamPoolRepository) {}
+  constructor(
+    private readonly teamPoolRepository: TeamPoolRepository,
+    private readonly now: () => number = () => Date.now(),
+  ) {}
 
   async getOrCreate(participantId: string) {
     const existing = this.squads.get(participantId)
@@ -72,9 +82,7 @@ export class MemorySquadRepository implements SquadRepository {
 
   async assignPlayer(participantId: string, input: AssignPlayerInput) {
     const squad = await this.getOrCreate(participantId)
-    if (squad.isLocked) {
-      throw new SquadValidationError('Squad is locked.')
-    }
+    assertSquadEditable(squad.isLocked, this.now())
 
     const slot = getSlotDefinition(input.slotKey)
     if (!slot) {
@@ -123,9 +131,7 @@ export class MemorySquadRepository implements SquadRepository {
     }
 
     const squad = await this.getOrCreate(participantId)
-    if (squad.isLocked) {
-      throw new SquadValidationError('Squad is locked.')
-    }
+    assertSquadEditable(squad.isLocked, this.now())
     if (squad.budgetUsed > option.budgetLimit) {
       throw new SquadValidationError('Remove drafted players before lowering the budget.')
     }
@@ -142,9 +148,7 @@ export class MemorySquadRepository implements SquadRepository {
 
   async removePlayer(participantId: string, slotKey: string) {
     const squad = await this.getOrCreate(participantId)
-    if (squad.isLocked) {
-      throw new SquadValidationError('Squad is locked.')
-    }
+    assertSquadEditable(squad.isLocked, this.now())
 
     const slot = squad.slots.find((slotState) => slotState.key === slotKey)
     if (!slot?.player) {
@@ -164,9 +168,7 @@ export class MemorySquadRepository implements SquadRepository {
 
   async resetSquad(participantId: string) {
     const squad = await this.getOrCreate(participantId)
-    if (squad.isLocked) {
-      throw new SquadValidationError('Squad is locked.')
-    }
+    assertSquadEditable(squad.isLocked, this.now())
     const resetSquad: ParticipantSquad = {
       ...squad,
       budgetUsed: 0,
@@ -313,9 +315,7 @@ export class PostgresSquadRepository implements SquadRepository {
         [participantId],
       )
       const squad = squadResult.rows[0]
-      if (squad.is_locked) {
-        throw new SquadValidationError('Squad is locked.')
-      }
+      assertSquadEditable(squad.is_locked)
 
       const slotsResult = await client.query<{ slot_key: string; player_id: string }>(
         'SELECT slot_key, player_id FROM squad_slots WHERE squad_id = $1 FOR UPDATE',
@@ -375,9 +375,7 @@ export class PostgresSquadRepository implements SquadRepository {
         [participantId],
       )
       const squad = squadResult.rows[0]
-      if (squad.is_locked) {
-        throw new SquadValidationError('Squad is locked.')
-      }
+      assertSquadEditable(squad.is_locked)
       if (squad.budget_used > option.budgetLimit) {
         throw new SquadValidationError('Remove drafted players before lowering the budget.')
       }
@@ -406,9 +404,7 @@ export class PostgresSquadRepository implements SquadRepository {
         await client.query('ROLLBACK')
         return this.getOrCreate(participantId)
       }
-      if (squad.is_locked) {
-        throw new SquadValidationError('Squad is locked.')
-      }
+      assertSquadEditable(squad.is_locked)
 
       const slotResult = await client.query<{ player_id: string; rating: number | null }>(
         `
@@ -452,9 +448,7 @@ export class PostgresSquadRepository implements SquadRepository {
         await client.query('ROLLBACK')
         return this.getOrCreate(participantId)
       }
-      if (squad.is_locked) {
-        throw new SquadValidationError('Squad is locked.')
-      }
+      assertSquadEditable(squad.is_locked)
 
       await client.query('DELETE FROM squad_slots WHERE squad_id = $1', [squad.squad_id])
       await client.query('UPDATE squads SET budget_used = 0, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])

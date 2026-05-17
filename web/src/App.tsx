@@ -71,7 +71,7 @@ function App() {
     <div className="stadium-shell min-h-[100dvh] bg-[var(--color-ink)] text-[var(--color-paper)]">
       <div className="noise-layer" />
       <div className="relative z-[2] mx-auto flex min-h-[100dvh] max-w-[1440px] flex-col px-3 py-3 sm:px-5 lg:px-7">
-        <header className="premium-nav sticky top-3 z-20 mb-4 flex flex-col gap-3 rounded-[1.15rem] px-3 py-2 sm:px-4">
+        <header className="premium-nav z-20 mb-4 flex flex-col gap-3 rounded-[1.15rem] px-3 py-2 sm:px-4">
           <div className="flex items-center justify-between gap-3">
             <NavLink
               to={withReferral('/', referrerSoccerverseUsername)}

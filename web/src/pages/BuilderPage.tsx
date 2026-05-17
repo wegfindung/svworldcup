@@ -1,10 +1,11 @@
-import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier, leagueCopy } from '../data/eventConfig'
+import { useBootstrap } from '../hooks/useBootstrap'
 import {
   ApiError,
   assignSquadPlayer,
@@ -33,6 +34,7 @@ import { playUnlockSound } from '../lib/unlockSound'
 import type {
   LeagueType,
   LocaleCode,
+  FixtureSeed,
   ParticipantProfile,
   ParticipantSquad,
   ParticipantSquadSummary,
@@ -173,8 +175,17 @@ function buildPublicProfileUrl(participant: Pick<ParticipantProfile, 'displayNam
   return `/profiles/${slug || 'manager'}-${participant.participantId.slice(0, 8)}`
 }
 
+function getCompetitionStartEpoch(fixtures: FixtureSeed[]) {
+  const kickoffEpochs = fixtures
+    .map((fixture) => new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeUtc}Z`).getTime())
+    .filter((epoch) => Number.isFinite(epoch))
+
+  return kickoffEpochs.length ? Math.min(...kickoffEpochs) : null
+}
+
 export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '', mode = 'builder' }: BuilderPageProps) {
   void _locale
+  const { data: bootstrap } = useBootstrap()
 
   const initialReadyState = readParticipantReady()
   const [dashboardSeed, setDashboardSeed] = useState<ParticipantReadyState | null>(initialReadyState)
@@ -211,6 +222,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
   const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
+  const [competitionStarted, setCompetitionStarted] = useState(false)
 
   const selectedTeam = useMemo(
     () => eventTeams.find((team) => team.code === selectedTeamCode) ?? null,
@@ -256,6 +268,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   }, [draftedPlayerIds, playerSearch, selectedSlot, teamPlayers])
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
   const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
+  const competitionStart = useMemo(() => getCompetitionStartEpoch(bootstrap?.fixtures ?? []), [bootstrap?.fixtures])
+  const canEditSquad = !squad?.isLocked || !competitionStarted
   const socialSharingUnlocked = draftedCount === 15
   const previousDraftedCountRef = useRef<number | null>(null)
   const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? 'Budget left' : 'Budget'
@@ -273,6 +287,27 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
     previousDraftedCountRef.current = draftedCount
   }, [draftedCount, squad])
+
+  useEffect(() => {
+    let active = true
+
+    function updateCompetitionStarted() {
+      if (!active) {
+        return
+      }
+
+      setCompetitionStarted(competitionStart !== null && Date.now() >= competitionStart)
+    }
+
+    const immediate = window.setTimeout(updateCompetitionStarted, 0)
+    const interval = window.setInterval(updateCompetitionStarted, 60_000)
+
+    return () => {
+      active = false
+      window.clearTimeout(immediate)
+      window.clearInterval(interval)
+    }
+  }, [competitionStart])
 
   function storeReadyState(state: ParticipantReadyState) {
     writeParticipantReady(state)
@@ -342,20 +377,16 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     }
   }
 
-  async function handleLoadTeamPlayers() {
-    if (!selectedTeamCode) {
-      return
-    }
-
+  const loadTeamPlayersForCode = useCallback(async (teamCode: string) => {
     setTeamPlayersLoading(true)
     setBuilderError(null)
 
     try {
-      const response = await fetchTeamPlayers(selectedTeamCode)
+      const response = await fetchTeamPlayers(teamCode)
       startTransition(() => {
         setTeamPlayers(response.items)
       })
-      setLoadedTeamCode(selectedTeamCode)
+      setLoadedTeamCode(teamCode)
       setPlayerSearch('')
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Could not load the team pool.')
@@ -364,7 +395,27 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     } finally {
       setTeamPlayersLoading(false)
     }
+  }, [])
+
+  async function handleLoadTeamPlayers() {
+    if (!selectedTeamCode) {
+      return
+    }
+
+    await loadTeamPlayersForCode(selectedTeamCode)
   }
+
+  useEffect(() => {
+    if (accessState !== 'active' || !selectedTeamCode || loadedTeamCode === selectedTeamCode || teamPlayersLoading) {
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      void loadTeamPlayersForCode(selectedTeamCode)
+    }, 0)
+
+    return () => window.clearTimeout(timeout)
+  }, [accessState, loadedTeamCode, loadTeamPlayersForCode, selectedTeamCode, teamPlayersLoading])
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -544,7 +595,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   }
 
   async function handleLockSquad() {
-    const approved = window.confirm('Lock this competition squad? You will not be able to edit it afterwards.')
+    const approved = window.confirm('Submit this squad? You can still edit it until the competition starts.')
     if (!approved) {
       return
     }
@@ -555,7 +606,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Squad could not be locked.')
+      setBuilderError(error instanceof Error ? error.message : 'Squad could not be submitted.')
     }
   }
 
@@ -643,7 +694,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
           </button>
         )}
 
-        {slot.player && !squad?.isLocked ? (
+        {slot.player && canEditSquad ? (
           <button
             type="button"
             onClick={() => void handleRemove(slot.key)}
@@ -1213,20 +1264,21 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   </span>
                   {squad.isLocked ? (
                     <span className="rounded-full border border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
-                      Squad locked
+                      {competitionStarted ? 'Squad locked' : 'Submitted, editable'}
                     </span>
                   ) : null}
                 </div>
 
                 <p className="eyebrow mt-5">step 3 · squad builder</p>
-                <h2 className="mt-3 max-w-[13ch] text-[clamp(2rem,1.7vw+1rem,3.25rem)] font-semibold leading-[0.96] tracking-[-0.045em] text-white">
-                  Draft the one hidden squad that counts.
+                <h2 className="mt-3 max-w-[18ch] text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
+                  Build, adjust, submit.
                 </h2>
                 <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[var(--color-muted)]">
-                  Verified as <span className="font-medium text-white">{participant.displayName}</span>. Load one team pool at a time,
-                  build your competition squad once, and stay under the selected {formatBudget(squad.budgetLimit)} cap.
+                  Verified as <span className="font-medium text-white">{participant.displayName}</span>. Choose a team pool, fill the open slots,
+                  and stay under the selected {formatBudget(squad.budgetLimit)} cap.
                   Your score multiplier is <span className="font-medium text-white">{formatMultiplier(activeScoreMultiplier)}</span>.
-                  {squad.isLocked ? ' This squad is now locked and cannot be edited.' : ''}
+                  {squad.isLocked && canEditSquad ? ' Your squad is submitted, but you can still edit it until kickoff.' : ''}
+                  {!canEditSquad ? ' The competition has started, so submitted squads are now locked.' : ''}
                 </p>
               </div>
 
@@ -1337,9 +1389,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     disabled={teamPlayersLoading || !selectedTeamCode}
                     className="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                   >
-                    {teamPlayersLoading ? 'Loading team pool…' : 'Load selected team pool'}
+                    {teamPlayersLoading ? 'Loading team pool...' : 'Refresh team pool'}
                   </button>
-                  <p className="self-center text-xs text-[var(--color-muted)]">No request is sent until you load the team.</p>
+                  <p className="self-center text-xs text-[var(--color-muted)]">The selected team pool loads automatically.</p>
                 </div>
 
                 <div className="mt-5 grid gap-3">
@@ -1388,8 +1440,17 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 </div>
 
                 {selectedSlot?.player ? (
-                  <div className="mt-4 rounded-[0.9rem] border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2.5 text-sm text-[var(--color-paper)]">
-                    This slot is already filled. Remove {selectedSlot.player.displayName} from the squad panel before assigning another player here.
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[0.9rem] border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2.5 text-sm text-[var(--color-paper)]">
+                    <span>This slot has {selectedSlot.player.displayName}. Remove them to assign another compatible player.</span>
+                    {canEditSquad ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleRemove(selectedSlot.key)}
+                        className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/6"
+                      >
+                        Remove from slot
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -1415,7 +1476,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
                 {!teamPlayersLoading && selectedTeamCode && loadedTeamCode !== selectedTeamCode ? (
                   <div className="mt-6">
-                    <EmptyState title="Team pool is waiting" body="Choose a nation, then press load to fetch its preselected World Cup squad." />
+                    <EmptyState title="Team pool is loading" body="The player list starts automatically when a nation is selected." />
                   </div>
                 ) : null}
 
@@ -1439,9 +1500,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     {visibleTeamPlayers.map((player) => {
                       const selectedSlotIsOpen = Boolean(selectedSlot && !selectedSlot.player)
                       const isOverBudget = selectedSlotIsOpen && player.capCost > squad.budgetRemaining
-                      const actionDisabled = squad.isLocked || !selectedSlotIsOpen || isOverBudget
-                      const actionLabel = squad.isLocked
-                        ? 'Squad locked'
+                      const actionDisabled = !canEditSquad || !selectedSlotIsOpen || isOverBudget
+                      const actionLabel = !canEditSquad
+                        ? 'Locked after kickoff'
                         : !selectedSlot
                           ? 'Select a slot'
                           : selectedSlot.player
@@ -1519,7 +1580,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget choice</p>
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">Pick the cap before locking. Lower budgets earn a stronger score multiplier.</p>
+                    <p className="mt-2 text-sm text-[var(--color-muted)]">Pick the cap for your squad. Lower budgets earn a stronger score multiplier.</p>
                   </div>
                   <span className="mono rounded-full border border-white/10 px-3 py-1 text-xs text-white">{formatMultiplier(activeScoreMultiplier)}</span>
                 </div>
@@ -1532,13 +1593,13 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         key={option.budgetLimit}
                         type="button"
                         onClick={() => void handleBudgetChange(option.budgetLimit)}
-                        disabled={squad.isLocked || isSelected || isTooLow}
+                        disabled={!canEditSquad || isSelected || isTooLow}
                         className={[
                           'grid grid-cols-[1fr_auto] items-center gap-3 rounded-[0.85rem] border px-3 py-2.5 text-left transition hover:-translate-y-[1px] active:scale-[0.98]',
                           isSelected
                             ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white'
                             : 'border-white/8 bg-white/[0.03] text-[var(--color-muted)] hover:border-white/14 hover:text-white',
-                          squad.isLocked || isTooLow ? 'disabled:cursor-not-allowed disabled:opacity-50' : '',
+                          !canEditSquad || isTooLow ? 'disabled:cursor-not-allowed disabled:opacity-50' : '',
                         ].join(' ')}
                       >
                         <span>
@@ -1580,7 +1641,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   <button
                     type="button"
                     onClick={() => void handleReset()}
-                    disabled={squad.isLocked}
+                    disabled={!canEditSquad}
                     className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                   >
                     Reset
@@ -1591,12 +1652,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-white">
-                        {squad.isLocked ? 'Squad locked' : 'Ready to lock your squad?'}
+                        {squad.isLocked ? (competitionStarted ? 'Squad locked' : 'Squad submitted') : 'Ready to submit your squad?'}
                       </p>
                       <p className="mt-1 text-xs leading-6 text-[var(--color-muted)]">
                         {squad.isLocked
-                          ? 'This competition squad is immutable unless an admin unlock flow is added later.'
-                          : 'Fill all 15 slots, then lock the squad for the full competition. Your squad scores from the next fixture kickoff onward — earlier fixtures don’t count.'}
+                          ? canEditSquad
+                            ? 'You can keep editing until the first World Cup fixture kicks off. Submit again is not needed.'
+                            : 'The competition has started, so submitted squads are now locked.'
+                          : 'Fill all 15 slots, then submit the squad. You can still edit it until kickoff.'}
                       </p>
                     </div>
                     <button
@@ -1605,7 +1668,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       disabled={squad.isLocked || draftedCount !== 15}
                       className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                     >
-                      {squad.isLocked ? 'Locked' : 'Lock squad'}
+                      {squad.isLocked ? 'Submitted' : 'Submit squad'}
                     </button>
                   </div>
                 </div>
@@ -1620,7 +1683,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
                           {participant?.revealSquad
                             ? 'Your submitted squad is visible on your public profile.'
-                            : 'Reveal the profile first, then choose whether the locked squad should also be public.'}
+                            : 'Reveal the profile first, then choose whether the submitted squad should also be public.'}
                         </p>
                         {publicProfileUrl ? (
                           <Link to={publicProfileUrl} className="mt-3 inline-flex text-sm font-semibold text-[var(--color-accent)]">
