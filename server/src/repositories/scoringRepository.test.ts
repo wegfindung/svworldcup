@@ -4,6 +4,7 @@ import { MemoryRegistrationRepository } from './registrationRepository.js'
 import { MemoryScoringRepository, fixtureKickoffEpoch } from './scoringRepository.js'
 import { MemorySquadRepository } from './squadRepository.js'
 import { MemoryTeamPoolRepository } from './teamPoolRepository.js'
+import { MemoryVeteranInfluenceSnapshotRepository } from './veteranInfluenceSnapshotRepository.js'
 import type { ParticipantSquad, SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 
@@ -66,7 +67,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryVeteranInfluenceSnapshotRepository())
     await scoring.upsertMatchEntry({
       fixtureId: 'fixture-1',
       playerId: 101,
@@ -114,7 +115,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryVeteranInfluenceSnapshotRepository())
     await scoring.upsertMatchEntry({
       fixtureId: 'fixture-1',
       playerId: 109,
@@ -219,7 +220,7 @@ describe('MemoryScoringRepository late-entry rule', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryVeteranInfluenceSnapshotRepository())
     return { participantId: created.record.participantId, squads, scoring }
   }
 
@@ -280,5 +281,119 @@ describe('MemoryScoringRepository late-entry rule', () => {
 
     const leaderboard = await scoring.getLeagueLeaderboard('rookie')
     expect(leaderboard[0].baseScore).toBe(0)
+  })
+})
+
+describe('MemoryScoringRepository veteran ownership boost', () => {
+  async function buildVeteranScenario() {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      {
+        email: 'vet@example.com',
+        displayName: 'Veteran',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+        soccerverseUsername: 'vet-sv',
+      },
+      'vet-token',
+    )
+    await registrations.verifyByPlainToken('vet-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const snapshots = new MemoryVeteranInfluenceSnapshotRepository()
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, snapshots)
+
+    return { participantId: created.record.participantId, scoring, snapshots }
+  }
+
+  it('applies the snapshot bonus per (fixture, player) and derives a positive bonusPercent', async () => {
+    const { participantId, scoring, snapshots } = await buildVeteranScenario()
+
+    // Player 101 scores 5 (goal) + 1 (appearance) + 1 (minutes) = 7 base points.
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fx-boost',
+      playerId: 101,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+    await snapshots.upsert({
+      participantId,
+      fixtureId: 'fx-boost',
+      playerId: 101,
+      netShares: 100,
+      bonusPercent: 10,
+    })
+
+    const board = await scoring.getLeagueLeaderboard('veteran')
+    expect(board[0].baseScore).toBe(7)
+    expect(board[0].totalScore).toBeCloseTo(7.7, 5)
+    expect(board[0].bonusPercent).toBeCloseTo(10, 5)
+  })
+
+  it('treats a missing snapshot row as bonusPercent=0 (no boost)', async () => {
+    const { scoring } = await buildVeteranScenario()
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fx-noboost',
+      playerId: 101,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const board = await scoring.getLeagueLeaderboard('veteran')
+    expect(board[0].baseScore).toBe(7)
+    expect(board[0].totalScore).toBe(7)
+    expect(board[0].bonusPercent).toBe(0)
+  })
+
+  it('only boosts the fixture+player with a snapshot row, leaving other fixtures untouched', async () => {
+    const { participantId, scoring, snapshots } = await buildVeteranScenario()
+
+    // Two fixtures, same player. Snapshot exists only for the first fixture.
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fx-A',
+      playerId: 101,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fx-B',
+      playerId: 101,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+    await snapshots.upsert({
+      participantId,
+      fixtureId: 'fx-A',
+      playerId: 101,
+      netShares: 50,
+      bonusPercent: 5,
+    })
+
+    const board = await scoring.getLeagueLeaderboard('veteran')
+    // base = 7 + 7 = 14; boost = 7 * 0.05 = 0.35; total = 14.35
+    expect(board[0].baseScore).toBe(14)
+    expect(board[0].totalScore).toBeCloseTo(14.35, 5)
   })
 })

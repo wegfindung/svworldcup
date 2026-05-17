@@ -26,6 +26,7 @@ import {
   createScoringRepository,
   createSquadRepository,
   createTeamPoolRepository,
+  createVeteranInfluenceSnapshotRepository,
 } from './services/repos.js'
 
 export function createApp() {
@@ -42,6 +43,7 @@ export function createApp() {
   const matchMappingRepository = createMatchMappingRepository()
   const auditRepository = createAuditRepository()
   const emailMarketingRepository = createEmailMarketingRepository()
+  const veteranInfluenceSnapshotRepository = createVeteranInfluenceSnapshotRepository()
   const cwd = process.cwd()
   const publicDirCandidates = [
     resolve(cwd, 'public'),
@@ -141,6 +143,7 @@ export function createApp() {
       matchMappingRepository,
       auditRepository,
       emailMarketingRepository,
+      veteranInfluenceSnapshotRepository,
     ),
   )
 

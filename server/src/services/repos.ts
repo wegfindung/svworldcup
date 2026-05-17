@@ -37,6 +37,11 @@ import {
   PostgresEmailMarketingRepository,
   type EmailMarketingRepository,
 } from '../repositories/emailMarketingRepository.js'
+import {
+  MemoryVeteranInfluenceSnapshotRepository,
+  PostgresVeteranInfluenceSnapshotRepository,
+  type VeteranInfluenceSnapshotRepository,
+} from '../repositories/veteranInfluenceSnapshotRepository.js'
 
 let pool: Pool | null = null
 let registrationRepository: RegistrationRepository | null = null
@@ -52,6 +57,7 @@ let matchImportRepository: MatchImportRepository | null = null
 let matchMappingRepository: MatchMappingRepository | null = null
 let auditRepository: AuditRepository | null = null
 let emailMarketingRepository: EmailMarketingRepository | null = null
+let veteranInfluenceSnapshotRepository: VeteranInfluenceSnapshotRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -162,7 +168,12 @@ export function createScoringRepository(): ScoringRepository {
     const existingPool = getPool()
     scoringRepository = existingPool
       ? new PostgresScoringRepository(existingPool, createConfigRepository())
-      : new MemoryScoringRepository(createConfigRepository(), createRegistrationRepository(), createSquadRepository())
+      : new MemoryScoringRepository(
+          createConfigRepository(),
+          createRegistrationRepository(),
+          createSquadRepository(),
+          createVeteranInfluenceSnapshotRepository(),
+        )
   }
   return scoringRepository
 }
@@ -203,4 +214,14 @@ export function createEmailMarketingRepository(): EmailMarketingRepository {
       : new MemoryEmailMarketingRepository()
   }
   return emailMarketingRepository
+}
+
+export function createVeteranInfluenceSnapshotRepository(): VeteranInfluenceSnapshotRepository {
+  if (!veteranInfluenceSnapshotRepository) {
+    const existingPool = getPool()
+    veteranInfluenceSnapshotRepository = existingPool
+      ? new PostgresVeteranInfluenceSnapshotRepository(existingPool)
+      : new MemoryVeteranInfluenceSnapshotRepository()
+  }
+  return veteranInfluenceSnapshotRepository
 }

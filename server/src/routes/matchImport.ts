@@ -8,12 +8,14 @@ import { finalizeSubmission } from '../lib/matchImportSubmission.js'
 import { normalizeName } from '../lib/normalizeName.js'
 import { promoteBatchIfReady } from '../services/matchPromotion.js'
 import { JsonMatchStatsImporter } from '../services/matchStatsImporter.js'
+import { captureVeteranInfluenceSnapshotForFixture } from '../services/veteranInfluenceSnapshot.js'
 import type { MatchImportJson } from '../domain/types.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import type { VeteranInfluenceSnapshotRepository } from '../repositories/veteranInfluenceSnapshotRepository.js'
 
 export interface MatchImportRouterDeps {
   matchImportRepository: MatchImportRepository
@@ -21,6 +23,7 @@ export interface MatchImportRouterDeps {
   teamPoolRepository: TeamPoolRepository
   scoringRepository: ScoringRepository
   auditRepository: AuditRepository
+  veteranInfluenceSnapshotRepository: VeteranInfluenceSnapshotRepository
 }
 
 // A fixture's data is submitted as either JSON or CSV/TSV (Fix 12). CSV/TSV is a pure
@@ -233,6 +236,17 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
       auditRepository: deps.auditRepository,
       actorEmail: adminEmail,
     })
+
+    if (promotion.promoted) {
+      // Fire-and-forget: snapshot Veteran ownership boost for this fixture so scoring uses
+      // the holdings as of stats-promotion time. Failures here must not block promotion —
+      // missing snapshot rows simply yield bonusPercent = 0, matching the SOP fallback.
+      void captureVeteranInfluenceSnapshotForFixture(batch.fixtureId, {
+        snapshotRepository: deps.veteranInfluenceSnapshotRepository,
+      }).catch((error: Error) => {
+        console.warn(`veteran influence snapshot capture failed for fixture=${batch.fixtureId}: ${error.message}`)
+      })
+    }
 
     // When promoted, the pending batch no longer exists — the confirmed rows are in
     // admin_match_entries. Otherwise the batch is returned with its new confirmation.

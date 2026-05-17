@@ -41,7 +41,7 @@ The admin enters the raw match rating on each player entry; performance points a
 - Substitute slots score only when at least one starter in the same slot class is marked absent from the official squad.
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
 - Nations qualify for the public table once they have at least two scored entries.
-- Veteran ownership boost is currently represented as a deterministic `bonusPercent` field and remains `0` until the influence snapshot source is implemented.
+- Veteran ownership boost is sourced from `veteran_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — Rookies always, Veterans for fixtures not yet promoted, Veterans with zero net post-cutoff buys.
 
 ## Late Entry
 
@@ -70,8 +70,11 @@ The admin enters the raw match rating on each player entry; performance points a
 
 - Requires a linked Soccerverse account (`soccerverse_username IS NOT NULL`).
 - A participant becomes a Veteran either by registering as one (Soccerverse username provided at signup) or by being moved into the Veteran league by an admin after linking their account post-registration. See `SOP_registration_and_auth.md` "Account Linking and League Membership".
-- Gets `1%` score bonus for each `10` influence held in a drafted `playerId`.
-- Bonus cap: `10%`.
+- Gets `1%` score bonus for each `10` **net influence accumulated** in a drafted `playerId` since the participant's cutoff date. Bonus cap: `10%` (saturates at `100` net influence).
+- **Cutoff date** per participant: `MAX(participants.created_at, participants.soccerverse_linked_at)` — the later of register-or-link. A Veteran who links their Soccerverse account weeks after registering starts counting trades from the link timestamp; a participant who registered as Veteran starts counting from registration.
+- **Net influence**: total `num` of player-share BUYS minus total `num` of player-share SELLS by the Veteran's `soccerverse_username` for that `playerId`, restricted to trades with `unix_time >= cutoff`. Floored at `0`. Pre-cutoff holdings do not count.
+- **Per-fixture snapshot, lazily captured.** When match stats for a fixture are promoted via the match-data import pipeline, the boost is computed for every Veteran whose locked squad contains a player from that fixture and stored in `veteran_influence_snapshot(participant_id, fixture_id, player_id, bonus_percent)`. The scoring engine reads `bonus_percent` from the snapshot row keyed on `(participant_id, fixture_id, player_id)` and treats a missing row as `0`.
+- **Boost is never retroactive.** Past fixtures keep the `bonus_percent` they captured at promotion time even if the Veteran later buys more shares. Each fixture snapshots independently from the trades that exist by the time that fixture's stats are promoted.
 - A linked Rookie (a Rookie who has linked a Soccerverse account but has not been moved into the Veteran league) earns no boost — they remain in the Rookie league and the Rookie "no ownership bonus" rule applies.
 
 ## National Tables
