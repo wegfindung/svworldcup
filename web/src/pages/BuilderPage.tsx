@@ -203,6 +203,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const [playerSearch, setPlayerSearch] = useState('')
   const [builderError, setBuilderError] = useState<string | null>(null)
   const [publicProfileUrl, setPublicProfileUrl] = useState<string | null>(null)
+  const [nowEpoch] = useState(() => Date.now())
+  const [budgetMenuOpen, setBudgetMenuOpen] = useState(false)
 
   const [registrationForm, setRegistrationForm] = useState<RegistrationFormState>(initialRegistrationForm)
   const [registrationBusy, setRegistrationBusy] = useState(false)
@@ -268,9 +270,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
   const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
   const competitionStart = useMemo(() => getCompetitionStartEpoch(bootstrap?.fixtures ?? []), [bootstrap?.fixtures])
-  const competitionStarted = competitionStart !== null && Date.now() >= competitionStart
+  const competitionStarted = competitionStart !== null && nowEpoch >= competitionStart
   const canEditSquad = !squad?.isLocked || !competitionStarted
   const socialSharingUnlocked = draftedCount === 15
+  const totalSlotCount = squad?.slots.length ?? 15
+  const draftCompletionRatio = Math.round((draftedCount / Math.max(totalSlotCount, 1)) * 100)
+  const selectedSlotLabel = selectedSlot ? compactSlotLabel(selectedSlot.label) : 'No slot selected'
   const previousDraftedCountRef = useRef<number | null>(null)
   const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? 'Budget left' : 'Budget'
   const readyBudgetValue = dashboardSeed?.budgetRemaining ?? dashboardSeed?.budgetLimit ?? budgetLimit
@@ -389,7 +394,13 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       return
     }
 
-    void loadTeamPlayersForCode(selectedTeamCode)
+    const loadTimer = window.setTimeout(() => {
+      void loadTeamPlayersForCode(selectedTeamCode)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(loadTimer)
+    }
   }, [accessState, loadedTeamCode, loadTeamPlayersForCode, selectedTeamCode, teamPlayersLoading])
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
@@ -619,66 +630,45 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     setSelectedSlotKey(getSlotKeyForClass(squad, slotClass))
   }
 
-  function renderSquadSlot(slot: SquadSlotState) {
+  function renderPitchSlot(slot: SquadSlotState, index: number) {
     const isSelected = selectedSlot?.key === slot.key
 
     return (
-      <article
+      <button
         key={slot.key}
+        type="button"
+        onClick={() => setSelectedSlotKey(slot.key)}
+        style={{ animationDelay: `${index * 45}ms` }}
         className={[
-          'group rounded-[0.95rem] border px-3 py-3 transition hover:-translate-y-[1px]',
-          isSelected
-            ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 shadow-[0_0_0_1px_rgba(35,201,163,0.1)]'
-            : 'border-white/8 bg-[rgba(8,13,12,0.74)] hover:border-white/14 hover:bg-white/5',
+          'pitch-slot-card reveal-in',
+          isSelected ? 'is-selected' : '',
+          slot.player ? 'is-filled' : 'is-open',
         ].join(' ')}
       >
-        <div className="flex items-start justify-between gap-3">
-          <button type="button" onClick={() => setSelectedSlotKey(slot.key)} className="min-w-0 flex-1 text-left">
-            <p className="truncate text-xs font-semibold text-white">{compactSlotLabel(slot.label)}</p>
-            <p className="mono mt-1 text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{slot.slotClass}</p>
-          </button>
-          <span
-            className={[
-              'mono shrink-0 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]',
-              slot.player
-                ? 'border-[var(--color-accent)]/22 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                : 'border-white/10 text-[var(--color-muted)]',
-            ].join(' ')}
-          >
-            {slot.player ? 'Filled' : 'Open'}
-          </span>
-        </div>
-
+        <span className="pitch-slot-meta">
+          <span>{compactSlotLabel(slot.label)}</span>
+          <span>{slot.slotClass}</span>
+        </span>
         {slot.player ? (
-          <div className="mt-3 flex items-center gap-2.5">
+          <span className="mt-2 flex min-w-0 items-center gap-2.5">
             <PlayerPortrait
               src={slot.player.imageUrl}
               alt={slot.player.displayName}
               width={42}
               height={42}
-              className="h-10 w-10 shrink-0 rounded-[0.75rem] border border-white/10 object-cover"
+              className="h-11 w-11 shrink-0 rounded-[0.8rem] border border-white/10 bg-black/20 object-cover"
             />
-            <button type="button" onClick={() => setSelectedSlotKey(slot.key)} className="min-w-0 flex-1 text-left">
-              <p className="truncate text-xs font-medium text-white">{slot.player.displayName}</p>
-              <p className="mt-1 text-[11px] text-[var(--color-muted)]">{formatBudget(slot.player.capCost)}</p>
-            </button>
-          </div>
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block truncate text-xs font-semibold text-white">{slot.player.displayName}</span>
+              <span className="mono mt-1 block text-[9px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                {formatBudget(slot.player.capCost)}
+              </span>
+            </span>
+          </span>
         ) : (
-          <button type="button" onClick={() => setSelectedSlotKey(slot.key)} className="mt-3 text-left text-xs text-[var(--color-muted)]">
-            Select this slot, then pick a compatible player.
-          </button>
+          <span className="pitch-empty-copy">Tap to draft</span>
         )}
-
-        {slot.player && canEditSquad ? (
-          <button
-            type="button"
-            onClick={() => void handleRemove(slot.key)}
-            className="mt-3 inline-flex rounded-full border border-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/6"
-          >
-            Remove
-          </button>
-        ) : null}
-      </article>
+      </button>
     )
   }
 
@@ -1224,7 +1214,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
       {accessState === 'active' && participant && squad ? (
         <section className="space-y-4">
-          <div className="hero-card rounded-[1.15rem] px-4 py-5 sm:px-5">
+          <div className="hero-card builder-command rounded-[1.15rem] px-4 py-5 sm:px-5">
             <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1318,8 +1308,105 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
-            <div className="space-y-4">
+          <div className="builder-flow-strip">
+            <div>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">active slot</p>
+              <p className="mt-1 text-base font-semibold text-white">{selectedSlotLabel}</p>
+            </div>
+            <div className="budget-menu-anchor">
+              <button
+                type="button"
+                aria-expanded={budgetMenuOpen}
+                onClick={() => setBudgetMenuOpen((current) => !current)}
+                className={['budget-command-button', budgetMenuOpen ? 'is-open' : ''].join(' ')}
+              >
+                <span className="budget-command-main">
+                  <span className="mono block whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">budget left</span>
+                  <span className="mt-1 block whitespace-nowrap text-base font-semibold text-[var(--color-accent)]">{formatBudget(squad.budgetRemaining)}</span>
+                  <span className="mono mt-1 block whitespace-nowrap text-[10px] uppercase tracking-[0.14em] text-white/60">
+                    cap {formatBudget(squad.budgetLimit)}
+                  </span>
+                </span>
+                <span className="budget-command-action">
+                  <span className="mono text-[10px] uppercase tracking-[0.14em]">Change cap</span>
+                  <svg
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                    className={['h-4 w-4 text-[var(--color-accent)] transition', budgetMenuOpen ? 'rotate-180' : 'rotate-0'].join(' ')}
+                  >
+                    <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </button>
+
+              {budgetMenuOpen ? (
+                <div className="budget-popover">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">budget menu</p>
+                      <p className="mt-1 text-sm text-[var(--color-muted)]">Lower cap, bigger multiplier. Disabled caps need players removed first.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBudgetMenuOpen(false)}
+                      className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/6"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    {budgetOptions.map((option) => {
+                      const isSelected = option.budgetLimit === squad.budgetLimit
+                      const isTooLow = option.budgetLimit < squad.budgetUsed
+                      return (
+                        <button
+                          key={option.budgetLimit}
+                          type="button"
+                          onClick={() => {
+                            setBudgetMenuOpen(false)
+                            void handleBudgetChange(option.budgetLimit)
+                          }}
+                          disabled={!canEditSquad || isSelected || isTooLow}
+                          className={[
+                            'grid grid-cols-[1fr_auto] items-center gap-3 rounded-[0.75rem] border px-3 py-2.5 text-left transition hover:-translate-y-[1px] active:scale-[0.98]',
+                            isSelected
+                              ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white'
+                              : 'border-white/8 bg-white/[0.03] text-[var(--color-muted)] hover:border-white/14 hover:text-white',
+                            !canEditSquad || isTooLow ? 'disabled:cursor-not-allowed disabled:opacity-50' : '',
+                          ].join(' ')}
+                        >
+                          <span>
+                            <span className="block text-sm font-semibold">{formatBudget(option.budgetLimit)}</span>
+                            {isTooLow ? <span className="mt-0.5 block text-[11px] text-[var(--color-sand)]">Remove players first</span> : null}
+                          </span>
+                          <span className="mono text-xs text-[var(--color-accent)]">{formatMultiplier(option.scoreMultiplier)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <div>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">drafted</p>
+              <p className="mt-1 text-base font-semibold text-white">{draftedCount} / {totalSlotCount}</p>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">completion</p>
+                <p className="mono text-xs text-white">{draftCompletionRatio}%</p>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/7">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-accent),var(--color-sand))] transition-all duration-300"
+                  style={{ width: `${draftCompletionRatio}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="builder-workbench grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
+            <div className="space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
               <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -1488,7 +1575,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       return (
                         <article
                           key={player.playerId}
-                          className="surface-row rounded-[0.85rem] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:bg-white/5"
+                          className="scout-player-card rounded-[0.85rem] px-3 py-2.5 transition hover:-translate-y-[1px]"
                         >
                           <div className="grid gap-3 xl:grid-cols-[minmax(16rem,1fr)_minmax(0,35rem)] xl:items-center">
                             <div className="flex min-w-0 items-center gap-3">
@@ -1550,45 +1637,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="glass-panel rounded-[1.15rem] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget choice</p>
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">Pick the cap for your squad. Lower budgets earn a stronger score multiplier.</p>
-                  </div>
-                  <span className="mono rounded-full border border-white/10 px-3 py-1 text-xs text-white">{formatMultiplier(activeScoreMultiplier)}</span>
-                </div>
-                <div className="mt-4 grid gap-2">
-                  {budgetOptions.map((option) => {
-                    const isSelected = option.budgetLimit === squad.budgetLimit
-                    const isTooLow = option.budgetLimit < squad.budgetUsed
-                    return (
-                      <button
-                        key={option.budgetLimit}
-                        type="button"
-                        onClick={() => void handleBudgetChange(option.budgetLimit)}
-                        disabled={!canEditSquad || isSelected || isTooLow}
-                        className={[
-                          'grid grid-cols-[1fr_auto] items-center gap-3 rounded-[0.85rem] border px-3 py-2.5 text-left transition hover:-translate-y-[1px] active:scale-[0.98]',
-                          isSelected
-                            ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white'
-                            : 'border-white/8 bg-white/[0.03] text-[var(--color-muted)] hover:border-white/14 hover:text-white',
-                          !canEditSquad || isTooLow ? 'disabled:cursor-not-allowed disabled:opacity-50' : '',
-                        ].join(' ')}
-                      >
-                        <span>
-                          <span className="block text-sm font-semibold">{formatBudget(option.budgetLimit)}</span>
-                          {isTooLow ? <span className="mt-0.5 block text-[11px] text-[var(--color-sand)]">Remove players first</span> : null}
-                        </span>
-                        <span className="mono text-xs text-[var(--color-accent)]">{formatMultiplier(option.scoreMultiplier)}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div className="glass-panel rounded-[1.15rem] p-4">
+            <div className="grid gap-4 lg:order-1">
+              <div className="glass-panel rounded-[1.15rem] p-4 lg:order-3">
                 <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget monitor</p>
                 <div className="mt-4 flex items-end justify-between gap-4">
                   <div>
@@ -1607,7 +1657,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 </div>
               </div>
 
-              <div className="glass-panel rounded-[1.15rem] p-4">
+              <div className="glass-panel rounded-[1.15rem] p-4 lg:order-1">
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">current squad</p>
@@ -1688,22 +1738,45 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   </div>
                 ) : null}
 
-                <div className="mt-5 space-y-5">
-                  {squadSlotBuckets.map((bucket) => (
-                    <div key={bucket.slotClass} className="space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{bucket.label}</p>
+                <div className="mt-5">
+                  <div className="squad-pitch">
+                    {squadSlotBuckets.map((bucket) => (
+                      <div key={bucket.slotClass} className={['pitch-line', `pitch-line-${bucket.slotClass.toLowerCase()}`].join(' ')}>
+                        <div className="pitch-line-heading">
+                          <span>{bucket.label}</span>
+                          <button type="button" onClick={() => handleSelectSlotClass(bucket.slotClass)}>
+                            Scout {bucket.slotClass}
+                          </button>
+                        </div>
+                        <div className="pitch-line-slots">
+                          {bucket.slots.map((slot, index) => renderPitchSlot(slot, index))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedSlot ? (
+                    <div className="selected-slot-dock mt-4">
+                      <div className="min-w-0">
+                        <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">selected slot</p>
+                        <h4 className="mt-1 truncate text-lg font-semibold text-white">{selectedSlotLabel}</h4>
+                        <p className="mt-1 text-sm leading-6 text-[var(--color-muted)]">
+                          {selectedSlot.player
+                            ? `${selectedSlot.player.displayName} is currently assigned here.`
+                            : `Pick a compatible ${selectedSlot.slotClass} from the scouting board.`}
+                        </p>
+                      </div>
+                      {selectedSlot.player && canEditSquad ? (
                         <button
                           type="button"
-                          onClick={() => handleSelectSlotClass(bucket.slotClass)}
-                          className="text-xs font-semibold text-[var(--color-accent)] transition hover:text-white"
+                          onClick={() => void handleRemove(selectedSlot.key)}
+                          className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                         >
-                          Find {bucket.slotClass}
+                          Remove
                         </button>
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{bucket.slots.map((slot) => renderSquadSlot(slot))}</div>
+                      ) : null}
                     </div>
-                  ))}
+                  ) : null}
                 </div>
               </div>
             </div>
