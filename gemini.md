@@ -96,22 +96,21 @@ Fixed formation rule:
 
 ### Ownership boost
 
-- Optional mechanic.
-- `+0.1%` contribution per share.
-- Cap: `10%` max boost at `100` shares.
-- Window: only influence bought between Announcement and first World Cup kickoff counts.
-- Net of sells in the same window.
-- Clamped at `0`.
-- Non-market transfers do not count.
-- Freeze at first kickoff.
+- Applies to any participant with `soccerverse_username IS NOT NULL`, regardless of league.
+- `1%` bonus per `10` net influence accumulated in a drafted `playerId` since the participant's cutoff. Cap: `10%` (saturates at `100` net influence).
+- **Cutoff per participant**: `MAX(created_at, soccerverse_linked_at)` — the later of register-or-link.
+- **Net influence**: player-share BUYS minus player-share SELLS by the participant's `soccerverse_username` for that `playerId`, restricted to trades with `cutoff <= unix_time <= fixture_kickoff`. Floored at `0`. Trades made after the fixture's kickoff do not count toward that fixture.
+- **Per-fixture snapshot, frozen at the fixture's kickoff timestamp.** Computed and stored in `participant_influence_snapshot(participant_id, fixture_id, player_id, bonus_percent)` when the fixture's match stats are promoted. The kickoff upper bound on the trade-history fetch makes the snapshot time-invariant — same result whether captured at promotion or via a later re-run.
+- **Not retroactive.** Past fixtures keep their captured boost. Future fixtures snapshot independently from the trades that existed at *their* own kickoff.
+- See `architecture/SOP_scoring_and_leagues.md` "Ownership boost" for the canonical spec.
 
 ### League variants
 
-- `Rookie` league: no ownership bonus.
-- `Veteran` league: `1%` bonus for every `10` influence held in a drafted `playerId`, capped at `10%`.
-- Ownership bonus handling is therefore league-specific.
-- A participant is a `Veteran` if they provide a Soccerverse main account.
-- A participant without a Soccerverse main account is a `Rookie`.
+- League membership (`Rookie` vs `Veteran`) determines which leaderboard a participant appears on. It does **not** gate the ownership bonus.
+- Ownership bonus applies to any participant with a linked Soccerverse account, regardless of league: `1%` bonus for every `10` net influence accumulated in a drafted `playerId` since the participant's cutoff date, capped at `10%`. See `architecture/SOP_scoring_and_leagues.md` "Ownership boost" for the full rule.
+- A participant registering with a Soccerverse main account is a `Veteran`.
+- A participant without a Soccerverse main account is a `Rookie`. A Rookie may link a Soccerverse account post-registration without being moved into the Veteran league — they keep their Rookie standing and earn the boost.
+- An admin can promote a linked Rookie into the Veteran league via `POST /api/admin/participants/:id/league`.
 - A participant appears in up to three public tables:
 - Rookie or Veteran league
 - Primary country table

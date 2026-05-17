@@ -11,6 +11,7 @@ import { MemoryRegistrationRepository } from '../repositories/registrationReposi
 import { MemoryScoringRepository } from '../repositories/scoringRepository.js'
 import { MemorySquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 
 const BRA_MAR_FIXTURE = '2026-06-13-c-bra-mar'
@@ -42,6 +43,7 @@ async function setup() {
   await teamPoolRepository.replaceTeamPlayers('BRA', [svPlayer(10, 'Vinicius Junior'), svPlayer(11, 'Rodrygo')])
   await teamPoolRepository.replaceTeamPlayers('MAR', [svPlayer(20, 'Achraf Hakimi')])
 
+  const participantInfluenceSnapshotRepository = new MemoryParticipantInfluenceSnapshotRepository()
   const deps = {
     matchImportRepository: new MemoryMatchImportRepository(),
     matchMappingRepository: new MemoryMatchMappingRepository(),
@@ -50,8 +52,10 @@ async function setup() {
       new MemoryConfigRepository(),
       new MemoryRegistrationRepository(),
       new MemorySquadRepository(teamPoolRepository),
+      participantInfluenceSnapshotRepository,
     ),
     auditRepository: new MemoryAuditRepository(),
+    participantInfluenceSnapshotRepository,
   }
 
   const app = express()

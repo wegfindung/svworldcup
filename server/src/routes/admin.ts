@@ -18,6 +18,7 @@ import type { MatchMappingRepository } from '../repositories/matchMappingReposit
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import { LeagueChangeError } from '../repositories/registrationRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
+import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
@@ -120,6 +121,7 @@ export function createAdminRouter(
   matchMappingRepository: MatchMappingRepository,
   auditRepository: AuditRepository,
   emailMarketingRepository: EmailMarketingRepository,
+  participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository,
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
@@ -191,6 +193,7 @@ export function createAdminRouter(
       teamPoolRepository,
       scoringRepository,
       auditRepository,
+      participantInfluenceSnapshotRepository,
     }),
   )
 

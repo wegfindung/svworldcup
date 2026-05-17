@@ -19,6 +19,7 @@ import type {
 import type { ConfigRepository } from './configRepository.js'
 import type { RegistrationRepository } from './registrationRepository.js'
 import type { SquadRepository } from './squadRepository.js'
+import type { ParticipantInfluenceSnapshotRepository } from './participantInfluenceSnapshotRepository.js'
 
 interface ScoreParticipant {
   participantId: string
@@ -174,12 +175,17 @@ function buildFixtureEntryScoreMap(entries: MatchEntryRecord[], scoring: Scoring
   return fixtures
 }
 
+function bonusKey(participantId: string, fixtureId: string, playerId: number) {
+  return `${participantId}|${fixtureId}|${playerId}`
+}
+
 function calculateParticipantRows(
   participants: ScoreParticipant[],
   slots: ScoreSlot[],
   entries: MatchEntryRecord[],
   scoring: ScoringConfig,
   kickoffByFixture: Map<string, number>,
+  bonusByEntry: Map<string, number>,
 ): RankableParticipantRow[] {
   const fixtureEntryScores = buildFixtureEntryScoreMap(entries, scoring)
   const slotsByParticipant = new Map<string, ScoreSlot[]>()
@@ -196,6 +202,7 @@ function calculateParticipantRows(
     const hasLockCutoff = lockEpoch !== null && Number.isFinite(lockEpoch)
 
     let baseScore = 0
+    let bonusScore = 0
     const breakdown = createEmptyBreakdown()
     const fixtureDetailsById = new Map<string, ParticipantScoreFixtureDetail>()
 
@@ -225,6 +232,12 @@ function calculateParticipantRows(
       }
 
       const totalPoints = components.total + cleanSheetPoints
+
+      const entryBonus = bonusByEntry.get(bonusKey(participant.participantId, fixtureId, playerState.entry.playerId)) ?? 0
+      if (entryBonus > 0) {
+        bonusScore += totalPoints * (entryBonus / 100)
+      }
+
       if (totalPoints !== 0 || playerState.entry.minutes > 0 || playerState.entry.goals > 0 || playerState.entry.assists > 0) {
         const fixtureDetail = fixtureDetailsById.get(fixtureId) ?? { fixtureId, totalPoints: 0, players: [] }
         const playerDetail: ParticipantScorePlayerDetail = {
@@ -295,8 +308,8 @@ function calculateParticipantRows(
       }
     }
 
-    const bonusPercent = participant.leagueType === 'veteran' ? 0 : 0
-    const totalScore = baseScore * (1 + bonusPercent / 100)
+    const totalScore = baseScore + bonusScore
+    const bonusPercent = baseScore > 0 ? (bonusScore / baseScore) * 100 : 0
 
     return {
       participantId: participant.participantId,
@@ -339,6 +352,7 @@ export class MemoryScoringRepository implements ScoringRepository {
     private readonly configRepository: ConfigRepository,
     private readonly registrationRepository: RegistrationRepository,
     private readonly squadRepository: SquadRepository,
+    private readonly snapshotRepository: ParticipantInfluenceSnapshotRepository,
   ) {}
 
   async upsertMatchEntry(input: MatchEntryInput) {
@@ -457,7 +471,12 @@ export class MemoryScoringRepository implements ScoringRepository {
     }
 
     const kickoffByFixture = buildKickoffByFixture(seedFixtures)
-    return calculateParticipantRows(lockedParticipants, slots, entries, scoring, kickoffByFixture)
+    const snapshots = await this.snapshotRepository.listAll()
+    const bonusByEntry = new Map<string, number>()
+    for (const snapshot of snapshots) {
+      bonusByEntry.set(bonusKey(snapshot.participantId, snapshot.fixtureId, snapshot.playerId), snapshot.bonusPercent)
+    }
+    return calculateParticipantRows(lockedParticipants, slots, entries, scoring, kickoffByFixture, bonusByEntry)
   }
 }
 
@@ -468,6 +487,20 @@ export class PostgresScoringRepository implements ScoringRepository {
     private readonly pool: Pool,
     private readonly configRepository: ConfigRepository,
   ) {}
+
+  private async listBonusByEntry(): Promise<Map<string, number>> {
+    const result = await this.pool.query<{
+      participant_id: string
+      fixture_id: string
+      player_id: string
+      bonus_percent: number
+    }>(`SELECT participant_id, fixture_id, player_id, bonus_percent FROM participant_influence_snapshot`)
+    const map = new Map<string, number>()
+    for (const row of result.rows) {
+      map.set(bonusKey(row.participant_id, row.fixture_id, Number(row.player_id)), row.bonus_percent)
+    }
+    return map
+  }
 
   async upsertMatchEntry(input: MatchEntryInput) {
     const result = await this.pool.query<{
@@ -573,13 +606,14 @@ export class PostgresScoringRepository implements ScoringRepository {
 
   private async calculateRows() {
     const scoring = await this.configRepository.getScoringConfig()
-    const [participants, legacySlots, entries, kickoffByFixture] = await Promise.all([
+    const [participants, legacySlots, entries, kickoffByFixture, bonusByEntry] = await Promise.all([
       this.listParticipants(),
       this.listSlots(),
       this.listMatchEntries(),
       this.listFixtureKickoffs(),
+      this.listBonusByEntry(),
     ])
-    return calculateParticipantRows(participants, legacySlots, entries, scoring, kickoffByFixture)
+    return calculateParticipantRows(participants, legacySlots, entries, scoring, kickoffByFixture, bonusByEntry)
   }
 
   private async listParticipants(): Promise<ScoreParticipant[]> {

@@ -67,8 +67,8 @@ export function createPublicRouter({ configRepository, registrationRepository, f
       teams,
       fixtures: currentFixtures,
       leagues: {
-        rookie: 'No ownership bonus',
-        veteran: '1% for every 10 influence on drafted players, capped at 10%',
+        rookie: 'Ownership boost available once you link your Soccerverse account (1% per 10 net influence on drafted players, capped at 10%).',
+        veteran: '1% for every 10 net influence accumulated on drafted players since you registered or linked, capped at 10%.',
       },
     })
   })

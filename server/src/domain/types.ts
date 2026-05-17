@@ -226,6 +226,15 @@ export interface MatchEntryRecord extends MatchEntryInput {
   entryId: string
 }
 
+export interface ParticipantInfluenceSnapshotRecord {
+  participantId: string
+  fixtureId: string
+  playerId: number
+  netShares: number
+  bonusPercent: number
+  snapshotAt: string
+}
+
 export type EmailCampaignKind = 'newsletter' | 'autoresponder'
 export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
 export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'

@@ -706,8 +706,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
                       {mode === 'rookie'
-                        ? 'Beginner-friendly entry with no ownership bonus.'
-                        : 'Provide your main Soccerverse account and enter the veteran league.'}
+                        ? 'Beginner-friendly entry. Link a Soccerverse account later to earn the ownership boost while keeping your Rookie standing.'
+                        : 'Provide your main Soccerverse account and enter the veteran league. Ownership boost earned from post-registration buys.'}
                     </p>
                   </button>
                 ))}
