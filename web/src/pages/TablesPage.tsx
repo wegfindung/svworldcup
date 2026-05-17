@@ -40,6 +40,10 @@ function formatScore(value: number) {
   })
 }
 
+function formatMultiplier(value: number) {
+  return `x${value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: value % 1 === 0 ? 0 : 2 })}`
+}
+
 function BreakdownPill({ label, count, points }: { label: string; count?: number; points: number }) {
   return (
     <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[11px] text-[var(--color-muted)]">
@@ -177,6 +181,7 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
                     <div className="col-span-2 text-right sm:col-span-1">
                       <p className="mono text-lg text-white">{formatScore(row.totalScore)}</p>
                       <p className="mt-1 text-[11px] text-[var(--color-muted)]">base {formatScore(row.baseScore)}</p>
+                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">budget {formatMultiplier(row.scoreMultiplier)}</p>
                       {row.bonusPercent > 0 ? <p className="text-xs text-[var(--color-accent)]">+{row.bonusPercent}%</p> : null}
                       <button
                         type="button"

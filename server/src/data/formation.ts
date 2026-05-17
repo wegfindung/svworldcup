@@ -2,6 +2,25 @@ import type { SlotDefinition } from '../domain/types.js'
 
 export const STARTING_BUDGET = 3_000_000
 
+export const budgetOptions = [
+  { budgetLimit: 1_500_000, scoreMultiplier: 1.3 },
+  { budgetLimit: 2_000_000, scoreMultiplier: 1.18 },
+  { budgetLimit: 2_500_000, scoreMultiplier: 1.08 },
+  { budgetLimit: 3_000_000, scoreMultiplier: 1 },
+  { budgetLimit: 4_000_000, scoreMultiplier: 0.9 },
+  { budgetLimit: 5_000_000, scoreMultiplier: 0.82 },
+  { budgetLimit: 6_000_000, scoreMultiplier: 0.75 },
+  { budgetLimit: 9_000_000, scoreMultiplier: 0.5 },
+] as const
+
+export function getBudgetOption(budgetLimit: number) {
+  return budgetOptions.find((option) => option.budgetLimit === budgetLimit) ?? null
+}
+
+export function getScoreMultiplierForBudget(budgetLimit: number) {
+  return getBudgetOption(budgetLimit)?.scoreMultiplier ?? 1
+}
+
 export const formationSlots: SlotDefinition[] = [
   { key: 'starter-gk-1', slotGroup: 'starter', slotClass: 'GK', order: 1, label: 'Starting GK' },
   { key: 'starter-def-1', slotGroup: 'starter', slotClass: 'DEF', order: 2, label: 'Starting DEF 1' },

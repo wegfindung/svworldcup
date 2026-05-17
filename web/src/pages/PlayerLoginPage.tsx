@@ -19,6 +19,7 @@ function buildReadyState(
     email: participant.email,
     leagueType: participant.leagueType,
     budgetLimit: squadSummary?.budgetLimit ?? budgetLimit,
+    scoreMultiplier: squadSummary?.scoreMultiplier,
     budgetRemaining: squadSummary?.budgetRemaining,
     budgetUsed: squadSummary?.budgetUsed,
     draftedCount: squadSummary?.draftedCount,

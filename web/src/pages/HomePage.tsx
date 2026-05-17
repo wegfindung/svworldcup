@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { t } from '../i18n/messages'
-import { budgetLimit as defaultBudgetLimit, defaultScoring, eventTeams } from '../data/eventConfig'
+import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { withReferral } from '../lib/referral'
 import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
@@ -306,6 +306,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const { data: bootstrap } = useBootstrap()
   const scoring = bootstrap?.scoring ?? defaultScoring
   const budgetLimit = bootstrap?.budgetLimit ?? defaultBudgetLimit
+  const budgetOptions = bootstrap?.budgetOptions ?? defaultBudgetOptions
+  const minBudget = budgetOptions[0]?.budgetLimit ?? budgetLimit
+  const maxBudget = budgetOptions[budgetOptions.length - 1]?.budgetLimit ?? budgetLimit
   const teams = bootstrap?.teams ?? eventTeams
   const fixtures = bootstrap?.fixtures ?? []
   const fixtureCount = bootstrap?.fixtures.length ?? 104
@@ -334,7 +337,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                   Beat your nation.
                 </h2>
                 <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">
-                  Build one Soccerverse World Cup squad under the cap, lock it for the full competition, then watch every
+                  Build one Soccerverse World Cup squad under your chosen cap, lock it for the full competition, then watch every
                   official match swing the rookie, veteran, and nation rankings.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -421,10 +424,10 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
             <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">salary budget</p>
               <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">
-                {budgetLimit.toLocaleString('en-US')} SVC
+                {minBudget.toLocaleString('en-US')} - {maxBudget.toLocaleString('en-US')} SVC
               </p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                Every participant drafts under the same cap using Soccerverse wage logic.
+                Choose a tighter budget for a stronger multiplier, or spend more with a lower multiplier.
               </p>
             </div>
 

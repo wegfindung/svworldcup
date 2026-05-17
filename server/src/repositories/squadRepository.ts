@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
-import { STARTING_BUDGET, formationSlots, getSlotDefinition } from '../data/formation.js'
+import { STARTING_BUDGET, formationSlots, getBudgetOption, getScoreMultiplierForBudget, getSlotDefinition } from '../data/formation.js'
 import { getPositionClasses, isEligibleForSlot } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
 import type { AssignPlayerInput, ParticipantSquad, TeamPoolPlayer } from '../domain/types.js'
@@ -34,6 +34,7 @@ function createEmptySquad(participantId: string): ParticipantSquad {
     squadId: randomUUID(),
     participantId,
     budgetLimit: STARTING_BUDGET,
+    scoreMultiplier: getScoreMultiplierForBudget(STARTING_BUDGET),
     budgetUsed: 0,
     budgetRemaining: STARTING_BUDGET,
     isLocked: false,
@@ -45,6 +46,7 @@ function createEmptySquad(participantId: string): ParticipantSquad {
 export interface SquadRepository {
   storageKind: 'memory' | 'postgres'
   getOrCreate(participantId: string): Promise<ParticipantSquad>
+  setBudget(participantId: string, budgetLimit: number): Promise<ParticipantSquad>
   assignPlayer(participantId: string, input: AssignPlayerInput): Promise<ParticipantSquad>
   removePlayer(participantId: string, slotKey: string): Promise<ParticipantSquad>
   resetSquad(participantId: string): Promise<ParticipantSquad>
@@ -109,6 +111,30 @@ export class MemorySquadRepository implements SquadRepository {
       budgetUsed: nextBudgetUsed,
       budgetRemaining: squad.budgetLimit - nextBudgetUsed,
       slots: nextSlots,
+    }
+    this.squads.set(participantId, nextSquad)
+    return nextSquad
+  }
+
+  async setBudget(participantId: string, budgetLimit: number) {
+    const option = getBudgetOption(budgetLimit)
+    if (!option) {
+      throw new SquadValidationError('Unknown budget option.')
+    }
+
+    const squad = await this.getOrCreate(participantId)
+    if (squad.isLocked) {
+      throw new SquadValidationError('Squad is locked.')
+    }
+    if (squad.budgetUsed > option.budgetLimit) {
+      throw new SquadValidationError('Remove drafted players before lowering the budget.')
+    }
+
+    const nextSquad: ParticipantSquad = {
+      ...squad,
+      budgetLimit: option.budgetLimit,
+      scoreMultiplier: option.scoreMultiplier,
+      budgetRemaining: option.budgetLimit - squad.budgetUsed,
     }
     this.squads.set(participantId, nextSquad)
     return nextSquad
@@ -245,6 +271,7 @@ export class PostgresSquadRepository implements SquadRepository {
       squadId: squad.squad_id,
       participantId,
       budgetLimit: squad.budget_limit,
+      scoreMultiplier: getScoreMultiplierForBudget(squad.budget_limit),
       budgetUsed: squad.budget_used,
       budgetRemaining: Math.max(0, squad.budget_limit - squad.budget_used),
       isLocked: squad.is_locked,
@@ -314,6 +341,48 @@ export class PostgresSquadRepository implements SquadRepository {
         [squad.squad_id, slot.key, slot.slotGroup, slot.slotClass, player.playerId],
       )
       await client.query('UPDATE squads SET budget_used = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, nextBudgetUsed])
+      await client.query('COMMIT')
+      return this.getOrCreate(participantId)
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async setBudget(participantId: string, budgetLimit: number) {
+    const option = getBudgetOption(budgetLimit)
+    if (!option) {
+      throw new SquadValidationError('Unknown budget option.')
+    }
+
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `
+          INSERT INTO squads (participant_id, budget_limit, budget_used, updated_at)
+          VALUES ($1, $2, 0, NOW())
+          ON CONFLICT (participant_id)
+          DO NOTHING
+        `,
+        [participantId, STARTING_BUDGET],
+      )
+
+      const squadResult = await client.query<{ squad_id: string; budget_used: number; is_locked: boolean }>(
+        'SELECT squad_id, budget_used, is_locked FROM squads WHERE participant_id = $1 FOR UPDATE',
+        [participantId],
+      )
+      const squad = squadResult.rows[0]
+      if (squad.is_locked) {
+        throw new SquadValidationError('Squad is locked.')
+      }
+      if (squad.budget_used > option.budgetLimit) {
+        throw new SquadValidationError('Remove drafted players before lowering the budget.')
+      }
+
+      await client.query('UPDATE squads SET budget_limit = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, option.budgetLimit])
       await client.query('COMMIT')
       return this.getOrCreate(participantId)
     } catch (error) {

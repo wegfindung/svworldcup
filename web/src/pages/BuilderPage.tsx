@@ -4,7 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
-import { budgetLimit as defaultBudgetLimit, eventTeams, leagueCopy } from '../data/eventConfig'
+import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier, leagueCopy } from '../data/eventConfig'
 import {
   ApiError,
   assignSquadPlayer,
@@ -20,6 +20,7 @@ import {
   resendVerificationEmail,
   resetSquad,
   setParticipantPassword,
+  updateSquadBudget,
 } from '../lib/api'
 import {
   clearParticipantReady,
@@ -82,6 +83,10 @@ function formatBudget(value: number) {
   return `${value.toLocaleString(undefined)} SVC`
 }
 
+function formatMultiplier(value: number) {
+  return `x${value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: value % 1 === 0 ? 0 : 2 })}`
+}
+
 function compactSlotLabel(label: string) {
   return label.replace('Starting ', '').replace('Reserve ', 'Sub ')
 }
@@ -126,9 +131,12 @@ function playerMatchesSearch(player: TeamPoolPlayer, searchTerm: string) {
   )
 }
 
-function buildSquadSummaryFromSquad(squad: Pick<ParticipantSquad, 'budgetLimit' | 'budgetUsed' | 'budgetRemaining' | 'isLocked' | 'slots'>): ParticipantSquadSummary {
+function buildSquadSummaryFromSquad(
+  squad: Pick<ParticipantSquad, 'budgetLimit' | 'scoreMultiplier' | 'budgetUsed' | 'budgetRemaining' | 'isLocked' | 'slots'>,
+): ParticipantSquadSummary {
   return {
     budgetLimit: squad.budgetLimit,
+    scoreMultiplier: squad.scoreMultiplier,
     budgetUsed: squad.budgetUsed,
     budgetRemaining: squad.budgetRemaining,
     draftedCount: squad.slots.filter((slot) => slot.player).length,
@@ -146,6 +154,7 @@ function buildReadyState(
     email: participant.email,
     leagueType: participant.leagueType,
     budgetLimit: squadSummary?.budgetLimit ?? budgetLimit,
+    scoreMultiplier: squadSummary?.scoreMultiplier ?? getBudgetScoreMultiplier(squadSummary?.budgetLimit ?? budgetLimit),
     budgetRemaining: squadSummary?.budgetRemaining,
     budgetUsed: squadSummary?.budgetUsed,
     draftedCount: squadSummary?.draftedCount,
@@ -246,6 +255,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     })
   }, [draftedPlayerIds, playerSearch, selectedSlot, teamPlayers])
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
+  const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
   const socialSharingUnlocked = draftedCount === 15
   const previousDraftedCountRef = useRef<number | null>(null)
   const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? 'Budget left' : 'Budget'
@@ -502,7 +512,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   }
 
   async function handleReset() {
-    const approved = window.confirm('Reset this competition squad and restore the full budget?')
+    const approved = window.confirm('Reset this competition squad and restore the selected budget?')
     if (!approved) {
       return
     }
@@ -515,6 +525,21 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSelectedSlotKey(getNextDraftSlotKey(response.squad))
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
+    }
+  }
+
+  async function handleBudgetChange(nextBudgetLimit: number) {
+    if (!squad || nextBudgetLimit === squad.budgetLimit) {
+      return
+    }
+
+    setBuilderError(null)
+    try {
+      const response = await updateSquadBudget(nextBudgetLimit)
+      syncReadyStateWithSquad(participant, response.squad)
+      setSquad(response.squad)
+    } catch (error) {
+      setBuilderError(error instanceof Error ? error.message : 'Budget could not be changed.')
     }
   }
 
@@ -676,8 +701,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               Register first. Draft after verification.
             </h2>
             <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
-              Pick rookie or veteran, set your countries, confirm your email, then unlock the protected squad builder with the full{' '}
-              {formatBudget(budgetLimit)} wage budget.
+              Pick rookie or veteran, set your countries, confirm your email, then unlock the protected squad builder and choose your SVC budget.
             </p>
 
             <form onSubmit={handleRegister} className="mt-8 grid gap-5">
@@ -1023,6 +1047,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
                         <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{readyBudgetLabel}</p>
                         <p className="mt-2 text-base font-semibold text-[var(--color-accent)]">{formatBudget(readyBudgetValue)}</p>
+                        <p className="mt-1 text-xs text-[var(--color-muted)]">
+                          {formatMultiplier(dashboardSeed.scoreMultiplier ?? getBudgetScoreMultiplier(dashboardSeed.budgetLimit))}
+                        </p>
                         {dashboardSeed.budgetUsed !== undefined ? (
                           <p className="mt-1 text-xs text-[var(--color-muted)]">
                             {formatBudget(dashboardSeed.budgetUsed)} used
@@ -1197,7 +1224,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 </h2>
                 <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[var(--color-muted)]">
                   Verified as <span className="font-medium text-white">{participant.displayName}</span>. Load one team pool at a time,
-                  build your competition squad once, and stay under the fixed {formatBudget(squad.budgetLimit)} cap.
+                  build your competition squad once, and stay under the selected {formatBudget(squad.budgetLimit)} cap.
+                  Your score multiplier is <span className="font-medium text-white">{formatMultiplier(activeScoreMultiplier)}</span>.
                   {squad.isLocked ? ' This squad is now locked and cannot be edited.' : ''}
                 </p>
               </div>
@@ -1235,6 +1263,10 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3">
                       <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Slots filled</p>
                       <p className="mt-1 text-lg font-semibold tracking-tight text-white">{draftedCount} / 15</p>
+                    </div>
+                    <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3 sm:col-span-2">
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Score multiplier</p>
+                      <p className="mt-1 text-lg font-semibold tracking-tight text-white">{formatMultiplier(activeScoreMultiplier)}</p>
                     </div>
                   </div>
                   {socialSharingUnlocked ? (
@@ -1483,6 +1515,43 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
             </div>
 
             <div className="space-y-4">
+              <div className="glass-panel rounded-[1.15rem] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget choice</p>
+                    <p className="mt-2 text-sm text-[var(--color-muted)]">Pick the cap before locking. Lower budgets earn a stronger score multiplier.</p>
+                  </div>
+                  <span className="mono rounded-full border border-white/10 px-3 py-1 text-xs text-white">{formatMultiplier(activeScoreMultiplier)}</span>
+                </div>
+                <div className="mt-4 grid gap-2">
+                  {budgetOptions.map((option) => {
+                    const isSelected = option.budgetLimit === squad.budgetLimit
+                    const isTooLow = option.budgetLimit < squad.budgetUsed
+                    return (
+                      <button
+                        key={option.budgetLimit}
+                        type="button"
+                        onClick={() => void handleBudgetChange(option.budgetLimit)}
+                        disabled={squad.isLocked || isSelected || isTooLow}
+                        className={[
+                          'grid grid-cols-[1fr_auto] items-center gap-3 rounded-[0.85rem] border px-3 py-2.5 text-left transition hover:-translate-y-[1px] active:scale-[0.98]',
+                          isSelected
+                            ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white'
+                            : 'border-white/8 bg-white/[0.03] text-[var(--color-muted)] hover:border-white/14 hover:text-white',
+                          squad.isLocked || isTooLow ? 'disabled:cursor-not-allowed disabled:opacity-50' : '',
+                        ].join(' ')}
+                      >
+                        <span>
+                          <span className="block text-sm font-semibold">{formatBudget(option.budgetLimit)}</span>
+                          {isTooLow ? <span className="mt-0.5 block text-[11px] text-[var(--color-sand)]">Remove players first</span> : null}
+                        </span>
+                        <span className="mono text-xs text-[var(--color-accent)]">{formatMultiplier(option.scoreMultiplier)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
               <div className="glass-panel rounded-[1.15rem] p-4">
                 <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget monitor</p>
                 <div className="mt-4 flex items-end justify-between gap-4">

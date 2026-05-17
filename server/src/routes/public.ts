@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { STARTING_BUDGET } from '../data/formation.js'
+import { STARTING_BUDGET, budgetOptions } from '../data/formation.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import { defaultLocale, isKnownTeamCode, supportedLocales, teams } from '../data/worldCupSeed.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
@@ -64,6 +64,7 @@ export function createPublicRouter({ configRepository, registrationRepository, f
       defaultLocale,
       scoring,
       budgetLimit: STARTING_BUDGET,
+      budgetOptions,
       teams,
       fixtures: currentFixtures,
       leagues: {

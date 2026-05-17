@@ -7,6 +7,7 @@ export interface ParticipantReadyState {
   email: string
   leagueType: LeagueType
   budgetLimit: number
+  scoreMultiplier?: number
   budgetRemaining?: number
   budgetUsed?: number
   draftedCount?: number
@@ -31,6 +32,7 @@ export function readParticipantReady(): ParticipantReadyState | null {
       typeof parsed.email !== 'string' ||
       (parsed.leagueType !== 'rookie' && parsed.leagueType !== 'veteran') ||
       typeof parsed.budgetLimit !== 'number' ||
+      (parsed.scoreMultiplier !== undefined && typeof parsed.scoreMultiplier !== 'number') ||
       (parsed.budgetRemaining !== undefined && typeof parsed.budgetRemaining !== 'number') ||
       (parsed.budgetUsed !== undefined && typeof parsed.budgetUsed !== 'number') ||
       (parsed.draftedCount !== undefined && typeof parsed.draftedCount !== 'number') ||
@@ -45,6 +47,7 @@ export function readParticipantReady(): ParticipantReadyState | null {
       email: parsed.email,
       leagueType: parsed.leagueType,
       budgetLimit: parsed.budgetLimit,
+      scoreMultiplier: parsed.scoreMultiplier,
       budgetRemaining: parsed.budgetRemaining,
       budgetUsed: parsed.budgetUsed,
       draftedCount: parsed.draftedCount,

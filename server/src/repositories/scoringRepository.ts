@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
+import { STARTING_BUDGET, getScoreMultiplierForBudget } from '../data/formation.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import type {
   FixtureSeed,
@@ -29,6 +30,7 @@ interface ScoreParticipant {
   secondaryTeamCode?: string
   registeredAt: string
   lockedAt: string | null
+  budgetLimit: number
 }
 
 // kickoffDate + kickoffTimeUtc describe a UTC instant. Frontends format into the viewer's
@@ -308,8 +310,9 @@ function calculateParticipantRows(
       }
     }
 
-    const totalScore = baseScore + bonusScore
     const bonusPercent = baseScore > 0 ? (bonusScore / baseScore) * 100 : 0
+    const scoreMultiplier = getScoreMultiplierForBudget(participant.budgetLimit)
+    const totalScore = (baseScore + bonusScore) * scoreMultiplier
 
     return {
       participantId: participant.participantId,
@@ -319,6 +322,7 @@ function calculateParticipantRows(
       secondaryTeamCode: participant.secondaryTeamCode,
       baseScore,
       bonusPercent,
+      scoreMultiplier,
       totalScore,
       breakdown,
       fixtures: sortFixtureDetails([...fixtureDetailsById.values()]),
@@ -452,6 +456,7 @@ export class MemoryScoringRepository implements ScoringRepository {
         secondaryTeamCode: record.secondaryTeamCode,
         registeredAt: record.createdAt ?? record.verifiedAt ?? '9999-12-31T23:59:59.999Z',
         lockedAt: null,
+        budgetLimit: STARTING_BUDGET,
       }))
   }
 
@@ -467,7 +472,7 @@ export class MemoryScoringRepository implements ScoringRepository {
         continue
       }
 
-      lockedParticipants.push({ ...participant, lockedAt: squad.lockedAt })
+      lockedParticipants.push({ ...participant, lockedAt: squad.lockedAt, budgetLimit: squad.budgetLimit })
 
       for (const slot of squad.slots) {
         if (slot.player) {
@@ -620,14 +625,16 @@ export class PostgresScoringRepository implements ScoringRepository {
       secondary_team_code: string | null
       created_at: string
       locked_at: string | null
+      budget_limit: number
     }>(
       `
         SELECT p.participant_id, p.display_name, p.league_type, p.primary_team_code, p.secondary_team_code, p.created_at,
-               s.locked_at
+               s.locked_at, COALESCE(s.budget_limit, $1)::integer AS budget_limit
         FROM participants p
         LEFT JOIN squads s ON s.participant_id = p.participant_id AND s.is_locked = TRUE
         WHERE p.status = 'active'
       `,
+      [STARTING_BUDGET],
     )
     return result.rows.map((row) => ({
       participantId: row.participant_id,
@@ -637,6 +644,7 @@ export class PostgresScoringRepository implements ScoringRepository {
       secondaryTeamCode: row.secondary_team_code ?? undefined,
       registeredAt: row.created_at,
       lockedAt: row.locked_at,
+      budgetLimit: row.budget_limit,
     }))
   }
 
