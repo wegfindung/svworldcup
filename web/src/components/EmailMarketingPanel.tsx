@@ -49,7 +49,7 @@ function formatDate(value?: string) {
   if (!value) {
     return 'not set'
   }
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))

@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS fixtures (
     fixture_id TEXT PRIMARY KEY,
     group_key TEXT NOT NULL,
     kickoff_date DATE NOT NULL,
-    kickoff_time_local TIME NOT NULL,
+    kickoff_time_utc TIME NOT NULL,
     home_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     away_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     source TEXT NOT NULL DEFAULT 'user-first-matchday-seed',
@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS participants (
     reveal_squad BOOLEAN NOT NULL DEFAULT FALSE,
     verification_sent_at TIMESTAMPTZ,
     verified_at TIMESTAMPTZ,
+    soccerverse_linked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -138,6 +139,7 @@ CREATE TABLE IF NOT EXISTS squads (
     budget_limit INTEGER NOT NULL,
     budget_used INTEGER NOT NULL DEFAULT 0,
     is_locked BOOLEAN NOT NULL DEFAULT FALSE,
+    locked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

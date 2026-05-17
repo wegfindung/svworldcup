@@ -1,15 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '../EmptyState'
 import { eventTeams } from '../../data/eventConfig'
-import { fetchAdminParticipants } from '../../lib/api'
-import type { AdminParticipantRecord } from '../../lib/types'
+import { ApiError, adminSetParticipantLeague, fetchAdminParticipants } from '../../lib/api'
+import type { AdminParticipantRecord, LeagueType } from '../../lib/types'
+
+function leagueChangeErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const reason = typeof error.payload?.reason === 'string' ? (error.payload.reason as string) : null
+    switch (reason) {
+      case 'requires_soccerverse_username':
+        return 'Participant needs to link a Soccerverse account before being moved to the Veteran league.'
+      case 'invalid_league':
+        return 'League must be either Rookie or Veteran.'
+      case 'not_found':
+        return 'Participant not found.'
+    }
+    return error.message
+  }
+  return error instanceof Error ? error.message : 'Could not change league.'
+}
 
 function formatAdminDate(value?: string) {
   if (!value) {
     return 'Not set'
   }
 
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(undefined, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -30,6 +46,23 @@ export function AccountsView() {
   const [participants, setParticipants] = useState<AdminParticipantRecord[]>([])
   const [participantsBusy, setParticipantsBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [leagueBusyId, setLeagueBusyId] = useState<string | null>(null)
+  const [leagueError, setLeagueError] = useState<string | null>(null)
+
+  async function handleMoveLeague(participantId: string, target: LeagueType) {
+    setLeagueBusyId(participantId)
+    setLeagueError(null)
+    try {
+      const response = await adminSetParticipantLeague(participantId, target)
+      setParticipants((current) =>
+        current.map((row) => (row.participantId === participantId ? { ...row, ...response.participant } : row)),
+      )
+    } catch (err) {
+      setLeagueError(leagueChangeErrorMessage(err))
+    } finally {
+      setLeagueBusyId(null)
+    }
+  }
 
   const participantCounts = useMemo(
     () =>
@@ -115,6 +148,12 @@ export function AccountsView() {
         </div>
       ) : null}
 
+      {leagueError ? (
+        <div className="mt-5 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+          {leagueError}
+        </div>
+      ) : null}
+
       <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {[
           ['Total', participantCounts.total],
@@ -169,6 +208,26 @@ export function AccountsView() {
                     <p className="mt-3 text-xs text-[var(--color-muted)]">
                       Soccerverse: <span className="text-white">{participant.soccerverseUsername || 'None'}</span>
                     </p>
+                    {participant.leagueType === 'rookie' ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleMoveLeague(participant.participantId, 'veteran')}
+                        disabled={leagueBusyId === participant.participantId || !participant.soccerverseUsername}
+                        title={!participant.soccerverseUsername ? 'Participant must link a Soccerverse account first.' : undefined}
+                        className="mt-3 rounded-full border border-white/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        {leagueBusyId === participant.participantId ? 'Moving…' : 'Move to Veteran'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void handleMoveLeague(participant.participantId, 'rookie')}
+                        disabled={leagueBusyId === participant.participantId}
+                        className="mt-3 rounded-full border border-white/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        {leagueBusyId === participant.participantId ? 'Moving…' : 'Move to Rookie'}
+                      </button>
+                    )}
                   </td>
                   <td className="px-4 py-4 align-top">
                     <p className="text-xs text-white">{teamLabel(participant.primaryTeamCode)}</p>

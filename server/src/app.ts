@@ -121,7 +121,7 @@ export function createApp() {
     authApiLimiter,
     createAuthRouter(registrationRepository, participantSessionRepository, squadRepository, emailMarketingRepository),
   )
-  app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository))
+  app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository, auditRepository))
   app.use(
     '/api/admin',
     adminApiLimiter,

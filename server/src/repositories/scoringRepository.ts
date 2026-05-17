@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
+import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import type {
+  FixtureSeed,
   LeagueType,
   MatchEntryInput,
   MatchEntryRecord,
@@ -22,6 +24,25 @@ interface ScoreParticipant {
   primaryTeamCode: string
   secondaryTeamCode?: string
   registeredAt: string
+  lockedAt: string | null
+}
+
+// kickoffDate + kickoffTimeUtc describe a UTC instant. Frontends format into the viewer's
+// local timezone — this function returns the absolute epoch millis for time math.
+export function fixtureKickoffEpoch(fixture: Pick<FixtureSeed, 'kickoffDate' | 'kickoffTimeUtc'>) {
+  const epoch = new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeUtc}Z`).getTime()
+  return Number.isFinite(epoch) ? epoch : null
+}
+
+function buildKickoffByFixture(fixtures: Array<Pick<FixtureSeed, 'fixtureId' | 'kickoffDate' | 'kickoffTimeUtc'>>) {
+  const map = new Map<string, number>()
+  for (const fixture of fixtures) {
+    const epoch = fixtureKickoffEpoch(fixture)
+    if (epoch !== null) {
+      map.set(fixture.fixtureId, epoch)
+    }
+  }
+  return map
 }
 
 interface ScoreSlot {
@@ -136,6 +157,7 @@ function calculateParticipantRows(
   slots: ScoreSlot[],
   entries: MatchEntryRecord[],
   scoring: ScoringConfig,
+  kickoffByFixture: Map<string, number>,
 ): RankableParticipantRow[] {
   const fixtureEntryScores = buildFixtureEntryScoreMap(entries, scoring)
   const slotsByParticipant = new Map<string, ScoreSlot[]>()
@@ -148,6 +170,8 @@ function calculateParticipantRows(
 
   return participants.map((participant) => {
     const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
+    const lockEpoch = participant.lockedAt ? new Date(participant.lockedAt).getTime() : null
+    const hasLockCutoff = lockEpoch !== null && Number.isFinite(lockEpoch)
 
     let baseScore = 0
     const breakdown = createEmptyBreakdown()
@@ -177,7 +201,13 @@ function calculateParticipantRows(
       }
     }
 
-    for (const entryScores of fixtureEntryScores.values()) {
+    for (const [fixtureId, entryScores] of fixtureEntryScores) {
+      if (hasLockCutoff) {
+        const fixtureKickoff = kickoffByFixture.get(fixtureId)
+        if (fixtureKickoff !== undefined && fixtureKickoff <= (lockEpoch as number)) {
+          continue
+        }
+      }
       const starterSlots = participantSlots.filter((slot) => slot.slotGroup === 'starter')
       const subSlots = participantSlots.filter((slot) => slot.slotGroup === 'sub')
       const starterAbsences = new Map<SlotClass, number>()
@@ -336,6 +366,7 @@ export class MemoryScoringRepository implements ScoringRepository {
         primaryTeamCode: record.primaryTeamCode,
         secondaryTeamCode: record.secondaryTeamCode,
         registeredAt: record.createdAt ?? record.verifiedAt ?? '9999-12-31T23:59:59.999Z',
+        lockedAt: null,
       }))
   }
 
@@ -343,12 +374,15 @@ export class MemoryScoringRepository implements ScoringRepository {
     const scoring = await this.configRepository.getScoringConfig()
     const entries = await this.listMatchEntries()
     const slots: ScoreSlot[] = []
+    const lockedParticipants: ScoreParticipant[] = []
 
     for (const participant of participants) {
       const squad = await this.squadRepository.getOrCreate(participant.participantId)
       if (!squad.isLocked) {
         continue
       }
+
+      lockedParticipants.push({ ...participant, lockedAt: squad.lockedAt })
 
       for (const slot of squad.slots) {
         if (slot.player) {
@@ -363,7 +397,8 @@ export class MemoryScoringRepository implements ScoringRepository {
       }
     }
 
-    return calculateParticipantRows(participants, slots, entries, scoring)
+    const kickoffByFixture = buildKickoffByFixture(seedFixtures)
+    return calculateParticipantRows(lockedParticipants, slots, entries, scoring, kickoffByFixture)
   }
 }
 
@@ -479,12 +514,13 @@ export class PostgresScoringRepository implements ScoringRepository {
 
   private async calculateRows() {
     const scoring = await this.configRepository.getScoringConfig()
-    const [participants, legacySlots, entries] = await Promise.all([
+    const [participants, legacySlots, entries, kickoffByFixture] = await Promise.all([
       this.listParticipants(),
       this.listSlots(),
       this.listMatchEntries(),
+      this.listFixtureKickoffs(),
     ])
-    return calculateParticipantRows(participants, legacySlots, entries, scoring)
+    return calculateParticipantRows(participants, legacySlots, entries, scoring, kickoffByFixture)
   }
 
   private async listParticipants(): Promise<ScoreParticipant[]> {
@@ -495,10 +531,13 @@ export class PostgresScoringRepository implements ScoringRepository {
       primary_team_code: string
       secondary_team_code: string | null
       created_at: string
+      locked_at: string | null
     }>(
       `
-        SELECT p.participant_id, p.display_name, p.league_type, p.primary_team_code, p.secondary_team_code, p.created_at
+        SELECT p.participant_id, p.display_name, p.league_type, p.primary_team_code, p.secondary_team_code, p.created_at,
+               s.locked_at
         FROM participants p
+        LEFT JOIN squads s ON s.participant_id = p.participant_id AND s.is_locked = TRUE
         WHERE p.status = 'active'
       `,
     )
@@ -509,7 +548,23 @@ export class PostgresScoringRepository implements ScoringRepository {
       primaryTeamCode: row.primary_team_code,
       secondaryTeamCode: row.secondary_team_code ?? undefined,
       registeredAt: row.created_at,
+      lockedAt: row.locked_at,
     }))
+  }
+
+  private async listFixtureKickoffs(): Promise<Map<string, number>> {
+    const result = await this.pool.query<{
+      fixture_id: string
+      kickoff_date: string
+      kickoff_time_utc: string
+    }>('SELECT fixture_id, kickoff_date, kickoff_time_utc FROM fixtures')
+    return buildKickoffByFixture(
+      result.rows.map((row) => ({
+        fixtureId: row.fixture_id,
+        kickoffDate: typeof row.kickoff_date === 'string' ? row.kickoff_date : new Date(row.kickoff_date).toISOString().slice(0, 10),
+        kickoffTimeUtc: row.kickoff_time_utc,
+      })),
+    )
   }
 
   private async listSlots(): Promise<ScoreSlot[]> {

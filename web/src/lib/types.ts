@@ -17,7 +17,8 @@ export interface FixtureSeed {
   fixtureId: string
   groupKey: string
   kickoffDate: string
-  kickoffTimeLocal: string
+  /** Kickoff wall-clock time in UTC (HH:MM:SS). Frontends format into the viewer's local timezone. */
+  kickoffTimeUtc: string
   homeTeamCode: string
   awayTeamCode: string
 }
@@ -81,6 +82,7 @@ export interface ParticipantProfile {
   secondaryTeamCode?: string
   status: 'pending_verification' | 'active' | 'locked' | 'withdrawn'
   verifiedAt?: string
+  soccerverseLinkedAt?: string
   hasPassword: boolean
   revealProfile?: boolean
   revealSquad?: boolean
@@ -131,6 +133,7 @@ export interface ParticipantSquad {
   budgetUsed: number
   budgetRemaining: number
   isLocked: boolean
+  lockedAt: string | null
   slots: SquadSlotState[]
 }
 

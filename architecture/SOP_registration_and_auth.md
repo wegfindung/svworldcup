@@ -73,6 +73,49 @@ Allow participants to register securely with verified email, enter the squad bui
  - explicit `load team pool` action before player data is requested
 7. The builder must never rely on client-only validation for cap or slot legality.
 
+## Account Linking and League Membership
+
+A participant's Soccerverse account link and their public league membership are independent
+properties. Linking a Soccerverse account does not change a participant's league. Moving a
+participant between Rookie and Veteran public-table membership is an admin-mediated action.
+
+### Linking a Soccerverse account (participant-initiated)
+
+- A `rookie` participant may, after registration, link a Soccerverse main account via an
+  explicit, authenticated request: `POST /api/participant/link-soccerverse` with
+  `{ soccerverseUsername }`.
+- Linking sets `soccerverse_username` and stamps `soccerverse_linked_at` to the moment of
+  linking. It does **not** modify `league_type`. A Rookie who links stays in the Rookie
+  league and continues competing for the Rookie prize pool.
+- A participant who already has a `soccerverse_username` (whether they registered as Veteran
+  or linked earlier) cannot re-link; the endpoint rejects with `reason: 'already_linked'`.
+- The submitted `soccerverseUsername` is validated identically to initial registration
+  (trim, allowed characters, length, server-side uniqueness across all participants).
+- Uniqueness applies to all participants regardless of league — the same Soccerverse account
+  cannot back two participant rows.
+- The write is audited as `participant.link_soccerverse`.
+
+### Moving a participant between leagues (admin-initiated)
+
+- An admin may move any participant between `rookie` and `veteran` league membership via
+  `POST /api/admin/participants/:id/league` with `{ leagueType }`.
+- The participant must have a `soccerverse_username` set before being moved to `veteran`
+  (you can't be a Veteran without a linked Soccerverse account). The endpoint rejects with
+  `reason: 'requires_soccerverse_username'` if the precondition is not met.
+- Moving has no retroactive effect on existing scoring rows; what changes is the
+  participant's league table membership going forward, and their eligibility for the
+  Soccerverse ownership boost.
+- The write is audited as `admin.participant_league_change` with `detail: {from, to}`.
+
+### Boost eligibility (when the ingester ships)
+
+- The Soccerverse ownership boost applies when **both** conditions hold: `league_type =
+  'veteran'` and `soccerverse_username IS NOT NULL`. A linked Rookie still earns no boost
+  (preserves the SOP rule that the Rookie league has no ownership bonus). To earn the boost
+  the participant must be moved into the Veteran league by an admin.
+- The boost engine (when implemented) reads `soccerverse_linked_at` to scope the
+  share-balance snapshot window for participants who linked late.
+
 ## Admin Auth Rules
 
 - Admins authenticate with email and password.
@@ -99,6 +142,8 @@ Allow participants to register securely with verified email, enter the squad bui
 - `POST /api/participant/squad/assign`
 - `DELETE /api/participant/squad/slots/:slotKey`
 - `POST /api/participant/squad/reset`
+- `POST /api/participant/link-soccerverse`
+- `POST /api/admin/participants/:id/league`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
 - `GET /api/admin/session`

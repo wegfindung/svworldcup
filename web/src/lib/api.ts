@@ -74,6 +74,18 @@ function storeCsrfToken(path: string, payload: unknown) {
   }
 }
 
+export class ApiError extends Error {
+  readonly payload: Record<string, unknown> | null
+  readonly status: number
+
+  constructor(message: string, payload: Record<string, unknown> | null, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.payload = payload
+    this.status = status
+  }
+}
+
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const csrfToken = isUnsafeMethod(init?.method) ? csrfTokenForPath(path) : ''
   const response = await fetch(path, {
@@ -87,8 +99,9 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null
-    throw new Error(payload?.error ?? `Request failed with status ${response.status}`)
+    const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null
+    const serverMessage = typeof payload?.error === 'string' ? payload.error : null
+    throw new ApiError(serverMessage ?? `Request failed with status ${response.status}`, payload, response.status)
   }
 
   if (response.status === 204) {
@@ -324,6 +337,23 @@ export function loginAdmin(email: string, password: string) {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
+}
+
+export function linkSoccerverseAccount(soccerverseUsername: string) {
+  return getJson<{ participant: ParticipantProfile }>('/api/participant/link-soccerverse', {
+    method: 'POST',
+    body: JSON.stringify({ soccerverseUsername }),
+  })
+}
+
+export function adminSetParticipantLeague(participantId: string, leagueType: 'rookie' | 'veteran') {
+  return getJson<{ participant: ParticipantProfile }>(
+    `/api/admin/participants/${encodeURIComponent(participantId)}/league`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ leagueType }),
+    },
+  )
 }
 
 export function revealParticipantProfile(revealSquad: boolean) {

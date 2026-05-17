@@ -1,4 +1,4 @@
-import type { FixtureSeed, LeagueType, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
+import type { LeagueType, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
 
 export const supportedLocales: LocaleCode[] = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'zh']
 
@@ -76,29 +76,3 @@ export const eventTeams: TeamSeed[] = [
   { code: 'CRO', slug: 'croatia', nameEn: 'Croatia', groupKey: 'L' },
 ]
 
-export const eventFixtures: FixtureSeed[] = [
-  { fixtureId: '2026-06-11-a-mex-rsa', groupKey: 'A', kickoffDate: '2026-06-11', kickoffTimeLocal: '21:00:00', homeTeamCode: 'MEX', awayTeamCode: 'RSA' },
-  { fixtureId: '2026-06-12-a-kor-cze', groupKey: 'A', kickoffDate: '2026-06-12', kickoffTimeLocal: '04:00:00', homeTeamCode: 'KOR', awayTeamCode: 'CZE' },
-  { fixtureId: '2026-06-12-b-can-bih', groupKey: 'B', kickoffDate: '2026-06-12', kickoffTimeLocal: '21:00:00', homeTeamCode: 'CAN', awayTeamCode: 'BIH' },
-  { fixtureId: '2026-06-13-c-bra-mar', groupKey: 'C', kickoffDate: '2026-06-13', kickoffTimeLocal: '00:00:00', homeTeamCode: 'BRA', awayTeamCode: 'MAR' },
-  { fixtureId: '2026-06-13-d-usa-par', groupKey: 'D', kickoffDate: '2026-06-13', kickoffTimeLocal: '03:00:00', homeTeamCode: 'USA', awayTeamCode: 'PAR' },
-  { fixtureId: '2026-06-13-b-qat-sui', groupKey: 'B', kickoffDate: '2026-06-13', kickoffTimeLocal: '21:00:00', homeTeamCode: 'QAT', awayTeamCode: 'SUI' },
-  { fixtureId: '2026-06-14-e-civ-ecu', groupKey: 'E', kickoffDate: '2026-06-14', kickoffTimeLocal: '01:00:00', homeTeamCode: 'CIV', awayTeamCode: 'ECU' },
-  { fixtureId: '2026-06-14-c-hai-sco', groupKey: 'C', kickoffDate: '2026-06-14', kickoffTimeLocal: '03:00:00', homeTeamCode: 'HAI', awayTeamCode: 'SCO' },
-  { fixtureId: '2026-06-14-d-aus-tur', groupKey: 'D', kickoffDate: '2026-06-14', kickoffTimeLocal: '06:00:00', homeTeamCode: 'AUS', awayTeamCode: 'TUR' },
-  { fixtureId: '2026-06-14-e-ger-cuw', groupKey: 'E', kickoffDate: '2026-06-14', kickoffTimeLocal: '19:00:00', homeTeamCode: 'GER', awayTeamCode: 'CUW' },
-  { fixtureId: '2026-06-14-f-ned-jpn', groupKey: 'F', kickoffDate: '2026-06-14', kickoffTimeLocal: '22:00:00', homeTeamCode: 'NED', awayTeamCode: 'JPN' },
-  { fixtureId: '2026-06-15-h-ksa-uru', groupKey: 'H', kickoffDate: '2026-06-15', kickoffTimeLocal: '00:00:00', homeTeamCode: 'KSA', awayTeamCode: 'URU' },
-  { fixtureId: '2026-06-15-f-swe-tun', groupKey: 'F', kickoffDate: '2026-06-15', kickoffTimeLocal: '04:00:00', homeTeamCode: 'SWE', awayTeamCode: 'TUN' },
-  { fixtureId: '2026-06-15-h-esp-cpv', groupKey: 'H', kickoffDate: '2026-06-15', kickoffTimeLocal: '18:00:00', homeTeamCode: 'ESP', awayTeamCode: 'CPV' },
-  { fixtureId: '2026-06-15-g-bel-egy', groupKey: 'G', kickoffDate: '2026-06-15', kickoffTimeLocal: '21:00:00', homeTeamCode: 'BEL', awayTeamCode: 'EGY' },
-  { fixtureId: '2026-06-16-i-irq-nor', groupKey: 'I', kickoffDate: '2026-06-16', kickoffTimeLocal: '00:00:00', homeTeamCode: 'IRQ', awayTeamCode: 'NOR' },
-  { fixtureId: '2026-06-16-g-irn-nzl', groupKey: 'G', kickoffDate: '2026-06-16', kickoffTimeLocal: '03:00:00', homeTeamCode: 'IRN', awayTeamCode: 'NZL' },
-  { fixtureId: '2026-06-16-i-fra-sen', groupKey: 'I', kickoffDate: '2026-06-16', kickoffTimeLocal: '21:00:00', homeTeamCode: 'FRA', awayTeamCode: 'SEN' },
-  { fixtureId: '2026-06-17-l-gha-pan', groupKey: 'L', kickoffDate: '2026-06-17', kickoffTimeLocal: '01:00:00', homeTeamCode: 'GHA', awayTeamCode: 'PAN' },
-  { fixtureId: '2026-06-17-j-arg-alg', groupKey: 'J', kickoffDate: '2026-06-17', kickoffTimeLocal: '03:00:00', homeTeamCode: 'ARG', awayTeamCode: 'ALG' },
-  { fixtureId: '2026-06-17-j-aut-jor', groupKey: 'J', kickoffDate: '2026-06-17', kickoffTimeLocal: '06:00:00', homeTeamCode: 'AUT', awayTeamCode: 'JOR' },
-  { fixtureId: '2026-06-17-k-por-cod', groupKey: 'K', kickoffDate: '2026-06-17', kickoffTimeLocal: '19:00:00', homeTeamCode: 'POR', awayTeamCode: 'COD' },
-  { fixtureId: '2026-06-17-l-eng-cro', groupKey: 'L', kickoffDate: '2026-06-17', kickoffTimeLocal: '22:00:00', homeTeamCode: 'ENG', awayTeamCode: 'CRO' },
-  { fixtureId: '2026-06-18-k-uzb-col', groupKey: 'K', kickoffDate: '2026-06-18', kickoffTimeLocal: '04:00:00', homeTeamCode: 'UZB', awayTeamCode: 'COL' },
-]

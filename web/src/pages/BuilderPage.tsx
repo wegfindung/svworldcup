@@ -6,10 +6,12 @@ import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, eventTeams, leagueCopy } from '../data/eventConfig'
 import {
+  ApiError,
   assignSquadPlayer,
   fetchParticipantSession,
   fetchParticipantSquad,
   fetchTeamPlayers,
+  linkSoccerverseAccount,
   logoutParticipant,
   lockSquad,
   revealParticipantProfile,
@@ -77,7 +79,7 @@ function leagueLabel(mode: LeagueType) {
 }
 
 function formatBudget(value: number) {
-  return `${value.toLocaleString('en-US')} SVC`
+  return `${value.toLocaleString(undefined)} SVC`
 }
 
 function compactSlotLabel(label: string) {
@@ -192,6 +194,11 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null)
+
+  const [linkUsername, setLinkUsername] = useState('')
+  const [linkBusy, setLinkBusy] = useState(false)
+  const [linkError, setLinkError] = useState<string | null>(null)
+  const [linkMessage, setLinkMessage] = useState<string | null>(null)
 
   const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
@@ -427,6 +434,46 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       }
     } finally {
       setPasswordBusy(false)
+    }
+  }
+
+  function linkSoccerverseErrorMessage(error: unknown): string {
+    if (error instanceof ApiError) {
+      const reason = typeof error.payload?.reason === 'string' ? (error.payload.reason as string) : null
+      switch (reason) {
+        case 'invalid_username':
+          return 'Soccerverse username must be 1–60 characters.'
+        case 'username_taken':
+          return 'That Soccerverse username is already linked to another participant.'
+        case 'already_linked':
+          return 'A Soccerverse account is already linked to this participant.'
+        case 'not_found':
+          return 'Participant not found. Please sign out and back in.'
+      }
+      return error.message
+    }
+    return error instanceof Error ? error.message : 'Could not link the Soccerverse account.'
+  }
+
+  async function handleLinkSoccerverse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setLinkError(null)
+    setLinkMessage(null)
+    const trimmed = linkUsername.trim()
+    if (!trimmed) {
+      setLinkError('Enter your Soccerverse username.')
+      return
+    }
+    setLinkBusy(true)
+    try {
+      const response = await linkSoccerverseAccount(trimmed)
+      setParticipant((current) => (current ? { ...current, ...response.participant } : response.participant))
+      setLinkUsername('')
+      setLinkMessage('Soccerverse account linked. An admin can move you into the Veteran league when ready.')
+    } catch (error) {
+      setLinkError(linkSoccerverseErrorMessage(error))
+    } finally {
+      setLinkBusy(false)
     }
   }
 
@@ -1004,6 +1051,47 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     </button>
                   </div>
 
+                  {!participant?.soccerverseUsername ? (
+                    <form onSubmit={handleLinkSoccerverse} className="mt-5 grid gap-3 rounded-[1rem] border border-[var(--color-accent)]/15 bg-[var(--color-accent)]/5 p-4">
+                      <div>
+                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">Optional · link your Soccerverse account</p>
+                        <p className="mt-2 text-sm leading-relaxed text-[var(--color-paper)]">
+                          Link your Soccerverse account to keep it associated with this entry. You stay in the {leagueLabel(dashboardSeed.leagueType)} league for now — an admin can move you to the Veteran league later if you want to compete for the bigger prize pool.
+                        </p>
+                      </div>
+                      <label className="grid gap-2">
+                        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Soccerverse username</span>
+                        <input
+                          required
+                          type="text"
+                          maxLength={60}
+                          autoComplete="off"
+                          value={linkUsername}
+                          onChange={(event) => setLinkUsername(event.target.value)}
+                          placeholder="your-soccerverse-name"
+                          className="rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
+                        />
+                      </label>
+                      {linkError ? (
+                        <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+                          {linkError}
+                        </div>
+                      ) : null}
+                      {linkMessage ? (
+                        <div className="rounded-[1.3rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-4 py-3 text-sm text-[var(--color-paper)]">
+                          {linkMessage}
+                        </div>
+                      ) : null}
+                      <button
+                        type="submit"
+                        disabled={linkBusy}
+                        className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                      >
+                        {linkBusy ? 'Linking…' : 'Link Soccerverse account'}
+                      </button>
+                    </form>
+                  ) : null}
+
                   {!dashboardSeed.hasPassword ? (
                     <form onSubmit={handleSetPassword} className="mt-5 grid gap-4">
                       <p className="text-sm leading-relaxed text-[var(--color-muted)]">
@@ -1439,7 +1527,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       <p className="mt-1 text-xs leading-6 text-[var(--color-muted)]">
                         {squad.isLocked
                           ? 'This competition squad is immutable unless an admin unlock flow is added later.'
-                          : 'Fill all 15 slots, then lock the squad for the full competition.'}
+                          : 'Fill all 15 slots, then lock the squad for the full competition. Your squad scores from the next fixture kickoff onward — earlier fixtures don’t count.'}
                       </p>
                     </div>
                     <button

@@ -14,7 +14,7 @@ function formatScore(value: number | undefined) {
     return '0'
   }
 
-  return value.toLocaleString('en-US', {
+  return value.toLocaleString(undefined, {
     maximumFractionDigits: 2,
     minimumFractionDigits: value % 1 === 0 ? 0 : 2,
   })

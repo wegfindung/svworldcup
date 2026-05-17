@@ -88,7 +88,7 @@ export function VerifyPage() {
             <h2 className="section-title max-w-[12ch]">Your squad budget is now unlocked.</h2>
             <p className="max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
               {state.displayName} is verified in the {state.leagueType} league. Your starting wage budget is{' '}
-              <span className="font-semibold text-[var(--color-accent)]">{state.budgetLimit.toLocaleString('en-US')} SVC</span>.
+              <span className="font-semibold text-[var(--color-accent)]">{state.budgetLimit.toLocaleString(undefined)} SVC</span>.
             </p>
             <Link
               to="/builder"
