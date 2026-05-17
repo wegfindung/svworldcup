@@ -115,7 +115,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryVeteranInfluenceSnapshotRepository())
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository())
     await scoring.upsertMatchEntry({
       fixtureId: 'fixture-1',
       playerId: 109,
