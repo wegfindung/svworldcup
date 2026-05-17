@@ -5,7 +5,7 @@ import { MemoryMatchMappingRepository } from '../repositories/matchMappingReposi
 import { MemoryTeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { JsonMatchStatsImporter } from './matchStatsImporter.js'
 
-const BRA_MAR_FIXTURE = '2026-06-13-c-bra-mar'
+const BRA_MAR_FIXTURE = '2026-06-14-c-bra-mar'
 
 function svPlayer(playerId: number, displayName: string): SoccerversePlayerRecord {
   return { playerId, displayName, nationalityCode: 'BRA', rating: 80, clubId: 0, positions: ['MID'] }

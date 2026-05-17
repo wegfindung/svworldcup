@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MemoryConfigRepository } from './configRepository.js'
 import { MemoryRegistrationRepository } from './registrationRepository.js'
-import { MemoryScoringRepository } from './scoringRepository.js'
+import { MemoryScoringRepository, fixtureKickoffEpoch } from './scoringRepository.js'
 import { MemorySquadRepository } from './squadRepository.js'
 import { MemoryTeamPoolRepository } from './teamPoolRepository.js'
 import type { ParticipantSquad, SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
@@ -101,7 +101,11 @@ describe('MemoryScoringRepository late-entry rule', () => {
   }
 
   function fixtureKickoffIso(fixture: { kickoffDate: string; kickoffTimeLocal: string }) {
-    return `${fixture.kickoffDate}T${fixture.kickoffTimeLocal}Z`
+    const epoch = fixtureKickoffEpoch(fixture)
+    if (epoch === null) {
+      throw new Error('fixture is missing a parseable kickoff')
+    }
+    return new Date(epoch).toISOString()
   }
 
   function overrideLockedAt(repo: MemorySquadRepository, participantId: string, lockedAt: string | null) {

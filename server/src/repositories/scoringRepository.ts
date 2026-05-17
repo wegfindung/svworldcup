@@ -27,10 +27,17 @@ interface ScoreParticipant {
   lockedAt: string | null
 }
 
-function fixtureKickoffEpoch(fixture: Pick<FixtureSeed, 'kickoffDate' | 'kickoffTimeLocal'>) {
-  const iso = `${fixture.kickoffDate}T${fixture.kickoffTimeLocal}Z`
-  const timestamp = new Date(iso).getTime()
-  return Number.isFinite(timestamp) ? timestamp : null
+// kickoffTimeLocal is Europe/Stockholm time. The 2026 WC runs entirely within CEST (UTC+2),
+// so the offset is constant for this dataset. If the fixture set ever spans CET (UTC+1), this
+// constant must move to a per-fixture computation.
+const STOCKHOLM_UTC_OFFSET_HOURS = 2
+
+export function fixtureKickoffEpoch(fixture: Pick<FixtureSeed, 'kickoffDate' | 'kickoffTimeLocal'>) {
+  const naive = new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeLocal}Z`).getTime()
+  if (!Number.isFinite(naive)) {
+    return null
+  }
+  return naive - STOCKHOLM_UTC_OFFSET_HOURS * 60 * 60 * 1000
 }
 
 function buildKickoffByFixture(fixtures: Array<Pick<FixtureSeed, 'fixtureId' | 'kickoffDate' | 'kickoffTimeLocal'>>) {
