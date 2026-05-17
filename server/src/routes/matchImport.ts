@@ -8,14 +8,14 @@ import { finalizeSubmission } from '../lib/matchImportSubmission.js'
 import { normalizeName } from '../lib/normalizeName.js'
 import { promoteBatchIfReady } from '../services/matchPromotion.js'
 import { JsonMatchStatsImporter } from '../services/matchStatsImporter.js'
-import { captureVeteranInfluenceSnapshotForFixture } from '../services/veteranInfluenceSnapshot.js'
+import { captureParticipantInfluenceSnapshotForFixture } from '../services/participantInfluenceSnapshot.js'
 import type { MatchImportJson } from '../domain/types.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
-import type { VeteranInfluenceSnapshotRepository } from '../repositories/veteranInfluenceSnapshotRepository.js'
+import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 
 export interface MatchImportRouterDeps {
   matchImportRepository: MatchImportRepository
@@ -23,7 +23,7 @@ export interface MatchImportRouterDeps {
   teamPoolRepository: TeamPoolRepository
   scoringRepository: ScoringRepository
   auditRepository: AuditRepository
-  veteranInfluenceSnapshotRepository: VeteranInfluenceSnapshotRepository
+  participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository
 }
 
 // A fixture's data is submitted as either JSON or CSV/TSV (Fix 12). CSV/TSV is a pure
@@ -241,8 +241,8 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
       // Fire-and-forget: snapshot Veteran ownership boost for this fixture so scoring uses
       // the holdings as of stats-promotion time. Failures here must not block promotion —
       // missing snapshot rows simply yield bonusPercent = 0, matching the SOP fallback.
-      void captureVeteranInfluenceSnapshotForFixture(batch.fixtureId, {
-        snapshotRepository: deps.veteranInfluenceSnapshotRepository,
+      void captureParticipantInfluenceSnapshotForFixture(batch.fixtureId, {
+        snapshotRepository: deps.participantInfluenceSnapshotRepository,
       }).catch((error: Error) => {
         console.warn(`veteran influence snapshot capture failed for fixture=${batch.fixtureId}: ${error.message}`)
       })

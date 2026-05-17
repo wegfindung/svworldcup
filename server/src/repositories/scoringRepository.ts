@@ -19,7 +19,7 @@ import type {
 import type { ConfigRepository } from './configRepository.js'
 import type { RegistrationRepository } from './registrationRepository.js'
 import type { SquadRepository } from './squadRepository.js'
-import type { VeteranInfluenceSnapshotRepository } from './veteranInfluenceSnapshotRepository.js'
+import type { ParticipantInfluenceSnapshotRepository } from './participantInfluenceSnapshotRepository.js'
 
 interface ScoreParticipant {
   participantId: string
@@ -352,7 +352,7 @@ export class MemoryScoringRepository implements ScoringRepository {
     private readonly configRepository: ConfigRepository,
     private readonly registrationRepository: RegistrationRepository,
     private readonly squadRepository: SquadRepository,
-    private readonly snapshotRepository: VeteranInfluenceSnapshotRepository,
+    private readonly snapshotRepository: ParticipantInfluenceSnapshotRepository,
   ) {}
 
   async upsertMatchEntry(input: MatchEntryInput) {
@@ -494,7 +494,7 @@ export class PostgresScoringRepository implements ScoringRepository {
       fixture_id: string
       player_id: string
       bonus_percent: number
-    }>(`SELECT participant_id, fixture_id, player_id, bonus_percent FROM veteran_influence_snapshot`)
+    }>(`SELECT participant_id, fixture_id, player_id, bonus_percent FROM participant_influence_snapshot`)
     const map = new Map<string, number>()
     for (const row of result.rows) {
       map.set(bonusKey(row.participant_id, row.fixture_id, Number(row.player_id)), row.bonus_percent)

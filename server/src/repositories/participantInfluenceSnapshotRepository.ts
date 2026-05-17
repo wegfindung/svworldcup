@@ -1,7 +1,7 @@
 import { Pool } from 'pg'
-import type { VeteranInfluenceSnapshotRecord } from '../domain/types.js'
+import type { ParticipantInfluenceSnapshotRecord } from '../domain/types.js'
 
-export interface VeteranInfluenceSnapshotInput {
+export interface ParticipantInfluenceSnapshotInput {
   participantId: string
   fixtureId: string
   playerId: number
@@ -16,11 +16,11 @@ export interface SnapshotWorkItem {
   playerId: number
 }
 
-export interface VeteranInfluenceSnapshotRepository {
+export interface ParticipantInfluenceSnapshotRepository {
   storageKind: 'memory' | 'postgres'
-  upsert(input: VeteranInfluenceSnapshotInput): Promise<VeteranInfluenceSnapshotRecord>
+  upsert(input: ParticipantInfluenceSnapshotInput): Promise<ParticipantInfluenceSnapshotRecord>
   getBonusPercent(participantId: string, fixtureId: string, playerId: number): Promise<number>
-  listAll(): Promise<VeteranInfluenceSnapshotRecord[]>
+  listAll(): Promise<ParticipantInfluenceSnapshotRecord[]>
   listSnapshotWorkForFixture(fixtureId: string): Promise<SnapshotWorkItem[]>
 }
 
@@ -28,17 +28,17 @@ function snapshotKey(participantId: string, fixtureId: string, playerId: number)
   return `${participantId}|${fixtureId}|${playerId}`
 }
 
-export class MemoryVeteranInfluenceSnapshotRepository implements VeteranInfluenceSnapshotRepository {
+export class MemoryParticipantInfluenceSnapshotRepository implements ParticipantInfluenceSnapshotRepository {
   storageKind: 'memory' = 'memory'
-  private readonly snapshots = new Map<string, VeteranInfluenceSnapshotRecord>()
+  private readonly snapshots = new Map<string, ParticipantInfluenceSnapshotRecord>()
   private readonly workQueueByFixture = new Map<string, SnapshotWorkItem[]>()
 
   setWorkForFixture(fixtureId: string, work: SnapshotWorkItem[]) {
     this.workQueueByFixture.set(fixtureId, work)
   }
 
-  async upsert(input: VeteranInfluenceSnapshotInput): Promise<VeteranInfluenceSnapshotRecord> {
-    const record: VeteranInfluenceSnapshotRecord = {
+  async upsert(input: ParticipantInfluenceSnapshotInput): Promise<ParticipantInfluenceSnapshotRecord> {
+    const record: ParticipantInfluenceSnapshotRecord = {
       participantId: input.participantId,
       fixtureId: input.fixtureId,
       playerId: input.playerId,
@@ -54,7 +54,7 @@ export class MemoryVeteranInfluenceSnapshotRepository implements VeteranInfluenc
     return this.snapshots.get(snapshotKey(participantId, fixtureId, playerId))?.bonusPercent ?? 0
   }
 
-  async listAll(): Promise<VeteranInfluenceSnapshotRecord[]> {
+  async listAll(): Promise<ParticipantInfluenceSnapshotRecord[]> {
     return [...this.snapshots.values()]
   }
 
@@ -63,12 +63,12 @@ export class MemoryVeteranInfluenceSnapshotRepository implements VeteranInfluenc
   }
 }
 
-export class PostgresVeteranInfluenceSnapshotRepository implements VeteranInfluenceSnapshotRepository {
+export class PostgresParticipantInfluenceSnapshotRepository implements ParticipantInfluenceSnapshotRepository {
   storageKind: 'postgres' = 'postgres'
 
   constructor(private readonly pool: Pool) {}
 
-  async upsert(input: VeteranInfluenceSnapshotInput): Promise<VeteranInfluenceSnapshotRecord> {
+  async upsert(input: ParticipantInfluenceSnapshotInput): Promise<ParticipantInfluenceSnapshotRecord> {
     const result = await this.pool.query<{
       participant_id: string
       fixture_id: string
@@ -78,7 +78,7 @@ export class PostgresVeteranInfluenceSnapshotRepository implements VeteranInflue
       snapshot_at: string
     }>(
       `
-        INSERT INTO veteran_influence_snapshot (participant_id, fixture_id, player_id, net_shares, bonus_percent, snapshot_at)
+        INSERT INTO participant_influence_snapshot (participant_id, fixture_id, player_id, net_shares, bonus_percent, snapshot_at)
         VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (participant_id, fixture_id, player_id)
         DO UPDATE SET
@@ -102,14 +102,14 @@ export class PostgresVeteranInfluenceSnapshotRepository implements VeteranInflue
 
   async getBonusPercent(participantId: string, fixtureId: string, playerId: number): Promise<number> {
     const result = await this.pool.query<{ bonus_percent: number }>(
-      `SELECT bonus_percent FROM veteran_influence_snapshot
+      `SELECT bonus_percent FROM participant_influence_snapshot
        WHERE participant_id = $1 AND fixture_id = $2 AND player_id = $3`,
       [participantId, fixtureId, playerId],
     )
     return result.rows[0]?.bonus_percent ?? 0
   }
 
-  async listAll(): Promise<VeteranInfluenceSnapshotRecord[]> {
+  async listAll(): Promise<ParticipantInfluenceSnapshotRecord[]> {
     const result = await this.pool.query<{
       participant_id: string
       fixture_id: string
@@ -119,7 +119,7 @@ export class PostgresVeteranInfluenceSnapshotRepository implements VeteranInflue
       snapshot_at: string
     }>(
       `SELECT participant_id, fixture_id, player_id, net_shares, bonus_percent, snapshot_at
-       FROM veteran_influence_snapshot`,
+       FROM participant_influence_snapshot`,
     )
     return result.rows.map((row) => ({
       participantId: row.participant_id,
@@ -149,7 +149,6 @@ export class PostgresVeteranInfluenceSnapshotRepository implements VeteranInflue
         JOIN squads sq ON sq.squad_id = ss.squad_id AND sq.is_locked = TRUE
         JOIN participants p ON p.participant_id = sq.participant_id
         WHERE ame.fixture_id = $1
-          AND p.league_type = 'veteran'
           AND p.soccerverse_username IS NOT NULL
           AND p.status = 'active'
       `,

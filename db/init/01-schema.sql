@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS admin_match_entries (
 
 ALTER TABLE admin_match_entries ADD COLUMN IF NOT EXISTS rating NUMERIC(3,1);
 
-CREATE TABLE IF NOT EXISTS veteran_influence_snapshot (
+CREATE TABLE IF NOT EXISTS participant_influence_snapshot (
     participant_id UUID NOT NULL REFERENCES participants(participant_id) ON DELETE CASCADE,
     fixture_id TEXT NOT NULL REFERENCES fixtures(fixture_id) ON DELETE CASCADE,
     player_id BIGINT NOT NULL REFERENCES world_cup_players(player_id) ON DELETE CASCADE,
@@ -205,8 +205,8 @@ CREATE TABLE IF NOT EXISTS veteran_influence_snapshot (
     PRIMARY KEY (participant_id, fixture_id, player_id)
 );
 
-CREATE INDEX IF NOT EXISTS veteran_influence_snapshot_by_fixture
-    ON veteran_influence_snapshot (fixture_id);
+CREATE INDEX IF NOT EXISTS participant_influence_snapshot_by_fixture
+    ON participant_influence_snapshot (fixture_id);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     audit_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

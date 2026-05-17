@@ -226,7 +226,7 @@ export interface MatchEntryRecord extends MatchEntryInput {
   entryId: string
 }
 
-export interface VeteranInfluenceSnapshotRecord {
+export interface ParticipantInfluenceSnapshotRecord {
   participantId: string
   fixtureId: string
   playerId: number

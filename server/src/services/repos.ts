@@ -38,10 +38,10 @@ import {
   type EmailMarketingRepository,
 } from '../repositories/emailMarketingRepository.js'
 import {
-  MemoryVeteranInfluenceSnapshotRepository,
-  PostgresVeteranInfluenceSnapshotRepository,
-  type VeteranInfluenceSnapshotRepository,
-} from '../repositories/veteranInfluenceSnapshotRepository.js'
+  MemoryParticipantInfluenceSnapshotRepository,
+  PostgresParticipantInfluenceSnapshotRepository,
+  type ParticipantInfluenceSnapshotRepository,
+} from '../repositories/participantInfluenceSnapshotRepository.js'
 
 let pool: Pool | null = null
 let registrationRepository: RegistrationRepository | null = null
@@ -57,7 +57,7 @@ let matchImportRepository: MatchImportRepository | null = null
 let matchMappingRepository: MatchMappingRepository | null = null
 let auditRepository: AuditRepository | null = null
 let emailMarketingRepository: EmailMarketingRepository | null = null
-let veteranInfluenceSnapshotRepository: VeteranInfluenceSnapshotRepository | null = null
+let participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -172,7 +172,7 @@ export function createScoringRepository(): ScoringRepository {
           createConfigRepository(),
           createRegistrationRepository(),
           createSquadRepository(),
-          createVeteranInfluenceSnapshotRepository(),
+          createParticipantInfluenceSnapshotRepository(),
         )
   }
   return scoringRepository
@@ -216,12 +216,12 @@ export function createEmailMarketingRepository(): EmailMarketingRepository {
   return emailMarketingRepository
 }
 
-export function createVeteranInfluenceSnapshotRepository(): VeteranInfluenceSnapshotRepository {
-  if (!veteranInfluenceSnapshotRepository) {
+export function createParticipantInfluenceSnapshotRepository(): ParticipantInfluenceSnapshotRepository {
+  if (!participantInfluenceSnapshotRepository) {
     const existingPool = getPool()
-    veteranInfluenceSnapshotRepository = existingPool
-      ? new PostgresVeteranInfluenceSnapshotRepository(existingPool)
-      : new MemoryVeteranInfluenceSnapshotRepository()
+    participantInfluenceSnapshotRepository = existingPool
+      ? new PostgresParticipantInfluenceSnapshotRepository(existingPool)
+      : new MemoryParticipantInfluenceSnapshotRepository()
   }
-  return veteranInfluenceSnapshotRepository
+  return participantInfluenceSnapshotRepository
 }

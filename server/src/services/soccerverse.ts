@@ -2,6 +2,74 @@ import { env } from '../config/env.js'
 import type { SoccerversePlayerRecord } from '../domain/types.js'
 import { getCommunityPlayerName } from './communityPack.js'
 
+// Soccerverse's services.soccerverse.com REST API enforces a hard ~3 req/s limit
+// (claude-docs/soccerverse.md "Soccerverse rate limit-läge"). Over-rate returns 429
+// + "STOP SPAMMING" body + dropped CORS headers, and repeated triggering risks an IP
+// ban. We pace at 2.5 req/s (400ms slots) to match the sister project's throttle, with
+// exponential backoff (base 1s, ×2 per retry, capped at 30s, max 4 retries) on 429 —
+// honouring Retry-After when the server sends a numeric one.
+const SV_SLOT_MS = 400
+const SV_MAX_BACKOFF_MS = 30_000
+const SV_MAX_RETRIES = 4
+
+interface SvFetchClock {
+  now(): number
+  sleep(ms: number): Promise<void>
+  fetch: typeof fetch
+}
+
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+let svNextAllowedAt = 0
+let svGate: Promise<void> = Promise.resolve()
+
+async function svPace(clock: SvFetchClock): Promise<void> {
+  // Serialise pacing through svGate so concurrent callers queue in arrival order.
+  const myGate = svGate
+  let release!: () => void
+  svGate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  try {
+    await myGate
+    const now = clock.now()
+    const wait = Math.max(0, svNextAllowedAt - now)
+    if (wait > 0) {
+      await clock.sleep(wait)
+    }
+    svNextAllowedAt = Math.max(clock.now(), svNextAllowedAt) + SV_SLOT_MS
+  } finally {
+    release()
+  }
+}
+
+let svClock: SvFetchClock = {
+  now: () => Date.now(),
+  sleep: defaultSleep,
+  fetch: (input, init) => fetch(input as string, init),
+}
+
+export function _setSvFetchClockForTests(clock: Partial<SvFetchClock>) {
+  svClock = { ...svClock, ...clock }
+  svNextAllowedAt = 0
+  svGate = Promise.resolve()
+}
+
+export async function svFetch(url: string, init?: RequestInit, attempt = 0): Promise<Response> {
+  await svPace(svClock)
+  const response = await svClock.fetch(url, init)
+  if (response.status !== 429) return response
+  if (attempt >= SV_MAX_RETRIES) return response
+  const retryAfterHeader = response.headers.get('retry-after')
+  const retryAfterMs = retryAfterHeader && /^\d+$/.test(retryAfterHeader.trim())
+    ? Math.min(SV_MAX_BACKOFF_MS, Number(retryAfterHeader.trim()) * 1000)
+    : Math.min(SV_MAX_BACKOFF_MS, 1000 * 2 ** attempt)
+  await svClock.sleep(retryAfterMs)
+  return svFetch(url, init, attempt + 1)
+}
+
 function createPlayerImageUrl(playerId: number) {
   return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
 }
@@ -20,7 +88,7 @@ function mapSoccerverseRecord(item: Record<string, unknown>, fallbackName?: stri
 }
 
 async function requestPlayers(searchParams: URLSearchParams) {
-  const response = await fetch(`${env.SV_SERVICES_API_URL}/players/detailed?${searchParams.toString()}`)
+  const response = await svFetch(`${env.SV_SERVICES_API_URL}/players/detailed?${searchParams.toString()}`)
   if (!response.ok) {
     throw new Error(`Soccerverse player request failed with ${response.status}`)
   }
@@ -132,7 +200,7 @@ export async function fetchPlayerShareTrades(
 
     let payload: ShareTradeHistoryPayload
     try {
-      const response = await fetch(`${env.SV_SERVICES_API_URL}/share_trade_history?${searchParams.toString()}`)
+      const response = await svFetch(`${env.SV_SERVICES_API_URL}/share_trade_history?${searchParams.toString()}`)
       if (!response.ok) {
         console.warn(`share_trade_history ${response.status} name=${name} player_id=${playerId} page=${page}`)
         return collected

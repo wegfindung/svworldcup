@@ -107,14 +107,17 @@ participant between Rookie and Veteran public-table membership is an admin-media
   Soccerverse ownership boost.
 - The write is audited as `admin.participant_league_change` with `detail: {from, to}`.
 
-### Boost eligibility (when the ingester ships)
+### Boost eligibility
 
-- The Soccerverse ownership boost applies when **both** conditions hold: `league_type =
-  'veteran'` and `soccerverse_username IS NOT NULL`. A linked Rookie still earns no boost
-  (preserves the SOP rule that the Rookie league has no ownership bonus). To earn the boost
-  the participant must be moved into the Veteran league by an admin.
-- The boost engine (when implemented) reads `soccerverse_linked_at` to scope the
-  share-balance snapshot window for participants who linked late.
+- The Soccerverse ownership boost applies to **any participant with `soccerverse_username
+  IS NOT NULL`**, regardless of `league_type`. A linked Rookie earns the boost on the same
+  terms as a Veteran; only their leaderboard placement differs (Rookie table vs Veteran
+  table). League membership and boost eligibility are now independent concerns.
+- An unlinked Rookie earns no boost (no `soccerverse_username` → no snapshot row → 
+  `bonusPercent = 0`).
+- The boost engine reads `MAX(created_at, soccerverse_linked_at)` to scope the trade-history
+  window for participants who linked late. See `SOP_scoring_and_leagues.md` "Ownership
+  boost" for the full computation.
 
 ## Admin Auth Rules
 

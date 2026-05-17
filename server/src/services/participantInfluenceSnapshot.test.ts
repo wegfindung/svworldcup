@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { MemoryVeteranInfluenceSnapshotRepository } from '../repositories/veteranInfluenceSnapshotRepository.js'
+import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 import {
   bonusPercentFromNet,
-  captureVeteranInfluenceSnapshotForFixture,
+  captureParticipantInfluenceSnapshotForFixture,
   computeNetInfluence,
-} from './veteranInfluenceSnapshot.js'
+} from './participantInfluenceSnapshot.js'
 
 describe('computeNetInfluence', () => {
   it('sums buys when the name is the buyer', () => {
@@ -56,9 +56,9 @@ describe('bonusPercentFromNet', () => {
   })
 })
 
-describe('captureVeteranInfluenceSnapshotForFixture', () => {
+describe('captureParticipantInfluenceSnapshotForFixture', () => {
   it('upserts one snapshot per work item with computed bonus', async () => {
-    const repo = new MemoryVeteranInfluenceSnapshotRepository()
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
     repo.setWorkForFixture('fixture-1', [
       { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, playerId: 101 },
       { participantId: 'p-2', soccerverseUsername: 'bob', cutoffUnix: 1000, playerId: 101 },
@@ -71,7 +71,7 @@ describe('captureVeteranInfluenceSnapshotForFixture', () => {
       return [{ unixTime: 2000, buyer: 'bob', seller: 'seller', num: 5 }]
     })
 
-    const result = await captureVeteranInfluenceSnapshotForFixture('fixture-1', {
+    const result = await captureParticipantInfluenceSnapshotForFixture('fixture-1', {
       snapshotRepository: repo,
       fetchTrades,
     })
@@ -82,9 +82,9 @@ describe('captureVeteranInfluenceSnapshotForFixture', () => {
   })
 
   it('returns captured=0 when there is no work for the fixture', async () => {
-    const repo = new MemoryVeteranInfluenceSnapshotRepository()
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
     const fetchTrades = vi.fn()
-    const result = await captureVeteranInfluenceSnapshotForFixture('fixture-empty', {
+    const result = await captureParticipantInfluenceSnapshotForFixture('fixture-empty', {
       snapshotRepository: repo,
       fetchTrades: fetchTrades as never,
     })
@@ -93,7 +93,7 @@ describe('captureVeteranInfluenceSnapshotForFixture', () => {
   })
 
   it('continues past a single failing fetch and counts the rest', async () => {
-    const repo = new MemoryVeteranInfluenceSnapshotRepository()
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
     repo.setWorkForFixture('fixture-1', [
       { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, playerId: 101 },
       { participantId: 'p-2', soccerverseUsername: 'bob', cutoffUnix: 1000, playerId: 101 },
@@ -106,7 +106,7 @@ describe('captureVeteranInfluenceSnapshotForFixture', () => {
       return [{ unixTime: 2000, buyer: 'bob', seller: 'seller', num: 20 }]
     })
 
-    const result = await captureVeteranInfluenceSnapshotForFixture('fixture-1', {
+    const result = await captureParticipantInfluenceSnapshotForFixture('fixture-1', {
       snapshotRepository: repo,
       fetchTrades,
     })

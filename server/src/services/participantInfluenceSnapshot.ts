@@ -1,5 +1,5 @@
 import { fetchPlayerShareTrades, type ShareTradeEvent } from './soccerverse.js'
-import type { VeteranInfluenceSnapshotRepository } from '../repositories/veteranInfluenceSnapshotRepository.js'
+import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 
 export function computeNetInfluence(trades: ShareTradeEvent[], name: string): number {
   let net = 0
@@ -14,14 +14,14 @@ export function bonusPercentFromNet(netShares: number): number {
   return Math.min(10, Math.max(0, Math.floor(netShares / 10)))
 }
 
-export interface VeteranInfluenceSnapshotDeps {
-  snapshotRepository: VeteranInfluenceSnapshotRepository
+export interface ParticipantInfluenceSnapshotDeps {
+  snapshotRepository: ParticipantInfluenceSnapshotRepository
   fetchTrades?: typeof fetchPlayerShareTrades
 }
 
-export async function captureVeteranInfluenceSnapshotForFixture(
+export async function captureParticipantInfluenceSnapshotForFixture(
   fixtureId: string,
-  deps: VeteranInfluenceSnapshotDeps,
+  deps: ParticipantInfluenceSnapshotDeps,
 ): Promise<{ captured: number }> {
   const work = await deps.snapshotRepository.listSnapshotWorkForFixture(fixtureId)
   if (work.length === 0) {
@@ -46,7 +46,7 @@ export async function captureVeteranInfluenceSnapshotForFixture(
       captured += 1
     } catch (error) {
       console.warn(
-        `veteran influence snapshot failed participant=${item.participantId} fixture=${fixtureId} player=${item.playerId}: ${(error as Error).message}`,
+        `participant influence snapshot failed participant=${item.participantId} fixture=${fixtureId} player=${item.playerId}: ${(error as Error).message}`,
       )
     }
   }

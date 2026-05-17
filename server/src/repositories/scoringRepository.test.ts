@@ -4,7 +4,7 @@ import { MemoryRegistrationRepository } from './registrationRepository.js'
 import { MemoryScoringRepository, fixtureKickoffEpoch } from './scoringRepository.js'
 import { MemorySquadRepository } from './squadRepository.js'
 import { MemoryTeamPoolRepository } from './teamPoolRepository.js'
-import { MemoryVeteranInfluenceSnapshotRepository } from './veteranInfluenceSnapshotRepository.js'
+import { MemoryParticipantInfluenceSnapshotRepository } from './participantInfluenceSnapshotRepository.js'
 import type { ParticipantSquad, SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 
@@ -67,7 +67,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryVeteranInfluenceSnapshotRepository())
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository())
     await scoring.upsertMatchEntry({
       fixtureId: 'fixture-1',
       playerId: 101,
@@ -220,7 +220,7 @@ describe('MemoryScoringRepository late-entry rule', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryVeteranInfluenceSnapshotRepository())
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository())
     return { participantId: created.record.participantId, squads, scoring }
   }
 
@@ -284,7 +284,7 @@ describe('MemoryScoringRepository late-entry rule', () => {
   })
 })
 
-describe('MemoryScoringRepository veteran ownership boost', () => {
+describe('MemoryScoringRepository ownership boost', () => {
   async function buildVeteranScenario() {
     const pools = new MemoryTeamPoolRepository()
     await pools.replaceTeamPlayers(
@@ -310,7 +310,7 @@ describe('MemoryScoringRepository veteran ownership boost', () => {
     }
     await squads.lockSquad(created.record.participantId)
 
-    const snapshots = new MemoryVeteranInfluenceSnapshotRepository()
+    const snapshots = new MemoryParticipantInfluenceSnapshotRepository()
     const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, snapshots)
 
     return { participantId: created.record.participantId, scoring, snapshots }
@@ -395,5 +395,64 @@ describe('MemoryScoringRepository veteran ownership boost', () => {
     // base = 7 + 7 = 14; boost = 7 * 0.05 = 0.35; total = 14.35
     expect(board[0].baseScore).toBe(14)
     expect(board[0].totalScore).toBeCloseTo(14.35, 5)
+  })
+
+  it('applies the boost to a linked Rookie on the Rookie leaderboard (boost is not league-gated)', async () => {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      {
+        email: 'rookie@example.com',
+        displayName: 'Linked Rookie',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+        // No soccerverseUsername at registration — registers as Rookie.
+      },
+      'rookie-token',
+    )
+    await registrations.verifyByPlainToken('rookie-token')
+    // Link a Soccerverse account post-registration; linking does NOT move the
+    // participant into the Veteran league. They stay on the Rookie leaderboard.
+    await registrations.linkSoccerverseAccount(created.record.participantId, 'rookie-sv')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const snapshots = new MemoryParticipantInfluenceSnapshotRepository()
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, snapshots)
+
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fx-rookie-boost',
+      playerId: 101,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+    await snapshots.upsert({
+      participantId: created.record.participantId,
+      fixtureId: 'fx-rookie-boost',
+      playerId: 101,
+      netShares: 80,
+      bonusPercent: 8,
+    })
+
+    const rookieBoard = await scoring.getLeagueLeaderboard('rookie')
+    expect(rookieBoard).toHaveLength(1)
+    expect(rookieBoard[0].leagueType).toBe('rookie')
+    expect(rookieBoard[0].baseScore).toBe(7)
+    expect(rookieBoard[0].totalScore).toBeCloseTo(7.56, 5)
+    expect(rookieBoard[0].bonusPercent).toBeCloseTo(8, 5)
+
+    const veteranBoard = await scoring.getLeagueLeaderboard('veteran')
+    expect(veteranBoard).toHaveLength(0)
   })
 })
