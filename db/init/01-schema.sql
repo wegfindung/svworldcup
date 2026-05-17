@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS participants (
     reveal_squad BOOLEAN NOT NULL DEFAULT FALSE,
     verification_sent_at TIMESTAMPTZ,
     verified_at TIMESTAMPTZ,
+    veteran_since TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

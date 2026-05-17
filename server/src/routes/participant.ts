@@ -5,8 +5,13 @@ import { participantSessionCookieName } from '../config/auth.js'
 import { createRequireCookieCsrf } from '../lib/csrf.js'
 import { parseShareSnapshotPayload } from '../lib/sharePayload.js'
 import { createSignedShareSnapshot } from '../lib/shareSignature.js'
+import type { AuditRepository } from '../repositories/auditRepository.js'
 import type { ParticipantSessionRepository } from '../repositories/participantSessionRepository.js'
-import { publicProfileSlug, type RegistrationRepository } from '../repositories/registrationRepository.js'
+import {
+  RookieUpgradeError,
+  publicProfileSlug,
+  type RegistrationRepository,
+} from '../repositories/registrationRepository.js'
 import { SquadValidationError, type SquadRepository } from '../repositories/squadRepository.js'
 
 const assignPlayerSchema = z.object({
@@ -14,10 +19,15 @@ const assignPlayerSchema = z.object({
   playerId: z.coerce.number().int().positive(),
 })
 
+const linkSoccerverseSchema = z.object({
+  soccerverseUsername: z.string().trim().min(1).max(60),
+})
+
 export function createParticipantRouter(
   participantSessionRepository: ParticipantSessionRepository,
   squadRepository: SquadRepository,
   registrationRepository: RegistrationRepository,
+  auditRepository: AuditRepository,
 ) {
   const router = Router()
   const requireParticipant = createRequireParticipant(participantSessionRepository)
@@ -81,6 +91,29 @@ export function createParticipantRouter(
     } catch (error) {
       if (error instanceof SquadValidationError) {
         return res.status(422).json({ error: error.message })
+      }
+      throw error
+    }
+  })
+
+  router.post('/link-soccerverse', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const parsed = linkSoccerverseSchema.parse(req.body)
+
+    try {
+      const profile = await registrationRepository.upgradeRookieToVeteran(participantId, parsed.soccerverseUsername)
+      await auditRepository.record({
+        actorEmail: profile.email,
+        actionKey: 'participant.upgrade_to_veteran',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: { soccerverseUsername: profile.soccerverseUsername },
+      })
+      res.json({ participant: profile })
+    } catch (error) {
+      if (error instanceof RookieUpgradeError) {
+        const status = error.reason === 'invalid_username' ? 422 : error.reason === 'not_found' ? 404 : 409
+        return res.status(status).json({ error: error.message, reason: error.reason })
       }
       throw error
     }

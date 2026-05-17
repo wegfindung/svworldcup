@@ -19,6 +19,15 @@ export class ActiveRegistrationExistsError extends Error {
   }
 }
 
+export type RookieUpgradeFailureReason = 'not_rookie' | 'username_taken' | 'invalid_username' | 'not_found'
+
+export class RookieUpgradeError extends Error {
+  constructor(public readonly reason: RookieUpgradeFailureReason, message: string) {
+    super(message)
+    this.name = 'RookieUpgradeError'
+  }
+}
+
 export interface RegistrationRepository {
   storageKind: 'memory' | 'postgres'
   createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult>
@@ -26,6 +35,7 @@ export interface RegistrationRepository {
   resendVerification(email: string, plainToken: string): Promise<RegistrationCreationResult | null>
   authenticateWithPassword(email: string, password: string): Promise<ParticipantProfile | null>
   setPassword(participantId: string, passwordHash: string): Promise<ParticipantProfile | null>
+  upgradeRookieToVeteran(participantId: string, soccerverseUsername: string): Promise<ParticipantProfile>
   createPasswordReset(email: string, plainToken: string): Promise<ParticipantProfile | null>
   resetPasswordByPlainToken(plainToken: string, passwordHash: string): Promise<ParticipantProfile | null>
   getByParticipantId(participantId: string): Promise<ParticipantProfile | null>
@@ -53,6 +63,7 @@ interface ParticipantRow {
   secondary_team_code: string | null
   status: RegistrationRecord['status']
   verified_at: string | null
+  veteran_since: string | null
   has_password: boolean
   reveal_profile?: boolean
   reveal_squad?: boolean
@@ -114,6 +125,7 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     secondaryTeamCode: record.secondaryTeamCode,
     status: record.status,
     verifiedAt: record.verifiedAt,
+    veteranSince: record.veteranSince,
     hasPassword: record.hasPassword,
     revealProfile: record.revealProfile,
     revealSquad: record.revealSquad,
@@ -135,6 +147,7 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     secondaryTeamCode: row.secondary_team_code ?? undefined,
     status: row.status,
     verifiedAt: row.verified_at ?? undefined,
+    veteranSince: row.veteran_since ?? undefined,
     hasPassword: row.has_password,
     revealProfile: row.reveal_profile ?? false,
     revealSquad: row.reveal_squad ?? false,
@@ -268,6 +281,37 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
 
     this.passwordHashes.set(participantId, passwordHash)
     const nextRecord = this.attachPasswordState(record)
+    this.byEmail.set(nextRecord.email, nextRecord)
+    return toParticipantProfile(nextRecord)
+  }
+
+  async upgradeRookieToVeteran(participantId: string, soccerverseUsername: string) {
+    const trimmed = soccerverseUsername.trim()
+    if (!trimmed || trimmed.length > 60) {
+      throw new RookieUpgradeError('invalid_username', 'Soccerverse username must be 1–60 characters.')
+    }
+
+    const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
+    if (!record) {
+      throw new RookieUpgradeError('not_found', 'Participant not found.')
+    }
+    if (record.leagueType !== 'rookie') {
+      throw new RookieUpgradeError('not_rookie', 'Account is already a Veteran.')
+    }
+
+    const duplicate = [...this.byEmail.values()].some(
+      (item) => item.participantId !== participantId && item.soccerverseUsername?.trim().toLowerCase() === trimmed.toLowerCase(),
+    )
+    if (duplicate) {
+      throw new RookieUpgradeError('username_taken', 'Soccerverse username is already linked to another participant.')
+    }
+
+    const nextRecord: RegistrationRecord = this.attachPasswordState({
+      ...record,
+      soccerverseUsername: trimmed,
+      leagueType: 'veteran',
+      veteranSince: new Date().toISOString(),
+    })
     this.byEmail.set(nextRecord.email, nextRecord)
     return toParticipantProfile(nextRecord)
   }
@@ -527,6 +571,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             secondary_team_code,
             status,
             verified_at,
+            veteran_since,
             (password_hash IS NOT NULL) AS has_password
         `,
         [
@@ -573,6 +618,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           verificationTokenHash: tokenHash,
           verificationTokenExpiresAt: expiresAt,
           verifiedAt: participant.verified_at ?? undefined,
+          veteranSince: participant.veteran_since ?? undefined,
           hasPassword: participant.has_password,
         },
       }
@@ -610,6 +656,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.secondary_team_code,
             p.status,
             p.verified_at,
+            p.veteran_since,
             (p.password_hash IS NOT NULL) AS has_password,
             vt.expires_at
           FROM verification_tokens vt
@@ -654,6 +701,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
               secondary_team_code,
               status,
               verified_at,
+              veteran_since,
               (password_hash IS NOT NULL) AS has_password
           `,
           [tokenRow.participant_id],
@@ -695,6 +743,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             secondary_team_code,
             status,
             verified_at,
+            veteran_since,
             (password_hash IS NOT NULL) AS has_password
           FROM participants
           WHERE email = $1
@@ -742,6 +791,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           verificationTokenHash: tokenHash,
           verificationTokenExpiresAt: expiresAt,
           verifiedAt: participant.verified_at ?? undefined,
+          veteranSince: participant.veteran_since ?? undefined,
           hasPassword: participant.has_password,
         },
       }
@@ -774,6 +824,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           password_hash,
           (password_hash IS NOT NULL) AS has_password
         FROM participants
@@ -811,12 +862,91 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           (password_hash IS NOT NULL) AS has_password
       `,
       [participantId, passwordHash],
     )
     const row = result.rows[0]
     return row ? mapParticipantRow(row) : null
+  }
+
+  async upgradeRookieToVeteran(participantId: string, soccerverseUsername: string) {
+    const trimmed = soccerverseUsername.trim()
+    if (!trimmed || trimmed.length > 60) {
+      throw new RookieUpgradeError('invalid_username', 'Soccerverse username must be 1–60 characters.')
+    }
+
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      const existing = await client.query<{ league_type: LeagueType }>(
+        'SELECT league_type FROM participants WHERE participant_id = $1 FOR UPDATE',
+        [participantId],
+      )
+      const target = existing.rows[0]
+      if (!target) {
+        await client.query('ROLLBACK')
+        throw new RookieUpgradeError('not_found', 'Participant not found.')
+      }
+      if (target.league_type !== 'rookie') {
+        await client.query('ROLLBACK')
+        throw new RookieUpgradeError('not_rookie', 'Account is already a Veteran.')
+      }
+
+      const duplicate = await client.query<{ participant_id: string }>(
+        `
+          SELECT participant_id
+          FROM participants
+          WHERE LOWER(soccerverse_username) = LOWER($2)
+            AND participant_id <> $1
+          LIMIT 1
+        `,
+        [participantId, trimmed],
+      )
+      if (duplicate.rows[0]) {
+        await client.query('ROLLBACK')
+        throw new RookieUpgradeError('username_taken', 'Soccerverse username is already linked to another participant.')
+      }
+
+      const updated = await client.query<ParticipantRow>(
+        `
+          UPDATE participants
+          SET soccerverse_username = $2,
+              league_type = 'veteran',
+              veteran_since = NOW(),
+              updated_at = NOW()
+          WHERE participant_id = $1
+          RETURNING
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            veteran_since,
+            (password_hash IS NOT NULL) AS has_password
+        `,
+        [participantId, trimmed],
+      )
+      await client.query('COMMIT')
+      return mapParticipantRow(updated.rows[0])
+    } catch (error) {
+      if (!(error instanceof RookieUpgradeError)) {
+        await client.query('ROLLBACK')
+      }
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   async createPasswordReset(email: string, plainToken: string) {
@@ -843,6 +973,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             secondary_team_code,
             status,
             verified_at,
+            veteran_since,
             (password_hash IS NOT NULL) AS has_password
           FROM participants
           WHERE email = $1
@@ -906,6 +1037,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.secondary_team_code,
             p.status,
             p.verified_at,
+            p.veteran_since,
             (p.password_hash IS NOT NULL) AS has_password,
             prt.expires_at
           FROM participant_password_reset_tokens prt
@@ -946,6 +1078,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             secondary_team_code,
             status,
             verified_at,
+            veteran_since,
             (password_hash IS NOT NULL) AS has_password
         `,
         [tokenRow.participant_id, passwordHash],
@@ -977,6 +1110,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           (password_hash IS NOT NULL) AS has_password,
           reveal_profile,
           reveal_squad
@@ -1006,6 +1140,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           (password_hash IS NOT NULL) AS has_password,
           reveal_profile,
           reveal_squad
@@ -1040,6 +1175,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           (password_hash IS NOT NULL) AS has_password,
           reveal_profile,
           reveal_squad
@@ -1067,6 +1203,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           (password_hash IS NOT NULL) AS has_password,
           reveal_profile,
           reveal_squad
@@ -1110,6 +1247,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           secondary_team_code,
           status,
           verified_at,
+          veteran_since,
           verification_sent_at,
           password_set_at,
           created_at,

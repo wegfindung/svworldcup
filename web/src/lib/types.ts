@@ -81,6 +81,7 @@ export interface ParticipantProfile {
   secondaryTeamCode?: string
   status: 'pending_verification' | 'active' | 'locked' | 'withdrawn'
   verifiedAt?: string
+  veteranSince?: string
   hasPassword: boolean
   revealProfile?: boolean
   revealSquad?: boolean

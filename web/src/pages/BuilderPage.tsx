@@ -10,6 +10,7 @@ import {
   fetchParticipantSession,
   fetchParticipantSquad,
   fetchTeamPlayers,
+  linkSoccerverseAccount,
   logoutParticipant,
   lockSquad,
   revealParticipantProfile,
@@ -192,6 +193,11 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null)
+
+  const [linkUsername, setLinkUsername] = useState('')
+  const [linkBusy, setLinkBusy] = useState(false)
+  const [linkError, setLinkError] = useState<string | null>(null)
+  const [linkMessage, setLinkMessage] = useState<string | null>(null)
 
   const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
@@ -427,6 +433,29 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       }
     } finally {
       setPasswordBusy(false)
+    }
+  }
+
+  async function handleLinkSoccerverse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setLinkError(null)
+    setLinkMessage(null)
+    const trimmed = linkUsername.trim()
+    if (!trimmed) {
+      setLinkError('Enter your Soccerverse username.')
+      return
+    }
+    setLinkBusy(true)
+    try {
+      const response = await linkSoccerverseAccount(trimmed)
+      setParticipant((current) => (current ? { ...current, ...response.participant } : response.participant))
+      setDashboardSeed((current) => (current ? { ...current, leagueType: response.participant.leagueType } : current))
+      setLinkUsername('')
+      setLinkMessage('Account linked — you are now a Veteran. The ownership boost will activate when the snapshot lands.')
+    } catch (error) {
+      setLinkError(error instanceof Error ? error.message : 'Could not link the Soccerverse account.')
+    } finally {
+      setLinkBusy(false)
     }
   }
 
@@ -1003,6 +1032,47 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       Sign out
                     </button>
                   </div>
+
+                  {dashboardSeed.leagueType === 'rookie' ? (
+                    <form onSubmit={handleLinkSoccerverse} className="mt-5 grid gap-3 rounded-[1rem] border border-[var(--color-accent)]/15 bg-[var(--color-accent)]/5 p-4">
+                      <div>
+                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">Optional · become a Veteran</p>
+                        <p className="mt-2 text-sm leading-relaxed text-[var(--color-paper)]">
+                          Link a Soccerverse account to move to the Veteran league. The ownership boost (+1% per 10 influence on a drafted player, capped at 10%) activates when the next snapshot lands.
+                        </p>
+                      </div>
+                      <label className="grid gap-2">
+                        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Soccerverse username</span>
+                        <input
+                          required
+                          type="text"
+                          maxLength={60}
+                          autoComplete="off"
+                          value={linkUsername}
+                          onChange={(event) => setLinkUsername(event.target.value)}
+                          placeholder="your-soccerverse-name"
+                          className="rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
+                        />
+                      </label>
+                      {linkError ? (
+                        <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+                          {linkError}
+                        </div>
+                      ) : null}
+                      {linkMessage ? (
+                        <div className="rounded-[1.3rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-4 py-3 text-sm text-[var(--color-paper)]">
+                          {linkMessage}
+                        </div>
+                      ) : null}
+                      <button
+                        type="submit"
+                        disabled={linkBusy}
+                        className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                      >
+                        {linkBusy ? 'Linking…' : 'Link Soccerverse account'}
+                      </button>
+                    </form>
+                  ) : null}
 
                   {!dashboardSeed.hasPassword ? (
                     <form onSubmit={handleSetPassword} className="mt-5 grid gap-4">

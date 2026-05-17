@@ -326,6 +326,13 @@ export function loginAdmin(email: string, password: string) {
   })
 }
 
+export function linkSoccerverseAccount(soccerverseUsername: string) {
+  return getJson<{ participant: ParticipantProfile }>('/api/participant/link-soccerverse', {
+    method: 'POST',
+    body: JSON.stringify({ soccerverseUsername }),
+  })
+}
+
 export function revealParticipantProfile(revealSquad: boolean) {
   return getJson<{ participant: ParticipantProfile; publicProfileUrl: string }>('/api/participant/reveal', {
     method: 'POST',

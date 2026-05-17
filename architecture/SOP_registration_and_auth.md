@@ -73,6 +73,18 @@ Allow participants to register securely with verified email, enter the squad bui
  - explicit `load team pool` action before player data is requested
 7. The builder must never rely on client-only validation for cap or slot legality.
 
+## Account Upgrade — Rookie to Veteran
+
+- A `rookie` participant may, after registration, link a Soccerverse main account and become `veteran`.
+- The upgrade is initiated by an explicit, authenticated request from the participant: `POST /api/participant/link-soccerverse` with `{ soccerverseUsername }`.
+- The upgrade sets `soccerverse_username`, flips `league_type` from `rookie` to `veteran`, and stamps `veteran_since` to the moment of upgrade.
+- `veteran` participants cannot downgrade to `rookie`. The endpoint rejects already-Veteran callers.
+- The submitted `soccerverseUsername` is validated identically to initial registration (trim, allowed characters, length, server-side uniqueness across active participants).
+- Uniqueness applies to all participants, not just Veterans — the same Soccerverse account cannot back two participant rows.
+- The upgrade has no retroactive effect on existing scoring rows; what changes is the participant's league table membership and their future eligibility for the Soccerverse ownership boost.
+- The ownership boost engine (when implemented) reads `veteran_since` so that share-balance snapshots taken between announcement and tournament kickoff can be restricted to the window after upgrade if the future boost rule requires it. NULL `veteran_since` indicates a participant who registered as Veteran from the start.
+- The upgrade write is audited (`participant.upgrade_to_veteran`).
+
 ## Admin Auth Rules
 
 - Admins authenticate with email and password.
@@ -99,6 +111,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - `POST /api/participant/squad/assign`
 - `DELETE /api/participant/squad/slots/:slotKey`
 - `POST /api/participant/squad/reset`
+- `POST /api/participant/link-soccerverse`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
 - `GET /api/admin/session`
