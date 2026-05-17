@@ -33,7 +33,7 @@ export async function captureParticipantInfluenceSnapshotForFixture(
 
   for (const item of work) {
     try {
-      const trades = await fetchTrades(item.soccerverseUsername, item.playerId, item.cutoffUnix)
+      const trades = await fetchTrades(item.soccerverseUsername, item.playerId, item.cutoffUnix, item.kickoffUnix)
       const netShares = computeNetInfluence(trades, item.soccerverseUsername)
       const bonusPercent = bonusPercentFromNet(netShares)
       await deps.snapshotRepository.upsert({

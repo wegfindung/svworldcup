@@ -13,6 +13,7 @@ export interface SnapshotWorkItem {
   participantId: string
   soccerverseUsername: string
   cutoffUnix: number
+  kickoffUnix: number
   playerId: number
 }
 
@@ -136,6 +137,7 @@ export class PostgresParticipantInfluenceSnapshotRepository implements Participa
       participant_id: string
       soccerverse_username: string
       cutoff_unix: string
+      kickoff_unix: string
       player_id: string
     }>(
       `
@@ -143,8 +145,10 @@ export class PostgresParticipantInfluenceSnapshotRepository implements Participa
           p.participant_id,
           p.soccerverse_username,
           EXTRACT(EPOCH FROM GREATEST(p.created_at, COALESCE(p.soccerverse_linked_at, p.created_at)))::bigint AS cutoff_unix,
+          EXTRACT(EPOCH FROM ((f.kickoff_date::timestamp + f.kickoff_time_utc) AT TIME ZONE 'UTC'))::bigint AS kickoff_unix,
           ame.player_id
         FROM admin_match_entries ame
+        JOIN fixtures f ON f.fixture_id = ame.fixture_id
         JOIN squad_slots ss ON ss.player_id = ame.player_id
         JOIN squads sq ON sq.squad_id = ss.squad_id AND sq.is_locked = TRUE
         JOIN participants p ON p.participant_id = sq.participant_id
@@ -158,6 +162,7 @@ export class PostgresParticipantInfluenceSnapshotRepository implements Participa
       participantId: row.participant_id,
       soccerverseUsername: row.soccerverse_username,
       cutoffUnix: Number(row.cutoff_unix),
+      kickoffUnix: Number(row.kickoff_unix),
       playerId: Number(row.player_id),
     }))
   }

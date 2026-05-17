@@ -180,10 +180,14 @@ export async function fetchPlayerShareTrades(
   name: string,
   playerId: number,
   cutoffUnix: number,
+  tradesBeforeUnix?: number,
 ): Promise<ShareTradeEvent[]> {
   if (!name || !Number.isFinite(playerId) || playerId <= 0) {
     return []
   }
+  // tradesBeforeUnix is inclusive — trades with unix_time > tradesBeforeUnix are excluded.
+  // This is how "frozen at kickoff" is achieved: snapshot service passes fixture kickoff,
+  // so trades made after kickoff don't count, regardless of when the snapshot actually runs.
 
   const collected: ShareTradeEvent[] = []
   let page = 1
@@ -221,6 +225,7 @@ export async function fetchPlayerShareTrades(
         reachedCutoff = true
         continue
       }
+      if (tradesBeforeUnix !== undefined && unixTime > tradesBeforeUnix) continue
       if (item.share_type !== 'player') continue
       if (Number(item.share_id) !== playerId) continue
       const buyer = String(item.buyer ?? '')

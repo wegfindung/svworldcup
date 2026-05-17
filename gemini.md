@@ -99,9 +99,9 @@ Fixed formation rule:
 - Applies to any participant with `soccerverse_username IS NOT NULL`, regardless of league.
 - `1%` bonus per `10` net influence accumulated in a drafted `playerId` since the participant's cutoff. Cap: `10%` (saturates at `100` net influence).
 - **Cutoff per participant**: `MAX(created_at, soccerverse_linked_at)` — the later of register-or-link.
-- **Net influence**: player-share BUYS minus player-share SELLS by the participant's `soccerverse_username` for that `playerId`, restricted to trades with `unix_time >= cutoff`. Floored at `0`.
-- **Per-fixture snapshot, lazily captured.** Computed and stored in `participant_influence_snapshot(participant_id, fixture_id, player_id, bonus_percent)` when the fixture's match stats are promoted.
-- **Not retroactive.** Past fixtures keep their captured boost even if the participant later buys more shares; future fixtures snapshot independently.
+- **Net influence**: player-share BUYS minus player-share SELLS by the participant's `soccerverse_username` for that `playerId`, restricted to trades with `cutoff <= unix_time <= fixture_kickoff`. Floored at `0`. Trades made after the fixture's kickoff do not count toward that fixture.
+- **Per-fixture snapshot, frozen at the fixture's kickoff timestamp.** Computed and stored in `participant_influence_snapshot(participant_id, fixture_id, player_id, bonus_percent)` when the fixture's match stats are promoted. The kickoff upper bound on the trade-history fetch makes the snapshot time-invariant — same result whether captured at promotion or via a later re-run.
+- **Not retroactive.** Past fixtures keep their captured boost. Future fixtures snapshot independently from the trades that existed at *their* own kickoff.
 - See `architecture/SOP_scoring_and_leagues.md` "Ownership boost" for the canonical spec.
 
 ### League variants

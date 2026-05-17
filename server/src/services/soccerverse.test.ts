@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _setSvFetchClockForTests, svFetch } from './soccerverse.js'
+import { _setSvFetchClockForTests, fetchPlayerShareTrades, svFetch } from './soccerverse.js'
 
 function mockResponse(body: unknown, init: { status?: number; headers?: Record<string, string> } = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -142,5 +142,61 @@ describe('svFetch 429 backoff', () => {
     expect(response.status).toBe(429)
     // 1 initial + 4 retries = 5 fetch calls
     expect(fetchMock).toHaveBeenCalledTimes(5)
+  })
+})
+
+describe('fetchPlayerShareTrades upper-bound filter', () => {
+  let clock: VirtualClock
+
+  beforeEach(() => {
+    clock = buildVirtualClock(0)
+  })
+
+  afterEach(() => {
+    _setSvFetchClockForTests({
+      now: () => Date.now(),
+      sleep: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+      fetch: (input, init) => fetch(input as string, init),
+    })
+  })
+
+  it('excludes trades after tradesBeforeUnix and keeps trades in [cutoff, kickoff]', async () => {
+    const payload = {
+      page: 1,
+      per_page: 100,
+      total_pages: 1,
+      items: [
+        // post-kickoff: should be excluded
+        { unix_time: 6000, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 10 },
+        // in window: should be kept
+        { unix_time: 4500, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 7 },
+        { unix_time: 4000, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 5 },
+        // pre-cutoff: should be excluded (and breaks pagination)
+        { unix_time: 500, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 1 },
+      ],
+    }
+    const fetchMock = vi.fn(async () => mockResponse(payload))
+    _setSvFetchClockForTests({ now: clock.now, sleep: clock.sleep, fetch: fetchMock as unknown as typeof fetch })
+
+    const trades = await fetchPlayerShareTrades('alice', 101, 1000, 5000)
+    expect(trades.map((trade) => trade.num)).toEqual([7, 5])
+  })
+
+  it('keeps default behaviour (all post-cutoff trades) when tradesBeforeUnix is omitted', async () => {
+    const payload = {
+      page: 1,
+      per_page: 100,
+      total_pages: 1,
+      items: [
+        { unix_time: 9999, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 10 },
+        { unix_time: 4000, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 5 },
+        { unix_time: 500, share_type: 'player', share_id: 101, buyer: 'alice', seller: 'x', num: 1 },
+      ],
+    }
+    const fetchMock = vi.fn(async () => mockResponse(payload))
+    _setSvFetchClockForTests({ now: clock.now, sleep: clock.sleep, fetch: fetchMock as unknown as typeof fetch })
+
+    const trades = await fetchPlayerShareTrades('alice', 101, 1000)
+    expect(trades.map((trade) => trade.num)).toEqual([10, 5])
   })
 })

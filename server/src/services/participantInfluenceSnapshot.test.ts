@@ -60,8 +60,8 @@ describe('captureParticipantInfluenceSnapshotForFixture', () => {
   it('upserts one snapshot per work item with computed bonus', async () => {
     const repo = new MemoryParticipantInfluenceSnapshotRepository()
     repo.setWorkForFixture('fixture-1', [
-      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, playerId: 101 },
-      { participantId: 'p-2', soccerverseUsername: 'bob', cutoffUnix: 1000, playerId: 101 },
+      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
+      { participantId: 'p-2', soccerverseUsername: 'bob', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
     ])
 
     const fetchTrades = vi.fn(async (name: string, _playerId: number, _cutoff: number) => {
@@ -92,11 +92,36 @@ describe('captureParticipantInfluenceSnapshotForFixture', () => {
     expect(fetchTrades).not.toHaveBeenCalled()
   })
 
+  it('excludes trades after kickoff (frozen-at-kickoff semantic)', async () => {
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
+    repo.setWorkForFixture('fixture-K', [
+      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
+    ])
+
+    // Mock that honours the upper bound: returns only trades in [cutoff, kickoff].
+    const fetchTrades = vi.fn(async (_name: string, _playerId: number, cutoff: number, tradesBefore?: number) => {
+      const allTrades = [
+        { unixTime: 4500, buyer: 'alice', seller: 'x', num: 30 },
+        { unixTime: 6000, buyer: 'alice', seller: 'x', num: 70 }, // post-kickoff
+      ]
+      return allTrades.filter((trade) => trade.unixTime >= cutoff && (tradesBefore === undefined || trade.unixTime <= tradesBefore))
+    })
+
+    await captureParticipantInfluenceSnapshotForFixture('fixture-K', {
+      snapshotRepository: repo,
+      fetchTrades,
+    })
+
+    expect(fetchTrades).toHaveBeenCalledWith('alice', 101, 1000, 5000)
+    // Only the 30-share pre-kickoff buy counts. 30 / 10 = 3% bonus.
+    expect(await repo.getBonusPercent('p-1', 'fixture-K', 101)).toBe(3)
+  })
+
   it('continues past a single failing fetch and counts the rest', async () => {
     const repo = new MemoryParticipantInfluenceSnapshotRepository()
     repo.setWorkForFixture('fixture-1', [
-      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, playerId: 101 },
-      { participantId: 'p-2', soccerverseUsername: 'bob', cutoffUnix: 1000, playerId: 101 },
+      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
+      { participantId: 'p-2', soccerverseUsername: 'bob', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
     ])
 
     const fetchTrades = vi.fn(async (name: string) => {
