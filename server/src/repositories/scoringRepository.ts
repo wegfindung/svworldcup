@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
+import { fixtureKickoffEpoch } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, getScoreMultiplierForBudget } from '../data/formation.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import type {
@@ -34,11 +35,6 @@ interface ScoreParticipant {
 
 // kickoffDate + kickoffTimeUtc describe a UTC instant. Frontends format into the viewer's
 // local timezone — this function returns the absolute epoch millis for time math.
-export function fixtureKickoffEpoch(fixture: Pick<FixtureSeed, 'kickoffDate' | 'kickoffTimeUtc'>) {
-  const epoch = new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeUtc}Z`).getTime()
-  return Number.isFinite(epoch) ? epoch : null
-}
-
 function buildKickoffByFixture(fixtures: Array<Pick<FixtureSeed, 'fixtureId' | 'kickoffDate' | 'kickoffTimeUtc'>>) {
   const map = new Map<string, number>()
   for (const fixture of fixtures) {
