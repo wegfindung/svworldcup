@@ -102,6 +102,7 @@ async function buildSquadSummary(participantId: string, squadRepository: SquadRe
 
   return {
     budgetLimit: squad.budgetLimit,
+    scoreMultiplier: squad.scoreMultiplier,
     budgetUsed: squad.budgetUsed,
     budgetRemaining: squad.budgetRemaining,
     draftedCount: squad.slots.filter((slot) => slot.player).length,

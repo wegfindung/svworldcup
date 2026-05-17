@@ -59,11 +59,17 @@ export interface ScoringConfig {
   performanceCurve: PerformanceCurveAnchor[]
 }
 
+export interface BudgetOption {
+  budgetLimit: number
+  scoreMultiplier: number
+}
+
 export interface BootstrapPayload {
   supportedLocales: LocaleCode[]
   defaultLocale: LocaleCode
   scoring: ScoringConfig
   budgetLimit: number
+  budgetOptions: BudgetOption[]
   teams: TeamSeed[]
   fixtures: FixtureSeed[]
   leagues: {
@@ -145,6 +151,7 @@ export interface ParticipantSquad {
   squadId: string
   participantId: string
   budgetLimit: number
+  scoreMultiplier: number
   budgetUsed: number
   budgetRemaining: number
   isLocked: boolean
@@ -165,6 +172,7 @@ export interface ParticipantLineup {
 
 export interface ParticipantSquadSummary {
   budgetLimit: number
+  scoreMultiplier: number
   budgetUsed: number
   budgetRemaining: number
   draftedCount: number
@@ -203,6 +211,7 @@ export interface ParticipantScoreRow {
   totalScore: number
   baseScore: number
   bonusPercent: number
+  scoreMultiplier: number
   breakdown: ParticipantScoreBreakdown
   fixtures: ParticipantScoreFixtureDetail[]
   rank: number

@@ -90,6 +90,48 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     expect(leaderboard[0].baseScore).toBe(4)
   })
 
+  it('applies the selected budget multiplier to the final score', async () => {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      {
+        email: 'budget@example.com',
+        displayName: 'Budget Manager',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'budget-token',
+    )
+    await registrations.verifyByPlainToken('budget-token')
+
+    const squads = new MemorySquadRepository(pools)
+    await squads.setBudget(created.record.participantId, 1_500_000)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fixture-1',
+      playerId: 109,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    expect(leaderboard[0].baseScore).toBe(7)
+    expect(leaderboard[0].scoreMultiplier).toBe(1.3)
+    expect(leaderboard[0].totalScore).toBeCloseTo(9.1)
+  })
+
   it('exposes fixture and player scoring details for public table drilldowns', async () => {
     const pools = new MemoryTeamPoolRepository()
     await pools.replaceTeamPlayers(

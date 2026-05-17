@@ -19,6 +19,10 @@ const assignPlayerSchema = z.object({
   playerId: z.coerce.number().int().positive(),
 })
 
+const budgetSchema = z.object({
+  budgetLimit: z.coerce.number().int().positive(),
+})
+
 const linkSoccerverseSchema = z.object({
   soccerverseUsername: z.string().trim().min(1).max(60),
 })
@@ -40,6 +44,21 @@ export function createParticipantRouter(
     const participantId = res.locals.participant.participantId as string
     const squad = await squadRepository.getOrCreate(participantId)
     res.json({ squad })
+  })
+
+  router.post('/squad/budget', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const parsed = budgetSchema.parse(req.body)
+
+    try {
+      const squad = await squadRepository.setBudget(participantId, parsed.budgetLimit)
+      res.json({ squad })
+    } catch (error) {
+      if (error instanceof SquadValidationError) {
+        return res.status(422).json({ error: error.message })
+      }
+      throw error
+    }
   })
 
   router.post('/squad/assign', async (req, res) => {

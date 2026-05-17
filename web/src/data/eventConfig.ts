@@ -6,6 +6,20 @@ export const defaultLocale: LocaleCode = 'en'
 
 export const budgetLimit = 3_000_000
 
+export const budgetOptions = [
+  { budgetLimit: 1_500_000, scoreMultiplier: 1.3 },
+  { budgetLimit: 2_000_000, scoreMultiplier: 1.18 },
+  { budgetLimit: 2_500_000, scoreMultiplier: 1.08 },
+  { budgetLimit: 3_000_000, scoreMultiplier: 1 },
+  { budgetLimit: 4_000_000, scoreMultiplier: 0.9 },
+  { budgetLimit: 5_000_000, scoreMultiplier: 0.82 },
+  { budgetLimit: 6_000_000, scoreMultiplier: 0.75 },
+] as const
+
+export function getBudgetScoreMultiplier(selectedBudgetLimit: number) {
+  return budgetOptions.find((option) => option.budgetLimit === selectedBudgetLimit)?.scoreMultiplier ?? 1
+}
+
 export const defaultScoring: ScoringConfig = {
   goal: 5,
   assist: 3,

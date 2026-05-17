@@ -30,6 +30,7 @@ export function VerifyPage() {
         email: response.email,
         leagueType: response.leagueType,
         budgetLimit: response.budgetLimit,
+        scoreMultiplier: response.squadSummary.scoreMultiplier,
         budgetRemaining: response.squadSummary.budgetRemaining,
         budgetUsed: response.squadSummary.budgetUsed,
         draftedCount: response.squadSummary.draftedCount,

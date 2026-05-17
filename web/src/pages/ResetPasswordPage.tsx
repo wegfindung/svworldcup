@@ -37,6 +37,7 @@ export function ResetPasswordPage() {
         email: response.participant.email,
         leagueType: response.participant.leagueType,
         budgetLimit: response.budgetLimit,
+        scoreMultiplier: response.squadSummary.scoreMultiplier,
         budgetRemaining: response.squadSummary.budgetRemaining,
         budgetUsed: response.squadSummary.budgetUsed,
         draftedCount: response.squadSummary.draftedCount,

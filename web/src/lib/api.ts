@@ -280,6 +280,13 @@ export function resetSquad() {
   })
 }
 
+export function updateSquadBudget(budgetLimit: number) {
+  return getJson<{ squad: ParticipantSquad }>('/api/participant/squad/budget', {
+    method: 'POST',
+    body: JSON.stringify({ budgetLimit }),
+  })
+}
+
 export function lockSquad() {
   return getJson<{ squad: ParticipantSquad }>('/api/participant/squad/lock', {
     method: 'POST',
