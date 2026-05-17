@@ -20,7 +20,7 @@ export function getLineupPeriods(sourceFixtures: FixtureSeed[]): LineupPeriod[] 
     .map(([periodKey, fixtures]) => ({
       periodKey,
       label: periodKey,
-      fixtures: fixtures.sort((left, right) => left.kickoffTimeLocal.localeCompare(right.kickoffTimeLocal)),
+      fixtures: fixtures.sort((left, right) => left.kickoffTimeUtc.localeCompare(right.kickoffTimeUtc)),
     }))
 }
 

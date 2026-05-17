@@ -11,9 +11,19 @@ function teamName(teamCode: string) {
   return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
 }
 
+// Fixtures are stored as UTC; render in the viewer's browser timezone + locale so a fan in
+// Stockholm, São Paulo, or Sydney each sees the kickoff in their own wall-clock.
+const kickoffFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
+
 function formatKickoff(result: PublicFixtureResult) {
-  const time = result.kickoffTimeLocal.slice(0, 5)
-  return `${result.kickoffDate} · ${time}`
+  const epoch = new Date(`${result.kickoffDate}T${result.kickoffTimeUtc}Z`).getTime()
+  if (!Number.isFinite(epoch)) {
+    return `${result.kickoffDate} · ${result.kickoffTimeUtc.slice(0, 5)} UTC`
+  }
+  return kickoffFormatter.format(epoch)
 }
 
 function ResultCard({ result }: { result: PublicFixtureResult }) {

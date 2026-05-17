@@ -27,20 +27,14 @@ interface ScoreParticipant {
   lockedAt: string | null
 }
 
-// kickoffTimeLocal is Europe/Stockholm time. The 2026 WC runs entirely within CEST (UTC+2),
-// so the offset is constant for this dataset. If the fixture set ever spans CET (UTC+1), this
-// constant must move to a per-fixture computation.
-const STOCKHOLM_UTC_OFFSET_HOURS = 2
-
-export function fixtureKickoffEpoch(fixture: Pick<FixtureSeed, 'kickoffDate' | 'kickoffTimeLocal'>) {
-  const naive = new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeLocal}Z`).getTime()
-  if (!Number.isFinite(naive)) {
-    return null
-  }
-  return naive - STOCKHOLM_UTC_OFFSET_HOURS * 60 * 60 * 1000
+// kickoffDate + kickoffTimeUtc describe a UTC instant. Frontends format into the viewer's
+// local timezone — this function returns the absolute epoch millis for time math.
+export function fixtureKickoffEpoch(fixture: Pick<FixtureSeed, 'kickoffDate' | 'kickoffTimeUtc'>) {
+  const epoch = new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeUtc}Z`).getTime()
+  return Number.isFinite(epoch) ? epoch : null
 }
 
-function buildKickoffByFixture(fixtures: Array<Pick<FixtureSeed, 'fixtureId' | 'kickoffDate' | 'kickoffTimeLocal'>>) {
+function buildKickoffByFixture(fixtures: Array<Pick<FixtureSeed, 'fixtureId' | 'kickoffDate' | 'kickoffTimeUtc'>>) {
   const map = new Map<string, number>()
   for (const fixture of fixtures) {
     const epoch = fixtureKickoffEpoch(fixture)
@@ -562,13 +556,13 @@ export class PostgresScoringRepository implements ScoringRepository {
     const result = await this.pool.query<{
       fixture_id: string
       kickoff_date: string
-      kickoff_time_local: string
-    }>('SELECT fixture_id, kickoff_date, kickoff_time_local FROM fixtures')
+      kickoff_time_utc: string
+    }>('SELECT fixture_id, kickoff_date, kickoff_time_utc FROM fixtures')
     return buildKickoffByFixture(
       result.rows.map((row) => ({
         fixtureId: row.fixture_id,
         kickoffDate: typeof row.kickoff_date === 'string' ? row.kickoff_date : new Date(row.kickoff_date).toISOString().slice(0, 10),
-        kickoffTimeLocal: row.kickoff_time_local,
+        kickoffTimeUtc: row.kickoff_time_utc,
       })),
     )
   }

@@ -4,7 +4,7 @@ export interface PublicFixtureResult {
   fixtureId: string
   groupKey: string
   kickoffDate: string
-  kickoffTimeLocal: string
+  kickoffTimeUtc: string
   homeTeamCode: string
   awayTeamCode: string
   homeGoals: number | null
@@ -54,7 +54,7 @@ export function buildPublicFixtureResults(
       fixtureId: fixture.fixtureId,
       groupKey: fixture.groupKey,
       kickoffDate: fixture.kickoffDate,
-      kickoffTimeLocal: fixture.kickoffTimeLocal,
+      kickoffTimeUtc: fixture.kickoffTimeUtc,
       homeTeamCode: fixture.homeTeamCode,
       awayTeamCode: fixture.awayTeamCode,
       homeGoals: status === 'final' ? goalsByTeam.get(fixture.homeTeamCode) ?? 0 : null,

@@ -32,7 +32,7 @@ const fixture: FixtureSeed = {
   fixtureId: 'fixture-a-b',
   groupKey: 'A',
   kickoffDate: '2026-06-01',
-  kickoffTimeLocal: '18:00:00',
+  kickoffTimeUtc: '18:00:00',
   homeTeamCode: 'FRA',
   awayTeamCode: 'SEN',
 }

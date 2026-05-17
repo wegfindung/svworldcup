@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS fixtures (
     fixture_id TEXT PRIMARY KEY,
     group_key TEXT NOT NULL,
     kickoff_date DATE NOT NULL,
-    kickoff_time_local TIME NOT NULL,
+    kickoff_time_utc TIME NOT NULL,
     home_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     away_team_code CHAR(3) NOT NULL REFERENCES teams(code),
     source TEXT NOT NULL DEFAULT 'user-first-matchday-seed',

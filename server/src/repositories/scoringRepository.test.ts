@@ -100,7 +100,7 @@ describe('MemoryScoringRepository late-entry rule', () => {
     return fixture
   }
 
-  function fixtureKickoffIso(fixture: { kickoffDate: string; kickoffTimeLocal: string }) {
+  function fixtureKickoffIso(fixture: { kickoffDate: string; kickoffTimeUtc: string }) {
     const epoch = fixtureKickoffEpoch(fixture)
     if (epoch === null) {
       throw new Error('fixture is missing a parseable kickoff')

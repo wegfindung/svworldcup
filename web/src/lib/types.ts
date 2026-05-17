@@ -17,7 +17,8 @@ export interface FixtureSeed {
   fixtureId: string
   groupKey: string
   kickoffDate: string
-  kickoffTimeLocal: string
+  /** Kickoff wall-clock time in UTC (HH:MM:SS). Frontends format into the viewer's local timezone. */
+  kickoffTimeUtc: string
   homeTeamCode: string
   awayTeamCode: string
 }
