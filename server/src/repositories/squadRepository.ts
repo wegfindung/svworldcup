@@ -37,6 +37,7 @@ function createEmptySquad(participantId: string): ParticipantSquad {
     budgetUsed: 0,
     budgetRemaining: STARTING_BUDGET,
     isLocked: false,
+    lockedAt: null,
     slots: buildSlotState(assignedPlayers),
   }
 }
@@ -164,6 +165,7 @@ export class MemorySquadRepository implements SquadRepository {
     const lockedSquad: ParticipantSquad = {
       ...squad,
       isLocked: true,
+      lockedAt: new Date().toISOString(),
     }
     this.squads.set(participantId, lockedSquad)
     return lockedSquad
@@ -194,7 +196,8 @@ export class PostgresSquadRepository implements SquadRepository {
       budget_limit: number
       budget_used: number
       is_locked: boolean
-    }>('SELECT squad_id, budget_limit, budget_used, is_locked FROM squads WHERE participant_id = $1', [participantId])
+      locked_at: string | null
+    }>('SELECT squad_id, budget_limit, budget_used, is_locked, locked_at FROM squads WHERE participant_id = $1', [participantId])
     const squad = squadResult.rows[0]
 
     const slotResult = await this.pool.query<{
@@ -245,6 +248,7 @@ export class PostgresSquadRepository implements SquadRepository {
       budgetUsed: squad.budget_used,
       budgetRemaining: Math.max(0, squad.budget_limit - squad.budget_used),
       isLocked: squad.is_locked,
+      lockedAt: squad.locked_at,
       slots: buildSlotState(assignedPlayers),
     }
   }
@@ -426,7 +430,7 @@ export class PostgresSquadRepository implements SquadRepository {
         throw new SquadValidationError('Squad must contain all 15 players before final submission.')
       }
 
-      await client.query('UPDATE squads SET is_locked = TRUE, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
+      await client.query('UPDATE squads SET is_locked = TRUE, locked_at = NOW(), updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
       await client.query('COMMIT')
       return this.getOrCreate(participantId)
     } catch (error) {

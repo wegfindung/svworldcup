@@ -4,7 +4,8 @@ import { MemoryRegistrationRepository } from './registrationRepository.js'
 import { MemoryScoringRepository } from './scoringRepository.js'
 import { MemorySquadRepository } from './squadRepository.js'
 import { MemoryTeamPoolRepository } from './teamPoolRepository.js'
-import type { SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
+import type { ParticipantSquad, SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
+import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 
 const slotPlayers: Array<{ playerId: number; slotKey: string; position: string; slotClass: SlotClass }> = [
   { playerId: 101, slotKey: 'starter-gk-1', position: 'GK', slotClass: 'GK' },
@@ -87,5 +88,115 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
     const leaderboard = await scoring.getLeagueLeaderboard('rookie')
     expect(leaderboard[0].baseScore).toBe(4)
+  })
+})
+
+describe('MemoryScoringRepository late-entry rule', () => {
+  function lateEntryFixture() {
+    const fixture = seedFixtures[0]
+    if (!fixture) {
+      throw new Error('worldCupSeed fixtures must be populated for late-entry tests.')
+    }
+    return fixture
+  }
+
+  function fixtureKickoffIso(fixture: { kickoffDate: string; kickoffTimeLocal: string }) {
+    return `${fixture.kickoffDate}T${fixture.kickoffTimeLocal}Z`
+  }
+
+  function overrideLockedAt(repo: MemorySquadRepository, participantId: string, lockedAt: string | null) {
+    const internal = (repo as unknown as { squads: Map<string, ParticipantSquad> }).squads
+    const squad = internal.get(participantId)
+    if (!squad) {
+      throw new Error('squad missing for participant')
+    }
+    internal.set(participantId, { ...squad, lockedAt })
+  }
+
+  async function buildScenario() {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      {
+        email: 'late@example.com',
+        displayName: 'Late Manager',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'late-token',
+    )
+    await registrations.verifyByPlainToken('late-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads)
+    return { participantId: created.record.participantId, squads, scoring }
+  }
+
+  it('grandfathers a NULL lockedAt: every fixture counts', async () => {
+    const { participantId, squads, scoring } = await buildScenario()
+    const fixture = lateEntryFixture()
+    overrideLockedAt(squads, participantId, null)
+
+    await scoring.upsertMatchEntry({
+      fixtureId: fixture.fixtureId,
+      playerId: slotPlayers[0].playerId,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    expect(leaderboard[0].baseScore).toBeGreaterThan(0)
+  })
+
+  it('skips a fixture whose kickoff predates the squad lock', async () => {
+    const { participantId, squads, scoring } = await buildScenario()
+    const fixture = lateEntryFixture()
+    const lockEpoch = new Date(fixtureKickoffIso(fixture)).getTime()
+    const lockedAfterFixture = new Date(lockEpoch + 60_000).toISOString()
+    overrideLockedAt(squads, participantId, lockedAfterFixture)
+
+    await scoring.upsertMatchEntry({
+      fixtureId: fixture.fixtureId,
+      playerId: slotPlayers[0].playerId,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    expect(leaderboard[0].baseScore).toBe(0)
+  })
+
+  it('uses strict greater-than: lock at the exact kickoff instant excludes that fixture', async () => {
+    const { participantId, squads, scoring } = await buildScenario()
+    const fixture = lateEntryFixture()
+    overrideLockedAt(squads, participantId, fixtureKickoffIso(fixture))
+
+    await scoring.upsertMatchEntry({
+      fixtureId: fixture.fixtureId,
+      playerId: slotPlayers[0].playerId,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    expect(leaderboard[0].baseScore).toBe(0)
   })
 })

@@ -1439,7 +1439,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       <p className="mt-1 text-xs leading-6 text-[var(--color-muted)]">
                         {squad.isLocked
                           ? 'This competition squad is immutable unless an admin unlock flow is added later.'
-                          : 'Fill all 15 slots, then lock the squad for the full competition.'}
+                          : 'Fill all 15 slots, then lock the squad for the full competition. Your squad scores from the next fixture kickoff onward — earlier fixtures don’t count.'}
                       </p>
                     </div>
                     <button

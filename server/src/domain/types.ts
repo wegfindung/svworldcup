@@ -166,6 +166,7 @@ export interface ParticipantSquad {
   budgetUsed: number
   budgetRemaining: number
   isLocked: boolean
+  lockedAt: string | null
   slots: SquadSlotState[]
 }
 

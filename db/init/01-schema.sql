@@ -138,6 +138,7 @@ CREATE TABLE IF NOT EXISTS squads (
     budget_limit INTEGER NOT NULL,
     budget_used INTEGER NOT NULL DEFAULT 0,
     is_locked BOOLEAN NOT NULL DEFAULT FALSE,
+    locked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

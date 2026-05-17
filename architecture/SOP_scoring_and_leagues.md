@@ -43,6 +43,16 @@ The admin enters the raw match rating on each player entry; performance points a
 - Nations qualify for the public table once they have at least two scored entries.
 - Veteran ownership boost is currently represented as a deterministic `bonusPercent` field and remains `0` until the influence snapshot source is implemented.
 
+## Late Entry
+
+- A locked squad scores only from fixtures whose kickoff is strictly after the squad's lock timestamp. Earlier fixtures contribute zero score, even if the participant's drafted players appeared in them.
+- The lock timestamp is captured on `POST /api/participant/squad/lock` as `squads.locked_at` and is immutable thereafter.
+- The cutoff is **strict greater-than** against `fixtures.kickoff`. A fixture whose kickoff equals the lock instant does not score for that participant — eliminates the race-window edge.
+- A squad locked before this rule existed has `locked_at = NULL`. NULL is treated as "no cutoff" — every fixture counts. New locks always carry a non-NULL `locked_at`.
+- The rule applies uniformly across rookie, veteran, and nation leaderboards, since all three derive from the same per-participant row produced by the scoring engine.
+- The substitution rule still operates per fixture inside the eligible set: a sub becomes active only if the linked starter is absent from a fixture that the squad is eligible for.
+- The rule is participant-visible in the lock-confirmation copy so a late entrant understands what they will and will not score.
+
 ## Score Configuration
 
 - Scoring values are stored in backend configuration.
