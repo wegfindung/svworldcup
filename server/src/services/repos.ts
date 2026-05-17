@@ -18,6 +18,7 @@ import {
 } from '../repositories/configRepository.js'
 import { MemorySquadRepository, PostgresSquadRepository, type SquadRepository } from '../repositories/squadRepository.js'
 import { MemoryLineupRepository, PostgresLineupRepository, type LineupRepository } from '../repositories/lineupRepository.js'
+import { MemoryFixtureRepository, PostgresFixtureRepository, type FixtureRepository } from '../repositories/fixtureRepository.js'
 import { MemoryTeamPoolRepository, PostgresTeamPoolRepository, type TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { MemoryScoringRepository, PostgresScoringRepository, type ScoringRepository } from '../repositories/scoringRepository.js'
 import {
@@ -45,6 +46,7 @@ let participantSessionRepository: ParticipantSessionRepository | null = null
 let teamPoolRepository: TeamPoolRepository | null = null
 let squadRepository: SquadRepository | null = null
 let lineupRepository: LineupRepository | null = null
+let fixtureRepository: FixtureRepository | null = null
 let scoringRepository: ScoringRepository | null = null
 let matchImportRepository: MatchImportRepository | null = null
 let matchMappingRepository: MatchMappingRepository | null = null
@@ -145,6 +147,14 @@ export function createLineupRepository(): LineupRepository {
       : new MemoryLineupRepository(createTeamPoolRepository())
   }
   return lineupRepository
+}
+
+export function createFixtureRepository(): FixtureRepository {
+  if (!fixtureRepository) {
+    const existingPool = getPool()
+    fixtureRepository = existingPool ? new PostgresFixtureRepository(existingPool) : new MemoryFixtureRepository()
+  }
+  return fixtureRepository
 }
 
 export function createScoringRepository(): ScoringRepository {

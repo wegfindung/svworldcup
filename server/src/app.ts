@@ -18,6 +18,7 @@ import {
   createAuditRepository,
   createConfigRepository,
   createEmailMarketingRepository,
+  createFixtureRepository,
   createMatchImportRepository,
   createMatchMappingRepository,
   createParticipantSessionRepository,
@@ -35,6 +36,7 @@ export function createApp() {
   const adminRepository = createAdminRepository()
   const teamPoolRepository = createTeamPoolRepository()
   const squadRepository = createSquadRepository()
+  const fixtureRepository = createFixtureRepository()
   const scoringRepository = createScoringRepository()
   const matchImportRepository = createMatchImportRepository()
   const matchMappingRepository = createMatchMappingRepository()
@@ -115,7 +117,11 @@ export function createApp() {
     })
   }
 
-  app.use('/api/public', publicApiLimiter, createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, scoringRepository, squadRepository }))
+  app.use(
+    '/api/public',
+    publicApiLimiter,
+    createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, fixtureRepository, scoringRepository, squadRepository }),
+  )
   app.use(
     '/api/auth',
     authApiLimiter,
