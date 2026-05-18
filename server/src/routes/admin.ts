@@ -23,6 +23,7 @@ import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerverse.js'
+import { listOperationEvents } from '../services/operationsMonitor.js'
 
 const scoringSchema = z.object({
   goal: z.coerce.number().min(0).max(20),
@@ -251,6 +252,17 @@ export function createAdminRouter(
       defaults: scoringDefaults,
       teamSelectionCounts: selectionCounts,
     })
+  })
+
+  router.get('/audit', async (req, res) => {
+    const limit = z.coerce.number().int().min(1).max(200).default(50).parse(req.query.limit)
+    const items = (await auditRepository.list()).slice().reverse().slice(0, limit)
+    res.json({ items })
+  })
+
+  router.get('/operations/events', async (req, res) => {
+    const limit = z.coerce.number().int().min(1).max(200).default(50).parse(req.query.limit)
+    res.json({ items: listOperationEvents(limit) })
   })
 
   router.get('/participants', async (_req, res) => {

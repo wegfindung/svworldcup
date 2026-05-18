@@ -1,14 +1,15 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { AccountsView } from '../components/admin/AccountsView'
 import { DashboardLanding } from '../components/admin/DashboardLanding'
 import { EmailMarketingView } from '../components/admin/EmailMarketingView'
 import { MatchImportView } from '../components/admin/MatchImportView'
+import { OperationsView } from '../components/admin/OperationsView'
 import { ReferralsView } from '../components/admin/ReferralsView'
 import { RevealControlsView } from '../components/admin/RevealControlsView'
 import { ScoringView } from '../components/admin/ScoringView'
 import { TeamPoolsView } from '../components/admin/TeamPoolsView'
-import { loginAdmin, logoutAdmin } from '../lib/api'
+import { fetchAdminSession, loginAdmin, logoutAdmin } from '../lib/api'
 import type { AdminProfile, LocaleCode } from '../lib/types'
 
 interface AdminPageProps {
@@ -24,16 +25,40 @@ const navItems: Array<[string, string]> = [
   ['/admin/referrals', 'Referrals'],
   ['/admin/reveal', 'Reveal'],
   ['/admin/email-marketing', 'Email marketing'],
+  ['/admin/operations', 'Operations'],
 ]
 
 export function AdminPage({ locale: _locale }: AdminPageProps) {
   void _locale
-  const [authState, setAuthState] = useState<'guest' | 'active'>('guest')
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'active'>('checking')
   const [admin, setAdmin] = useState<AdminProfile | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loginBusy, setLoginBusy] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    void fetchAdminSession()
+      .then((response) => {
+        if (!active) {
+          return
+        }
+        setAdmin(response.admin)
+        setAuthState('active')
+      })
+      .catch(() => {
+        if (!active) {
+          return
+        }
+        setAdmin(null)
+        setAuthState('guest')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -49,6 +74,21 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
     } finally {
       setLoginBusy(false)
     }
+  }
+
+  if (authState === 'checking') {
+    return (
+      <div className="mx-auto max-w-3xl pb-12">
+        <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
+          <p className="eyebrow">admin access</p>
+          <div className="mt-6 space-y-3">
+            <div className="skeleton h-8 max-w-sm rounded-full" />
+            <div className="skeleton h-4 max-w-xl rounded-full" />
+            <div className="skeleton h-4 max-w-lg rounded-full" />
+          </div>
+        </section>
+      </div>
+    )
   }
 
   if (authState === 'guest') {
@@ -157,6 +197,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
         <Route path="referrals" element={<ReferralsView />} />
         <Route path="reveal" element={<RevealControlsView />} />
         <Route path="email-marketing" element={<EmailMarketingView adminEmail={admin?.email ?? ''} />} />
+        <Route path="operations" element={<OperationsView />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </div>

@@ -2,6 +2,7 @@ import type {
   AdminProfile,
   AdminOverview,
   AdminParticipantRecord,
+  AuditLogEntry,
   BootstrapPayload,
   EmailCampaignDispatchSummary,
   EmailCampaignInput,
@@ -13,6 +14,7 @@ import type {
   MatchImportRowEdit,
   MatchImportSkipNameEntry,
   MatchResolution,
+  OperationEvent,
   PendingMatchBatch,
   ResolutionOverride,
   ScoringConfig,
@@ -386,6 +388,20 @@ export function fetchPublicProfile(slug: string) {
 
 export function fetchAdminOverview() {
   return getJson<AdminOverview>('/api/admin/overview', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchAdminAuditLogs(limit = 50) {
+  return getJson<{ items: AuditLogEntry[] }>(`/api/admin/audit?limit=${encodeURIComponent(String(limit))}`, {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchAdminOperationEvents(limit = 50) {
+  return getJson<{ items: OperationEvent[] }>(`/api/admin/operations/events?limit=${encodeURIComponent(String(limit))}`, {
     method: 'GET',
     headers: {},
   })

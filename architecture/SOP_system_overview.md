@@ -48,6 +48,7 @@ Provide a secure Soccerverse World Cup event platform with:
 - global squad reveal
 - verification resend
 - analytics overview
+- operations overview for audit logs, pending import state, email queue health, scheduler runs, and Soccerverse API warnings/errors
 
 ## Security Rules
 
@@ -74,6 +75,13 @@ Provide a secure Soccerverse World Cup event platform with:
 - player-name mapping corrections
 - import skip-list changes
 - pending match-stat batch discard
+
+## Operations Observability
+
+- Admins must have a protected operations screen that summarizes current event health without exposing secrets.
+- The operations screen may compose existing admin data sources such as account counts, team-pool counts, pending match-import batches, email campaign queue counts, and audit log rows.
+- Short-lived runtime events may be kept in process memory for low-friction visibility into scheduler runs and external Soccerverse API warnings/errors.
+- Runtime events are operational signals, not a durable audit log. Durable admin writes still belong in `audit_logs`.
 
 ## i18n Rules
 

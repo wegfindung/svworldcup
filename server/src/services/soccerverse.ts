@@ -1,6 +1,7 @@
 import { env } from '../config/env.js'
 import type { SoccerversePlayerRecord } from '../domain/types.js'
 import { getCommunityPlayerName } from './communityPack.js'
+import { recordOperationEvent } from './operationsMonitor.js'
 
 // Soccerverse's services.soccerverse.com REST API enforces a hard ~3 req/s limit
 // (claude-docs/soccerverse.md "Soccerverse rate limit-läge"). Over-rate returns 429
@@ -90,6 +91,15 @@ function mapSoccerverseRecord(item: Record<string, unknown>, fallbackName?: stri
 async function requestPlayers(searchParams: URLSearchParams) {
   const response = await svFetch(`${env.SV_SERVICES_API_URL}/players/detailed?${searchParams.toString()}`)
   if (!response.ok) {
+    recordOperationEvent({
+      type: 'soccerverse_api',
+      status: 'error',
+      message: `Soccerverse player request failed with ${response.status}.`,
+      detail: {
+        endpoint: 'players/detailed',
+        status: response.status,
+      },
+    })
     throw new Error(`Soccerverse player request failed with ${response.status}`)
   }
 
@@ -206,11 +216,35 @@ export async function fetchPlayerShareTrades(
     try {
       const response = await svFetch(`${env.SV_SERVICES_API_URL}/share_trade_history?${searchParams.toString()}`)
       if (!response.ok) {
+        recordOperationEvent({
+          type: 'soccerverse_api',
+          status: 'warning',
+          message: `Share trade history request returned ${response.status}.`,
+          detail: {
+            endpoint: 'share_trade_history',
+            status: response.status,
+            name,
+            playerId,
+            page,
+          },
+        })
         console.warn(`share_trade_history ${response.status} name=${name} player_id=${playerId} page=${page}`)
         return collected
       }
       payload = (await response.json()) as ShareTradeHistoryPayload
     } catch (error) {
+      recordOperationEvent({
+        type: 'soccerverse_api',
+        status: 'error',
+        message: 'Share trade history fetch failed.',
+        detail: {
+          endpoint: 'share_trade_history',
+          name,
+          playerId,
+          page,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      })
       console.warn(`share_trade_history fetch failed name=${name} player_id=${playerId} page=${page}: ${(error as Error).message}`)
       return collected
     }

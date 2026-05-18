@@ -356,6 +356,28 @@ export interface EmailCampaignDispatchSummary {
   status: EmailCampaignStatus
 }
 
+export interface AuditLogEntry {
+  auditId: string
+  actorEmail: string
+  actionKey: string
+  entityType: string
+  entityId: string
+  detail: Record<string, unknown>
+  createdAt: string
+}
+
+export type OperationEventType = 'email_scheduler' | 'soccerverse_api'
+export type OperationEventStatus = 'ok' | 'warning' | 'error'
+
+export interface OperationEvent {
+  eventId: string
+  type: OperationEventType
+  status: OperationEventStatus
+  message: string
+  detail: Record<string, unknown>
+  createdAt: string
+}
+
 // --- Match data import engine (see architecture/SOP_match_data_import.md) ---
 // Frontend mirrors of the server domain types in server/src/domain/types.ts.
 

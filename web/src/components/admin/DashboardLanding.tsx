@@ -11,6 +11,7 @@ const views: Array<{ to: string; label: string; blurb: string }> = [
   { to: '/admin/referrals', label: 'Referrals', blurb: 'Landing-page referral performance per referrer.' },
   { to: '/admin/reveal', label: 'Reveal controls', blurb: 'Toggle event-level profile and squad visibility.' },
   { to: '/admin/email-marketing', label: 'Email marketing', blurb: 'Draft, schedule and send campaigns.' },
+  { to: '/admin/operations', label: 'Operations', blurb: 'Monitor audit logs, import work and mail queue health.' },
 ]
 
 export function DashboardLanding() {
