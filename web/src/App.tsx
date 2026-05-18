@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
+import { getMessages } from './i18n/messages'
 import { recordReferralClick } from './lib/api'
 import {
   readReferralFromSearch,
@@ -20,18 +21,6 @@ import { ResultsPage } from './pages/ResultsPage'
 import { ShareComposerPage } from './pages/ShareComposerPage'
 import { TablesPage } from './pages/TablesPage'
 import { VerifyPage } from './pages/VerifyPage'
-
-const primaryNavigation = [
-  { to: '/', label: 'Overview' },
-  { to: '/builder', label: 'Builder' },
-  { to: '/results', label: 'Results' },
-  { to: '/tables', label: 'Tables' },
-]
-
-const accountNavigation = [
-  { to: '/login', label: 'Login' },
-  { to: '/admin', label: 'Admin' },
-]
 
 function App() {
   const location = useLocation()
@@ -54,6 +43,7 @@ function App() {
   }, [locale])
 
   const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
+  const copy = getMessages(locale)
 
   useEffect(() => {
     const referrer = readReferralFromSearch(location.search)
@@ -81,7 +71,7 @@ function App() {
               <span className="block h-[3.35rem] w-[9.4rem] overflow-hidden sm:h-[5.25rem] sm:w-[14.5rem] lg:w-[15.5rem]">
                 <img
                   src="/brand/logo-nav.webp"
-                  alt="Soccerverse World Cup Community Event"
+                  alt={copy.nav.logoAlt}
                   width={960}
                   height={640}
                   className="h-auto w-[9.4rem] max-w-none -translate-y-[1.08rem] transition duration-500 group-hover:scale-[1.03] sm:w-[14.5rem] sm:-translate-y-7 lg:w-[15.5rem]"
@@ -92,7 +82,7 @@ function App() {
             <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
               <div className="hidden items-center justify-end gap-2 lg:flex">
                 <nav className="flex items-center rounded-full border border-white/8 bg-black/20 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                  {primaryNavigation.map((item) => (
+                  {copy.nav.primary.map((item) => (
                     <NavLink
                       key={item.to}
                       to={withReferral(item.to, referrerSoccerverseUsername)}
@@ -121,11 +111,11 @@ function App() {
                     ].join(' ')
                   }
                 >
-                  Register
+                  {copy.nav.register}
                 </NavLink>
 
                 <nav className="flex items-center rounded-full border border-white/8 bg-black/14 p-1">
-                  {accountNavigation.map((item) => (
+                  {copy.nav.account.map((item) => (
                     <NavLink
                       key={item.to}
                       to={withReferral(item.to, referrerSoccerverseUsername)}
@@ -152,7 +142,7 @@ function App() {
 
               <button
                 type="button"
-                aria-label="Toggle navigation"
+                aria-label={copy.nav.toggle}
                 aria-expanded={mobileNavOpen}
                 onClick={() => setMobileNavOpen((current) => !current)}
                 className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/4 transition duration-300 ease-out hover:bg-white/8 active:scale-[0.96] lg:hidden"
@@ -180,11 +170,11 @@ function App() {
                   ].join(' ')
                 }
               >
-                Register
+                {copy.nav.register}
               </NavLink>
 
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {primaryNavigation.map((item) => (
+                {copy.nav.primary.map((item) => (
                   <NavLink
                     key={item.to}
                     to={withReferral(item.to, referrerSoccerverseUsername)}
@@ -204,7 +194,7 @@ function App() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                {accountNavigation.map((item) => (
+                {copy.nav.account.map((item) => (
                   <NavLink
                     key={item.to}
                     to={withReferral(item.to, referrerSoccerverseUsername)}
@@ -254,7 +244,7 @@ function App() {
             <Route path="/login" element={<PlayerLoginPage referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
             <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
             <Route path="/results" element={<ResultsPage />} />
-            <Route path="/tables" element={<TablesPage />} />
+            <Route path="/tables" element={<TablesPage locale={locale} />} />
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin/*" element={<AdminPage locale={locale} />} />

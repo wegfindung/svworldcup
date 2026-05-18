@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
+import { getMessages } from '../i18n/messages'
 import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import type {
+  LocaleCode,
   NationScoreRow,
   ParticipantScoreFixtureDetail,
   ParticipantScorePlayerDetail,
@@ -319,7 +321,12 @@ function NationTable({ rows }: { rows: NationScoreRow[] }) {
   )
 }
 
-export function TablesPage() {
+interface TablesPageProps {
+  locale: LocaleCode
+}
+
+export function TablesPage({ locale }: TablesPageProps) {
+  const copy = getMessages(locale).tables
   const [tablesPromise, setTablesPromise] = useState<Promise<TablesPayload> | null>(() => loadTablesPayload())
   const [tables, setTables] = useState<TablesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -358,20 +365,18 @@ export function TablesPage() {
   return (
     <div className="space-y-4 pb-10">
       <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
-        <p className="eyebrow">public standings</p>
+        <p className="eyebrow">{copy.heroEyebrow}</p>
         <div className="mt-5 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
           <div>
-            <h2 className="section-title max-w-[12ch]">Rookie and veteran tables in one place.</h2>
-            <p className="mt-4 max-w-[66ch] text-base leading-relaxed text-[var(--color-muted)]">
-              Every active participant can appear here, even before the first points land. Scores update as match data is entered, and ties are resolved by earlier registration.
-            </p>
+            <h2 className="section-title max-w-[12ch]">{copy.heroTitle}</h2>
+            <p className="mt-4 max-w-[66ch] text-base leading-relaxed text-[var(--color-muted)]">{copy.heroBody}</p>
           </div>
           <button
             type="button"
             onClick={refreshTables}
             className="premium-button h-11 px-6 text-sm font-semibold"
           >
-            Refresh tables
+            {copy.refresh}
           </button>
         </div>
       </section>
