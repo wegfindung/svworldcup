@@ -1,11 +1,13 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { getMessages } from '../i18n/messages'
 import { loginParticipant, requestParticipantPasswordReset } from '../lib/api'
 import { readParticipantReady, writeParticipantReady } from '../lib/participantReady'
 import { withReferral } from '../lib/referral'
-import type { ParticipantProfile, ParticipantSquadSummary } from '../lib/types'
+import type { LocaleCode, ParticipantProfile, ParticipantSquadSummary } from '../lib/types'
 
 interface PlayerLoginPageProps {
+  locale: LocaleCode
   referrerSoccerverseUsername?: string
 }
 
@@ -28,8 +30,9 @@ function buildReadyState(
   }
 }
 
-export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLoginPageProps) {
+export function PlayerLoginPage({ locale, referrerSoccerverseUsername = '' }: PlayerLoginPageProps) {
   const navigate = useNavigate()
+  const copy = getMessages(locale).login
   const readyState = useMemo(() => readParticipantReady(), [])
   const [email, setEmail] = useState(readyState?.email ?? '')
   const [password, setPassword] = useState('')
@@ -50,7 +53,7 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
       writeParticipantReady(buildReadyState(response.participant, response.budgetLimit, response.squadSummary))
       navigate(withReferral('/builder', referrerSoccerverseUsername))
     } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'Could not sign in.')
+      setLoginError(error instanceof Error ? error.message : copy.loginFailed)
     } finally {
       setLoginBusy(false)
     }
@@ -64,9 +67,9 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
 
     try {
       await requestParticipantPasswordReset(recoveryEmail)
-      setRecoveryMessage('Recovery email sent if this account exists.')
+      setRecoveryMessage(copy.recoverySent)
     } catch (error) {
-      setRecoveryError(error instanceof Error ? error.message : 'Could not send recovery email.')
+      setRecoveryError(error instanceof Error ? error.message : copy.recoveryFailed)
     } finally {
       setRecoveryBusy(false)
     }
@@ -77,10 +80,10 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
       <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
         <div className="grid gap-7 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
-            <p className="eyebrow">player login</p>
-            <h2 className="section-title mt-6 max-w-[10ch]">Return to your World Cup entry.</h2>
+            <p className="eyebrow">{copy.heroEyebrow}</p>
+            <h2 className="section-title mt-6 max-w-[10ch]">{copy.title}</h2>
             <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
-              Sign in with the email and password attached to your verified entry. You will land on your participant dashboard, then open the squad builder when you are ready.
+              {copy.body}
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -88,14 +91,14 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
                 to={withReferral('/register', referrerSoccerverseUsername)}
                 className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
               >
-                Create a new entry
+                {copy.createEntry}
               </Link>
               {readyState ? (
                 <Link
                   to={withReferral('/builder', referrerSoccerverseUsername)}
                   className="rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
                 >
-                  Continue as {readyState.displayName}
+                  {copy.continueAs} {readyState.displayName}
                 </Link>
               ) : null}
             </div>
@@ -103,12 +106,12 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
 
           <div className="grid gap-4">
             <form onSubmit={handleLogin} className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">secure access</p>
-              <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">Sign in to your dashboard.</h3>
+              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.accessEyebrow}</p>
+              <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">{copy.accessTitle}</h3>
 
               <div className="mt-6 grid gap-4">
                 <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Email address</span>
+                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.email}</span>
                   <input
                     required
                     type="email"
@@ -125,7 +128,7 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Password</span>
+                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.password}</span>
                   <input
                     required
                     type="password"
@@ -147,20 +150,20 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
                   disabled={loginBusy}
                   className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-7 py-3 text-sm font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                 >
-                  {loginBusy ? 'Signing in...' : 'Sign in'}
+                  {loginBusy ? copy.signingIn : copy.signIn}
                 </button>
               </div>
             </form>
 
             <form onSubmit={handleRecovery} className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">password recovery</p>
-              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Need a recovery link?</h3>
+              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.recoveryEyebrow}</p>
+              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">{copy.recoveryTitle}</h3>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                Enter the email used for your verified entry and we will send a reset link.
+                {copy.recoveryBody}
               </p>
 
               <label className="mt-5 grid gap-2">
-                <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Recovery email</span>
+                <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.recoveryEmail}</span>
                 <input
                   required
                   type="email"
@@ -187,7 +190,7 @@ export function PlayerLoginPage({ referrerSoccerverseUsername = '' }: PlayerLogi
                 disabled={recoveryBusy}
                 className="mt-5 inline-flex w-fit items-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
-                {recoveryBusy ? 'Sending link...' : 'Send recovery email'}
+                {recoveryBusy ? copy.sendingLink : copy.sendRecovery}
               </button>
             </form>
           </div>

@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
+import { getMessages, type AppMessages } from '../i18n/messages'
 import { fetchMatchResults } from '../lib/api'
-import type { PublicFixturePlayerResult, PublicFixtureResult } from '../lib/types'
+import type { LocaleCode, PublicFixturePlayerResult, PublicFixtureResult } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
+type ResultsCopy = AppMessages['results']
 
 function teamName(teamCode: string) {
   return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
@@ -13,54 +15,52 @@ function teamName(teamCode: string) {
 
 const stageOrder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3P', 'FINAL']
 
-function stageTitle(groupKey: string) {
-  if (/^[A-L]$/.test(groupKey)) return `Group ${groupKey}`
-  if (groupKey === 'R32') return 'Round of 32'
-  if (groupKey === 'R16') return 'Round of 16'
-  if (groupKey === 'QF') return 'Quarter-finals'
-  if (groupKey === 'SF') return 'Semi-finals'
-  if (groupKey === '3P') return 'Third place'
-  if (groupKey === 'FINAL') return 'Final'
+function stageTitle(groupKey: string, copy: ResultsCopy) {
+  if (/^[A-L]$/.test(groupKey)) return `${copy.group} ${groupKey}`
+  if (groupKey === 'R32') return copy.stages.round32
+  if (groupKey === 'R16') return copy.stages.round16
+  if (groupKey === 'QF') return copy.stages.quarterFinals
+  if (groupKey === 'SF') return copy.stages.semiFinals
+  if (groupKey === '3P') return copy.stages.thirdPlace
+  if (groupKey === 'FINAL') return copy.stages.final
   return groupKey
 }
 
-function stageEyebrow(groupKey: string) {
-  return /^[A-L]$/.test(groupKey) ? 'group stage' : 'knockout stage'
+function stageEyebrow(groupKey: string, copy: ResultsCopy) {
+  return /^[A-L]$/.test(groupKey) ? copy.groupStage : copy.knockoutStage
 }
 
 // Fixtures are stored as UTC; render in the viewer's browser timezone + locale so a fan in
 // Stockholm, São Paulo, or Sydney each sees the kickoff in their own wall-clock.
-const kickoffFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
-
-function formatKickoff(result: PublicFixtureResult) {
+function formatKickoff(result: PublicFixtureResult, locale: LocaleCode) {
   const epoch = new Date(`${result.kickoffDate}T${result.kickoffTimeUtc}Z`).getTime()
   if (!Number.isFinite(epoch)) {
     return `${result.kickoffDate} · ${result.kickoffTimeUtc.slice(0, 5)} UTC`
   }
-  return kickoffFormatter.format(epoch)
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(epoch)
 }
 
-function formatPlayerList(players: PublicFixturePlayerResult[], stat: 'goals' | 'assists') {
+function formatPlayerList(players: PublicFixturePlayerResult[], stat: 'goals' | 'assists', copy: ResultsCopy) {
   const contributors = players.filter((player) => player[stat] > 0)
   if (!contributors.length) {
-    return 'None'
+    return copy.none
   }
   return contributors
     .map((player) => `${player.displayName}${player[stat] > 1 ? ` (${player[stat]})` : ''}`)
     .join(', ')
 }
 
-function PlayerDetailRow({ player }: { player: PublicFixturePlayerResult }) {
+function PlayerDetailRow({ copy, player }: { copy: ResultsCopy; player: PublicFixturePlayerResult }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-[0.75rem] border border-white/8 bg-black/16 px-3 py-2">
       <div className="min-w-0">
         <p className="truncate text-xs font-semibold text-white">{player.displayName}</p>
         <p className="mono mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
           {player.minutes}' - ID {player.playerId}
-          {player.rating !== undefined ? ` - Rating ${player.rating}` : ''}
+          {player.rating !== undefined ? ` - ${copy.rating} ${player.rating}` : ''}
         </p>
       </div>
       <div className="flex flex-wrap justify-end gap-1 text-[10px]">
@@ -76,7 +76,7 @@ function PlayerDetailRow({ player }: { player: PublicFixturePlayerResult }) {
   )
 }
 
-function TeamPlayerDetails({ title, teamCode, players }: { title: string; teamCode: string; players: PublicFixturePlayerResult[] }) {
+function TeamPlayerDetails({ copy, title, teamCode, players }: { copy: ResultsCopy; title: string; teamCode: string; players: PublicFixturePlayerResult[] }) {
   return (
     <div className="min-w-0">
       <div className="mb-2 flex items-center gap-2">
@@ -85,10 +85,10 @@ function TeamPlayerDetails({ title, teamCode, players }: { title: string; teamCo
       </div>
       <div className="grid gap-1.5">
         {players.length ? (
-          players.map((player) => <PlayerDetailRow key={player.playerId} player={player} />)
+          players.map((player) => <PlayerDetailRow key={player.playerId} copy={copy} player={player} />)
         ) : (
           <p className="rounded-[0.75rem] border border-white/8 bg-black/16 px-3 py-2 text-xs text-[var(--color-muted)]">
-            No player stats entered yet.
+            {copy.noStats}
           </p>
         )}
       </div>
@@ -96,7 +96,19 @@ function TeamPlayerDetails({ title, teamCode, players }: { title: string; teamCo
   )
 }
 
-function ResultCard({ result, isOpen, onToggle }: { result: PublicFixtureResult; isOpen: boolean; onToggle: () => void }) {
+function ResultCard({
+  copy,
+  locale,
+  result,
+  isOpen,
+  onToggle,
+}: {
+  copy: ResultsCopy
+  locale: LocaleCode
+  result: PublicFixtureResult
+  isOpen: boolean
+  onToggle: () => void
+}) {
   const isFinal = result.status === 'final'
   const homeWon = isFinal && (result.homeGoals ?? 0) > (result.awayGoals ?? 0)
   const awayWon = isFinal && (result.awayGoals ?? 0) > (result.homeGoals ?? 0)
@@ -107,7 +119,7 @@ function ResultCard({ result, isOpen, onToggle }: { result: PublicFixtureResult;
     <article className="surface-row rounded-[0.95rem] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="mono rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
-          Group {result.groupKey}
+          {copy.group} {result.groupKey}
         </span>
         <span
           className={[
@@ -117,7 +129,7 @@ function ResultCard({ result, isOpen, onToggle }: { result: PublicFixtureResult;
               : 'border-white/10 text-[var(--color-muted)]',
           ].join(' ')}
         >
-          {isFinal ? 'Final' : 'Pending'}
+          {isFinal ? copy.final : copy.pending}
         </span>
       </div>
 
@@ -152,41 +164,46 @@ function ResultCard({ result, isOpen, onToggle }: { result: PublicFixtureResult;
       {isFinal ? (
         <div className="mt-3 grid gap-2 rounded-[0.8rem] border border-white/8 bg-black/12 p-3 text-xs text-[var(--color-muted)]">
           <p>
-            <span className="font-semibold text-white">Scorers:</span> {result.homeTeamCode} {formatPlayerList(result.homePlayers, 'goals')} -{' '}
-            {result.awayTeamCode} {formatPlayerList(result.awayPlayers, 'goals')}
+            <span className="font-semibold text-white">{copy.scorers}</span> {result.homeTeamCode} {formatPlayerList(result.homePlayers, 'goals', copy)} -{' '}
+            {result.awayTeamCode} {formatPlayerList(result.awayPlayers, 'goals', copy)}
           </p>
           <p>
-            <span className="font-semibold text-white">Assists:</span> {result.homeTeamCode} {formatPlayerList(result.homePlayers, 'assists')} -{' '}
-            {result.awayTeamCode} {formatPlayerList(result.awayPlayers, 'assists')}
+            <span className="font-semibold text-white">{copy.assists}</span> {result.homeTeamCode} {formatPlayerList(result.homePlayers, 'assists', copy)} -{' '}
+            {result.awayTeamCode} {formatPlayerList(result.awayPlayers, 'assists', copy)}
           </p>
         </div>
       ) : null}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--color-muted)]">
-        <span>{formatKickoff(result)}</span>
+        <span>{formatKickoff(result, locale)}</span>
         <div className="flex items-center gap-2">
-          {isFinal ? <span>{result.entryCount} player entries</span> : null}
+          {isFinal ? <span>{result.entryCount} {copy.playerEntries}</span> : null}
           <button
             type="button"
             onClick={onToggle}
             className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
           >
-            {isOpen ? 'Hide details' : 'Match details'}
+            {isOpen ? copy.hideDetails : copy.matchDetails}
           </button>
         </div>
       </div>
 
       {isOpen ? (
         <div className="mt-3 grid gap-3 border-t border-white/8 pt-3 md:grid-cols-2">
-          <TeamPlayerDetails title={homeName} teamCode={result.homeTeamCode} players={result.homePlayers} />
-          <TeamPlayerDetails title={awayName} teamCode={result.awayTeamCode} players={result.awayPlayers} />
+          <TeamPlayerDetails copy={copy} title={homeName} teamCode={result.homeTeamCode} players={result.homePlayers} />
+          <TeamPlayerDetails copy={copy} title={awayName} teamCode={result.awayTeamCode} players={result.awayPlayers} />
         </div>
       ) : null}
     </article>
   )
 }
 
-export function ResultsPage() {
+interface ResultsPageProps {
+  locale: LocaleCode
+}
+
+export function ResultsPage({ locale }: ResultsPageProps) {
+  const copy = getMessages(locale).results
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [results, setResults] = useState<PublicFixtureResult[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -215,7 +232,7 @@ export function ResultsPage() {
         }
       } catch (loadError) {
         if (active) {
-          setError(loadError instanceof Error ? loadError.message : 'Could not load match results.')
+          setError(loadError instanceof Error ? loadError.message : copy.loadErrorTitle)
           setLoadState('error')
         }
       }
@@ -224,7 +241,7 @@ export function ResultsPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [copy.loadErrorTitle])
 
   const groupedResults = useMemo(() => {
     const groups = new Map<string, PublicFixtureResult[]>()
@@ -245,21 +262,21 @@ export function ResultsPage() {
   return (
     <div className="space-y-4 pb-10">
       <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
-        <p className="eyebrow">match centre</p>
+        <p className="eyebrow">{copy.heroEyebrow}</p>
         <div className="mt-5 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
           <div>
-            <h2 className="section-title max-w-[12ch]">Every result on the board.</h2>
+            <h2 className="section-title max-w-[12ch]">{copy.heroTitle}</h2>
             <p className="mt-4 max-w-[66ch] text-base leading-relaxed text-[var(--color-muted)]">
-              Final scores are derived from the scoring entries that also drive the public tables.
+              {copy.heroBody}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="surface-row rounded-[0.85rem] px-4 py-3">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Final</p>
+              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.final}</p>
               <p className="mt-1 text-2xl font-semibold text-[var(--color-accent)]">{finalCount}</p>
             </div>
             <div className="surface-row rounded-[0.85rem] px-4 py-3">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Fixtures</p>
+              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.fixtures}</p>
               <p className="mt-1 text-2xl font-semibold text-white">{results.length}</p>
             </div>
           </div>
@@ -276,7 +293,7 @@ export function ResultsPage() {
 
       {loadState === 'error' ? (
         <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title="Could not load results" body={error ?? 'The backend returned an unexpected response.'} />
+          <EmptyState title={copy.loadErrorTitle} body={error ?? copy.loadErrorBody} />
         </section>
       ) : null}
 
@@ -286,17 +303,19 @@ export function ResultsPage() {
             <div key={groupKey} className="glass-panel rounded-[1.15rem] p-4">
               <div className="mb-4 flex items-end justify-between gap-4">
                 <div>
-                  <p className="eyebrow text-[10px]">{stageEyebrow(groupKey)}</p>
-                  <h3 className="mt-2 text-2xl font-semibold text-white">{stageTitle(groupKey)}</h3>
+                  <p className="eyebrow text-[10px]">{stageEyebrow(groupKey, copy)}</p>
+                  <h3 className="mt-2 text-2xl font-semibold text-white">{stageTitle(groupKey, copy)}</h3>
                 </div>
                 <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                  {groupResults.filter((result) => result.status === 'final').length}/{groupResults.length} final
+                  {groupResults.filter((result) => result.status === 'final').length}/{groupResults.length} {copy.finalSuffix}
                 </span>
               </div>
               <div className="grid gap-2">
                 {groupResults.map((result) => (
                   <ResultCard
                     key={result.fixtureId}
+                    copy={copy}
+                    locale={locale}
                     result={result}
                     isOpen={openFixtureIds.has(result.fixtureId)}
                     onToggle={() => toggleFixtureDetails(result.fixtureId)}

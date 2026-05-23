@@ -133,7 +133,7 @@ export function createAuthRouter(
     try {
       const result = await registrationRepository.createPending(registrationInput, plainToken)
       const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
-      const delivery = await sendVerificationMail(registrationInput.email, verificationUrl)
+      const delivery = await sendVerificationMail(registrationInput.email, verificationUrl, registrationInput.browserLocale)
       void emailMarketingRepository.queueAutoresponders('registration_created', result.record).catch((error) => {
         console.error('Failed to queue registration autoresponder', error)
       })
@@ -288,7 +288,7 @@ export function createAuthRouter(
     }
 
     const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
-    const delivery = await sendVerificationMail(parsed.email, verificationUrl)
+    const delivery = await sendVerificationMail(parsed.email, verificationUrl, result.record.browserLocale)
 
     res.json({
       participantId: result.record.participantId,
@@ -308,7 +308,7 @@ export function createAuthRouter(
 
     if (participant) {
       const resetUrl = `${env.PUBLIC_WEB_URL}/reset-password?token=${plainToken}`
-      await sendPasswordResetMail(parsed.email, resetUrl)
+      await sendPasswordResetMail(parsed.email, resetUrl, participant.browserLocale)
     }
 
     res.json({

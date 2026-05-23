@@ -4,8 +4,9 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
-import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier, leagueCopy } from '../data/eventConfig'
+import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
 import { useBootstrap } from '../hooks/useBootstrap'
+import { getMessages, type AppMessages } from '../i18n/messages'
 import {
   ApiError,
   assignSquadPlayer,
@@ -64,6 +65,8 @@ interface PasswordFormState {
   confirmPassword: string
 }
 
+type BuilderCopy = AppMessages['builder']
+
 const initialRegistrationForm: RegistrationFormState = {
   mode: 'rookie',
   displayName: '',
@@ -77,8 +80,8 @@ const initialPasswordForm: PasswordFormState = {
   confirmPassword: '',
 }
 
-function leagueLabel(mode: LeagueType) {
-  return leagueCopy[mode]
+function leagueLabel(mode: LeagueType, copy: BuilderCopy) {
+  return copy.leagueLabels[mode]
 }
 
 function formatBudget(value: number) {
@@ -89,18 +92,11 @@ function formatMultiplier(value: number) {
   return `x${value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: value % 1 === 0 ? 0 : 2 })}`
 }
 
-function compactSlotLabel(label: string) {
-  return label.replace('Starting ', '').replace('Reserve ', 'Sub ')
+function compactSlotLabel(label: string, copy: BuilderCopy) {
+  return label.replace('Starting ', copy.slots.startingPrefix).replace('Reserve ', copy.slots.reservePrefix)
 }
 
 const slotClassOrder: SlotClass[] = ['GK', 'DEF', 'MID', 'FWD']
-
-const slotClassCopy: Record<SlotClass, { label: string; pickLabel: string }> = {
-  GK: { label: 'Goalkeepers', pickLabel: 'Pick a goalkeeper' },
-  DEF: { label: 'Defenders', pickLabel: 'Pick a defender' },
-  MID: { label: 'Midfielders', pickLabel: 'Pick a midfielder' },
-  FWD: { label: 'Forwards', pickLabel: 'Pick a forward' },
-}
 
 function getNextDraftSlotKey(squad: ParticipantSquad, currentSlotKey?: string | null) {
   const slots = squad.slots
@@ -183,8 +179,9 @@ function getCompetitionStartEpoch(fixtures: FixtureSeed[]) {
   return kickoffEpochs.length ? Math.min(...kickoffEpochs) : null
 }
 
-export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '', mode = 'builder' }: BuilderPageProps) {
-  void _locale
+export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = 'builder' }: BuilderPageProps) {
+  const copy = getMessages(locale).builder
+  const slotClassCopy = copy.slotClasses
   const { data: bootstrap } = useBootstrap()
 
   const initialReadyState = readParticipantReady()
@@ -274,9 +271,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
   const socialSharingUnlocked = draftedCount === 15
   const totalSlotCount = squad?.slots.length ?? 15
   const draftCompletionRatio = Math.round((draftedCount / Math.max(totalSlotCount, 1)) * 100)
-  const selectedSlotLabel = selectedSlot ? compactSlotLabel(selectedSlot.label) : 'No slot selected'
+  const selectedSlotLabel = selectedSlot ? compactSlotLabel(selectedSlot.label, copy) : copy.slots.noSlotSelected
   const previousDraftedCountRef = useRef<number | null>(null)
-  const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? 'Budget left' : 'Budget'
+  const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? copy.common.budgetLeft : copy.common.budget
   const readyBudgetValue = dashboardSeed?.budgetRemaining ?? dashboardSeed?.budgetLimit ?? budgetLimit
 
   useEffect(() => {
@@ -369,10 +366,10 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSelectedTeamCode(session.participant.primaryTeamCode)
       setAccessState('active')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not open the protected builder.'
+      const message = error instanceof Error ? error.message : copy.errors.openBuilder
       if (/session/i.test(message)) {
         moveToGuestState()
-        setSessionError('Your browser session expired. Restore access before opening the builder again.')
+        setSessionError(copy.errors.sessionExpired)
       } else {
         setSessionError(message)
       }
@@ -393,7 +390,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setLoadedTeamCode(teamCode)
       setPlayerSearch('')
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Could not load the team pool.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.loadTeamPool)
       setTeamPlayers([])
       setLoadedTeamCode(null)
     } finally {
@@ -430,7 +427,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
     try {
       if (!registrationForm.primaryTeamCode) {
-        throw new Error('Choose a registration country first.')
+        throw new Error(copy.errors.chooseCountry)
       }
 
       const response = await registerParticipant({
@@ -449,7 +446,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSubmittedEmail(response.email)
       setAccessState('pending')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed.'
+      const message = error instanceof Error ? error.message : copy.errors.registrationFailed
       setRegistrationError(message)
     } finally {
       setRegistrationBusy(false)
@@ -467,7 +464,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       await resendVerificationEmail(submittedEmail)
       setResendState('sent')
     } catch (error) {
-      setRegistrationError(error instanceof Error ? error.message : 'Could not resend the email.')
+      setRegistrationError(error instanceof Error ? error.message : copy.errors.resendFailed)
       setResendState('idle')
     }
   }
@@ -478,7 +475,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     setPasswordMessage(null)
 
     if (passwordForm.password !== passwordForm.confirmPassword) {
-      setPasswordError('Passwords do not match.')
+      setPasswordError(copy.errors.passwordsMismatch)
       return
     }
 
@@ -488,12 +485,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       persistReadyState(buildReadyState(response.participant, response.budgetLimit, response.squadSummary))
       setParticipant((current) => (current ? response.participant : current))
       setPasswordForm(initialPasswordForm)
-      setPasswordMessage('Password saved. You can now sign in from the dedicated login page.')
+      setPasswordMessage(copy.errors.passwordSaved)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Password could not be saved.'
+      const message = error instanceof Error ? error.message : copy.errors.passwordFailed
       if (/session/i.test(message)) {
         moveToGuestState()
-        setSessionError('Your browser session expired. Sign in again, then set a password.')
+        setSessionError(copy.errors.passwordSessionExpired)
       } else {
         setPasswordError(message)
       }
@@ -507,17 +504,17 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       const reason = typeof error.payload?.reason === 'string' ? (error.payload.reason as string) : null
       switch (reason) {
         case 'invalid_username':
-          return 'Soccerverse username must be 1–60 characters.'
+          return copy.errors.invalidUsername
         case 'username_taken':
-          return 'That Soccerverse username is already linked to another participant.'
+          return copy.errors.usernameTaken
         case 'already_linked':
-          return 'A Soccerverse account is already linked to this participant.'
+          return copy.errors.alreadyLinked
         case 'not_found':
-          return 'Participant not found. Please sign out and back in.'
+          return copy.errors.participantNotFound
       }
       return error.message
     }
-    return error instanceof Error ? error.message : 'Could not link the Soccerverse account.'
+    return error instanceof Error ? error.message : copy.errors.linkFailed
   }
 
   async function handleLinkSoccerverse(event: FormEvent<HTMLFormElement>) {
@@ -526,7 +523,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
     setLinkMessage(null)
     const trimmed = linkUsername.trim()
     if (!trimmed) {
-      setLinkError('Enter your Soccerverse username.')
+      setLinkError(copy.errors.enterUsername)
       return
     }
     setLinkBusy(true)
@@ -534,7 +531,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       const response = await linkSoccerverseAccount(trimmed)
       setParticipant((current) => (current ? { ...current, ...response.participant } : response.participant))
       setLinkUsername('')
-      setLinkMessage('Soccerverse account linked. An admin can move you into the Veteran league when ready.')
+      setLinkMessage(copy.errors.linkSaved)
     } catch (error) {
       setLinkError(linkSoccerverseErrorMessage(error))
     } finally {
@@ -550,7 +547,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSquad(response.squad)
       setSelectedSlotKey(getNextDraftSlotKey(response.squad, slotKey))
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Player could not be assigned.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.assignFailed)
     }
   }
 
@@ -562,12 +559,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSquad(response.squad)
       setSelectedSlotKey(slotKey)
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Player could not be removed.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.removeFailed)
     }
   }
 
   async function handleReset() {
-    const approved = window.confirm('Reset this competition squad and restore the selected budget?')
+    const approved = window.confirm(copy.confirms.reset)
     if (!approved) {
       return
     }
@@ -579,7 +576,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setSquad(response.squad)
       setSelectedSlotKey(getNextDraftSlotKey(response.squad))
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Squad reset failed.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.resetFailed)
     }
   }
 
@@ -594,12 +591,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Budget could not be changed.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.budgetFailed)
     }
   }
 
   async function handleLockSquad() {
-    const approved = window.confirm('Submit this squad? You can still edit it until the competition starts.')
+    const approved = window.confirm(copy.confirms.submit)
     if (!approved) {
       return
     }
@@ -610,12 +607,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       syncReadyStateWithSquad(participant, response.squad)
       setSquad(response.squad)
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Squad could not be submitted.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.submitFailed)
     }
   }
 
   async function handleReveal(revealSquad: boolean) {
-    const approved = window.confirm(revealSquad ? 'Reveal your public profile and submitted squad?' : 'Reveal your public profile without showing the squad?')
+    const approved = window.confirm(revealSquad ? copy.confirms.revealWithSquad : copy.confirms.revealProfile)
     if (!approved) {
       return
     }
@@ -626,7 +623,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       setParticipant(response.participant)
       setPublicProfileUrl(response.publicProfileUrl || buildPublicProfileUrl(response.participant))
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : 'Profile reveal failed.')
+      setBuilderError(error instanceof Error ? error.message : copy.errors.revealFailed)
     }
   }
 
@@ -664,7 +661,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
         ].join(' ')}
       >
         <span className="pitch-slot-meta">
-          <span>{compactSlotLabel(slot.label)}</span>
+          <span>{compactSlotLabel(slot.label, copy)}</span>
           <span>{slot.slotClass}</span>
         </span>
         {slot.player ? (
@@ -694,7 +691,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
             </span>
           </span>
         ) : (
-          <span className="pitch-empty-copy">Tap to draft</span>
+          <span className="pitch-empty-copy">{copy.slots.tapToDraft}</span>
         )}
       </button>
     )
@@ -706,24 +703,24 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
         <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-              Builder access
+              {copy.locked.access}
             </span>
             <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-              Verification required
+              {copy.locked.verificationRequired}
             </span>
           </div>
           <h2 className="mt-7 max-w-[11ch] text-[clamp(2.6rem,2.8vw+1rem,4.5rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
-            Builder opens after registration.
+            {copy.locked.title}
           </h2>
           <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
-            Create an entry first, confirm the email link, then return here to open your protected squad dashboard.
+            {copy.locked.body}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to={withReferral('/register', referrerSoccerverseUsername)}
               className="premium-button px-7 py-4 text-base font-semibold"
             >
-              Register an entry
+              {copy.locked.cta}
             </Link>
           </div>
         </section>
@@ -732,20 +729,20 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       {accessState === 'guest' ? (
         <section className="grid gap-6">
           <div className="hero-card allow-dropdown-overflow rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
-            <p className="eyebrow">registration workflow</p>
+            <p className="eyebrow">{copy.register.eyebrow}</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
-                No multi-accounting allowed
+                {copy.register.noMulti}
               </span>
               <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                One email, one hidden squad
+                {copy.register.oneEmail}
               </span>
             </div>
             <h2 className="mt-7 max-w-[10ch] text-[clamp(2.8rem,3vw+1.1rem,5rem)] font-semibold leading-[0.92] tracking-[-0.05em] text-white">
-              Register first. Draft after verification.
+              {copy.register.title}
             </h2>
             <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
-              Pick rookie or veteran, set your countries, confirm your email, then unlock the protected squad builder and choose your SVC budget.
+              {copy.register.body}
             </p>
 
             <form onSubmit={handleRegister} className="mt-8 grid gap-5">
@@ -770,12 +767,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   >
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{mode}</p>
                     <p className="mt-3 text-lg font-semibold text-white">
-                      {mode === 'rookie' ? 'I have no Soccerverse account' : 'I have at least 1 Soccerverse account'}
+                      {mode === 'rookie' ? copy.register.rookieTitle : copy.register.veteranTitle}
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
                       {mode === 'rookie'
-                        ? 'Beginner-friendly entry. Link a Soccerverse account later to earn the ownership boost while keeping your Rookie standing.'
-                        : 'Provide your main Soccerverse account and enter the veteran league. Ownership boost earned from post-registration buys.'}
+                        ? copy.register.rookieBody
+                        : copy.register.veteranBody}
                     </p>
                   </button>
                 ))}
@@ -783,7 +780,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Nickname</span>
+                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.register.nickname}</span>
                   <input
                     required
                     autoComplete="nickname"
@@ -794,13 +791,13 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         displayName: event.target.value,
                       }))
                     }
-                    placeholder="Display name"
+                    placeholder={copy.register.displayNamePlaceholder}
                     className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                   />
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Email address</span>
+                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.register.emailAddress}</span>
                   <input
                     required
                     type="email"
@@ -812,7 +809,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         email: event.target.value,
                       }))
                     }
-                    placeholder="name@example.com"
+                    placeholder={copy.register.emailPlaceholder}
                     className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                   />
                 </label>
@@ -820,7 +817,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
               {registrationForm.mode === 'veteran' ? (
                 <label className="grid gap-2">
-                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">Main Soccerverse account</span>
+                  <span className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.register.mainAccount}</span>
                   <input
                     required
                     autoComplete="username"
@@ -831,7 +828,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         soccerverseUsername: event.target.value,
                       }))
                     }
-                    placeholder="Soccerverse username"
+                    placeholder={copy.register.accountPlaceholder}
                     className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                   />
                 </label>
@@ -839,10 +836,10 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <TeamSelect
-                  label="Registration country"
+                  label={copy.register.registrationCountry}
                   teams={eventTeams}
                   value={registrationForm.primaryTeamCode}
-                  placeholder="Choose your main country"
+                  placeholder={copy.register.registrationCountryPlaceholder}
                   onChange={(teamCode) =>
                     setRegistrationForm((current) => ({
                       ...current,
@@ -852,10 +849,10 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   }
                 />
                 <TeamSelect
-                  label="Secondary country"
+                  label={copy.register.secondaryCountry}
                   teams={eventTeams}
                   value={registrationForm.secondaryTeamCode}
-                  placeholder="Optional second country"
+                  placeholder={copy.register.secondaryCountryPlaceholder}
                   excludeTeamCode={registrationForm.primaryTeamCode}
                   onChange={(teamCode) =>
                     setRegistrationForm((current) => ({
@@ -879,7 +876,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
                 />
                 <span>
-                  I want to receive Soccerverse World Cup news, reminders, and event updates by email. I can unsubscribe any time.
+                  {copy.register.marketingOptIn}
                 </span>
               </label>
 
@@ -899,7 +896,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 disabled={registrationBusy}
                 className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-8 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
-                {registrationBusy ? 'Submitting registration…' : 'Register and send confirmation email'}
+                {registrationBusy ? copy.register.submitting : copy.register.submit}
               </button>
             </form>
           </div>
@@ -910,13 +907,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
       {accessState === 'pending' ? (
         <section className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
           <div className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
-            <p className="eyebrow">step 2 · verify email</p>
+            <p className="eyebrow">{copy.pending.eyebrow}</p>
             <h2 className="mt-6 max-w-[11ch] text-[clamp(2.6rem,2.8vw+1rem,4.4rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
-              Confirm the link to unlock the budget.
+              {copy.pending.title}
             </h2>
             <p className="mt-6 max-w-[56ch] text-lg leading-relaxed text-[var(--color-muted)]">
-              We sent the access link to <span className="font-medium text-white">{submittedEmail}</span>. Once you open it, your
-              participant session becomes active and the protected dashboard is ready.
+              {copy.pending.bodyPrefix} <span className="font-medium text-white">{submittedEmail}</span>. {copy.pending.bodySuffix}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -926,14 +922,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 disabled={resendState === 'sending'}
                 className="rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
-                {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Email sent again' : 'Resend verification email'}
+                {resendState === 'sending' ? copy.pending.sending : resendState === 'sent' ? copy.pending.sent : copy.pending.resend}
               </button>
               <button
                 type="button"
                 onClick={() => setAccessState('guest')}
                 className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
               >
-                Back to registration
+                {copy.pending.back}
               </button>
             </div>
 
@@ -946,13 +942,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
           <div className="grid gap-4">
             <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">what happens next</p>
+              <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.pending.nextTitle}</p>
               <div className="mt-5 space-y-3">
-                {[
-                  ['1', 'Open the email', 'Use the verification link from the same device if possible.'],
-                  ['2', 'Land on the dashboard', 'The confirmation page stores your verified participant state locally.'],
-                  ['3', 'Start the builder', 'Your protected squad and session only load after the CTA press.'],
-                ].map(([step, title, body]) => (
+                {copy.pending.steps.map(({ step, title, body }) => (
                   <div key={step} className="rounded-[1.4rem] border border-white/8 bg-[rgba(8,13,12,0.68)] px-4 py-4">
                     <div className="flex items-center gap-3">
                       <span className="mono inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 text-[11px] uppercase tracking-[0.18em] text-[var(--color-accent)]">
@@ -973,17 +965,17 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
         <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-              Entry active
+              {copy.registered.active}
             </span>
             <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-              {leagueLabel(dashboardSeed.leagueType)}
+              {leagueLabel(dashboardSeed.leagueType, copy)}
             </span>
           </div>
           <h2 className="mt-7 max-w-[12ch] text-[clamp(2.4rem,2.4vw+1rem,4rem)] font-semibold leading-[0.94] tracking-[-0.05em] text-white">
-            Your entry is already registered.
+            {copy.registered.title}
           </h2>
           <p className="mt-6 max-w-[56ch] text-lg leading-relaxed text-[var(--color-muted)]">
-            Continue to the Builder tab to open the protected squad dashboard for{' '}
+            {copy.registered.bodyPrefix}{' '}
             <span className="font-semibold text-white">{dashboardSeed.displayName}</span>.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -991,13 +983,13 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               to={withReferral('/builder', referrerSoccerverseUsername)}
               className="premium-button px-7 py-4 text-base font-semibold"
             >
-              Open builder
+              {copy.common.openBuilder}
             </Link>
             <Link
               to={withReferral('/tables', referrerSoccerverseUsername)}
               className="inline-flex items-center rounded-full border border-white/12 px-6 py-4 text-base font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
             >
-              View public tables
+              {copy.common.viewTables}
             </Link>
           </div>
         </section>
@@ -1008,25 +1000,24 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
           <div className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                Verified
+                {copy.common.verified}
               </span>
               <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                {leagueLabel(dashboardSeed.leagueType)}
+                {leagueLabel(dashboardSeed.leagueType, copy)}
               </span>
               <span className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                Hidden squad entry
+                {copy.common.hiddenSquadEntry}
               </span>
             </div>
 
             <div className="mt-7 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
               <div>
-                <p className="eyebrow">participant dashboard</p>
+                <p className="eyebrow">{copy.ready.eyebrow}</p>
                 <h2 className="mt-4 max-w-[16ch] text-[clamp(2.1rem,1.6vw+1rem,3.35rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-white">
-                  Your entry is live. The draft starts when you do.
+                  {copy.ready.title}
                 </h2>
                 <p className="mt-4 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)]">
-                  Welcome back, <span className="font-semibold text-white">{dashboardSeed.displayName}</span>. Your email is confirmed,
-                  your budget is reserved, and the protected builder only opens after your main CTA.
+                  {copy.ready.welcomePrefix} <span className="font-semibold text-white">{dashboardSeed.displayName}</span>. {copy.ready.welcomeSuffix}
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -1036,13 +1027,13 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     disabled={sessionBusy}
                     className="premium-button px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {sessionBusy ? 'Opening builder…' : 'Start building my squad'}
+                    {sessionBusy ? copy.ready.opening : copy.ready.start}
                   </button>
                   <Link
                     to={withReferral('/tables', referrerSoccerverseUsername)}
                     className="inline-flex items-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                   >
-                    View public tables
+                    {copy.common.viewTables}
                   </Link>
                 </div>
 
@@ -1054,18 +1045,18 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
                 <div className="data-strip mt-6 max-w-[34rem]">
                   <div>
-                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">Status</p>
-                    <p className="mt-2 text-sm font-semibold text-white">Verified</p>
+                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.common.status}</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{copy.common.verified}</p>
                   </div>
                   <div>
-                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">League</p>
-                    <p className="mt-2 text-sm font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
+                    <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.common.league}</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{leagueLabel(dashboardSeed.leagueType, copy)}</p>
                   </div>
                   <div>
                     <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{readyBudgetLabel}</p>
                     <p className="mono mt-2 text-sm font-semibold text-[var(--color-accent)]">{formatBudget(readyBudgetValue)}</p>
                     {dashboardSeed.budgetUsed !== undefined ? (
-                      <p className="mt-1 text-xs text-[var(--color-muted)]">{formatBudget(dashboardSeed.budgetUsed)} used</p>
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">{formatBudget(dashboardSeed.budgetUsed)} {copy.common.used}</p>
                     ) : null}
                   </div>
                 </div>
@@ -1073,20 +1064,20 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
               <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
                 <div className="surface-row rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">account snapshot</p>
+                  <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.ready.accountSnapshot}</p>
                   <div className="mt-5 grid gap-3">
                     <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Nickname</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.common.nickname}</p>
                       <p className="mt-2 text-lg font-semibold text-white">{dashboardSeed.displayName}</p>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Email</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.common.email}</p>
                       <p className="mt-2 break-all text-sm font-medium text-white">{dashboardSeed.email}</p>
                     </div>
                     <div className="grid gap-3">
                       <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
-                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">League</p>
-                        <p className="mt-2 text-base font-semibold text-white">{leagueLabel(dashboardSeed.leagueType)}</p>
+                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.common.league}</p>
+                        <p className="mt-2 text-base font-semibold text-white">{leagueLabel(dashboardSeed.leagueType, copy)}</p>
                       </div>
                       <div className="rounded-[0.95rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-3">
                         <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{readyBudgetLabel}</p>
@@ -1096,8 +1087,8 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         </p>
                         {dashboardSeed.budgetUsed !== undefined ? (
                           <p className="mt-1 text-xs text-[var(--color-muted)]">
-                            {formatBudget(dashboardSeed.budgetUsed)} used
-                            {dashboardSeed.draftedCount !== undefined ? ` · ${dashboardSeed.draftedCount}/15 filled` : ''}
+                            {formatBudget(dashboardSeed.budgetUsed)} {copy.common.used}
+                            {dashboardSeed.draftedCount !== undefined ? ` · ${dashboardSeed.draftedCount}/15 ${copy.ready.filledSuffix}` : ''}
                           </p>
                         ) : null}
                       </div>
@@ -1108,9 +1099,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 <div className="surface-row rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">security</p>
+                      <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.ready.security}</p>
                       <h3 className="mt-3 max-w-[16rem] text-xl font-semibold tracking-tight text-white">
-                        {dashboardSeed.hasPassword ? 'Password login is active' : 'Set a password for later sign-ins'}
+                        {dashboardSeed.hasPassword ? copy.ready.passwordActive : copy.ready.setPasswordTitle}
                       </h3>
                     </div>
                     <button
@@ -1118,20 +1109,20 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       onClick={() => void handleSignOut()}
                       className="whitespace-nowrap rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                     >
-                      Sign out
+                      {copy.common.signOut}
                     </button>
                   </div>
 
                   {!participant?.soccerverseUsername ? (
                     <form onSubmit={handleLinkSoccerverse} className="mt-5 grid gap-3 rounded-[1rem] border border-[var(--color-accent)]/15 bg-[var(--color-accent)]/5 p-4">
                       <div>
-                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">Optional · link your Soccerverse account</p>
+                        <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">{copy.ready.linkTitle}</p>
                         <p className="mt-2 text-sm leading-relaxed text-[var(--color-paper)]">
-                          Link your Soccerverse account to keep it associated with this entry. You stay in the {leagueLabel(dashboardSeed.leagueType)} league for now — an admin can move you to the Veteran league later if you want to compete for the bigger prize pool.
+                          {copy.ready.linkBodyPrefix} {leagueLabel(dashboardSeed.leagueType, copy)} {copy.ready.linkBodySuffix}
                         </p>
                       </div>
                       <label className="grid gap-2">
-                        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Soccerverse username</span>
+                        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.ready.soccerverseUsername}</span>
                         <input
                           required
                           type="text"
@@ -1139,7 +1130,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                           autoComplete="off"
                           value={linkUsername}
                           onChange={(event) => setLinkUsername(event.target.value)}
-                          placeholder="your-soccerverse-name"
+                          placeholder={copy.ready.linkPlaceholder}
                           className="rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                         />
                       </label>
@@ -1158,7 +1149,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         disabled={linkBusy}
                         className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                       >
-                        {linkBusy ? 'Linking…' : 'Link Soccerverse account'}
+                        {linkBusy ? copy.ready.linking : copy.ready.linkCta}
                       </button>
                     </form>
                   ) : null}
@@ -1166,12 +1157,11 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   {!dashboardSeed.hasPassword ? (
                     <form onSubmit={handleSetPassword} className="mt-5 grid gap-4">
                       <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                        This browser session is already verified. Add a password now so you can return later through the dedicated login
-                        screen.
+                        {copy.ready.passwordHelp}
                       </p>
                       <div className="grid gap-3 2xl:grid-cols-2">
                         <label className="grid gap-2">
-                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">New password</span>
+                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.ready.newPassword}</span>
                           <input
                             required
                             type="password"
@@ -1188,7 +1178,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                           />
                         </label>
                         <label className="grid gap-2">
-                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Repeat password</span>
+                          <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.ready.repeatPassword}</span>
                           <input
                             required
                             type="password"
@@ -1222,14 +1212,13 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         disabled={passwordBusy}
                         className="inline-flex w-fit items-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                       >
-                        {passwordBusy ? 'Saving password…' : 'Save password access'}
+                        {passwordBusy ? copy.ready.savingPassword : copy.ready.savePassword}
                       </button>
                     </form>
                   ) : (
                     <div className="mt-5 rounded-[1.4rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-4 py-4">
                       <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                        You can sign in later from the Login screen with your email and password, or request a recovery link if you lose
-                        access.
+                        {copy.ready.passwordReady}
                       </p>
                     </div>
                   )}
@@ -1247,31 +1236,31 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                    Builder unlocked
+                    {copy.active.unlocked}
                   </span>
                   <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                    {leagueLabel(participant.leagueType)}
+                    {leagueLabel(participant.leagueType, copy)}
                   </span>
                   <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                    {draftedCount}/15 selected
+                    {draftedCount}/15 {copy.common.selected}
                   </span>
                   {squad.isLocked ? (
                     <span className="rounded-full border border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
-                      {competitionStarted ? 'Squad locked' : 'Submitted, editable'}
+                      {competitionStarted ? copy.active.squadLocked : copy.active.submittedEditable}
                     </span>
                   ) : null}
                 </div>
 
-                <p className="eyebrow mt-5">step 3 · squad builder</p>
+                <p className="eyebrow mt-5">{copy.active.eyebrow}</p>
                 <h2 className="mt-3 max-w-[18ch] text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
-                  Build, adjust, submit.
+                  {copy.active.title}
                 </h2>
                 <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[var(--color-muted)]">
-                  Verified as <span className="font-medium text-white">{participant.displayName}</span>. Choose a team pool, fill the open slots,
-                  and stay under the selected {formatBudget(squad.budgetLimit)} cap.
-                  Your score multiplier is <span className="font-medium text-white">{formatMultiplier(activeScoreMultiplier)}</span>.
-                  {squad.isLocked && canEditSquad ? ' Your squad is submitted, but you can still edit it until kickoff.' : ''}
-                  {!canEditSquad ? ' The competition has started, so submitted squads are now locked.' : ''}
+                  {copy.active.verifiedAs} <span className="font-medium text-white">{participant.displayName}</span>. {copy.active.bodyMiddle}{' '}
+                  {formatBudget(squad.budgetLimit)} {copy.active.capSuffix}{' '}
+                  {copy.active.multiplierPrefix} <span className="font-medium text-white">{formatMultiplier(activeScoreMultiplier)}</span>.
+                  {squad.isLocked && canEditSquad ? ` ${copy.active.submittedEditableNote}` : ''}
+                  {!canEditSquad ? ` ${copy.active.lockedNote}` : ''}
                 </p>
               </div>
 
@@ -1279,11 +1268,11 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 <div className="surface-row rounded-[0.9rem] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">account</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.common.account}</p>
                       <p className="mt-2 text-base font-semibold text-white">{participant.displayName}</p>
                       <p className="mt-1 break-all text-xs text-[var(--color-muted)]">{participant.email}</p>
                       {participant.soccerverseUsername ? (
-                        <p className="mt-1 text-xs text-[var(--color-muted)]">Main Soccerverse account: {participant.soccerverseUsername}</p>
+                        <p className="mt-1 text-xs text-[var(--color-muted)]">{copy.active.mainAccount} {participant.soccerverseUsername}</p>
                       ) : null}
                     </div>
                     <button
@@ -1291,42 +1280,42 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       onClick={() => void handleSignOut()}
                       className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                     >
-                      Sign out
+                      {copy.common.signOut}
                     </button>
                   </div>
                 </div>
 
                 <div className="surface-row rounded-[0.9rem] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">draft progress</p>
+                  <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.active.draftProgress}</p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Budget left</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.common.budgetLeft}</p>
                       <p className="mt-1 text-lg font-semibold tracking-tight text-[var(--color-accent)]">
                         {formatBudget(squad.budgetRemaining)}
                       </p>
                     </div>
                     <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Slots filled</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.slotsFilled}</p>
                       <p className="mt-1 text-lg font-semibold tracking-tight text-white">{draftedCount} / 15</p>
                     </div>
                     <div className="rounded-[0.85rem] border border-white/8 bg-[rgba(255,255,255,0.03)] px-3 py-3 sm:col-span-2">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Score multiplier</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.scoreMultiplier}</p>
                       <p className="mt-1 text-lg font-semibold tracking-tight text-white">{formatMultiplier(activeScoreMultiplier)}</p>
                     </div>
                   </div>
                   {socialSharingUnlocked ? (
                     <div className="mt-4 rounded-[1.4rem] border border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 px-4 py-4">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">share status</p>
-                      <p className="mt-2 text-base font-semibold text-white">Social sharing unlocked.</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">{copy.active.shareStatus}</p>
+                      <p className="mt-2 text-base font-semibold text-white">{copy.active.shareUnlocked}</p>
                       <p className="mt-1 text-sm text-[var(--color-muted)]">
-                        Your competition squad is complete. Lock it once before kickoff, then it carries the whole event.
+                        {copy.active.shareBody}
                       </p>
                       <div className="mt-4">
                         <Link
                           to="/builder/share"
                           className="inline-flex rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
                         >
-                          Open share page
+                          {copy.active.shareCta}
                         </Link>
                       </div>
                     </div>
@@ -1338,7 +1327,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
           <div className="builder-flow-strip">
             <div>
-              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">active slot</p>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.active.activeSlot}</p>
               <p className="mt-1 text-base font-semibold text-white">{selectedSlotLabel}</p>
             </div>
             <div className="budget-menu-anchor">
@@ -1349,14 +1338,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 className={['budget-command-button', budgetMenuOpen ? 'is-open' : ''].join(' ')}
               >
                 <span className="budget-command-main">
-                  <span className="mono block whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">budget left</span>
+                  <span className="mono block whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.common.budgetLeft}</span>
                   <span className="mt-1 block whitespace-nowrap text-base font-semibold text-[var(--color-accent)]">{formatBudget(squad.budgetRemaining)}</span>
                   <span className="mono mt-1 block whitespace-nowrap text-[10px] uppercase tracking-[0.14em] text-white/60">
-                    cap {formatBudget(squad.budgetLimit)}
+                    {copy.active.cap} {formatBudget(squad.budgetLimit)}
                   </span>
                 </span>
                 <span className="budget-command-action">
-                  <span className="mono text-[10px] uppercase tracking-[0.14em]">Change cap</span>
+                  <span className="mono text-[10px] uppercase tracking-[0.14em]">{copy.active.changeCap}</span>
                   <svg
                     viewBox="0 0 20 20"
                     aria-hidden="true"
@@ -1371,15 +1360,15 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                 <div className="budget-popover">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">budget menu</p>
-                      <p className="mt-1 text-sm text-[var(--color-muted)]">Lower cap, bigger multiplier. Disabled caps need players removed first.</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">{copy.active.budgetMenu}</p>
+                      <p className="mt-1 text-sm text-[var(--color-muted)]">{copy.active.budgetMenuBody}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setBudgetMenuOpen(false)}
                       className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/6"
                     >
-                      Close
+                      {copy.common.close}
                     </button>
                   </div>
                   <div className="mt-3 grid gap-2">
@@ -1405,7 +1394,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         >
                           <span>
                             <span className="block text-sm font-semibold">{formatBudget(option.budgetLimit)}</span>
-                            {isTooLow ? <span className="mt-0.5 block text-[11px] text-[var(--color-sand)]">Remove players first</span> : null}
+                            {isTooLow ? <span className="mt-0.5 block text-[11px] text-[var(--color-sand)]">{copy.active.removePlayersFirst}</span> : null}
                           </span>
                           <span className="mono text-xs text-[var(--color-accent)]">{formatMultiplier(option.scoreMultiplier)}</span>
                         </button>
@@ -1416,12 +1405,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               ) : null}
             </div>
             <div>
-              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">drafted</p>
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.active.drafted}</p>
               <p className="mt-1 text-base font-semibold text-white">{draftedCount} / {totalSlotCount}</p>
             </div>
             <div className="min-w-0">
               <div className="flex items-center justify-between gap-3">
-                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">completion</p>
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.active.completion}</p>
                 <p className="mono text-xs text-white">{draftCompletionRatio}%</p>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/7">
@@ -1438,14 +1427,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="eyebrow">team pool</p>
+                    <p className="eyebrow">{copy.active.teamPool}</p>
                     <h3 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                      {selectedSlot ? slotClassCopy[selectedSlot.slotClass].pickLabel : 'Scouting board'}
+                      {selectedSlot ? slotClassCopy[selectedSlot.slotClass].pickLabel : copy.active.scoutingBoard}
                     </h3>
                     <p className="mt-2 text-sm text-[var(--color-muted)]">
                       {selectedSlot
-                        ? `${compactSlotLabel(selectedSlot.label)} is active. Only compatible players are shown.`
-                        : 'Select a squad slot to filter the pool by position.'}
+                        ? `${compactSlotLabel(selectedSlot.label, copy)} ${copy.active.activeSlotSuffix}`
+                        : copy.active.selectSlotToFilter}
                     </p>
                   </div>
                   {selectedTeam ? (
@@ -1458,10 +1447,10 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
                 <div className="mt-4 max-w-xl">
                   <TeamSelect
-                    label="World Cup team"
+                    label={copy.active.worldCupTeam}
                     teams={eventTeams}
                     value={selectedTeamCode}
-                    placeholder="Select a World Cup team"
+                    placeholder={copy.active.worldCupTeamPlaceholder}
                     onChange={(teamCode) => {
                       setSelectedTeamCode(teamCode)
                       setLoadedTeamCode(null)
@@ -1479,9 +1468,9 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     disabled={teamPlayersLoading || !selectedTeamCode}
                     className="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                   >
-                    {teamPlayersLoading ? 'Loading team pool...' : 'Refresh team pool'}
+                    {teamPlayersLoading ? copy.active.loadingTeamPool : copy.active.refreshTeamPool}
                   </button>
-                  <p className="self-center text-xs text-[var(--color-muted)]">The selected team pool loads automatically.</p>
+                  <p className="self-center text-xs text-[var(--color-muted)]">{copy.active.autoLoad}</p>
                 </div>
 
                 <div className="mt-5 grid gap-3">
@@ -1513,32 +1502,32 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
                   <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                     <label className="block">
-                      <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Search players</span>
+                      <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.searchPlayers}</span>
                       <input
                         type="search"
                         value={playerSearch}
                         onChange={(event) => setPlayerSearch(event.target.value)}
-                        placeholder="Name, ID, position..."
+                        placeholder={copy.active.searchPlaceholder}
                         className="mt-2 w-full rounded-[0.9rem] border border-white/10 bg-[rgba(8,13,12,0.78)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]/45"
                       />
                     </label>
                     <div className="rounded-[0.9rem] border border-white/8 bg-white/[0.03] px-4 py-3">
-                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Shown</p>
-                      <p className="mt-1 text-sm font-semibold text-white">{visibleTeamPlayers.length} players</p>
+                      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.shown}</p>
+                      <p className="mt-1 text-sm font-semibold text-white">{visibleTeamPlayers.length} {copy.common.players}</p>
                     </div>
                   </div>
                 </div>
 
                 {selectedSlot?.player ? (
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[0.9rem] border border-[var(--color-sand)]/20 bg-[var(--color-sand)]/8 px-3 py-2.5 text-sm text-[var(--color-paper)]">
-                    <span>This slot has {selectedSlot.player.displayName}. Remove them to assign another compatible player.</span>
+                    <span>{copy.active.slotHasPrefix} {selectedSlot.player.displayName}. {copy.active.slotHasSuffix}</span>
                     {canEditSquad ? (
                       <button
                         type="button"
                         onClick={() => void handleRemove(selectedSlot.key)}
                         className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/6"
                       >
-                        Remove from slot
+                        {copy.active.removeFromSlot}
                       </button>
                     ) : null}
                   </div>
@@ -1560,28 +1549,28 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
                 {!teamPlayersLoading && !selectedTeamCode ? (
                   <div className="mt-6">
-                    <EmptyState title="No team selected yet" body="Pick a World Cup team from the dropdown to load the preselected player pool." />
+                    <EmptyState title={copy.active.noTeamTitle} body={copy.active.noTeamBody} />
                   </div>
                 ) : null}
 
                 {!teamPlayersLoading && selectedTeamCode && loadedTeamCode !== selectedTeamCode ? (
                   <div className="mt-6">
-                    <EmptyState title="Team pool is loading" body="The player list starts automatically when a nation is selected." />
+                    <EmptyState title={copy.active.teamLoadingTitle} body={copy.active.teamLoadingBody} />
                   </div>
                 ) : null}
 
                 {!teamPlayersLoading && selectedTeamCode && loadedTeamCode === selectedTeamCode && teamPlayers.length === 0 ? (
                   <div className="mt-6">
                     <EmptyState
-                      title="This team pool is still empty"
-                      body="An admin still has to preselect the eligible World Cup squad for this nation before participants can draft from it."
+                      title={copy.active.emptyTeamTitle}
+                      body={copy.active.emptyTeamBody}
                     />
                   </div>
                 ) : null}
 
                 {!teamPlayersLoading && teamPlayers.length > 0 && visibleTeamPlayers.length === 0 ? (
                   <div className="mt-6">
-                    <EmptyState title="No compatible players" body="Try another slot, clear the search, or free budget by removing a drafted player." />
+                    <EmptyState title={copy.active.noPlayersTitle} body={copy.active.noPlayersBody} />
                   </div>
                 ) : null}
 
@@ -1592,14 +1581,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       const isOverBudget = selectedSlotIsOpen && player.capCost > squad.budgetRemaining
                       const actionDisabled = !canEditSquad || !selectedSlotIsOpen || isOverBudget
                       const actionLabel = !canEditSquad
-                        ? 'Locked after kickoff'
+                        ? copy.active.lockedAfterKickoff
                         : !selectedSlot
-                          ? 'Select a slot'
+                          ? copy.active.selectSlot
                           : selectedSlot.player
-                            ? 'Clear slot first'
+                            ? copy.active.clearSlotFirst
                             : isOverBudget
-                              ? 'Over budget'
-                              : `Add to ${compactSlotLabel(selectedSlot.label)}`
+                              ? copy.active.overBudget
+                              : `${copy.active.addTo} ${compactSlotLabel(selectedSlot.label, copy)}`
                       return (
                         <article
                           key={player.playerId}
@@ -1667,14 +1656,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
 
             <div className="grid gap-4 lg:order-1">
               <div className="glass-panel rounded-[1.15rem] p-4 lg:order-3">
-                <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">budget monitor</p>
+                <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.active.budgetMonitor}</p>
                 <div className="mt-4 flex items-end justify-between gap-4">
                   <div>
                     <p className="text-2xl font-semibold tracking-tight text-[var(--color-accent)]">{formatBudget(squad.budgetRemaining)}</p>
-                    <p className="mt-1 text-xs text-[var(--color-muted)]">Remaining of {formatBudget(squad.budgetLimit)}</p>
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">{copy.active.remainingOf} {formatBudget(squad.budgetLimit)}</p>
                   </div>
                   <div className="rounded-full border border-white/10 px-3 py-1.5">
-                    <span className="mono text-xs text-white">{formatBudget(squad.budgetUsed)} used</span>
+                    <span className="mono text-xs text-white">{formatBudget(squad.budgetUsed)} {copy.common.used}</span>
                   </div>
                 </div>
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/6">
@@ -1688,7 +1677,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
               <div className="glass-panel rounded-[1.15rem] p-4 lg:order-1">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">current squad</p>
+                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.active.currentSquad}</p>
                     <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 + bench</h3>
                   </div>
                   <button
@@ -1697,7 +1686,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     disabled={!canEditSquad}
                     className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                   >
-                    Reset
+                    {copy.common.reset}
                   </button>
                 </div>
 
@@ -1705,14 +1694,14 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-white">
-                        {squad.isLocked ? (competitionStarted ? 'Squad locked' : 'Squad submitted') : 'Ready to submit your squad?'}
+                        {squad.isLocked ? (competitionStarted ? copy.active.squadLocked : copy.active.squadSubmitted) : copy.active.readySubmit}
                       </p>
                       <p className="mt-1 text-xs leading-6 text-[var(--color-muted)]">
                         {squad.isLocked
                           ? canEditSquad
-                            ? 'You can keep editing until the first World Cup fixture kicks off. Submit again is not needed.'
-                            : 'The competition has started, so submitted squads are now locked.'
-                          : 'Fill all 15 slots, then submit the squad. You can still edit it until kickoff.'}
+                            ? copy.active.editUntilKickoff
+                            : copy.active.lockedAfterStart
+                          : copy.active.fillThenSubmit}
                       </p>
                     </div>
                     <button
@@ -1721,7 +1710,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                       disabled={squad.isLocked || draftedCount !== 15}
                       className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                     >
-                      {squad.isLocked ? 'Submitted' : 'Submit squad'}
+                      {squad.isLocked ? copy.active.submitted : copy.active.submitSquad}
                     </button>
                   </div>
                 </div>
@@ -1731,16 +1720,16 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
                         <p className="text-sm font-semibold text-white">
-                          {participant?.revealProfile ? 'Public profile is live' : 'Ready to share?'}
+                          {participant?.revealProfile ? copy.active.publicProfileLive : copy.active.readyToShare}
                         </p>
                         <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
                           {participant?.revealSquad
-                            ? 'Your submitted squad is visible on your public profile.'
-                            : 'Reveal the profile first, then choose whether the submitted squad should also be public.'}
+                            ? copy.active.squadVisible
+                            : copy.active.revealHelp}
                         </p>
                         {publicProfileUrl ? (
                           <Link to={publicProfileUrl} className="mt-3 inline-flex text-sm font-semibold text-[var(--color-accent)]">
-                            Open public profile
+                            {copy.active.openPublicProfile}
                           </Link>
                         ) : null}
                       </div>
@@ -1751,7 +1740,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                           disabled={participant?.revealProfile}
                           className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                         >
-                          Reveal profile
+                          {copy.active.revealProfile}
                         </button>
                         <button
                           type="button"
@@ -1759,7 +1748,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                           disabled={participant?.revealSquad}
                           className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                         >
-                          Reveal squad
+                          {copy.active.revealSquad}
                         </button>
                       </div>
                     </div>
@@ -1773,7 +1762,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                         <div className="pitch-line-heading">
                           <span>{bucket.label}</span>
                           <button type="button" onClick={() => handleSelectSlotClass(bucket.slotClass)}>
-                            Scout {bucket.slotClass}
+                            {copy.active.scout} {bucket.slotClass}
                           </button>
                         </div>
                         <div className="pitch-line-slots">
@@ -1786,12 +1775,12 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                   {selectedSlot ? (
                     <div className="selected-slot-dock mt-4">
                       <div className="min-w-0">
-                        <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">selected slot</p>
+                        <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.slots.selectedSlot}</p>
                         <h4 className="mt-1 truncate text-lg font-semibold text-white">{selectedSlotLabel}</h4>
                         <p className="mt-1 text-sm leading-6 text-[var(--color-muted)]">
                           {selectedSlot.player
-                            ? `${selectedSlot.player.displayName} is currently assigned here.`
-                            : `Pick a compatible ${selectedSlot.slotClass} from the scouting board.`}
+                            ? `${selectedSlot.player.displayName} ${copy.slots.assignedHere}`
+                            : `${copy.slots.pickCompatiblePrefix} ${selectedSlot.slotClass} ${copy.slots.pickCompatibleSuffix}`}
                         </p>
                       </div>
                       {selectedSlot.player && canEditSquad ? (
@@ -1800,7 +1789,7 @@ export function BuilderPage({ locale: _locale, referrerSoccerverseUsername = '',
                           onClick={() => void handleRemove(selectedSlot.key)}
                           className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                         >
-                          Remove
+                          {copy.common.remove}
                         </button>
                       ) : null}
                     </div>

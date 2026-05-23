@@ -14,6 +14,7 @@ export async function bootstrapDefaultEmailCampaigns(emailMarketingRepository: E
     )
 
     if (existing) {
+      await emailMarketingRepository.saveCampaign({ ...seed, campaignId: existing.campaignId }, 'system@svworldcup.local')
       continue
     }
 

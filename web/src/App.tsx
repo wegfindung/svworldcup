@@ -242,13 +242,13 @@ function App() {
                 />
               }
             />
-            <Route path="/login" element={<PlayerLoginPage referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
+            <Route path="/login" element={<PlayerLoginPage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
             <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
-            <Route path="/results" element={<ResultsPage />} />
+            <Route path="/results" element={<ResultsPage locale={locale} />} />
             <Route path="/prizes" element={<PrizesPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage locale={locale} />} />
-            <Route path="/verify" element={<VerifyPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify" element={<VerifyPage locale={locale} />} />
+            <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
             <Route path="/admin/*" element={<AdminPage locale={locale} />} />
             <Route path="/profiles/:slug" element={<ProfilePage />} />
           </Routes>

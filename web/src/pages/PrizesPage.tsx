@@ -64,6 +64,146 @@ copyByLocale.de = {
   cta: 'Kader registrieren',
 }
 
+copyByLocale.es = {
+  eyebrow: 'premios dummy',
+  title: 'Estructura de premios pendiente de confirmación final.',
+  body:
+    'Esta página refleja la infografía actual para que el email de onboarding ya tenga un enlace de premios activo. Cantidades, artículos y lógica de pago siguen siendo provisionales hasta la confirmación final del equipo del evento.',
+  status: 'Aún no confirmado',
+  imageAlt: 'Infografía provisional de la estructura de premios del Soccerverse World Cup Event',
+  individualTitle: 'Ligas individuales',
+  individualBody: 'Las ligas Rookie y Veteran usan actualmente la misma escala de premios.',
+  individualItems: [
+    { rank: '1.º', prize: '200 SVV', extra: 'Exclusive Winner Shirt' },
+    { rank: '2.º', prize: '100 SVV', extra: 'Exclusive Cap' },
+    { rank: '3.º', prize: '75 SVV', extra: '' },
+    { rank: '4.º-10.º', prize: '20 SVV cada uno', extra: '' },
+  ],
+  nationalTitle: 'Pool de liga nacional',
+  nationalBody:
+    'El pool comunitario por hitos crece con los participantes y tiene un tope de 500 SVV. El pool alcanzado se distribuye completo.',
+  nationalItems: [
+    '200 participantes desbloquean 50 SVV.',
+    '400 participantes desbloquean 100 SVV.',
+    '2000 participantes desbloquean el cap de 500 SVV.',
+    'Una nación ganadora con 11+ managers recibe el pool desbloqueado completo para sus miembros.',
+    'Si gana una nación underdog con menos de 11 managers, el 20% va allí y el resto se reasigna a la siguiente nación o naciones elegibles.',
+  ],
+  cta: 'Registrar plantilla',
+}
+
+copyByLocale.fr = {
+  eyebrow: 'prix dummy',
+  title: 'Structure des prix en attente de confirmation finale.',
+  body:
+    'Cette page reprend l’infographie actuelle afin que l’email d’onboarding dispose déjà d’un lien prix actif. Montants, objets et logique de distribution restent provisoires jusqu’à confirmation finale par l’équipe événement.',
+  status: 'Pas encore confirmé',
+  imageAlt: 'Infographie provisoire de la structure des prix du Soccerverse World Cup Event',
+  individualTitle: 'Ligues individuelles',
+  individualBody: 'Les ligues Rookie et Veteran utilisent actuellement la même grille de prix.',
+  individualItems: [
+    { rank: '1er', prize: '200 SVV', extra: 'Exclusive Winner Shirt' },
+    { rank: '2e', prize: '100 SVV', extra: 'Exclusive Cap' },
+    { rank: '3e', prize: '75 SVV', extra: '' },
+    { rank: '4e-10e', prize: '20 SVV chacun', extra: '' },
+  ],
+  nationalTitle: 'Pool de ligue nationale',
+  nationalBody:
+    'Le pool communautaire par paliers augmente avec le nombre de participants et est plafonné à 500 SVV. Le pool atteint est distribué intégralement.',
+  nationalItems: [
+    '200 participants débloquent 50 SVV.',
+    '400 participants débloquent 100 SVV.',
+    '2000 participants débloquent le cap de 500 SVV.',
+    'Une nation gagnante avec 11+ managers reçoit tout le pool débloqué pour ses membres.',
+    'Si une nation outsider avec moins de 11 managers gagne, 20% y vont et le reste est réalloué à la ou aux prochaines nations éligibles.',
+  ],
+  cta: 'Inscrire ton effectif',
+}
+
+copyByLocale.pt = {
+  eyebrow: 'prémios dummy',
+  title: 'Estrutura de prémios ainda por confirmar.',
+  body:
+    'Esta página replica a infografia atual para que o email de onboarding já tenha um link de prémios ativo. Valores, itens e lógica de pagamento ainda são provisórios até confirmação final da equipa do evento.',
+  status: 'Ainda não confirmado',
+  imageAlt: 'Infografia provisória da estrutura de prémios do Soccerverse World Cup Event',
+  individualTitle: 'Ligas individuais',
+  individualBody: 'As ligas Rookie e Veteran usam atualmente a mesma escala de prémios.',
+  individualItems: [
+    { rank: '1.º', prize: '200 SVV', extra: 'Exclusive Winner Shirt' },
+    { rank: '2.º', prize: '100 SVV', extra: 'Exclusive Cap' },
+    { rank: '3.º', prize: '75 SVV', extra: '' },
+    { rank: '4.º-10.º', prize: '20 SVV cada', extra: '' },
+  ],
+  nationalTitle: 'Pool da liga nacional',
+  nationalBody:
+    'O pool comunitário por milestones cresce com participantes e tem cap de 500 SVV. O pool atingido é distribuído na totalidade.',
+  nationalItems: [
+    '200 participantes desbloqueiam 50 SVV.',
+    '400 participantes desbloqueiam 100 SVV.',
+    '2000 participantes desbloqueiam o cap de 500 SVV.',
+    'Uma nação vencedora com 11+ managers recebe o pool desbloqueado completo para os seus membros.',
+    'Se uma nação underdog com menos de 11 managers vencer, 20% vai para ela e o restante é realocado para a próxima nação ou nações elegíveis.',
+  ],
+  cta: 'Registar plantel',
+}
+
+copyByLocale.ru = {
+  eyebrow: 'призы dummy',
+  title: 'Структура призов ожидает финального подтверждения.',
+  body:
+    'Эта страница повторяет текущую инфографику, чтобы onboarding email уже вел на рабочую страницу призов. Суммы, предметы и логика выплат остаются предварительными до финального подтверждения команды события.',
+  status: 'Еще не подтверждено',
+  imageAlt: 'Черновая инфографика структуры призов Soccerverse World Cup Event',
+  individualTitle: 'Индивидуальные лиги',
+  individualBody: 'Rookie и Veteran лиги сейчас используют одну и ту же призовую лестницу.',
+  individualItems: [
+    { rank: '1-е', prize: '200 SVV', extra: 'Exclusive Winner Shirt' },
+    { rank: '2-е', prize: '100 SVV', extra: 'Exclusive Cap' },
+    { rank: '3-е', prize: '75 SVV', extra: '' },
+    { rank: '4-10-е', prize: '20 SVV каждому', extra: '' },
+  ],
+  nationalTitle: 'Национальный призовой pool',
+  nationalBody:
+    'Community milestone pool растет вместе с числом участников и ограничен 500 SVV. Достигнутый milestone pool распределяется полностью.',
+  nationalItems: [
+    '200 участников открывают 50 SVV.',
+    '400 участников открывают 100 SVV.',
+    '2000 участников открывают cap 500 SVV.',
+    'Победившая нация с 11+ managers получает весь открытый pool для своих участников.',
+    'Если underdog-нация с менее чем 11 managers выигрывает, 20% идет ей, а оставшийся pool перераспределяется следующей eligible нации или нациям.',
+  ],
+  cta: 'Зарегистрировать состав',
+}
+
+copyByLocale.zh = {
+  eyebrow: '奖品 dummy',
+  title: '奖品结构仍待最终确认。',
+  body:
+    '此页面根据当前信息图制作，方便 onboarding 邮件使用可访问的奖品链接。金额、物品和发放逻辑在活动团队最终确认前仍为临时版本。',
+  status: '尚未最终确认',
+  imageAlt: 'Soccerverse World Cup Event 奖品结构草案信息图',
+  individualTitle: '个人联赛',
+  individualBody: 'Rookie 和 Veteran 联赛目前使用相同奖品阶梯。',
+  individualItems: [
+    { rank: '第 1 名', prize: '200 SVV', extra: 'Exclusive Winner Shirt' },
+    { rank: '第 2 名', prize: '100 SVV', extra: 'Exclusive Cap' },
+    { rank: '第 3 名', prize: '75 SVV', extra: '' },
+    { rank: '第 4-10 名', prize: '每人 20 SVV', extra: '' },
+  ],
+  nationalTitle: '国家联赛奖池',
+  nationalBody:
+    '社区里程碑奖池随参与人数增长，最高 500 SVV。达到的里程碑奖池会全额发放。',
+  nationalItems: [
+    '200 名参与者解锁 50 SVV。',
+    '400 名参与者解锁 100 SVV。',
+    '2000 名参与者解锁 500 SVV 上限。',
+    '拥有 11+ managers 的获胜国家会为成员获得完整解锁奖池。',
+    '如果少于 11 managers 的 underdog 国家获胜，20% 发放给该国家，剩余奖池重新分配给下一个符合条件的国家。',
+  ],
+  cta: '注册阵容',
+}
+
 function getPrizeCopy(locale: LocaleCode) {
   return copyByLocale[locale] ?? englishCopy
 }

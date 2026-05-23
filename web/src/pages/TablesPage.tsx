@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
-import { getMessages } from '../i18n/messages'
+import { getMessages, type AppMessages } from '../i18n/messages'
 import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import type {
   LocaleCode,
@@ -78,7 +78,7 @@ function DetailStat({ label, value }: { label: string; value: number }) {
   )
 }
 
-function PlayerScoreDetail({ player }: { player: ParticipantScorePlayerDetail }) {
+function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: ParticipantScorePlayerDetail }) {
   return (
     <div className="grid gap-3 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <div className="min-w-0">
@@ -89,25 +89,25 @@ function PlayerScoreDetail({ player }: { player: ParticipantScorePlayerDetail })
         </div>
         <p className="mono mt-1 text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
           {player.slotGroup} - {player.minutes}' - ID {player.playerId}
-          {player.rating !== undefined ? ` - Rating ${player.rating}` : ''}
+          {player.rating !== undefined ? ` - ${copy.rating} ${player.rating}` : ''}
         </p>
       </div>
       <div className="flex flex-wrap gap-1.5 sm:justify-end">
-        <DetailStat label="G" value={player.goalPoints} />
-        <DetailStat label="A" value={player.assistPoints} />
-        <DetailStat label="Apps" value={player.appearancePoints} />
-        <DetailStat label="60+" value={player.minutesPoints} />
-        <DetailStat label="CS" value={player.cleanSheetPoints} />
-        <DetailStat label="Perf" value={player.performancePoints} />
+        <DetailStat label={copy.breakdown.goals} value={player.goalPoints} />
+        <DetailStat label={copy.breakdown.assists} value={player.assistPoints} />
+        <DetailStat label={copy.breakdown.appearances} value={player.appearancePoints} />
+        <DetailStat label={copy.breakdown.minutes} value={player.minutesPoints} />
+        <DetailStat label={copy.breakdown.cleanSheets} value={player.cleanSheetPoints} />
+        <DetailStat label={copy.breakdown.performance} value={player.performancePoints} />
         <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[10px] text-[var(--color-accent)]">
-          Total {formatScore(player.totalPoints)}
+          {copy.total} {formatScore(player.totalPoints)}
         </span>
       </div>
     </div>
   )
 }
 
-function FixtureScoreDetail({ fixture, fixtureLookup }: { fixture: ParticipantScoreFixtureDetail; fixtureLookup: Map<string, PublicFixtureResult> }) {
+function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy; fixture: ParticipantScoreFixtureDetail; fixtureLookup: Map<string, PublicFixtureResult> }) {
   const result = fixtureLookup.get(fixture.fixtureId)
   return (
     <div className="rounded-[0.85rem] border border-white/8 bg-white/[0.025] p-3">
@@ -117,14 +117,14 @@ function FixtureScoreDetail({ fixture, fixtureLookup }: { fixture: ParticipantSc
           <p className="truncate text-sm font-semibold text-white">{matchLabel(fixture.fixtureId, fixtureLookup)}</p>
           {result ? <TeamFlag teamCode={result.awayTeamCode} label={teamName(result.awayTeamCode)} size="sm" /> : null}
         </div>
-        <span className="mono text-xs text-[var(--color-accent)]">{formatScore(fixture.totalPoints)} pts</span>
+        <span className="mono text-xs text-[var(--color-accent)]">{formatScore(fixture.totalPoints)} {copy.pts}</span>
       </div>
-      <div className="grid gap-1.5">{fixture.players.map((player) => <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} player={player} />)}</div>
+      <div className="grid gap-1.5">{fixture.players.map((player) => <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} copy={copy} player={player} />)}</div>
     </div>
   )
 }
 
-function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, PublicFixtureResult> }) {
+function ParticipantTable({ copy, title, rows, fixtureLookup }: { copy: TablesCopy; title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, PublicFixtureResult> }) {
   const [openParticipantIds, setOpenParticipantIds] = useState<Set<string>>(new Set())
 
   function toggleParticipant(participantId: string) {
@@ -143,10 +143,10 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
     <section className="glass-panel rounded-[1.15rem] p-4">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="eyebrow text-[10px]">league table</p>
+          <p className="eyebrow text-[10px]">{copy.tableEyebrow}</p>
           <h3 className="mt-2 text-2xl font-semibold text-white">{title}</h3>
         </div>
-        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} entries</span>
+        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} {copy.entriesSuffix}</span>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
@@ -172,18 +172,18 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
                         ) : null}
                       </div>
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        <BreakdownPill label="G" count={row.breakdown.goals.count} points={row.breakdown.goals.points} />
-                        <BreakdownPill label="A" count={row.breakdown.assists.count} points={row.breakdown.assists.points} />
-                        <BreakdownPill label="Apps" count={row.breakdown.appearances.count} points={row.breakdown.appearances.points} />
-                        <BreakdownPill label="60+" count={row.breakdown.minutes.count} points={row.breakdown.minutes.points} />
-                        <BreakdownPill label="CS" count={row.breakdown.cleanSheets.count} points={row.breakdown.cleanSheets.points} />
-                        <BreakdownPill label="Perf" points={row.breakdown.performance.points} />
+                        <BreakdownPill label={copy.breakdown.goals} count={row.breakdown.goals.count} points={row.breakdown.goals.points} />
+                        <BreakdownPill label={copy.breakdown.assists} count={row.breakdown.assists.count} points={row.breakdown.assists.points} />
+                        <BreakdownPill label={copy.breakdown.appearances} count={row.breakdown.appearances.count} points={row.breakdown.appearances.points} />
+                        <BreakdownPill label={copy.breakdown.minutes} count={row.breakdown.minutes.count} points={row.breakdown.minutes.points} />
+                        <BreakdownPill label={copy.breakdown.cleanSheets} count={row.breakdown.cleanSheets.count} points={row.breakdown.cleanSheets.points} />
+                        <BreakdownPill label={copy.breakdown.performance} points={row.breakdown.performance.points} />
                       </div>
                     </div>
                     <div className="col-span-2 text-right sm:col-span-1">
                       <p className="mono text-lg text-white">{formatScore(row.totalScore)}</p>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">base {formatScore(row.baseScore)}</p>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">budget {formatMultiplier(row.scoreMultiplier)}</p>
+                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{copy.base} {formatScore(row.baseScore)}</p>
+                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{copy.budget} {formatMultiplier(row.scoreMultiplier)}</p>
                       {row.bonusPercent > 0 ? <p className="text-xs text-[var(--color-accent)]">+{row.bonusPercent}%</p> : null}
                       <button
                         type="button"
@@ -191,14 +191,14 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
                         disabled={!row.fixtures.length}
                         className="mt-2 rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        {isOpen ? 'Hide details' : 'Score details'}
+                        {isOpen ? copy.hideDetails : copy.scoreDetails}
                       </button>
                     </div>
                   </div>
                   {isOpen ? (
                     <div className="mt-3 grid gap-2 border-t border-white/8 pt-3">
                       {row.fixtures.map((fixture) => (
-                        <FixtureScoreDetail key={fixture.fixtureId} fixture={fixture} fixtureLookup={fixtureLookup} />
+                        <FixtureScoreDetail key={fixture.fixtureId} copy={copy} fixture={fixture} fixtureLookup={fixtureLookup} />
                       ))}
                     </div>
                   ) : null}
@@ -208,7 +208,7 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
           </div>
         ) : (
           <div className="bg-black/12 p-5">
-            <EmptyState title="No active entries yet" body="Standings will populate as soon as verified participants enter the tournament." />
+            <EmptyState title={copy.noEntriesTitle} body={copy.noEntriesBody} />
           </div>
         )}
       </div>
@@ -216,7 +216,7 @@ function ParticipantTable({ title, rows, fixtureLookup }: { title: string; rows:
   )
 }
 
-function NationTable({ rows }: { rows: NationScoreRow[] }) {
+function NationTable({ copy, rows }: { copy: TablesCopy; rows: NationScoreRow[] }) {
   const [openTeamCodes, setOpenTeamCodes] = useState<Set<string>>(new Set())
 
   function toggleTeam(teamCode: string) {
@@ -235,10 +235,10 @@ function NationTable({ rows }: { rows: NationScoreRow[] }) {
     <section className="glass-panel rounded-[1.15rem] p-4">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="eyebrow text-[10px]">country ranking</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">Nation ranking</h3>
+          <p className="eyebrow text-[10px]">{copy.nationEyebrow}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{copy.nationTitle}</h3>
         </div>
-        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} nations</span>
+        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} {copy.nationsSuffix}</span>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
@@ -256,24 +256,24 @@ function NationTable({ rows }: { rows: NationScoreRow[] }) {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-white">{teamName(row.teamCode)}</p>
                           <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                            {row.teamCode} - {row.participantCount} managers
+                            {row.teamCode} - {row.participantCount} {copy.managersSuffix}
                           </p>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        <BreakdownPill label="Avg" points={row.averageScore} />
-                        <BreakdownPill label="Top" points={row.topScore} />
+                        <BreakdownPill label={copy.avg} points={row.averageScore} />
+                        <BreakdownPill label={copy.top} points={row.topScore} />
                       </div>
                     </div>
                     <div className="col-span-2 text-right sm:col-span-1">
                       <p className="mono text-lg text-white">{formatScore(row.averageScore)}</p>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">average score</p>
+                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{copy.averageScore}</p>
                       <button
                         type="button"
                         onClick={() => toggleTeam(row.teamCode)}
                         className="mt-2 rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
                       >
-                        {isOpen ? 'Hide managers' : 'Managers'}
+                        {isOpen ? copy.hideManagers : copy.managers}
                       </button>
                     </div>
                   </div>
@@ -313,13 +313,15 @@ function NationTable({ rows }: { rows: NationScoreRow[] }) {
           </div>
         ) : (
           <div className="bg-black/12 p-5">
-            <EmptyState title="No nation ranking yet" body="A country enters the table as soon as one active manager is attached to it." />
+            <EmptyState title={copy.noNationTitle} body={copy.noNationBody} />
           </div>
         )}
       </div>
     </section>
   )
 }
+
+type TablesCopy = AppMessages['tables']
 
 interface TablesPageProps {
   locale: LocaleCode
@@ -347,14 +349,14 @@ export function TablesPage({ locale }: TablesPageProps) {
       })
       .catch((loadError) => {
         if (active) {
-          setError(loadError instanceof Error ? loadError.message : 'Could not load public tables.')
+          setError(loadError instanceof Error ? loadError.message : copy.loadError)
         }
       })
 
     return () => {
       active = false
     }
-  }, [tablesPromise])
+  }, [copy.loadError, tablesPromise])
 
   function refreshTables() {
     setTables(null)
@@ -383,18 +385,18 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="glass-panel rounded-[1.15rem] p-4">
-          <p className="eyebrow text-[10px]">scoring profile</p>
+          <p className="eyebrow text-[10px]">{copy.scoringProfile}</p>
           <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
             <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="text-[var(--color-muted)]">Goal</p>
+              <p className="text-[var(--color-muted)]">{copy.goal}</p>
               <p className="mono mt-2 text-xl text-white">{defaultScoring.goal}</p>
             </div>
             <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="text-[var(--color-muted)]">Assist</p>
+              <p className="text-[var(--color-muted)]">{copy.assist}</p>
               <p className="mono mt-2 text-xl text-white">{defaultScoring.assist}</p>
             </div>
             <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="text-[var(--color-muted)]">Clean sheet</p>
+              <p className="text-[var(--color-muted)]">{copy.cleanSheet}</p>
               <p className="mono mt-2 text-sm text-white">
                 GK {defaultScoring.cleanSheet.GK} · DEF {defaultScoring.cleanSheet.DEF} · MID {defaultScoring.cleanSheet.MID} · FWD {defaultScoring.cleanSheet.FWD}
               </p>
@@ -403,15 +405,15 @@ export function TablesPage({ locale }: TablesPageProps) {
         </div>
 
         <div className="glass-panel rounded-[1.15rem] p-4">
-          <p className="eyebrow text-[10px]">ranking format</p>
+          <p className="eyebrow text-[10px]">{copy.rankingFormat}</p>
           <div className="mt-5 grid gap-3 text-sm text-[var(--color-paper)]">
             <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Visible entries</p>
-              <p className="mt-2 leading-relaxed">All active rookie and veteran participants are listed, including entries currently on zero points.</p>
+              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.visibleEntriesTitle}</p>
+              <p className="mt-2 leading-relaxed">{copy.visibleEntriesBody}</p>
             </div>
             <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">Tie-break</p>
-              <p className="mt-2 leading-relaxed">If points are level, the earlier registration date earns the higher rank.</p>
+              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.tieBreakTitle}</p>
+              <p className="mt-2 leading-relaxed">{copy.tieBreakBody}</p>
             </div>
           </div>
         </div>
@@ -419,7 +421,7 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {error ? (
         <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title="Could not load standings" body={error} />
+          <EmptyState title={copy.loadErrorTitle} body={error} />
         </section>
       ) : null}
 
@@ -427,10 +429,10 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {tables ? (
         <>
-          <NationTable rows={tables.nations} />
+          <NationTable copy={copy} rows={tables.nations} />
           <section className="grid gap-4 xl:grid-cols-2">
-            <ParticipantTable title="Rookie" rows={tables.rookies} fixtureLookup={tables.fixtureLookup} />
-            <ParticipantTable title="Veteran" rows={tables.veterans} fixtureLookup={tables.fixtureLookup} />
+            <ParticipantTable copy={copy} title="Rookie" rows={tables.rookies} fixtureLookup={tables.fixtureLookup} />
+            <ParticipantTable copy={copy} title="Veteran" rows={tables.veterans} fixtureLookup={tables.fixtureLookup} />
           </section>
         </>
       ) : null}
