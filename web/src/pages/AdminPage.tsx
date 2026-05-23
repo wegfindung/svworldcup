@@ -4,6 +4,7 @@ import { AccountsView } from '../components/admin/AccountsView'
 import { DashboardLanding } from '../components/admin/DashboardLanding'
 import { EmailMarketingView } from '../components/admin/EmailMarketingView'
 import { MatchImportView } from '../components/admin/MatchImportView'
+import { MultiAccountingView } from '../components/admin/MultiAccountingView'
 import { OperationsView } from '../components/admin/OperationsView'
 import { ReferralsView } from '../components/admin/ReferralsView'
 import { RevealControlsView } from '../components/admin/RevealControlsView'
@@ -22,6 +23,7 @@ const navItems: Array<[string, string]> = [
   ['/admin/team-pools', 'Team pools'],
   ['/admin/scoring', 'Scoring'],
   ['/admin/accounts', 'Accounts'],
+  ['/admin/multi-accounting', 'Multi-accounting'],
   ['/admin/referrals', 'Referrals'],
   ['/admin/reveal', 'Reveal'],
   ['/admin/email-marketing', 'Email marketing'],
@@ -194,6 +196,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
         <Route path="team-pools" element={<TeamPoolsView />} />
         <Route path="scoring" element={<ScoringView />} />
         <Route path="accounts" element={<AccountsView />} />
+        <Route path="multi-accounting" element={<MultiAccountingView />} />
         <Route path="referrals" element={<ReferralsView />} />
         <Route path="reveal" element={<RevealControlsView />} />
         <Route path="email-marketing" element={<EmailMarketingView adminEmail={admin?.email ?? ''} />} />

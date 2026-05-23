@@ -48,6 +48,7 @@ Provide a secure Soccerverse World Cup event platform with:
 - global squad reveal
 - verification resend
 - analytics overview
+- multi-accounting review cases
 - operations overview for audit logs, pending import state, email queue health, scheduler runs, and Soccerverse API warnings/errors
 
 ## Security Rules
@@ -69,6 +70,7 @@ Provide a secure Soccerverse World Cup event platform with:
 - reveal actions
 - score-config changes
 - verification resend actions
+- multi-accounting review status changes
 - match-data import
 - pending match-stat edits
 - match-stat fixture confirmations

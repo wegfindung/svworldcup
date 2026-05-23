@@ -315,7 +315,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
     }
 
     const duplicate = [...this.byEmail.values()].some(
-      (item) => item.participantId !== participantId && item.soccerverseUsername?.trim().toLowerCase() === trimmed.toLowerCase(),
+      (item) => item.participantId !== participantId && item.soccerverseUsername?.trim() === trimmed,
     )
     if (duplicate) {
       throw new SoccerverseLinkError('username_taken', 'Soccerverse username is already linked to another participant.')
@@ -947,7 +947,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         `
           SELECT participant_id
           FROM participants
-          WHERE LOWER(soccerverse_username) = LOWER($2)
+          WHERE soccerverse_username = $2
             AND participant_id <> $1
           LIMIT 1
         `,

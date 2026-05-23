@@ -42,6 +42,11 @@ import {
   PostgresParticipantInfluenceSnapshotRepository,
   type ParticipantInfluenceSnapshotRepository,
 } from '../repositories/participantInfluenceSnapshotRepository.js'
+import {
+  MemoryParticipantRiskRepository,
+  PostgresParticipantRiskRepository,
+  type ParticipantRiskRepository,
+} from '../repositories/participantRiskRepository.js'
 
 let pool: Pool | null = null
 let registrationRepository: RegistrationRepository | null = null
@@ -58,6 +63,7 @@ let matchMappingRepository: MatchMappingRepository | null = null
 let auditRepository: AuditRepository | null = null
 let emailMarketingRepository: EmailMarketingRepository | null = null
 let participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository | null = null
+let participantRiskRepository: ParticipantRiskRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -224,4 +230,12 @@ export function createParticipantInfluenceSnapshotRepository(): ParticipantInflu
       : new MemoryParticipantInfluenceSnapshotRepository()
   }
   return participantInfluenceSnapshotRepository
+}
+
+export function createParticipantRiskRepository(): ParticipantRiskRepository {
+  if (!participantRiskRepository) {
+    const existingPool = getPool()
+    participantRiskRepository = existingPool ? new PostgresParticipantRiskRepository(existingPool) : new MemoryParticipantRiskRepository()
+  }
+  return participantRiskRepository
 }

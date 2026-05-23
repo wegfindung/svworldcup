@@ -47,6 +47,7 @@ const envSchema = z.object({
   SESSION_SECRET: optionalString,
   SHARE_SNAPSHOT_SECRET: optionalString,
   CSRF_TOKEN_SECRET: optionalString,
+  RISK_SIGNAL_SECRET: optionalString,
   TOURNAMENT_KICKOFF_AT: optionalString,
   RATE_LIMIT_TRUST_PROXY: booleanFromString,
 })

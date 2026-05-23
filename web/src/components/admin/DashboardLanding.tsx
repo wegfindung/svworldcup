@@ -8,6 +8,7 @@ const views: Array<{ to: string; label: string; blurb: string }> = [
   { to: '/admin/team-pools', label: 'Team pools', blurb: 'Curate the Soccerverse player pool for each nation.' },
   { to: '/admin/scoring', label: 'Scoring', blurb: 'Tune the scoring rules behind the leaderboards.' },
   { to: '/admin/accounts', label: 'Accounts', blurb: 'Review every registered participant account.' },
+  { to: '/admin/multi-accounting', label: 'Multi-accounting', blurb: 'Review duplicate-account risk cases and signal clusters.' },
   { to: '/admin/referrals', label: 'Referrals', blurb: 'Landing-page referral performance per referrer.' },
   { to: '/admin/reveal', label: 'Reveal controls', blurb: 'Toggle event-level profile and squad visibility.' },
   { to: '/admin/email-marketing', label: 'Email marketing', blurb: 'Draft, schedule and send campaigns.' },

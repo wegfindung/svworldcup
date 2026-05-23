@@ -28,6 +28,7 @@ import {
   createSquadRepository,
   createTeamPoolRepository,
   createParticipantInfluenceSnapshotRepository,
+  createParticipantRiskRepository,
 } from './services/repos.js'
 
 export function createApp() {
@@ -45,6 +46,7 @@ export function createApp() {
   const auditRepository = createAuditRepository()
   const emailMarketingRepository = createEmailMarketingRepository()
   const participantInfluenceSnapshotRepository = createParticipantInfluenceSnapshotRepository()
+  const participantRiskRepository = createParticipantRiskRepository()
   const cwd = process.cwd()
   const publicDirCandidates = [
     resolve(cwd, 'public'),
@@ -131,9 +133,13 @@ export function createApp() {
   app.use(
     '/api/auth',
     authApiLimiter,
-    createAuthRouter(registrationRepository, participantSessionRepository, squadRepository, emailMarketingRepository),
+    createAuthRouter(registrationRepository, participantSessionRepository, squadRepository, emailMarketingRepository, participantRiskRepository),
   )
-  app.use('/api/participant', participantApiLimiter, createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository, auditRepository))
+  app.use(
+    '/api/participant',
+    participantApiLimiter,
+    createParticipantRouter(participantSessionRepository, squadRepository, registrationRepository, auditRepository, participantRiskRepository),
+  )
   app.use(
     '/api/admin',
     adminApiLimiter,
@@ -148,6 +154,7 @@ export function createApp() {
       auditRepository,
       emailMarketingRepository,
       participantInfluenceSnapshotRepository,
+      participantRiskRepository,
     ),
   )
 

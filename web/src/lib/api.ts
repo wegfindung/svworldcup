@@ -24,6 +24,8 @@ import type {
   ParticipantSquad,
   ParticipantSquadSummary,
   ParticipantScoreRow,
+  ParticipantRiskCase,
+  ParticipantRiskCaseStatus,
   PublicFixtureResult,
   PublicParticipantProfile,
   NationScoreRow,
@@ -34,6 +36,7 @@ import type {
 } from './types'
 import type { ShareSnapshotPayload } from './sharePayload'
 import { detectBrowserLocale } from './browserLocale'
+import { clientFingerprintHeader } from './clientFingerprint'
 
 interface AuthParticipantResponse {
   participant: ParticipantProfile
@@ -58,6 +61,10 @@ function csrfTokenForPath(path: string) {
     return participantCsrfToken
   }
   return ''
+}
+
+function riskHeadersForPath(path: string) {
+  return path.startsWith('/api/auth') || path.startsWith('/api/participant') ? clientFingerprintHeader() : {}
 }
 
 function storeCsrfToken(path: string, payload: unknown) {
@@ -92,14 +99,27 @@ export class ApiError extends Error {
 
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const csrfToken = isUnsafeMethod(init?.method) ? csrfTokenForPath(path) : ''
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    ...riskHeadersForPath(path),
+    ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+  }
+  if (init?.headers instanceof Headers) {
+    init.headers.forEach((value, key) => {
+      headers[key] = value
+    })
+  } else if (Array.isArray(init?.headers)) {
+    for (const [key, value] of init.headers) {
+      headers[key] = value
+    }
+  } else if (init?.headers) {
+    Object.assign(headers, init.headers)
+  }
+
   const response = await fetch(path, {
     credentials: 'same-origin',
     ...init,
-    headers: {
-      'content-type': 'application/json',
-      ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
-      ...(init?.headers ?? {}),
-    },
+    headers,
   })
 
   if (!response.ok) {
@@ -417,6 +437,20 @@ export function fetchAdminParticipants() {
   return getJson<{ items: AdminParticipantRecord[] }>('/api/admin/participants', {
     method: 'GET',
     headers: {},
+  })
+}
+
+export function fetchAdminRiskCases() {
+  return getJson<{ items: ParticipantRiskCase[] }>('/api/admin/risk-cases', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function updateAdminRiskCaseStatus(caseId: string, status: ParticipantRiskCaseStatus, note?: string) {
+  return getJson<{ item: ParticipantRiskCase }>(`/api/admin/risk-cases/${encodeURIComponent(caseId)}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status, note }),
   })
 }
 

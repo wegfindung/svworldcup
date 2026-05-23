@@ -13,6 +13,8 @@ import {
   type RegistrationRepository,
 } from '../repositories/registrationRepository.js'
 import { SquadValidationError, type SquadRepository } from '../repositories/squadRepository.js'
+import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
+import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 
 const assignPlayerSchema = z.object({
   slotKey: z.string().trim().min(1),
@@ -32,6 +34,7 @@ export function createParticipantRouter(
   squadRepository: SquadRepository,
   registrationRepository: RegistrationRepository,
   auditRepository: AuditRepository,
+  participantRiskRepository: ParticipantRiskRepository,
 ) {
   const router = Router()
   const requireParticipant = createRequireParticipant(participantSessionRepository)
@@ -102,10 +105,16 @@ export function createParticipantRouter(
     }
   })
 
-  router.post('/squad/lock', async (_req, res) => {
+  router.post('/squad/lock', async (req, res) => {
     const participantId = res.locals.participant.participantId as string
     try {
       const squad = await squadRepository.lockSquad(participantId)
+      recordParticipantRiskEventAsync({
+        repository: participantRiskRepository,
+        participant: res.locals.participant,
+        eventType: 'squad_lock',
+        request: req,
+      })
       res.json({ squad })
     } catch (error) {
       if (error instanceof SquadValidationError) {

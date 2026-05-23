@@ -115,6 +115,44 @@ export interface AdminParticipantRecord extends ParticipantProfile {
   updatedAt?: string
   verificationSentAt?: string
   passwordSetAt?: string
+  riskSummary?: ParticipantRiskSummary
+}
+
+export type ParticipantRiskCaseStatus = 'open' | 'reviewing' | 'confirmed' | 'dismissed'
+
+export interface ParticipantRiskSummary {
+  participantId: string
+  openCaseCount: number
+  maxRiskScore: number
+  caseIds: string[]
+}
+
+export interface ParticipantRiskCaseMember {
+  participantId: string
+  email: string
+  displayName: string
+  leagueType: LeagueType
+  status: ParticipantProfile['status']
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  memberScore: number
+  reasonKeys: string[]
+  lastSignalAt?: string
+}
+
+export interface ParticipantRiskCase {
+  caseId: string
+  caseKey: string
+  title: string
+  status: ParticipantRiskCaseStatus
+  score: number
+  reasonKeys: string[]
+  detail: Record<string, unknown>
+  firstSeenAt: string
+  lastSeenAt: string
+  createdAt: string
+  updatedAt: string
+  members: ParticipantRiskCaseMember[]
 }
 
 export interface ReferralAnalyticsRow {

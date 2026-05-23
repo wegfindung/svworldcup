@@ -21,6 +21,8 @@ import {
 } from '../repositories/registrationRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
+import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
+import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 
 const registrationSchema = z
   .object({
@@ -117,6 +119,7 @@ export function createAuthRouter(
   participantSessionRepository: ParticipantSessionRepository,
   squadRepository: SquadRepository,
   emailMarketingRepository: EmailMarketingRepository,
+  participantRiskRepository: ParticipantRiskRepository,
 ) {
   const router = Router()
   const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
@@ -132,6 +135,13 @@ export function createAuthRouter(
 
     try {
       const result = await registrationRepository.createPending(registrationInput, plainToken)
+      recordParticipantRiskEventAsync({
+        repository: participantRiskRepository,
+        participant: result.record,
+        eventType: 'registration',
+        request: req,
+        checkMx: true,
+      })
       const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
       const delivery = await sendVerificationMail(registrationInput.email, verificationUrl, registrationInput.browserLocale)
       void emailMarketingRepository.queueAutoresponders('registration_created', result.record).catch((error) => {
@@ -166,6 +176,12 @@ export function createAuthRouter(
       return res.status(401).json({ error: 'Email or password is invalid.' })
     }
 
+    recordParticipantRiskEventAsync({
+      repository: participantRiskRepository,
+      participant,
+      eventType: 'login',
+      request: req,
+    })
     const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
     const sessionCookie = await issueParticipantSession(participant.participantId, participantSessionRepository)
     const sessionToken = sessionCookie.match(new RegExp(`${participantSessionCookieName}=([^;]+)`))?.[1] ?? ''
@@ -190,6 +206,12 @@ export function createAuthRouter(
     }
 
     const squadSummary = await buildSquadSummary(verified.participantId, squadRepository)
+    recordParticipantRiskEventAsync({
+      repository: participantRiskRepository,
+      participant: verified,
+      eventType: 'verify',
+      request: req,
+    })
     void emailMarketingRepository.queueAutoresponders('registration_verified', verified).catch((error) => {
       console.error('Failed to queue verification autoresponder', error)
     })

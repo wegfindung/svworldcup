@@ -40,6 +40,10 @@ Allow participants to register securely with verified email, enter the squad bui
 
 - Verified email is mandatory for participant sessions.
 - One active registration per normalized email address.
+- Multi-accounting signals must not automatically block registration, login, verification, or squad submission in the MVP. They are stored for admin review.
+- Soccerverse usernames are case-sensitive and must not be canonicalized for multi-account detection.
+- E-mail canonicalization is used as a review signal only. Gmail/Googlemail dot and plus aliases are collapsed, Microsoft plus aliases are collapsed conservatively, and no canonical-email uniqueness constraint is enforced in the MVP.
+- Disposable e-mail domains and MX lookup failures are review signals, not hard rejection gates.
 - A landing page `ref` parameter must survive navigation before registration via URL propagation and session storage.
 - The referral value must be stored separately as `referrerSoccerverseUsername` / `referrer_soccerverse_username`; it must not change rookie/veteran classification and must not overwrite the participant's own `soccerverseUsername`.
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
@@ -129,6 +133,20 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - Admins can change scoring parameters only before World Cup kickoff.
 - Admins must be able to maintain the preselected player pool for all 48 World Cup teams before public drafting opens.
 - Admin team-pool reads must start from explicit operator actions, not automatic page-load fetches.
+- Admins must have a protected multi-accounting review screen for open risk cases and case status changes (`open`, `reviewing`, `confirmed`, `dismissed`).
+
+## Multi-Accounting Review MVP
+
+- Risk events are recorded for:
+- registration
+- participant login
+- email verification
+- squad lock
+- future lineup lock routes when mounted
+- Stored signals include hashed IP, hashed IPv4 `/24` and `/26`, hashed IPv6 `/64`, hashed user agent, Accept-Language, timestamp, event type, canonical e-mail hash, disposable-domain status, MX status, and a basic non-invasive browser fingerprint.
+- Basic fingerprinting may include timezone, browser languages, platform, User-Agent Client Hints where available, `navigator.webdriver`, hardware concurrency, touch points, device memory, cookie support, and coarse screen metrics.
+- The system creates review cases for canonical e-mail collisions, disposable domains, MX warnings, subnet registration bursts, shared subnet + user-agent clusters, shared basic browser fingerprints, and `navigator.webdriver`.
+- Review cases are advisory. Any participant action must remain available unless an admin separately changes product policy and implements an explicit enforcement rule.
 
 ## Protected Routes
 
@@ -147,6 +165,8 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - `POST /api/participant/squad/reset`
 - `POST /api/participant/link-soccerverse`
 - `POST /api/admin/participants/:id/league`
+- `GET /api/admin/risk-cases`
+- `POST /api/admin/risk-cases/:caseId/status`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
 - `GET /api/admin/session`

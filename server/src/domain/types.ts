@@ -63,6 +63,69 @@ export interface AdminParticipantRecord extends ParticipantProfile {
   updatedAt?: string
   verificationSentAt?: string
   passwordSetAt?: string
+  riskSummary?: ParticipantRiskSummary
+}
+
+export type ParticipantRiskEventType = 'registration' | 'login' | 'verify' | 'squad_lock' | 'lineup_lock'
+
+export type ParticipantRiskCaseStatus = 'open' | 'reviewing' | 'confirmed' | 'dismissed'
+
+export interface ParticipantRiskSummary {
+  participantId: string
+  openCaseCount: number
+  maxRiskScore: number
+  caseIds: string[]
+}
+
+export interface ParticipantRiskSignalInput {
+  participant: Pick<
+    ParticipantProfile,
+    'participantId' | 'email' | 'displayName' | 'leagueType' | 'primaryTeamCode' | 'secondaryTeamCode' | 'status'
+  >
+  eventType: ParticipantRiskEventType
+  emailCanonicalHash?: string
+  emailDomain?: string
+  emailProvider?: string
+  emailIsDisposable?: boolean
+  emailMxStatus?: string
+  emailMxHostCount?: number
+  ipHash?: string
+  ipv4Cidr24Hash?: string
+  ipv4Cidr26Hash?: string
+  ipv6Cidr64Hash?: string
+  userAgentHash?: string
+  acceptLanguageHash?: string
+  acceptLanguage?: string
+  clientFingerprintHash?: string
+  clientFingerprint?: Record<string, unknown>
+}
+
+export interface ParticipantRiskCaseMember {
+  participantId: string
+  email: string
+  displayName: string
+  leagueType: LeagueType
+  status: ParticipantStatus
+  primaryTeamCode: string
+  secondaryTeamCode?: string
+  memberScore: number
+  reasonKeys: string[]
+  lastSignalAt?: string
+}
+
+export interface ParticipantRiskCase {
+  caseId: string
+  caseKey: string
+  title: string
+  status: ParticipantRiskCaseStatus
+  score: number
+  reasonKeys: string[]
+  detail: Record<string, unknown>
+  firstSeenAt: string
+  lastSeenAt: string
+  createdAt: string
+  updatedAt: string
+  members: ParticipantRiskCaseMember[]
 }
 
 export interface ReferralAnalyticsRow {

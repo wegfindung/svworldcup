@@ -19,6 +19,7 @@ import type { AuditRepository } from '../repositories/auditRepository.js'
 import { LeagueChangeError } from '../repositories/registrationRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
@@ -107,6 +108,11 @@ const emailTestSchema = emailCampaignSchema.extend({
   recipient: z.string().trim().email(),
 })
 
+const riskCaseStatusSchema = z.object({
+  status: z.enum(['open', 'reviewing', 'confirmed', 'dismissed']),
+  note: z.string().trim().max(1000).optional(),
+})
+
 function isScoringLocked(): boolean {
   if (!env.TOURNAMENT_KICKOFF_AT) {
     return false
@@ -126,6 +132,7 @@ export function createAdminRouter(
   auditRepository: AuditRepository,
   emailMarketingRepository: EmailMarketingRepository,
   participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository,
+  participantRiskRepository: ParticipantRiskRepository,
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
@@ -270,7 +277,36 @@ export function createAdminRouter(
 
   router.get('/participants', async (_req, res) => {
     const items = await registrationRepository.listForAdmin()
+    const summaries = await participantRiskRepository.summarizeParticipants(items.map((item) => item.participantId))
+    res.json({
+      items: items.map((item) => ({
+        ...item,
+        riskSummary: summaries[item.participantId],
+      })),
+    })
+  })
+
+  router.get('/risk-cases', async (_req, res) => {
+    const items = await participantRiskRepository.listCases()
     res.json({ items })
+  })
+
+  router.post('/risk-cases/:caseId/status', async (req, res) => {
+    const caseId = String(req.params.caseId ?? '').trim()
+    const parsed = riskCaseStatusSchema.parse(req.body)
+    const updated = await participantRiskRepository.updateCaseStatus(caseId, parsed.status, parsed.note)
+    if (!updated) {
+      return res.status(404).json({ error: 'Risk case not found.' })
+    }
+
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.risk_case_status_change',
+      entityType: 'participant_risk_case',
+      entityId: caseId,
+      detail: { status: parsed.status, note: parsed.note },
+    })
+    res.json({ item: updated })
   })
 
   const participantLeagueSchema = z.object({

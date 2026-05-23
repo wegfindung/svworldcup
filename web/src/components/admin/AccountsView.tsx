@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
 import { eventTeams } from '../../data/eventConfig'
 import { ApiError, adminSetParticipantLeague, fetchAdminParticipants } from '../../lib/api'
@@ -181,10 +182,10 @@ export function AccountsView() {
             <EmptyState title="No registrations yet" body="Registered accounts will appear here after participants submit the signup form." />
           </div>
         ) : (
-          <table className="min-w-[1080px] w-full border-collapse text-left text-sm">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-sm">
             <thead className="border-b border-white/8 bg-black/20">
               <tr>
-                {['Manager', 'League', 'Teams', 'Referral', 'State', 'Dates'].map((heading) => (
+                {['Manager', 'League', 'Teams', 'Referral', 'Risk', 'State', 'Dates'].map((heading) => (
                   <th key={heading} className="mono px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
                     {heading}
                   </th>
@@ -237,6 +238,21 @@ export function AccountsView() {
                   </td>
                   <td className="px-4 py-4 align-top">
                     <p className="text-xs text-white">{participant.referrerSoccerverseUsername || 'None'}</p>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    {participant.riskSummary?.openCaseCount ? (
+                      <Link
+                        to={`/admin/multi-accounting?participant=${encodeURIComponent(participant.participantId)}`}
+                        className="inline-flex flex-col rounded-[0.9rem] border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-xs text-amber-100 transition hover:-translate-y-[1px] hover:bg-amber-300/15 active:scale-[0.98]"
+                      >
+                        <span className="font-semibold">{participant.riskSummary.openCaseCount} active</span>
+                        <span className="mono mt-1 text-[10px] uppercase tracking-[0.14em]">
+                          score {participant.riskSummary.maxRiskScore}
+                        </span>
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-[var(--color-muted)]">No open cases</span>
+                    )}
                   </td>
                   <td className="px-4 py-4 align-top">
                     <span

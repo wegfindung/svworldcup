@@ -97,6 +97,24 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
     })
   })
 
+  it('treats Soccerverse username casing as distinct', async () => {
+    const repo = new MemoryRegistrationRepository()
+    await createActiveVeteran(repo, 'veteran@example.com', 'vet-token', 'CaseName')
+    const { record } = await repo.createPending(
+      {
+        email: 'rookie@example.com',
+        displayName: 'Rookie',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'rookie-token',
+    )
+    await repo.verifyByPlainToken('rookie-token')
+
+    const linked = await repo.linkSoccerverseAccount(record.participantId, 'casename')
+    expect(linked.soccerverseUsername).toBe('casename')
+  })
+
   it('rejects empty or oversized usernames', async () => {
     const { repo, participantId } = await createActiveRookie()
     await expect(repo.linkSoccerverseAccount(participantId, '   ')).rejects.toMatchObject({
