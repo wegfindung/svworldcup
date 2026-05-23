@@ -10,6 +10,7 @@ interface LocaleRailProps {
 const localeMeta: Record<LocaleCode, { label: string; flag: string }> = {
   en: { label: 'English', flag: '/flags/en.svg' },
   es: { label: 'Spanish', flag: '/flags/es.svg' },
+  it: { label: 'Italian', flag: '/flags/it.svg' },
   de: { label: 'German', flag: '/flags/de.svg' },
   fr: { label: 'French', flag: '/flags/fr.svg' },
   pt: { label: 'Portuguese', flag: '/flags/pt.svg' },

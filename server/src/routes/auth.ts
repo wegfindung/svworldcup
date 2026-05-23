@@ -31,7 +31,7 @@ const registrationSchema = z
     soccerverseUsername: z.string().trim().max(60).optional(),
     referrerSoccerverseUsername: z.string().trim().max(60).optional(),
     marketingOptIn: z.boolean().optional().default(false),
-    browserLocale: z.enum(['en', 'es', 'de', 'fr', 'pt', 'ru', 'zh']).optional(),
+    browserLocale: z.enum(['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh']).optional(),
     primaryTeamCode: z.string().trim().toUpperCase().length(3),
     secondaryTeamCode: z.string().trim().toUpperCase().length(3).optional(),
   })

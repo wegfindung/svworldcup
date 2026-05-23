@@ -1,4 +1,4 @@
-export type LocaleCode = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'zh'
+export type LocaleCode = 'en' | 'es' | 'it' | 'de' | 'fr' | 'pt' | 'ru' | 'zh'
 
 export type LeagueType = 'rookie' | 'veteran'
 

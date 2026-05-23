@@ -31,6 +31,7 @@ const englishCopy: ShareLocaleCopy = {
 const copyByLocale: Record<ShareLocale, ShareLocaleCopy> = {
   en: englishCopy,
   es: englishCopy,
+  it: englishCopy,
   de: {
     pageTitleSuffix: 'WM Top Picks',
     pageDescriptionPrefix: 'Ausgewählte Picks',

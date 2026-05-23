@@ -62,6 +62,15 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     signoff: 'Nos vemos en la cancha,\nel Soccerverse World Cup Team',
     linkHelp: 'Si el botón no funciona, abre este enlace:',
   },
+  it: {
+    subject: 'Azione richiesta: conferma la registrazione al Soccerverse World Cup',
+    title: 'Benvenuto al Soccerverse World Cup!',
+    intro: 'Ti manca un solo clic per guidare le tue nazioni e i tuoi giocatori preferiti nell’evento community Soccerverse World Cup.',
+    actionLabel: 'Conferma registrazione',
+    after: 'Dopo la conferma dell’email potrai iniziare a costruire la tua rosa.',
+    signoff: 'Ci vediamo in campo,\nil Soccerverse World Cup Team',
+    linkHelp: 'Se il pulsante non funziona, apri questo link:',
+  },
   de: {
     subject: 'Aktion erforderlich: Bestätige deine Soccerverse World Cup Registrierung',
     title: 'Willkommen beim Soccerverse World Cup!',
@@ -127,6 +136,15 @@ const passwordResetCopy: Record<SupportedLocale, ActionMailCopy> = {
     after: 'Si no lo solicitaste, puedes ignorar este email.',
     signoff: 'el Soccerverse World Cup Team',
     linkHelp: 'Si el botón no funciona, abre este enlace:',
+  },
+  it: {
+    subject: 'Reimposta la password del Soccerverse World Cup',
+    title: 'Imposta una nuova password',
+    intro: 'Usa questo link per recuperare l’accesso al tuo account Soccerverse World Cup.',
+    actionLabel: 'Imposta nuova password',
+    after: 'Se non hai richiesto tu questa email, puoi ignorarla.',
+    signoff: 'il Soccerverse World Cup Team',
+    linkHelp: 'Se il pulsante non funziona, apri questo link:',
   },
   de: {
     subject: 'Setze dein Soccerverse World Cup Passwort zurück',

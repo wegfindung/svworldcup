@@ -130,6 +130,7 @@ const germanCopy: ShareComposerCopy = {
 const copyByLocale: Record<LocaleCode, ShareComposerCopy> = {
   en: englishCopy,
   es: englishCopy,
+  it: englishCopy,
   de: germanCopy,
   fr: englishCopy,
   pt: englishCopy,
