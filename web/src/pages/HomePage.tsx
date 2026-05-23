@@ -22,16 +22,16 @@ const superstarPlayers = [
 ] as const
 
 const footballNations = [
-  { code: 'ar', label: 'Argentina' },
-  { code: 'br', label: 'Brazil' },
-  { code: 'de', label: 'Germany' },
-  { code: 'eng', label: 'England' },
-  { code: 'es', label: 'Spain' },
-  { code: 'fr', label: 'France' },
-  { code: 'it', label: 'Italy' },
-  { code: 'nl', label: 'Netherlands' },
-  { code: 'pt', label: 'Portugal' },
-  { code: 'uy', label: 'Uruguay' },
+  { code: 'ARG', label: 'Argentina' },
+  { code: 'BRA', label: 'Brazil' },
+  { code: 'GER', label: 'Germany' },
+  { code: 'ENG', label: 'England' },
+  { code: 'ESP', label: 'Spain' },
+  { code: 'FRA', label: 'France' },
+  { code: 'CRO', label: 'Croatia' },
+  { code: 'NED', label: 'Netherlands' },
+  { code: 'POR', label: 'Portugal' },
+  { code: 'URU', label: 'Uruguay' },
 ] as const
 
 const squadShape = [
@@ -198,7 +198,7 @@ function NationFlagsCard({ copy }: { copy: HomeCopy['nations'] }) {
               className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-white/12 bg-white/6 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition duration-300 ease-out group-hover:-translate-y-[1px] sm:h-11 sm:w-11"
             >
               <img
-                src={`/flags/${nation.code}.svg`}
+                src={`/team-flags/${nation.code}.svg`}
                 alt={nation.label}
                 width={40}
                 height={40}
