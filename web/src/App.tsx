@@ -16,6 +16,7 @@ import { BuilderPage } from './pages/BuilderPage'
 import { HomePage } from './pages/HomePage'
 import { PlayerLoginPage } from './pages/PlayerLoginPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { PrizesPage } from './pages/PrizesPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { ShareComposerPage } from './pages/ShareComposerPage'
@@ -244,6 +245,7 @@ function App() {
             <Route path="/login" element={<PlayerLoginPage referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
             <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
             <Route path="/results" element={<ResultsPage />} />
+            <Route path="/prizes" element={<PrizesPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage locale={locale} />} />
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

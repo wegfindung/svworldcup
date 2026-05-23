@@ -12,8 +12,10 @@ import type {
   EmailCampaignTrigger,
   EmailRecipientStatus,
   ParticipantProfile,
+  SupportedLocale,
 } from '../domain/types.js'
 import { env } from '../config/env.js'
+import { defaultLocale, supportedLocales } from '../data/worldCupSeed.js'
 import { sendAppMail } from '../lib/mailer.js'
 
 const newsletterInputStatuses: EmailCampaignStatus[] = ['draft', 'scheduled']
@@ -30,6 +32,7 @@ interface EmailRecipientSeed {
   secondaryTeamCode?: string
   referrerSoccerverseUsername?: string
   marketingUnsubscribeToken?: string
+  browserLocale?: SupportedLocale
 }
 
 interface CampaignStats {
@@ -47,6 +50,8 @@ interface EmailCampaignRow {
   trigger_key: EmailCampaignTrigger
   subject: string
   body_html: string
+  subject_by_locale?: Partial<Record<SupportedLocale, string>> | null
+  body_html_by_locale?: Partial<Record<SupportedLocale, string>> | null
   audience_status: EmailCampaignAudienceStatus
   audience_league: EmailCampaignAudienceLeague
   audience_team_code: string | null
@@ -54,6 +59,7 @@ interface EmailCampaignRow {
   scheduled_at: Date | string | null
   delay_minutes: number
   batch_size: number
+  requires_marketing_opt_in?: boolean
   created_by: string
   updated_by: string
   sent_at: Date | string | null
@@ -72,6 +78,7 @@ interface EmailRecipientRow {
   secondary_team_code: string | null
   referrer_soccerverse_username: string | null
   marketing_unsubscribe_token: string | null
+  browser_locale?: SupportedLocale | null
   status: EmailRecipientStatus
   queued_at: Date | string
   sent_at: Date | string | null
@@ -132,6 +139,23 @@ function clampDelayMinutes(value?: number) {
     return 0
   }
   return Math.max(0, Math.min(60 * 24 * 30, Math.trunc(delay)))
+}
+
+function normalizeLocalizedTextMap(value?: Partial<Record<SupportedLocale, string>>) {
+  const entries = Object.entries(value ?? {})
+    .map(([locale, text]) => [locale.trim().toLowerCase(), text?.trim() ?? ''] as const)
+    .filter(([locale, text]) => supportedLocales.includes(locale as SupportedLocale) && text)
+
+  return Object.fromEntries(entries) as Partial<Record<SupportedLocale, string>>
+}
+
+function localizedText(
+  fallback: string,
+  localized: Partial<Record<SupportedLocale, string>> | undefined,
+  locale?: SupportedLocale,
+) {
+  const resolvedLocale = locale && supportedLocales.includes(locale) ? locale : defaultLocale
+  return localized?.[resolvedLocale] ?? localized?.[defaultLocale] ?? fallback
 }
 
 function escapeHtml(value: string) {
@@ -200,6 +224,8 @@ function normalizeInput(input: EmailCampaignInput) {
   const fallbackStatus: EmailCampaignStatus = kind === 'newsletter' ? (scheduledAt ? 'scheduled' : 'draft') : 'draft'
   const requestedStatus = input.status ?? fallbackStatus
   const status = allowedStatuses.includes(requestedStatus) ? requestedStatus : fallbackStatus
+  const subjectByLocale = normalizeLocalizedTextMap(input.subjectByLocale)
+  const bodyHtmlByLocale = normalizeLocalizedTextMap(input.bodyHtmlByLocale)
 
   return {
     campaignId: input.campaignId?.trim() || undefined,
@@ -208,6 +234,8 @@ function normalizeInput(input: EmailCampaignInput) {
     triggerKey,
     subject,
     bodyHtml,
+    subjectByLocale: Object.keys(subjectByLocale).length ? subjectByLocale : undefined,
+    bodyHtmlByLocale: Object.keys(bodyHtmlByLocale).length ? bodyHtmlByLocale : undefined,
     audienceStatus: input.audienceStatus ?? 'active',
     audienceLeague: input.audienceLeague ?? 'all',
     audienceTeamCode: input.audienceTeamCode?.trim().toUpperCase() || undefined,
@@ -215,6 +243,7 @@ function normalizeInput(input: EmailCampaignInput) {
     scheduledAt,
     delayMinutes: kind === 'autoresponder' ? clampDelayMinutes(input.delayMinutes) : 0,
     batchSize: clampBatchSize(input.batchSize),
+    requiresMarketingOptIn: input.requiresMarketingOptIn ?? true,
   }
 }
 
@@ -256,9 +285,26 @@ function campaignRowAudienceMatchesParticipant(campaign: EmailCampaignRow, parti
   )
 }
 
+function campaignConsentMatchesParticipant(
+  campaign: Pick<EmailCampaignRecord, 'requiresMarketingOptIn'>,
+  participant: ParticipantProfile,
+) {
+  return campaign.requiresMarketingOptIn === false || (participant.marketingOptIn && !participant.marketingUnsubscribedAt)
+}
+
+function campaignRowConsentMatchesParticipant(campaign: EmailCampaignRow, participant: ParticipantProfile) {
+  return (
+    campaign.requires_marketing_opt_in === false ||
+    (participant.marketingOptIn && !participant.marketingUnsubscribedAt)
+  )
+}
+
 function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubscribeUrl?: string) {
   const displayName = recipient.displayName.trim() || recipient.email
+  const firstName = displayName.split(/\s+/)[0] || displayName
+  const publicWebUrl = env.PUBLIC_WEB_URL.replace(/\/+$/, '')
   const replacements: Record<string, string> = {
+    '{{first_name}}': firstName,
     '{{display_name}}': displayName,
     '{{email}}': recipient.email,
     '{{league_type}}': recipient.leagueType ?? '',
@@ -266,7 +312,11 @@ function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubsc
     '{{secondary_team_code}}': recipient.secondaryTeamCode ?? '',
     '{{referrer_soccerverse_username}}': recipient.referrerSoccerverseUsername ?? '',
     '{{unsubscribe_url}}': unsubscribeUrl ?? '',
-    '{{builder_url}}': 'https://worldcup.svtool.info/builder',
+    '{{builder_url}}': `${publicWebUrl}/builder`,
+    '{{prizes_url}}': `${publicWebUrl}/prizes`,
+    '{{play_url}}': 'https://play.soccerverse.com/',
+    '{{logo_url}}': `${publicWebUrl}/brand/logo-200.webp`,
+    '{{public_web_url}}': publicWebUrl,
   }
 
   let result = value
@@ -286,6 +336,7 @@ function seedFromParticipant(participant: ParticipantProfile): EmailRecipientSee
     secondaryTeamCode: participant.secondaryTeamCode,
     referrerSoccerverseUsername: participant.referrerSoccerverseUsername,
     marketingUnsubscribeToken: participant.marketingUnsubscribeToken,
+    browserLocale: participant.browserLocale,
   }
 }
 
@@ -301,6 +352,7 @@ function mapRecipientRow(row: EmailRecipientRow): EmailCampaignRecipient {
     secondaryTeamCode: row.secondary_team_code ?? undefined,
     referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
     marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
+    browserLocale: row.browser_locale ?? undefined,
     status: row.status,
     queuedAt: requiredIso(row.queued_at),
     sentAt: toIso(row.sent_at),
@@ -316,6 +368,8 @@ function mapCampaignRow(row: EmailCampaignRow, stats: CampaignStats): EmailCampa
     triggerKey: row.trigger_key,
     subject: row.subject,
     bodyHtml: row.body_html,
+    subjectByLocale: row.subject_by_locale ?? undefined,
+    bodyHtmlByLocale: row.body_html_by_locale ?? undefined,
     audienceStatus: row.audience_status,
     audienceLeague: row.audience_league ?? 'all',
     audienceTeamCode: row.audience_team_code ?? undefined,
@@ -323,6 +377,7 @@ function mapCampaignRow(row: EmailCampaignRow, stats: CampaignStats): EmailCampa
     scheduledAt: toIso(row.scheduled_at),
     delayMinutes: row.delay_minutes,
     batchSize: row.batch_size,
+    requiresMarketingOptIn: row.requires_marketing_opt_in ?? true,
     createdBy: row.created_by,
     updatedBy: row.updated_by,
     sentAt: toIso(row.sent_at),
@@ -332,14 +387,24 @@ function mapCampaignRow(row: EmailCampaignRow, stats: CampaignStats): EmailCampa
   }
 }
 
-async function sendCampaignMail(campaign: Pick<EmailCampaignRecord, 'subject' | 'bodyHtml'>, recipient: EmailRecipientSeed) {
-  const unsubscribeUrl = recipient.marketingUnsubscribeToken
+async function sendCampaignMail(
+  campaign: Pick<EmailCampaignRecord, 'subject' | 'bodyHtml' | 'subjectByLocale' | 'bodyHtmlByLocale' | 'requiresMarketingOptIn'>,
+  recipient: EmailRecipientSeed,
+) {
+  const requiresMarketingOptIn = campaign.requiresMarketingOptIn ?? true
+  const unsubscribeUrl = requiresMarketingOptIn && recipient.marketingUnsubscribeToken
     ? `${env.PUBLIC_WEB_URL.replace(/\/+$/, '')}/api/public/email/unsubscribe?token=${encodeURIComponent(
         recipient.marketingUnsubscribeToken,
       )}`
     : undefined
-  const subject = applyPlaceholders(campaign.subject, recipient, unsubscribeUrl)
-  const body = htmlFromEditorValue(applyPlaceholders(campaign.bodyHtml, recipient, unsubscribeUrl))
+  const subject = applyPlaceholders(
+    localizedText(campaign.subject, campaign.subjectByLocale, recipient.browserLocale),
+    recipient,
+    unsubscribeUrl,
+  )
+  const body = htmlFromEditorValue(
+    applyPlaceholders(localizedText(campaign.bodyHtml, campaign.bodyHtmlByLocale, recipient.browserLocale), recipient, unsubscribeUrl),
+  )
   await sendAppMail({
     to: recipient.email,
     subject,
@@ -388,6 +453,8 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
       triggerKey: normalized.triggerKey,
       subject: normalized.subject,
       bodyHtml: normalized.bodyHtml,
+      subjectByLocale: normalized.subjectByLocale,
+      bodyHtmlByLocale: normalized.bodyHtmlByLocale,
       audienceStatus: normalized.audienceStatus,
       audienceLeague: normalized.audienceLeague,
       audienceTeamCode: normalized.audienceTeamCode,
@@ -395,6 +462,7 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
       scheduledAt: normalized.scheduledAt,
       delayMinutes: normalized.delayMinutes,
       batchSize: normalized.batchSize,
+      requiresMarketingOptIn: normalized.requiresMarketingOptIn,
       createdBy: existing?.createdBy ?? actorEmail,
       updatedBy: actorEmail,
       sentAt: existing?.sentAt,
@@ -456,15 +524,12 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
   }
 
   async queueAutoresponders(triggerKey: EmailCampaignTrigger, participant: ParticipantProfile) {
-    if (!participant.marketingOptIn || participant.marketingUnsubscribedAt) {
-      return []
-    }
-
     const matching = (await this.listCampaigns()).filter(
       (campaign) =>
         campaign.kind === 'autoresponder' &&
         campaign.status === 'active' &&
         campaign.triggerKey === triggerKey &&
+        campaignConsentMatchesParticipant(campaign, participant) &&
         campaignAudienceMatchesParticipant(campaign, participant),
     )
     const summaries: EmailCampaignDispatchSummary[] = []
@@ -485,6 +550,7 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
           secondaryTeamCode: participant.secondaryTeamCode,
           referrerSoccerverseUsername: participant.referrerSoccerverseUsername,
           marketingUnsubscribeToken: participant.marketingUnsubscribeToken,
+          browserLocale: participant.browserLocale,
           status: 'pending',
           queuedAt,
         })
@@ -598,14 +664,17 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
               trigger_key = $4,
               subject = $5,
               body_html = $6,
-              audience_status = $7,
-              audience_league = $8,
-              audience_team_code = $9,
-              audience_referrer = $10,
-              scheduled_at = $11,
-              delay_minutes = $12,
-              batch_size = $13,
-              updated_by = $14,
+              subject_by_locale = $7,
+              body_html_by_locale = $8,
+              audience_status = $9,
+              audience_league = $10,
+              audience_team_code = $11,
+              audience_referrer = $12,
+              scheduled_at = $13,
+              delay_minutes = $14,
+              batch_size = $15,
+              requires_marketing_opt_in = $16,
+              updated_by = $17,
               updated_at = NOW()
           WHERE campaign_id = $1
           RETURNING *
@@ -617,6 +686,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           normalized.triggerKey,
           normalized.subject,
           normalized.bodyHtml,
+          normalized.subjectByLocale ?? null,
+          normalized.bodyHtmlByLocale ?? null,
           normalized.audienceStatus,
           normalized.audienceLeague,
           normalized.audienceTeamCode ?? null,
@@ -624,6 +695,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           normalized.scheduledAt ?? null,
           normalized.delayMinutes,
           normalized.batchSize,
+          normalized.requiresMarketingOptIn,
           actorEmail,
         ],
       )
@@ -642,6 +714,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           trigger_key,
           subject,
           body_html,
+          subject_by_locale,
+          body_html_by_locale,
           audience_status,
           audience_league,
           audience_team_code,
@@ -649,10 +723,11 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           scheduled_at,
           delay_minutes,
           batch_size,
+          requires_marketing_opt_in,
           created_by,
           updated_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $16)
         RETURNING *
       `,
       [
@@ -661,6 +736,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         normalized.triggerKey,
         normalized.subject,
         normalized.bodyHtml,
+        normalized.subjectByLocale ?? null,
+        normalized.bodyHtmlByLocale ?? null,
         normalized.audienceStatus,
         normalized.audienceLeague,
         normalized.audienceTeamCode ?? null,
@@ -668,6 +745,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         normalized.scheduledAt ?? null,
         normalized.delayMinutes,
         normalized.batchSize,
+        normalized.requiresMarketingOptIn,
         actorEmail,
       ],
     )
@@ -766,9 +844,6 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     if (triggerKey === 'manual') {
       return []
     }
-    if (!participant.marketingOptIn || participant.marketingUnsubscribedAt) {
-      return []
-    }
 
     const campaigns = await this.pool.query<EmailCampaignRow>(
       `
@@ -783,7 +858,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
 
     const summaries: EmailCampaignDispatchSummary[] = []
     for (const row of campaigns.rows) {
-      if (!campaignRowAudienceMatchesParticipant(row, participant)) {
+      if (!campaignRowConsentMatchesParticipant(row, participant) || !campaignRowAudienceMatchesParticipant(row, participant)) {
         continue
       }
 
@@ -804,8 +879,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           FROM participants
           WHERE email IS NOT NULL
             AND email <> ''
-            AND marketing_opt_in = TRUE
-            AND marketing_unsubscribed_at IS NULL
+            AND ($5::boolean = FALSE OR (marketing_opt_in = TRUE AND marketing_unsubscribed_at IS NULL))
             AND ($1 = 'all' OR status = $1)
             AND ($2 = 'all' OR league_type = $2)
             AND ($3::text IS NULL OR primary_team_code = $3 OR secondary_team_code = $3)
@@ -816,6 +890,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           campaign.audience_league ?? 'all',
           campaign.audience_team_code,
           campaign.audience_referrer,
+          campaign.requires_marketing_opt_in ?? true,
         ],
       ),
       this.pool.query<{
@@ -857,6 +932,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
       secondary_team_code: string | null
       referrer_soccerverse_username: string | null
       marketing_unsubscribe_token: string | null
+      browser_locale: SupportedLocale | null
     }>(
       `
         SELECT
@@ -867,12 +943,12 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           primary_team_code,
           secondary_team_code,
           referrer_soccerverse_username,
-          marketing_unsubscribe_token
+          marketing_unsubscribe_token,
+          browser_locale
         FROM participants
         WHERE email IS NOT NULL
           AND email <> ''
-          AND marketing_opt_in = TRUE
-          AND marketing_unsubscribed_at IS NULL
+          AND ($5::boolean = FALSE OR (marketing_opt_in = TRUE AND marketing_unsubscribed_at IS NULL))
           AND ($1 = 'all' OR status = $1)
           AND ($2 = 'all' OR league_type = $2)
           AND ($3::text IS NULL OR primary_team_code = $3 OR secondary_team_code = $3)
@@ -884,6 +960,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         campaign.audienceLeague ?? 'all',
         campaign.audienceTeamCode ?? null,
         campaign.audienceReferrer ?? null,
+        campaign.requiresMarketingOptIn ?? true,
       ],
     )
 
@@ -899,6 +976,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           secondaryTeamCode: row.secondary_team_code ?? undefined,
           referrerSoccerverseUsername: row.referrer_soccerverse_username ?? undefined,
           marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
+          browserLocale: row.browser_locale ?? undefined,
         },
         queuedAt,
       )
@@ -918,9 +996,10 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           secondary_team_code,
           referrer_soccerverse_username,
           marketing_unsubscribe_token,
+          browser_locale,
           queued_at
         )
-        VALUES ($1, $2, LOWER($3), $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, LOWER($3), $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (campaign_id, email)
         DO UPDATE SET
           participant_id = COALESCE(email_campaign_recipients.participant_id, EXCLUDED.participant_id),
@@ -930,6 +1009,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           secondary_team_code = EXCLUDED.secondary_team_code,
           referrer_soccerverse_username = EXCLUDED.referrer_soccerverse_username,
           marketing_unsubscribe_token = EXCLUDED.marketing_unsubscribe_token,
+          browser_locale = EXCLUDED.browser_locale,
           queued_at = CASE
             WHEN email_campaign_recipients.status = 'pending' THEN EXCLUDED.queued_at
             ELSE email_campaign_recipients.queued_at
@@ -945,6 +1025,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         recipient.secondaryTeamCode ?? null,
         recipient.referrerSoccerverseUsername ?? null,
         recipient.marketingUnsubscribeToken ?? null,
+        recipient.browserLocale ?? null,
         queuedAt,
       ],
     )
@@ -972,7 +1053,7 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     }
 
     try {
-      const skipped = await this.skipUnsubscribedRecipients(campaignId)
+      const skipped = await this.skipUnsubscribedRecipients(campaignId, campaign.requiresMarketingOptIn ?? true)
       const availableQuota = await this.availableSendQuota()
       const recipientResult = await this.pool.query<EmailRecipientRow>(
         `
@@ -1032,7 +1113,11 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     }
   }
 
-  private async skipUnsubscribedRecipients(campaignId: string) {
+  private async skipUnsubscribedRecipients(campaignId: string, requiresMarketingOptIn: boolean) {
+    if (!requiresMarketingOptIn) {
+      return 0
+    }
+
     const result = await this.pool.query(
       `
         UPDATE email_campaign_recipients r

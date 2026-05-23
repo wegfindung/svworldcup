@@ -87,4 +87,32 @@ describe('MemoryEmailMarketingRepository', () => {
     expect(runs).toHaveLength(0)
     expect(recipients).toHaveLength(0)
   })
+
+  it('queues transactional autoresponders without marketing opt-in', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+    const campaign = await repository.saveCampaign(
+      {
+        kind: 'autoresponder',
+        status: 'active',
+        triggerKey: 'registration_verified',
+        subject: 'Veteran onboarding',
+        bodyHtml: 'Welcome {{first_name}}.',
+        audienceStatus: 'active',
+        audienceLeague: 'veteran',
+        requiresMarketingOptIn: false,
+      },
+      'admin@example.com',
+    )
+
+    const runs = await repository.queueAutoresponders('registration_verified', {
+      ...participant,
+      marketingOptIn: false,
+      leagueType: 'veteran',
+      browserLocale: 'de',
+    })
+    const recipients = await repository.listRecipients(campaign.campaignId)
+
+    expect(runs).toHaveLength(1)
+    expect(recipients[0]).toMatchObject({ browserLocale: 'de', email: 'manager@example.com', status: 'sent' })
+  })
 })

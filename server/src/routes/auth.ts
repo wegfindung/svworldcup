@@ -9,6 +9,7 @@ import { env } from '../config/env.js'
 import { isKnownTeamCode } from '../data/worldCupSeed.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
 import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
+import { resolveBrowserLocale } from '../lib/locale.js'
 import { sendPasswordResetMail, sendVerificationMail } from '../lib/mailer.js'
 import { hashPassword } from '../lib/passwords.js'
 import { generatePlainToken } from '../lib/tokens.js'
@@ -28,6 +29,7 @@ const registrationSchema = z
     soccerverseUsername: z.string().trim().max(60).optional(),
     referrerSoccerverseUsername: z.string().trim().max(60).optional(),
     marketingOptIn: z.boolean().optional().default(false),
+    browserLocale: z.enum(['en', 'es', 'de', 'fr', 'pt', 'ru', 'zh']).optional(),
     primaryTeamCode: z.string().trim().toUpperCase().length(3),
     secondaryTeamCode: z.string().trim().toUpperCase().length(3).optional(),
   })
@@ -124,6 +126,7 @@ export function createAuthRouter(
     const registrationInput = {
       ...parsed,
       referrerSoccerverseUsername: normalizeReferrerSoccerverseUsername(parsed.referrerSoccerverseUsername),
+      browserLocale: resolveBrowserLocale(parsed.browserLocale, req.header('accept-language')),
     }
     const plainToken = generatePlainToken()
 

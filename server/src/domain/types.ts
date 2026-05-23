@@ -32,6 +32,7 @@ export interface RegistrationInput {
   soccerverseUsername?: string
   referrerSoccerverseUsername?: string
   marketingOptIn?: boolean
+  browserLocale?: SupportedLocale
   primaryTeamCode: string
   secondaryTeamCode?: string
 }
@@ -45,6 +46,7 @@ export interface ParticipantProfile {
   marketingOptIn: boolean
   marketingUnsubscribedAt?: string
   marketingUnsubscribeToken?: string
+  browserLocale?: SupportedLocale
   leagueType: LeagueType
   primaryTeamCode: string
   secondaryTeamCode?: string
@@ -257,6 +259,8 @@ export interface EmailCampaignInput {
   triggerKey?: EmailCampaignTrigger
   subject: string
   bodyHtml: string
+  subjectByLocale?: Partial<Record<SupportedLocale, string>>
+  bodyHtmlByLocale?: Partial<Record<SupportedLocale, string>>
   audienceStatus: EmailCampaignAudienceStatus
   audienceLeague?: EmailCampaignAudienceLeague
   audienceTeamCode?: string
@@ -264,6 +268,7 @@ export interface EmailCampaignInput {
   scheduledAt?: string
   delayMinutes?: number
   batchSize?: number
+  requiresMarketingOptIn?: boolean
 }
 
 export interface EmailCampaignRecord extends EmailCampaignInput {
@@ -295,6 +300,7 @@ export interface EmailCampaignRecipient {
   secondaryTeamCode?: string
   referrerSoccerverseUsername?: string
   marketingUnsubscribeToken?: string
+  browserLocale?: SupportedLocale
   status: EmailRecipientStatus
   queuedAt: string
   sentAt?: string

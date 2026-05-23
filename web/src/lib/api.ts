@@ -9,6 +9,7 @@ import type {
   EmailCampaignRecipient,
   EmailCampaignRecord,
   EventControls,
+  LocaleCode,
   MatchImportInput,
   MatchImportPromotionResult,
   MatchImportRowEdit,
@@ -32,6 +33,7 @@ import type {
   TeamSeed,
 } from './types'
 import type { ShareSnapshotPayload } from './sharePayload'
+import { detectBrowserLocale } from './browserLocale'
 
 interface AuthParticipantResponse {
   participant: ParticipantProfile
@@ -128,6 +130,7 @@ export function registerParticipant(payload: {
   soccerverseUsername?: string
   referrerSoccerverseUsername?: string
   marketingOptIn?: boolean
+  browserLocale?: LocaleCode
   primaryTeamCode: string
   secondaryTeamCode?: string
 }) {
@@ -140,7 +143,10 @@ export function registerParticipant(payload: {
     verificationPreviewUrl?: string
   }>('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      browserLocale: payload.browserLocale ?? detectBrowserLocale(),
+    }),
   })
 }
 

@@ -11,6 +11,7 @@ import { createAdminRouter } from './routes/admin.js'
 import { createParticipantRouter } from './routes/participant.js'
 import { createPublicRouter } from './routes/public.js'
 import { handleShareSnapshotPage } from './routes/share.js'
+import { bootstrapDefaultEmailCampaigns } from './services/bootstrapEmailCampaigns.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
 import {
@@ -81,6 +82,9 @@ export function createApp() {
 
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
     console.error('Failed to bootstrap initial team pools', error)
+  })
+  void bootstrapDefaultEmailCampaigns(emailMarketingRepository).catch((error) => {
+    console.error('Failed to bootstrap default email campaigns', error)
   })
   startEmailMarketingScheduler(emailMarketingRepository)
 

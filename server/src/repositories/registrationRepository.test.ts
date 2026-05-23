@@ -36,6 +36,24 @@ async function createActiveVeteran(repo: MemoryRegistrationRepository, email: st
 }
 
 describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
+  it('stores the browser locale during registration', async () => {
+    const repo = new MemoryRegistrationRepository()
+    const { record } = await repo.createPending(
+      {
+        email: 'locale@example.com',
+        displayName: 'Locale Manager',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: true,
+        browserLocale: 'de',
+      },
+      'locale-token',
+    )
+    const verified = await repo.verifyByPlainToken('locale-token')
+
+    expect(record.browserLocale).toBe('de')
+    expect(verified?.browserLocale).toBe('de')
+  })
+
   it('links a Soccerverse account without changing league_type', async () => {
     const { repo, participantId } = await createActiveRookie()
     const before = await repo.getByParticipantId(participantId)

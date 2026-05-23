@@ -86,6 +86,8 @@ const emailCampaignSchema = z.object({
   triggerKey: z.enum(['manual', 'registration_created', 'registration_verified']).optional(),
   subject: z.string().trim().min(1).max(255),
   bodyHtml: z.string().trim().min(1).max(100_000),
+  subjectByLocale: z.record(z.string(), z.string().trim().min(1).max(255)).optional(),
+  bodyHtmlByLocale: z.record(z.string(), z.string().trim().min(1).max(100_000)).optional(),
   audienceStatus: z.enum(['all', 'pending_verification', 'active']).default('active'),
   audienceLeague: z.enum(['all', 'rookie', 'veteran']).optional(),
   audienceTeamCode: z.string().trim().toUpperCase().length(3).optional(),
@@ -98,6 +100,7 @@ const emailCampaignSchema = z.object({
     .transform((value) => value || undefined),
   delayMinutes: z.coerce.number().int().min(0).max(60 * 24 * 30).optional(),
   batchSize: z.coerce.number().int().min(1).max(500).optional(),
+  requiresMarketingOptIn: z.boolean().optional(),
 })
 
 const emailTestSchema = emailCampaignSchema.extend({

@@ -10,6 +10,7 @@ import type {
   RegistrationCreationResult,
   RegistrationInput,
   RegistrationRecord,
+  SupportedLocale,
 } from '../domain/types.js'
 
 export class ActiveRegistrationExistsError extends Error {
@@ -68,6 +69,7 @@ interface ParticipantRow {
   marketing_opt_in: boolean
   marketing_unsubscribed_at: string | null
   marketing_unsubscribe_token: string | null
+  browser_locale?: SupportedLocale | null
   league_type: LeagueType
   primary_team_code: string
   secondary_team_code: string | null
@@ -130,6 +132,7 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     marketingOptIn: record.marketingOptIn,
     marketingUnsubscribedAt: record.marketingUnsubscribedAt,
     marketingUnsubscribeToken: record.marketingUnsubscribeToken,
+    browserLocale: record.browserLocale,
     leagueType: record.leagueType,
     primaryTeamCode: record.primaryTeamCode,
     secondaryTeamCode: record.secondaryTeamCode,
@@ -152,6 +155,7 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     marketingOptIn: row.marketing_opt_in,
     marketingUnsubscribedAt: row.marketing_unsubscribed_at ?? undefined,
     marketingUnsubscribeToken: row.marketing_unsubscribe_token ?? undefined,
+    browserLocale: row.browser_locale ?? undefined,
     leagueType: row.league_type,
     primaryTeamCode: row.primary_team_code,
     secondaryTeamCode: row.secondary_team_code ?? undefined,
@@ -209,6 +213,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       marketingOptIn: input.marketingOptIn ? true : (existing?.marketingOptIn ?? false),
       marketingUnsubscribedAt: input.marketingOptIn ? undefined : existing?.marketingUnsubscribedAt,
       marketingUnsubscribeToken: existing?.marketingUnsubscribeToken ?? randomUUID(),
+      browserLocale: input.browserLocale ?? existing?.browserLocale,
       leagueType,
       primaryTeamCode: input.primaryTeamCode,
       secondaryTeamCode: input.secondaryTeamCode,
@@ -570,13 +575,14 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             referrer_soccerverse_username,
             marketing_opt_in,
             marketing_unsubscribe_token,
+            browser_locale,
             league_type,
             primary_team_code,
             secondary_team_code,
             status,
             verification_sent_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending_verification', NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_verification', NOW())
           ON CONFLICT (email)
           DO UPDATE SET
             display_name = EXCLUDED.display_name,
@@ -585,6 +591,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             marketing_opt_in = CASE WHEN EXCLUDED.marketing_opt_in THEN TRUE ELSE participants.marketing_opt_in END,
             marketing_unsubscribed_at = CASE WHEN EXCLUDED.marketing_opt_in THEN NULL ELSE participants.marketing_unsubscribed_at END,
             marketing_unsubscribe_token = COALESCE(participants.marketing_unsubscribe_token, EXCLUDED.marketing_unsubscribe_token),
+            browser_locale = COALESCE(EXCLUDED.browser_locale, participants.browser_locale),
             league_type = EXCLUDED.league_type,
             primary_team_code = EXCLUDED.primary_team_code,
             secondary_team_code = EXCLUDED.secondary_team_code,
@@ -600,6 +607,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             marketing_opt_in,
             marketing_unsubscribed_at,
             marketing_unsubscribe_token,
+            browser_locale,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -615,6 +623,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           input.referrerSoccerverseUsername?.trim() || null,
           input.marketingOptIn ? true : false,
           randomUUID(),
+          input.browserLocale ?? null,
           leagueType,
           input.primaryTeamCode,
           input.secondaryTeamCode ?? null,
@@ -645,6 +654,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           marketingOptIn: participant.marketing_opt_in,
           marketingUnsubscribedAt: participant.marketing_unsubscribed_at ?? undefined,
           marketingUnsubscribeToken: participant.marketing_unsubscribe_token ?? undefined,
+          browserLocale: participant.browser_locale ?? undefined,
           leagueType: participant.league_type,
           primaryTeamCode: participant.primary_team_code,
           secondaryTeamCode: participant.secondary_team_code ?? undefined,
@@ -685,6 +695,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             p.marketing_opt_in,
             p.marketing_unsubscribed_at,
             p.marketing_unsubscribe_token,
+            p.browser_locale,
             p.league_type,
             p.primary_team_code,
             p.secondary_team_code,
@@ -730,6 +741,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
               marketing_opt_in,
               marketing_unsubscribed_at,
               marketing_unsubscribe_token,
+              browser_locale,
               league_type,
               primary_team_code,
               secondary_team_code,
@@ -772,6 +784,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             marketing_opt_in,
             marketing_unsubscribed_at,
             marketing_unsubscribe_token,
+            browser_locale,
             league_type,
             primary_team_code,
             secondary_team_code,
@@ -818,6 +831,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           marketingOptIn: participant.marketing_opt_in,
           marketingUnsubscribedAt: participant.marketing_unsubscribed_at ?? undefined,
           marketingUnsubscribeToken: participant.marketing_unsubscribe_token ?? undefined,
+          browserLocale: participant.browser_locale ?? undefined,
           leagueType: participant.league_type,
           primaryTeamCode: participant.primary_team_code,
           secondaryTeamCode: participant.secondary_team_code ?? undefined,

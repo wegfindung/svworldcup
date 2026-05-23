@@ -15,6 +15,7 @@ const englishMessages = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Results' },
       { to: '/tables', label: 'Tables' },
+      { to: '/prizes', label: 'Prizes' },
     ],
     account: [
       { to: '/login', label: 'Login' },

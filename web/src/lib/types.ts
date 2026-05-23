@@ -98,6 +98,7 @@ export interface ParticipantProfile {
   marketingOptIn: boolean
   marketingUnsubscribedAt?: string
   marketingUnsubscribeToken?: string
+  browserLocale?: LocaleCode
   leagueType: LeagueType
   primaryTeamCode: string
   secondaryTeamCode?: string
@@ -303,6 +304,8 @@ export interface EmailCampaignInput {
   triggerKey?: EmailCampaignTrigger
   subject: string
   bodyHtml: string
+  subjectByLocale?: Partial<Record<LocaleCode, string>>
+  bodyHtmlByLocale?: Partial<Record<LocaleCode, string>>
   audienceStatus: EmailCampaignAudienceStatus
   audienceLeague?: EmailCampaignAudienceLeague
   audienceTeamCode?: string
@@ -310,6 +313,7 @@ export interface EmailCampaignInput {
   scheduledAt?: string
   delayMinutes?: number
   batchSize?: number
+  requiresMarketingOptIn?: boolean
 }
 
 export interface EmailCampaignRecord extends EmailCampaignInput {
@@ -341,6 +345,7 @@ export interface EmailCampaignRecipient {
   secondaryTeamCode?: string
   referrerSoccerverseUsername?: string
   marketingUnsubscribeToken?: string
+  browserLocale?: LocaleCode
   status: EmailRecipientStatus
   queuedAt: string
   sentAt?: string

@@ -296,6 +296,8 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
       triggerKey: campaign.triggerKey,
       subject: campaign.subject,
       bodyHtml: campaign.bodyHtml,
+      subjectByLocale: campaign.subjectByLocale,
+      bodyHtmlByLocale: campaign.bodyHtmlByLocale,
       audienceStatus: campaign.audienceStatus,
       audienceLeague: campaign.audienceLeague ?? 'all',
       audienceTeamCode: campaign.audienceTeamCode,
@@ -303,6 +305,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
       scheduledAt: campaign.scheduledAt,
       delayMinutes: campaign.delayMinutes,
       batchSize: campaign.batchSize,
+      requiresMarketingOptIn: campaign.requiresMarketingOptIn,
     })
     setScheduledLocal(toLocalInputValue(campaign.scheduledAt))
     setMessage(null)
@@ -718,7 +721,8 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
 
           <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">
             Available placeholders: {'{{display_name}}'}, {'{{email}}'}, {'{{league_type}}'}, {'{{primary_team_code}}'},{' '}
-            {'{{secondary_team_code}}'}, {'{{referrer_soccerverse_username}}'}, {'{{builder_url}}'}, {'{{unsubscribe_url}}'}.
+            {'{{secondary_team_code}}'}, {'{{referrer_soccerverse_username}}'}, {'{{first_name}}'}, {'{{builder_url}}'},{' '}
+            {'{{prizes_url}}'}, {'{{play_url}}'}, {'{{logo_url}}'}, {'{{unsubscribe_url}}'}.
           </p>
 
           <label className="mt-4 grid gap-2">
