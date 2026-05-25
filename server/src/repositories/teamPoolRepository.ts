@@ -2,6 +2,7 @@ import { Pool } from 'pg'
 import { getPositionClasses } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
 import type { SoccerversePlayerRecord, TeamPoolPlayer } from '../domain/types.js'
+import { normalizeDisplayName } from '../lib/displayName.js'
 import { compareTeamPoolPlayersForBuilder } from '../lib/teamPoolSort.js'
 
 function defaultPlayerImageUrl(playerId: number) {
@@ -12,7 +13,7 @@ function toTeamPoolPlayer(teamCode: string, player: SoccerversePlayerRecord): Te
   return {
     teamCode,
     playerId: player.playerId,
-    displayName: player.displayName,
+    displayName: normalizeDisplayName(player.displayName),
     nationalityCode: player.nationalityCode,
     rating: player.rating,
     capCost: getCapCostForRating(player.rating),
@@ -164,6 +165,7 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
     try {
       await client.query('BEGIN')
       for (const player of players) {
+        const displayName = normalizeDisplayName(player.displayName)
         await client.query(
           `
             INSERT INTO world_cup_players (player_id, display_name, nationality_code, position_codes, rating, position_main, image_url, source, updated_at)
@@ -180,7 +182,7 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
           `,
           [
             player.playerId,
-            player.displayName,
+            displayName,
             player.nationalityCode,
             player.positions,
             player.rating,

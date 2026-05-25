@@ -1,5 +1,6 @@
 import { env } from '../config/env.js'
 import type { SoccerversePlayerRecord } from '../domain/types.js'
+import { normalizeDisplayName } from '../lib/displayName.js'
 import { getCommunityPlayerName } from './communityPack.js'
 import { recordOperationEvent } from './operationsMonitor.js'
 
@@ -79,7 +80,7 @@ function mapSoccerverseRecord(item: Record<string, unknown>, fallbackName?: stri
   const playerId = Number(item.player_id)
   return {
     playerId,
-    displayName: fallbackName ?? `Player ${playerId}`,
+    displayName: normalizeDisplayName(fallbackName ?? `Player ${playerId}`),
     nationalityCode: String(item.country_id ?? ''),
     rating: Number(item.rating ?? 50),
     clubId: Number(item.club_id ?? 0),

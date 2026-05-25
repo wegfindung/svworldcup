@@ -3,6 +3,7 @@ import path from 'node:path'
 import { env } from '../server/src/config/env.js'
 import { teams } from '../server/src/data/worldCupSeed.js'
 import type { SoccerversePlayerRecord } from '../server/src/domain/types.js'
+import { normalizeDisplayName } from '../server/src/lib/displayName.js'
 import { createTeamPoolRepository } from '../server/src/services/repos.js'
 
 interface SourcePlayer {
@@ -79,7 +80,7 @@ function normalizePositions(player: SourcePlayer) {
 function mapPlayer(player: SourcePlayer, fallbackTeamCode: string): SoccerversePlayerRecord {
   return {
     playerId: Number(player.id),
-    displayName: String(player.name).trim(),
+    displayName: normalizeDisplayName(String(player.name)),
     nationalityCode: String(player.country_id ?? fallbackTeamCode).trim().toUpperCase().slice(0, 3) || fallbackTeamCode,
     rating: normalizeRating(player.rating),
     clubId: 0,
