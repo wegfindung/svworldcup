@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS legacy_team_nations;
 CREATE TEMP TABLE legacy_team_nations (
     team_code TEXT PRIMARY KEY,
     nation_code TEXT NOT NULL
-) ON COMMIT DROP;
+);
 
 INSERT INTO legacy_team_nations (team_code, nation_code)
 VALUES
