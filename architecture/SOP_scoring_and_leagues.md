@@ -109,6 +109,7 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 
 - Each participant chooses one primary country.
 - Each participant may choose one optional secondary country.
+- Countries are drawn from the full Soccerverse nation set (`server/src/data/soccerverseNations.ts`), not just the 48 World Cup teams — a participant can represent any nation the game recognises, independent of which World Cup pools they draft from.
 - Participants contribute to:
 - rookie or veteran table
 - primary country table

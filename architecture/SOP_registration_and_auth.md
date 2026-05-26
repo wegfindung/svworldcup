@@ -180,7 +180,7 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - `referrerSoccerverseUsername` is optional, trimmed, safe-character filtered, and length-limited to 60 characters.
 - `primaryCountryCode` is required.
 - `secondaryCountryCode` is optional.
-- `primaryCountryCode` and `secondaryCountryCode` must refer to seeded team/country records.
+- `primaryCountryCode` and `secondaryCountryCode` must refer to a Soccerverse nation (the full nation set the game recognises), **not** only the 48 World Cup teams. The nation pick drives the Nation League and is independent of the World Cup team pools used for drafting. Codes are ISO-3166 alpha-2 plus the home-nation specials (`gb` = England, `gb-sct`, `gb-wls`, `gb-nir`) and `xk` (Kosovo); the canonical list lives in `server/src/data/soccerverseNations.ts`. The secondary nation must differ from the primary.
 - `slotKey` must map to one canonical builder slot.
 - player assignment must fail when:
 - the slot is filled

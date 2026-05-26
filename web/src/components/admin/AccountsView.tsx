@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
 import { eventTeams } from '../../data/eventConfig'
+import { getNationName } from '../../data/soccerverseNations'
 import { ApiError, adminSetParticipantLeague, fetchAdminParticipants } from '../../lib/api'
 import type { AdminParticipantRecord, LeagueType } from '../../lib/types'
 
@@ -40,7 +41,8 @@ function teamLabel(teamCode?: string) {
     return 'None'
   }
 
-  return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
+  // Nation pick uses Soccerverse nation codes; fall back to WC team names for any legacy codes.
+  return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? getNationName(teamCode)
 }
 
 export function AccountsView() {

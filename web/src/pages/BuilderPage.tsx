@@ -1,10 +1,12 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
+import { soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import {
@@ -363,7 +365,9 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
       setSquad(squadResponse.squad)
       setSelectedSlotKey(getNextDraftSlotKey(squadResponse.squad))
       setPublicProfileUrl(session.participant.revealProfile ? buildPublicProfileUrl(session.participant) : null)
-      setSelectedTeamCode(session.participant.primaryTeamCode)
+      // The picked nation only feeds the Nation League — it never selects a draft pool. The user
+      // chooses which World Cup team's players to browse from the pool selector below.
+      setSelectedTeamCode(undefined)
       setAccessState('active')
     } catch (error) {
       const message = error instanceof Error ? error.message : copy.errors.openBuilder
@@ -835,29 +839,29 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <TeamSelect
+                <NationSelect
                   label={copy.register.registrationCountry}
-                  teams={eventTeams}
+                  nations={soccerverseNations}
                   value={registrationForm.primaryTeamCode}
                   placeholder={copy.register.registrationCountryPlaceholder}
-                  onChange={(teamCode) =>
+                  onChange={(code) =>
                     setRegistrationForm((current) => ({
                       ...current,
-                      primaryTeamCode: teamCode,
-                      secondaryTeamCode: current.secondaryTeamCode === teamCode ? undefined : current.secondaryTeamCode,
+                      primaryTeamCode: code,
+                      secondaryTeamCode: current.secondaryTeamCode === code ? undefined : current.secondaryTeamCode,
                     }))
                   }
                 />
-                <TeamSelect
+                <NationSelect
                   label={copy.register.secondaryCountry}
-                  teams={eventTeams}
+                  nations={soccerverseNations}
                   value={registrationForm.secondaryTeamCode}
                   placeholder={copy.register.secondaryCountryPlaceholder}
-                  excludeTeamCode={registrationForm.primaryTeamCode}
-                  onChange={(teamCode) =>
+                  excludeCode={registrationForm.primaryTeamCode}
+                  onChange={(code) =>
                     setRegistrationForm((current) => ({
                       ...current,
-                      secondaryTeamCode: teamCode,
+                      secondaryTeamCode: code,
                     }))
                   }
                 />
