@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
-import { hasCompetitionStarted } from '../data/competitionWindow.js'
+import { hasCompetitionStarted, hasRegistrationClosed } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, formationSlots, getBudgetOption, getScoreMultiplierForBudget, getSlotDefinition } from '../data/formation.js'
 import { getPositionClasses, isEligibleForSlot } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
@@ -19,6 +19,9 @@ export class SquadValidationError extends Error {
 }
 
 function assertSquadEditable(isLocked: boolean, now = Date.now()) {
+  if (hasRegistrationClosed(now)) {
+    throw new SquadValidationError('Squad is locked because registration has closed.')
+  }
   if (isLocked && hasCompetitionStarted(now)) {
     throw new SquadValidationError('Squad is locked because the competition has started.')
   }

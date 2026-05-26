@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { competitionStartEpoch } from '../data/competitionWindow.js'
+import { competitionStartEpoch, registrationCloseEpoch } from '../data/competitionWindow.js'
 import type { SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
 import { MemorySquadRepository } from './squadRepository.js'
 import { MemoryTeamPoolRepository } from './teamPoolRepository.js'
@@ -77,5 +77,28 @@ describe('MemorySquadRepository competition edit window', () => {
     now = start + 1_000
 
     await expect(squads.removePlayer(participantId, 'starter-gk-1')).rejects.toThrow('competition has started')
+  })
+})
+
+describe('MemorySquadRepository registration close edit window', () => {
+  it('blocks squad edits once registration has closed, even for an unlocked squad', async () => {
+    // Build before both the competition start and registration close, so assignment is allowed.
+    let now = (competitionStartEpoch() ?? Date.now()) - 1_000
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.flatMap((slotPlayer) => [player(slotPlayer.playerId, slotPlayer.position), player(slotPlayer.playerId + 100, slotPlayer.position)]),
+    )
+    const squads = new MemorySquadRepository(pools, () => now)
+    const participantId = 'participant-1'
+    await squads.assignPlayer(participantId, { slotKey: 'starter-gk-1', playerId: 101 })
+
+    // Soccerverse season transition: ratings (and therefore wages) change. The squad is never
+    // locked, but edits must still be refused so no one builds against the new wage table.
+    now = registrationCloseEpoch() + 1_000
+
+    await expect(
+      squads.assignPlayer(participantId, { slotKey: 'starter-def-1', playerId: 102 }),
+    ).rejects.toThrow('registration has closed')
   })
 })

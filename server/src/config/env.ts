@@ -49,6 +49,7 @@ const envSchema = z.object({
   CSRF_TOKEN_SECRET: optionalString,
   RISK_SIGNAL_SECRET: optionalString,
   TOURNAMENT_KICKOFF_AT: optionalString,
+  REGISTRATION_CLOSE_AT: optionalString,
   RATE_LIMIT_TRUST_PROXY: booleanFromString,
 })
 
@@ -61,7 +62,7 @@ function parseAdminEmails(raw: string): string[] {
     .filter(Boolean)
 }
 
-function parseKickoff(raw?: string): Date | null {
+function parseInstant(raw?: string): Date | null {
   if (!raw) {
     return null
   }
@@ -74,6 +75,7 @@ export const env = {
   ...parsed,
   SMTP_SECURE: parsed.SMTP_SECURE ?? false,
   ADMIN_BOOTSTRAP_EMAILS: parseAdminEmails(parsed.ADMIN_BOOTSTRAP_EMAILS),
-  TOURNAMENT_KICKOFF_AT: parseKickoff(parsed.TOURNAMENT_KICKOFF_AT),
+  TOURNAMENT_KICKOFF_AT: parseInstant(parsed.TOURNAMENT_KICKOFF_AT),
+  REGISTRATION_CLOSE_AT: parseInstant(parsed.REGISTRATION_CLOSE_AT),
   RATE_LIMIT_TRUST_PROXY: parsed.RATE_LIMIT_TRUST_PROXY ?? false,
 }

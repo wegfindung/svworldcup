@@ -6,6 +6,7 @@ import {
   shouldUseSecureCookies,
 } from '../config/auth.js'
 import { env } from '../config/env.js'
+import { hasRegistrationClosed } from '../data/competitionWindow.js'
 import { isKnownNationCode } from '../data/soccerverseNations.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
 import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
@@ -124,7 +125,13 @@ export function createAuthRouter(
   const router = Router()
   const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
 
+  const registrationClosedMessage = 'Registration has closed for this event.'
+
   router.post('/register', async (req, res) => {
+    if (hasRegistrationClosed()) {
+      return res.status(403).json({ error: registrationClosedMessage })
+    }
+
     const parsed = registrationSchema.parse(req.body)
     const registrationInput = {
       ...parsed,
@@ -195,6 +202,10 @@ export function createAuthRouter(
   })
 
   router.get('/verify', async (req, res) => {
+    if (hasRegistrationClosed()) {
+      return res.status(403).json({ error: registrationClosedMessage })
+    }
+
     const token = String(req.query.token ?? '')
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required.' })
@@ -301,6 +312,10 @@ export function createAuthRouter(
   })
 
   router.post('/resend-verification', async (req, res) => {
+    if (hasRegistrationClosed()) {
+      return res.status(403).json({ error: registrationClosedMessage })
+    }
+
     const parsed = resendSchema.parse(req.body)
     const plainToken = generatePlainToken()
     const result = await registrationRepository.resendVerification(parsed.email, plainToken)
