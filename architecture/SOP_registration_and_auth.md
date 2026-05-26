@@ -52,6 +52,13 @@ Allow participants to register securely with verified email, enter the squad bui
 - Password login is optional at first verification and can be added from the verified dashboard.
 - Password reset tokens must be one-time, expiring, and not reusable after consumption.
 - Squad mutations are blocked after tournament lock.
+- Registration closes at the Soccerverse season transition (`2026-07-04T00:00:00Z`, unix `1783123200`,
+  overridable via `REGISTRATION_CLOSE_AT`). At that transition the game rewrites every player's rating,
+  and rating drives the wage/cap table — so allowing late entries would let someone build against a
+  different wage table than everyone else. After this instant: `POST /auth/register`, `GET /auth/verify`,
+  and `POST /auth/resend-verification` all reject with `403`, and all squad mutations are refused
+  regardless of whether the squad was manually locked. Login, password set/reset, and read endpoints
+  stay open. A pending registration that is not verified before the close cannot be completed.
 - Hidden squads remain private until self-reveal or global kickoff reveal.
 - A participant may request a fresh email link if they are pending verification or need to re-enter on another device.
 
@@ -180,7 +187,7 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - `referrerSoccerverseUsername` is optional, trimmed, safe-character filtered, and length-limited to 60 characters.
 - `primaryCountryCode` is required.
 - `secondaryCountryCode` is optional.
-- `primaryCountryCode` and `secondaryCountryCode` must refer to seeded team/country records.
+- `primaryCountryCode` and `secondaryCountryCode` must refer to a Soccerverse nation (the full nation set the game recognises), **not** only the 48 World Cup teams. The nation pick drives the Nation League and is independent of the World Cup team pools used for drafting. Codes are ISO-3166 alpha-2 plus the home-nation specials (`gb` = England, `gb-sct`, `gb-wls`, `gb-nir`) and `xk` (Kosovo); the canonical list lives in `server/src/data/soccerverseNations.ts`. The secondary nation must differ from the primary.
 - `slotKey` must map to one canonical builder slot.
 - player assignment must fail when:
 - the slot is filled

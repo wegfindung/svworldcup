@@ -535,6 +535,10 @@ export interface ResolvedMatchRow {
 export interface MatchResolution {
   fixtureId: string
   sourceUrl: string
+  // The fixture's two sides, so a row's teamCode can be mapped to the goals it conceded
+  // (the opposing side's goals) when deriving clean-sheet eligibility at finalize.
+  homeTeamCode: string
+  awayTeamCode: string
   homeGoals: number
   awayGoals: number
   rows: ResolvedMatchRow[]
@@ -543,8 +547,10 @@ export interface MatchResolution {
 
 // An admin's pre-persist choices for one row, keyed by the row's (teamCode, sourceName):
 // a resolve (playerId) or skip choice, plus optional stat edits (Fix A). A stat field, when
-// present, overrides the parsed value for that field; clean-sheet eligibility is deliberately
-// absent — it stays a review-screen judgement (D11).
+// present, overrides the parsed value for that field. Clean-sheet eligibility is deliberately
+// absent here — it is auto-derived at finalize (60+ minutes AND the team conceded none) and
+// corrected, when needed, via the post-promote row edit (UpdateMatchRowInput.cleanSheetEligible),
+// which lets an admin fix own-goal / feed mistakes; that manual override wins.
 export interface ResolutionOverride {
   sourceName: string
   teamCode: string

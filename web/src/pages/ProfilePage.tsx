@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { StatTile } from '../components/StatTile'
 import { TeamFlag } from '../components/TeamFlag'
+import { getNationName } from '../data/soccerverseNations'
 import { fetchPublicProfile } from '../lib/api'
 import type { PublicParticipantProfile } from '../lib/types'
 
@@ -115,17 +116,17 @@ export function ProfilePage() {
           <p className="eyebrow text-[10px]">nations</p>
           <div className="mt-5 grid gap-3">
             <div className="flex items-center gap-3 rounded-[1.1rem] border border-white/8 bg-black/12 p-3">
-              <TeamFlag teamCode={profile.primaryTeamCode} label={profile.primaryTeamCode} size="sm" />
+              <TeamFlag teamCode={profile.primaryTeamCode} label={getNationName(profile.primaryTeamCode)} size="sm" />
               <div>
-                <p className="text-sm font-semibold text-white">{profile.primaryTeamCode}</p>
+                <p className="text-sm font-semibold text-white">{getNationName(profile.primaryTeamCode)}</p>
                 <p className="text-xs text-[var(--color-muted)]">Primary nation</p>
               </div>
             </div>
             {profile.secondaryTeamCode ? (
               <div className="flex items-center gap-3 rounded-[1.1rem] border border-white/8 bg-black/12 p-3">
-                <TeamFlag teamCode={profile.secondaryTeamCode} label={profile.secondaryTeamCode} size="sm" />
+                <TeamFlag teamCode={profile.secondaryTeamCode} label={getNationName(profile.secondaryTeamCode)} size="sm" />
                 <div>
-                  <p className="text-sm font-semibold text-white">{profile.secondaryTeamCode}</p>
+                  <p className="text-sm font-semibold text-white">{getNationName(profile.secondaryTeamCode)}</p>
                   <p className="text-xs text-[var(--color-muted)]">Secondary nation</p>
                 </div>
               </div>

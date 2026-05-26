@@ -22,6 +22,12 @@ Clean sheet — per lineup slot class (the slot the player is placed in, not the
 - MID: `1`
 - FWD: `0`
 
+Clean-sheet points are awarded only when the entry's `clean_sheet_eligible` flag is set. That flag is
+auto-derived during match import — `true` when the player lasted 60+ minutes **and** their team conceded
+none — and is admin-overridable in review (see `SOP_match_data_import.md` "Clean Sheet"). The scoring
+engine itself does not re-check minutes or goals conceded; it trusts the (possibly admin-corrected) flag
+and applies the slot-class weight above (and the reserve half-weight where applicable).
+
 Performance points — derived from the admin-entered match rating via a continuous piecewise-linear curve:
 
 - anchors: `(6.0 → 0.5)`, `(8.0 → 1.0)`, `(9.5 → 1.5)`, `(10.0 → 2.0)`
@@ -31,14 +37,35 @@ Performance points — derived from the admin-entered match rating via a continu
 
 The admin enters the raw match rating on each player entry; performance points are computed from that rating on every score calculation, so a curve-config change propagates automatically.
 
+## Salary Budget Multiplier
+
+Each participant selects a salary budget when building their squad. The chosen budget sets both the spending cap and a fixed score multiplier applied to the squad's output — spending less earns a points boost, spending more incurs a penalty. This is a deliberate strategic lever: a dream team of high-rated players is allowed, but it scores a fraction of the points it generates.
+
+- The budget options and their multipliers (`server/src/data/formation.ts`, mirrored in `web/src/data/eventConfig.ts`):
+
+  | Budget | Multiplier |
+  |---|---|
+  | 1,500,000 | 1.30 |
+  | 2,000,000 | 1.18 |
+  | 2,500,000 | 1.08 |
+  | 3,000,000 | 1.00 (default / neutral) |
+  | 4,000,000 | 0.90 |
+  | 5,000,000 | 0.82 |
+  | 6,000,000 | 0.75 |
+  | 9,000,000 | 0.50 |
+
+- The default budget is `3,000,000` (multiplier `1.00`). A participant changes it via the squad budget endpoint; an unrecognised budget falls back to multiplier `1.00`.
+- Order of operations per participant: `totalScore = (baseScore + ownershipBoost) * multiplier`. The multiplier is applied last, to the boosted base — it scales both the rubric points and the ownership boost.
+- The multiplier is keyed to the **selected budget tier**, not to actual spend within it: selecting the `9,000,000` budget yields `0.50` even if the squad costs less.
+
 ## Scoring Slice V1
 
 - Admins can upsert one player match entry per `(fixtureId, playerId)`.
 - Player match entries reach `admin_match_entries` only through the match-data import lifecycle (upload, review, two-admin confirm, promote) — see `SOP_match_data_import.md`. The scoring engine reads `admin_match_entries` and is otherwise unaffected by that lifecycle.
 - A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, the match rating, and a source note. Performance points are not stored on the entry; they are derived from the rating via the performance curve at calculation time.
 - Public league leaderboards are calculated from locked squads only.
-- Starter slots score from their player match entries.
-- Substitute slots score only when at least one starter in the same slot class is marked absent from the official squad.
+- Starter slots score from their player match entries at full weight.
+- Substitute slots always score, at half weight: every point a reserve earns from its own match entry is multiplied by `0.5`. There is no auto-activation and no dependency on starter absence or official-squad presence (see "Substitution Rules").
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
 - Nations qualify for the public table once they have at least two scored entries.
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
@@ -50,7 +77,7 @@ The admin enters the raw match rating on each player entry; performance points a
 - The cutoff is **strict greater-than** against `fixtures.kickoff`. A fixture whose kickoff equals the lock instant does not score for that participant — eliminates the race-window edge.
 - A squad locked before this rule existed has `locked_at = NULL`. NULL is treated as "no cutoff" — every fixture counts. New locks always carry a non-NULL `locked_at`.
 - The rule applies uniformly across rookie, veteran, and nation leaderboards, since all three derive from the same per-participant row produced by the scoring engine.
-- The substitution rule still operates per fixture inside the eligible set: a sub becomes active only if the linked starter is absent from a fixture that the squad is eligible for.
+- Reserves score at half weight per fixture inside the eligible set, exactly as in steady state; the late-entry cutoff just controls which fixtures are eligible at all.
 - The rule is participant-visible in the lock-confirmation copy so a late entrant understands what they will and will not score.
 
 ## Score Configuration
@@ -88,6 +115,7 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 
 - Each participant chooses one primary country.
 - Each participant may choose one optional secondary country.
+- Countries are drawn from the full Soccerverse nation set (`server/src/data/soccerverseNations.ts`), not just the 48 World Cup teams — a participant can represent any nation the game recognises, independent of which World Cup pools they draft from.
 - Participants contribute to:
 - rookie or veteran table
 - primary country table
@@ -95,10 +123,11 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 
 ## Substitution Rules
 
-- One substitute per class: `GK`, `DEF`, `MID`, `FWD`.
-- A sub scores only when the linked starter is absent from the official match squad list.
-- Rotation or benching does not trigger substitution.
-- Subs are locked to their slot class.
+- One substitute per class: `GK`, `DEF`, `MID`, `FWD`. Subs are locked to their slot class.
+- **Every reserve always contributes 50% of the points it earns from its own match entries** — controlled by `SUBSTITUTE_POINT_WEIGHT` in `scoringRepository.ts`. Starters contribute 100%.
+- There is no auto-activation: a reserve's contribution does not depend on whether a starter played, was rotated, benched, or absent from the official squad. A reserve with no match entry for a fixture simply scores nothing for it.
+- This is a deliberate temporary failsafe. It removes the need for a live player-availability/injury feed (whose data source is not yet guaranteed) and avoids per-matchday activation bookkeeping across a World Cup round's staggered kickoffs. It may be replaced by an availability-driven model later; if so, update `SUBSTITUTE_POINT_WEIGHT` and this section together.
+- Point counts on the score breakdown (goals, assists, appearances) remain the true match counts; only the *points* are halved for reserves.
 
 ## Hidden Squad Rules
 

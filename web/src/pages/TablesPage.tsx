@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
+import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import type {
@@ -58,6 +59,10 @@ function BreakdownPill({ label, count, points }: { label: string; count?: number
 
 function teamName(teamCode: string) {
   return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
+}
+
+function nationName(code: string) {
+  return getNationName(code)
 }
 
 function matchLabel(fixtureId: string, fixtureLookup: Map<string, PublicFixtureResult>) {
@@ -161,13 +166,13 @@ function ParticipantTable({ copy, title, rows, fixtureLookup }: { copy: TablesCo
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-white">{row.displayName}</p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-[var(--color-muted)]">
-                        <TeamFlag teamCode={row.primaryTeamCode} label={row.primaryTeamCode} size="sm" />
-                        <span>{row.primaryTeamCode}</span>
+                        <TeamFlag teamCode={row.primaryTeamCode} label={nationName(row.primaryTeamCode)} size="sm" />
+                        <span>{nationName(row.primaryTeamCode)}</span>
                         {row.secondaryTeamCode ? (
                           <>
                             <span className="text-white/25">+</span>
-                            <TeamFlag teamCode={row.secondaryTeamCode} label={row.secondaryTeamCode} size="sm" />
-                            <span>{row.secondaryTeamCode}</span>
+                            <TeamFlag teamCode={row.secondaryTeamCode} label={nationName(row.secondaryTeamCode)} size="sm" />
+                            <span>{nationName(row.secondaryTeamCode)}</span>
                           </>
                         ) : null}
                       </div>
@@ -252,9 +257,9 @@ function NationTable({ copy, rows }: { copy: TablesCopy; rows: NationScoreRow[] 
                     <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <TeamFlag teamCode={row.teamCode} label={teamName(row.teamCode)} size="sm" />
+                        <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-white">{teamName(row.teamCode)}</p>
+                          <p className="truncate text-sm font-semibold text-white">{nationName(row.teamCode)}</p>
                           <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
                             {row.teamCode} - {row.participantCount} {copy.managersSuffix}
                           </p>
@@ -290,13 +295,13 @@ function NationTable({ copy, rows }: { copy: TablesCopy; rows: NationScoreRow[] 
                               #{contributor.rank} {contributor.displayName}
                             </p>
                             <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--color-muted)]">
-                              <TeamFlag teamCode={contributor.primaryTeamCode} label={contributor.primaryTeamCode} size="sm" />
-                              <span>{contributor.primaryTeamCode}</span>
+                              <TeamFlag teamCode={contributor.primaryTeamCode} label={nationName(contributor.primaryTeamCode)} size="sm" />
+                              <span>{nationName(contributor.primaryTeamCode)}</span>
                               {contributor.secondaryTeamCode ? (
                                 <>
                                   <span className="text-white/25">+</span>
-                                  <TeamFlag teamCode={contributor.secondaryTeamCode} label={contributor.secondaryTeamCode} size="sm" />
-                                  <span>{contributor.secondaryTeamCode}</span>
+                                  <TeamFlag teamCode={contributor.secondaryTeamCode} label={nationName(contributor.secondaryTeamCode)} size="sm" />
+                                  <span>{nationName(contributor.secondaryTeamCode)}</span>
                                 </>
                               ) : null}
                               <span className="rounded-full border border-white/8 px-2 py-0.5 uppercase">{contributor.leagueType}</span>

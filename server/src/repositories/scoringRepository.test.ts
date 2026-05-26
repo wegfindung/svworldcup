@@ -92,6 +92,41 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     expect(leaderboard[0].baseScore).toBe(4)
   })
 
+  it('scores reserves at half their earned points, with no auto-activation', async () => {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      { email: 'reserve@example.com', displayName: 'Reserve Manager', primaryTeamCode: 'FRA', marketingOptIn: false },
+      'reserve-token',
+    )
+    await registrations.verifyByPlainToken('reserve-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository())
+    // Reserve forward (sub-fwd-1, playerId 115) plays 90' and scores: full = goal 5 + appearance 1 + 60' 1 = 7.
+    await scoring.upsertMatchEntry({
+      fixtureId: 'fixture-1',
+      playerId: 115,
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 1,
+      assists: 0,
+      cleanSheetEligible: false,
+    })
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    expect(leaderboard[0].baseScore).toBeCloseTo(3.5, 5)
+  })
+
   it('applies the selected budget multiplier to the final score', async () => {
     const pools = new MemoryTeamPoolRepository()
     await pools.replaceTeamPlayers(
@@ -290,7 +325,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     ])
   })
 
-  it('includes countries with a single active manager', async () => {
+  it('excludes countries with a single active manager', async () => {
     const pools = new MemoryTeamPoolRepository()
     await pools.replaceTeamPlayers(
       'FRA',
@@ -327,14 +362,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
     const nationRows = await scoring.getNationLeaderboard()
 
-    expect(nationRows).toEqual([
-      expect.objectContaining({
-        teamCode: 'FRA',
-        participantCount: 1,
-        averageScore: 7,
-        topScore: 7,
-      }),
-    ])
+    expect(nationRows).toEqual([])
   })
 })
 

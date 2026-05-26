@@ -177,6 +177,13 @@ function bonusKey(participantId: string, fixtureId: string, playerId: number) {
   return `${participantId}|${fixtureId}|${playerId}`
 }
 
+// Substitutes are not auto-activated on starter absence. Instead every reserve always contributes a
+// reduced share of the points it actually earns. This is a deliberate failsafe: it removes the need
+// for a live player-availability/injury feed and avoids per-matchday activation bookkeeping while a
+// World Cup "round" spans almost a week of staggered kickoffs. Adjust or remove when the full
+// availability mechanic lands — see SOP_scoring_and_leagues.md.
+const SUBSTITUTE_POINT_WEIGHT = 0.5
+
 function calculateParticipantRows(
   participants: ScoreParticipant[],
   slots: ScoreSlot[],
@@ -204,32 +211,34 @@ function calculateParticipantRows(
     const breakdown = createEmptyBreakdown()
     const fixtureDetailsById = new Map<string, ParticipantScoreFixtureDetail>()
 
-    function addPlayerState(fixtureId: string, slot: ScoreSlot, playerState: FixtureEntryScore) {
+    // weight is 1 for starters and SUBSTITUTE_POINT_WEIGHT for reserves. It scales every point
+    // contribution (event counts stay truthful) so a reserve banks a fraction of what it earned.
+    function addPlayerState(fixtureId: string, slot: ScoreSlot, playerState: FixtureEntryScore, weight: number) {
       const components = scoreEntryComponents(playerState.entry, scoring)
-      baseScore += components.total
+      baseScore += components.total * weight
       breakdown.goals.count += playerState.entry.goals
-      breakdown.goals.points += components.goals
+      breakdown.goals.points += components.goals * weight
       breakdown.assists.count += playerState.entry.assists
-      breakdown.assists.points += components.assists
+      breakdown.assists.points += components.assists * weight
       if (playerState.entry.minutes > 0) {
         breakdown.appearances.count += 1
-        breakdown.appearances.points += components.appearance
+        breakdown.appearances.points += components.appearance * weight
       }
       if (playerState.entry.minutes >= 60) {
         breakdown.minutes.count += 1
-        breakdown.minutes.points += components.minutes
+        breakdown.minutes.points += components.minutes * weight
       }
-      breakdown.performance.points += components.performance
+      breakdown.performance.points += components.performance * weight
 
       let cleanSheetPoints = 0
       if (playerState.cleanSheetEligible) {
-        cleanSheetPoints = scoring.cleanSheet[slot.slotClass]
+        cleanSheetPoints = scoring.cleanSheet[slot.slotClass] * weight
         baseScore += cleanSheetPoints
         breakdown.cleanSheets.count += 1
         breakdown.cleanSheets.points += cleanSheetPoints
       }
 
-      const totalPoints = components.total + cleanSheetPoints
+      const totalPoints = components.total * weight + cleanSheetPoints
 
       const entryBonus = bonusByEntry.get(bonusKey(participant.participantId, fixtureId, playerState.entry.playerId)) ?? 0
       if (entryBonus > 0) {
@@ -253,12 +262,12 @@ function calculateParticipantRows(
           cleanSheetEligible: playerState.cleanSheetEligible,
           rating: playerState.entry.rating,
           sourceNote: playerState.entry.sourceNote,
-          goalPoints: components.goals,
-          assistPoints: components.assists,
-          appearancePoints: components.appearance,
-          minutesPoints: components.minutes,
+          goalPoints: components.goals * weight,
+          assistPoints: components.assists * weight,
+          appearancePoints: components.appearance * weight,
+          minutesPoints: components.minutes * weight,
           cleanSheetPoints,
-          performancePoints: components.performance,
+          performancePoints: components.performance * weight,
           totalPoints,
         }
         fixtureDetail.players.push(playerDetail)
@@ -274,35 +283,14 @@ function calculateParticipantRows(
           continue
         }
       }
-      const starterSlots = participantSlots.filter((slot) => slot.slotGroup === 'starter')
-      const subSlots = participantSlots.filter((slot) => slot.slotGroup === 'sub')
-      const starterAbsences = new Map<SlotClass, number>()
-
-      for (const slot of starterSlots) {
+      for (const slot of participantSlots) {
         const playerState = entryScores.get(slot.playerId)
         if (!playerState) {
           continue
         }
 
-        if (!playerState.inOfficialSquad) {
-          starterAbsences.set(slot.slotClass, (starterAbsences.get(slot.slotClass) ?? 0) + 1)
-        }
-
-        addPlayerState(fixtureId, slot, playerState)
-      }
-
-      for (const slot of subSlots) {
-        const missingStarters = starterAbsences.get(slot.slotClass) ?? 0
-        if (missingStarters < 1) {
-          continue
-        }
-
-        const playerState = entryScores.get(slot.playerId)
-        if (playerState) {
-          addPlayerState(fixtureId, slot, playerState)
-        }
-
-        starterAbsences.set(slot.slotClass, missingStarters - 1)
+        const weight = slot.slotGroup === 'sub' ? SUBSTITUTE_POINT_WEIGHT : 1
+        addPlayerState(fixtureId, slot, playerState, weight)
       }
     }
 
@@ -375,7 +363,9 @@ function buildNationLeaderboard(rows: ParticipantScoreRow[]) {
           topScore: Math.max(...scores),
           contributors: sortedContributors,
         }
-      }),
+      })
+      // A nation needs at least two members before its average competes on the public table.
+      .filter((nation) => nation.participantCount >= 2),
   )
 }
 

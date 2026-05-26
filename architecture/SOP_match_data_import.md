@@ -79,7 +79,8 @@ Common to both:
   deduplicated.
 - A submission listing more than eleven starters for either team is rejected loudly. The
   starting lineup is fixed at eleven players; used substitutes are not capped.
-- `clean_sheet_eligible` is never in the submission; it is a review-UI judgement.
+- `clean_sheet_eligible` is never in the submission; it is auto-derived at finalize (60+ minutes
+  AND the team conceded none) and admin-overridable in review (see "Clean Sheet").
 
 ## Fixture Identity
 
@@ -138,9 +139,15 @@ Common to both:
 
 - The JSON carries goals-conceded per team via the final score. The review UI surfaces
   this next to each player row.
-- The reviewing admin sets `clean_sheet_eligible` informed by that visible fact. The
-  import engine defines no clean-sheet scoring rule and forces no team decision; it
-  transcribes the raw input and lets the human apply judgement.
+- `clean_sheet_eligible` is **auto-derived at finalize**: it is `true` when the player lasted
+  60+ minutes (post-edit minutes) **and** their team conceded none — the opposing side's goals
+  from the final score, mapped via the fixture's home/away team codes. The final score is used
+  rather than summing per-player goals because own goals are the known weak point in feed data.
+- The reviewing admin can **override** `clean_sheet_eligible` per player after promotion
+  (`UpdateMatchRowInput.clean_sheet_eligible`) to correct own-goal / feed mistakes; that manual
+  value wins over the derivation.
+- Position is not gated here: forwards earn zero clean-sheet points regardless, via the
+  position weight in the scoring engine (`SOP_scoring_and_leagues.md`).
 
 ## Confirmation Rules
 

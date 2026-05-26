@@ -6,7 +6,8 @@ import {
   shouldUseSecureCookies,
 } from '../config/auth.js'
 import { env } from '../config/env.js'
-import { isKnownTeamCode } from '../data/worldCupSeed.js'
+import { hasRegistrationClosed } from '../data/competitionWindow.js'
+import { isKnownNationCode } from '../data/soccerverseNations.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
 import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
 import { resolveBrowserLocale } from '../lib/locale.js'
@@ -32,29 +33,29 @@ const registrationSchema = z
     referrerSoccerverseUsername: z.string().trim().max(60).optional(),
     marketingOptIn: z.boolean().optional().default(false),
     browserLocale: z.enum(['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh']).optional(),
-    primaryTeamCode: z.string().trim().toUpperCase().length(3),
-    secondaryTeamCode: z.string().trim().toUpperCase().length(3).optional(),
+    primaryTeamCode: z.string().trim().toLowerCase().max(6),
+    secondaryTeamCode: z.string().trim().toLowerCase().max(6).optional(),
   })
   .superRefine((value, context) => {
-    if (!isKnownTeamCode(value.primaryTeamCode)) {
+    if (!isKnownNationCode(value.primaryTeamCode)) {
       context.addIssue({
         code: 'custom',
         path: ['primaryTeamCode'],
-        message: 'Unknown primary team code.',
+        message: 'Unknown primary nation.',
       })
     }
-    if (value.secondaryTeamCode && !isKnownTeamCode(value.secondaryTeamCode)) {
+    if (value.secondaryTeamCode && !isKnownNationCode(value.secondaryTeamCode)) {
       context.addIssue({
         code: 'custom',
         path: ['secondaryTeamCode'],
-        message: 'Unknown secondary team code.',
+        message: 'Unknown secondary nation.',
       })
     }
     if (value.secondaryTeamCode && value.secondaryTeamCode === value.primaryTeamCode) {
       context.addIssue({
         code: 'custom',
         path: ['secondaryTeamCode'],
-        message: 'Secondary team must be different from primary team.',
+        message: 'Secondary nation must be different from primary nation.',
       })
     }
   })
@@ -124,7 +125,13 @@ export function createAuthRouter(
   const router = Router()
   const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
 
+  const registrationClosedMessage = 'Registration has closed for this event.'
+
   router.post('/register', async (req, res) => {
+    if (hasRegistrationClosed()) {
+      return res.status(403).json({ error: registrationClosedMessage })
+    }
+
     const parsed = registrationSchema.parse(req.body)
     const registrationInput = {
       ...parsed,
@@ -195,6 +202,10 @@ export function createAuthRouter(
   })
 
   router.get('/verify', async (req, res) => {
+    if (hasRegistrationClosed()) {
+      return res.status(403).json({ error: registrationClosedMessage })
+    }
+
     const token = String(req.query.token ?? '')
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required.' })
@@ -301,6 +312,10 @@ export function createAuthRouter(
   })
 
   router.post('/resend-verification', async (req, res) => {
+    if (hasRegistrationClosed()) {
+      return res.status(403).json({ error: registrationClosedMessage })
+    }
+
     const parsed = resendSchema.parse(req.body)
     const plainToken = generatePlainToken()
     const result = await registrationRepository.resendVerification(parsed.email, plainToken)
