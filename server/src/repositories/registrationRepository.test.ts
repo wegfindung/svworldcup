@@ -54,6 +54,29 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
     expect(verified?.browserLocale).toBe('de')
   })
 
+  it('lets a participant rejoin marketing after an accidental unsubscribe', async () => {
+    const repo = new MemoryRegistrationRepository()
+    const { record } = await repo.createPending(
+      {
+        email: 'marketing@example.com',
+        displayName: 'Marketing Manager',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: true,
+      },
+      'marketing-token',
+    )
+    await repo.verifyByPlainToken('marketing-token')
+
+    const token = record.marketingUnsubscribeToken ?? ''
+    await expect(repo.unsubscribeMarketing(token)).resolves.toBe(true)
+    expect((await repo.getByParticipantId(record.participantId))?.marketingOptIn).toBe(false)
+
+    await expect(repo.resubscribeMarketing(token)).resolves.toBe(true)
+    const resubscribed = await repo.getByParticipantId(record.participantId)
+    expect(resubscribed?.marketingOptIn).toBe(true)
+    expect(resubscribed?.marketingUnsubscribedAt).toBeUndefined()
+  })
+
   it('links a Soccerverse account without changing league_type', async () => {
     const { repo, participantId } = await createActiveRookie()
     const before = await repo.getByParticipantId(participantId)

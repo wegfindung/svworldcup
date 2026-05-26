@@ -31,6 +31,53 @@ function normalizeReferrerSoccerverseUsername(value: string) {
   return sanitized || undefined
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function renderEmailPreferencesPage(input: { token: string; status: 'unsubscribed' | 'resubscribed' | 'invalid' }) {
+  const safeToken = encodeURIComponent(input.token)
+  const heading =
+    input.status === 'unsubscribed'
+      ? 'Email subscription stopped.'
+      : input.status === 'resubscribed'
+        ? 'Email subscription restored.'
+        : 'Subscription link not found.'
+  const message =
+    input.status === 'unsubscribed'
+      ? 'You will no longer receive Soccerverse World Cup marketing emails.'
+      : input.status === 'resubscribed'
+        ? 'You are subscribed to Soccerverse World Cup marketing emails again.'
+        : 'This subscription link is invalid or has already been removed.'
+  const undoForm =
+    input.status === 'unsubscribed'
+      ? `<form method="post" action="/api/public/email/resubscribe?token=${safeToken}" style="margin:24px 0 0;">
+          <button type="submit" style="border:0;border-radius:999px;background:#22bd93;color:#07100e;font-weight:700;padding:12px 18px;cursor:pointer;">Resubscribe</button>
+        </form>`
+      : ''
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Soccerverse World Cup Email Preferences</title>
+  </head>
+  <body style="margin:0;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;">
+    <main style="max-width:620px;margin:0 auto;padding:48px 24px;line-height:1.55;">
+      <h1 style="margin:0 0 16px;font-size:28px;">${escapeHtml(heading)}</h1>
+      <p style="margin:0;color:#c6d3ce;">${escapeHtml(message)}</p>
+      ${undoForm}
+    </main>
+  </body>
+</html>`
+}
+
 interface Dependencies {
   configRepository: ConfigRepository
   registrationRepository: RegistrationRepository
@@ -121,24 +168,24 @@ export function createPublicRouter({ configRepository, registrationRepository, f
   router.get('/email/unsubscribe', async (req, res) => {
     const token = String(req.query.token ?? '').trim()
     const unsubscribed = token ? await registrationRepository.unsubscribeMarketing(token) : false
-    res.type('html').send(`<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Soccerverse World Cup Email Preferences</title>
-  </head>
-  <body style="margin:0;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;">
-    <main style="max-width:620px;margin:0 auto;padding:48px 24px;line-height:1.55;">
-      <h1 style="margin:0 0 16px;font-size:28px;">${unsubscribed ? 'Email subscription stopped.' : 'Unsubscribe link not found.'}</h1>
-      <p style="margin:0;color:#c6d3ce;">${
-        unsubscribed
-          ? 'You will no longer receive Soccerverse World Cup marketing emails.'
-          : 'This unsubscribe link is invalid or has already been removed.'
-      }</p>
-    </main>
-  </body>
-</html>`)
+    res.type('html').send(renderEmailPreferencesPage({ token, status: unsubscribed ? 'unsubscribed' : 'invalid' }))
+  })
+
+  router.post('/email/unsubscribe', async (req, res) => {
+    const token = String(req.query.token ?? '').trim()
+    const unsubscribed = token ? await registrationRepository.unsubscribeMarketing(token) : false
+    return unsubscribed ? res.status(204).end() : res.status(404).json({ error: 'Unsubscribe link not found.' })
+  })
+
+  router.post('/email/resubscribe', async (req, res) => {
+    const token = String(req.query.token ?? '').trim()
+    const resubscribed = token ? await registrationRepository.resubscribeMarketing(token) : false
+    res.type('html').status(resubscribed ? 200 : 404).send(
+      renderEmailPreferencesPage({
+        token,
+        status: resubscribed ? 'resubscribed' : 'invalid',
+      }),
+    )
   })
 
   router.get('/team-players/:teamCode', async (req, res) => {

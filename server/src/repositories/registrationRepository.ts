@@ -56,6 +56,7 @@ export interface RegistrationRepository {
   getCounts(): Promise<{ pending: number; active: number }>
   listForAdmin(): Promise<AdminParticipantRecord[]>
   unsubscribeMarketing(token: string): Promise<boolean>
+  resubscribeMarketing(token: string): Promise<boolean>
   recordReferralClick(input: { referrerSoccerverseUsername: string; landingPath?: string; userAgent?: string }): Promise<void>
   getReferralAnalytics(): Promise<ReferralAnalyticsRow[]>
 }
@@ -454,6 +455,22 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       ...record,
       marketingOptIn: false,
       marketingUnsubscribedAt: new Date().toISOString(),
+    })
+    this.byEmail.set(nextRecord.email, nextRecord)
+    return true
+  }
+
+  async resubscribeMarketing(token: string) {
+    const trimmedToken = token.trim()
+    const record = [...this.byEmail.values()].find((item) => item.marketingUnsubscribeToken === trimmedToken)
+    if (!record) {
+      return false
+    }
+
+    const nextRecord = this.attachPasswordState({
+      ...record,
+      marketingOptIn: true,
+      marketingUnsubscribedAt: undefined,
     })
     this.byEmail.set(nextRecord.email, nextRecord)
     return true
@@ -1386,6 +1403,26 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         UPDATE participants
         SET marketing_opt_in = FALSE,
             marketing_unsubscribed_at = COALESCE(marketing_unsubscribed_at, NOW()),
+            updated_at = NOW()
+        WHERE marketing_unsubscribe_token = $1
+        RETURNING participant_id
+      `,
+      [trimmedToken],
+    )
+    return (result.rowCount ?? 0) > 0
+  }
+
+  async resubscribeMarketing(token: string) {
+    const trimmedToken = token.trim()
+    if (!trimmedToken) {
+      return false
+    }
+
+    const result = await this.pool.query(
+      `
+        UPDATE participants
+        SET marketing_opt_in = TRUE,
+            marketing_unsubscribed_at = NULL,
             updated_at = NOW()
         WHERE marketing_unsubscribe_token = $1
         RETURNING participant_id

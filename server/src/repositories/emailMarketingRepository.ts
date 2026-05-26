@@ -410,6 +410,12 @@ async function sendCampaignMail(
     subject,
     html: wrapMarketingHtml(body, unsubscribeUrl),
     text: unsubscribeUrl ? `${stripHtml(body)}\n\nUnsubscribe: ${unsubscribeUrl}` : stripHtml(body),
+    headers: unsubscribeUrl
+      ? {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined,
   })
 }
 

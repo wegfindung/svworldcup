@@ -30,6 +30,7 @@ interface AppMailInput {
   subject: string
   text: string
   html: string
+  headers?: Record<string, string>
 }
 
 interface ActionMailCopy {
@@ -44,7 +45,7 @@ interface ActionMailCopy {
 
 const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
   en: {
-    subject: 'Action Required: Confirm your Soccerverse World Cup Registration',
+    subject: 'Confirm your Soccerverse World Cup registration',
     title: 'Welcome to the Soccerverse World Cup!',
     intro:
       'You are one click away from taking control of your favorite nations and players in the Soccerverse World Cup community event.',
@@ -54,7 +55,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'If the button does not work, open this link:',
   },
   es: {
-    subject: 'Acción requerida: confirma tu registro en Soccerverse World Cup',
+    subject: 'Confirma tu registro en Soccerverse World Cup',
     title: '¡Bienvenido al Soccerverse World Cup!',
     intro: 'Estás a un clic de controlar tus naciones y jugadores favoritos en el evento comunitario Soccerverse World Cup.',
     actionLabel: 'Confirmar registro',
@@ -63,7 +64,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'Si el botón no funciona, abre este enlace:',
   },
   it: {
-    subject: 'Azione richiesta: conferma la registrazione al Soccerverse World Cup',
+    subject: 'Conferma la registrazione al Soccerverse World Cup',
     title: 'Benvenuto al Soccerverse World Cup!',
     intro: 'Ti manca un solo clic per guidare le tue nazioni e i tuoi giocatori preferiti nell’evento community Soccerverse World Cup.',
     actionLabel: 'Conferma registrazione',
@@ -72,7 +73,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'Se il pulsante non funziona, apri questo link:',
   },
   de: {
-    subject: 'Aktion erforderlich: Bestätige deine Soccerverse World Cup Registrierung',
+    subject: 'Bestätige deine Soccerverse World Cup Registrierung',
     title: 'Willkommen beim Soccerverse World Cup!',
     intro: 'Du bist nur einen Klick davon entfernt, deine Lieblingsnationen und Spieler im Soccerverse World Cup Community Event zu übernehmen.',
     actionLabel: 'Registrierung bestätigen',
@@ -81,7 +82,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'Falls der Button nicht funktioniert, öffne diesen Link:',
   },
   fr: {
-    subject: 'Action requise : confirme ton inscription Soccerverse World Cup',
+    subject: 'Confirme ton inscription Soccerverse World Cup',
     title: 'Bienvenue au Soccerverse World Cup !',
     intro: 'Tu es à un clic de prendre le contrôle de tes nations et joueurs favoris dans l’événement communautaire Soccerverse World Cup.',
     actionLabel: 'Confirmer l’inscription',
@@ -90,7 +91,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'Si le bouton ne fonctionne pas, ouvre ce lien :',
   },
   pt: {
-    subject: 'Ação necessária: confirma o teu registo no Soccerverse World Cup',
+    subject: 'Confirma o teu registo no Soccerverse World Cup',
     title: 'Bem-vindo ao Soccerverse World Cup!',
     intro: 'Estás a um clique de controlar as tuas nações e jogadores favoritos no evento comunitário Soccerverse World Cup.',
     actionLabel: 'Confirmar registo',
@@ -99,7 +100,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'Se o botão não funcionar, abre este link:',
   },
   ru: {
-    subject: 'Требуется действие: подтверди регистрацию Soccerverse World Cup',
+    subject: 'Подтверди регистрацию Soccerverse World Cup',
     title: 'Добро пожаловать в Soccerverse World Cup!',
     intro: 'Один клик отделяет тебя от управления любимыми странами и игроками в community event Soccerverse World Cup.',
     actionLabel: 'Подтвердить регистрацию',
@@ -108,7 +109,7 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     linkHelp: 'Если кнопка не работает, открой эту ссылку:',
   },
   zh: {
-    subject: '需要操作：确认你的 Soccerverse World Cup 注册',
+    subject: '确认你的 Soccerverse World Cup 注册',
     title: '欢迎参加 Soccerverse World Cup！',
     intro: '只差一次点击，你就可以在 Soccerverse World Cup 社区活动中管理自己喜欢的国家和球员。',
     actionLabel: '确认注册',
@@ -209,6 +210,7 @@ export async function sendAppMail(input: AppMailInput) {
     subject: input.subject,
     text: input.text,
     html: input.html,
+    headers: input.headers,
   })
 }
 
