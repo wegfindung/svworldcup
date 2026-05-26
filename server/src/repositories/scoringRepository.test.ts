@@ -290,7 +290,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
     ])
   })
 
-  it('includes countries with a single active manager', async () => {
+  it('excludes countries with a single active manager', async () => {
     const pools = new MemoryTeamPoolRepository()
     await pools.replaceTeamPlayers(
       'FRA',
@@ -327,14 +327,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
     const nationRows = await scoring.getNationLeaderboard()
 
-    expect(nationRows).toEqual([
-      expect.objectContaining({
-        teamCode: 'FRA',
-        participantCount: 1,
-        averageScore: 7,
-        topScore: 7,
-      }),
-    ])
+    expect(nationRows).toEqual([])
   })
 })
 

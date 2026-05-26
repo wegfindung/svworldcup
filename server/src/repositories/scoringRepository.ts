@@ -375,7 +375,9 @@ function buildNationLeaderboard(rows: ParticipantScoreRow[]) {
           topScore: Math.max(...scores),
           contributors: sortedContributors,
         }
-      }),
+      })
+      // A nation needs at least two members before its average competes on the public table.
+      .filter((nation) => nation.participantCount >= 2),
   )
 }
 

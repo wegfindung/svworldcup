@@ -31,6 +31,27 @@ Performance points — derived from the admin-entered match rating via a continu
 
 The admin enters the raw match rating on each player entry; performance points are computed from that rating on every score calculation, so a curve-config change propagates automatically.
 
+## Salary Budget Multiplier
+
+Each participant selects a salary budget when building their squad. The chosen budget sets both the spending cap and a fixed score multiplier applied to the squad's output — spending less earns a points boost, spending more incurs a penalty. This is a deliberate strategic lever: a dream team of high-rated players is allowed, but it scores a fraction of the points it generates.
+
+- The budget options and their multipliers (`server/src/data/formation.ts`, mirrored in `web/src/data/eventConfig.ts`):
+
+  | Budget | Multiplier |
+  |---|---|
+  | 1,500,000 | 1.30 |
+  | 2,000,000 | 1.18 |
+  | 2,500,000 | 1.08 |
+  | 3,000,000 | 1.00 (default / neutral) |
+  | 4,000,000 | 0.90 |
+  | 5,000,000 | 0.82 |
+  | 6,000,000 | 0.75 |
+  | 9,000,000 | 0.50 |
+
+- The default budget is `3,000,000` (multiplier `1.00`). A participant changes it via the squad budget endpoint; an unrecognised budget falls back to multiplier `1.00`.
+- Order of operations per participant: `totalScore = (baseScore + ownershipBoost) * multiplier`. The multiplier is applied last, to the boosted base — it scales both the rubric points and the ownership boost.
+- The multiplier is keyed to the **selected budget tier**, not to actual spend within it: selecting the `9,000,000` budget yields `0.50` even if the squad costs less.
+
 ## Scoring Slice V1
 
 - Admins can upsert one player match entry per `(fixtureId, playerId)`.
