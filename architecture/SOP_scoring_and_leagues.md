@@ -58,8 +58,8 @@ Each participant selects a salary budget when building their squad. The chosen b
 - Player match entries reach `admin_match_entries` only through the match-data import lifecycle (upload, review, two-admin confirm, promote) — see `SOP_match_data_import.md`. The scoring engine reads `admin_match_entries` and is otherwise unaffected by that lifecycle.
 - A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, the match rating, and a source note. Performance points are not stored on the entry; they are derived from the rating via the performance curve at calculation time.
 - Public league leaderboards are calculated from locked squads only.
-- Starter slots score from their player match entries.
-- Substitute slots score only when at least one starter in the same slot class is marked absent from the official squad.
+- Starter slots score from their player match entries at full weight.
+- Substitute slots always score, at half weight: every point a reserve earns from its own match entry is multiplied by `0.5`. There is no auto-activation and no dependency on starter absence or official-squad presence (see "Substitution Rules").
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
 - Nations qualify for the public table once they have at least two scored entries.
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
@@ -71,7 +71,7 @@ Each participant selects a salary budget when building their squad. The chosen b
 - The cutoff is **strict greater-than** against `fixtures.kickoff`. A fixture whose kickoff equals the lock instant does not score for that participant — eliminates the race-window edge.
 - A squad locked before this rule existed has `locked_at = NULL`. NULL is treated as "no cutoff" — every fixture counts. New locks always carry a non-NULL `locked_at`.
 - The rule applies uniformly across rookie, veteran, and nation leaderboards, since all three derive from the same per-participant row produced by the scoring engine.
-- The substitution rule still operates per fixture inside the eligible set: a sub becomes active only if the linked starter is absent from a fixture that the squad is eligible for.
+- Reserves score at half weight per fixture inside the eligible set, exactly as in steady state; the late-entry cutoff just controls which fixtures are eligible at all.
 - The rule is participant-visible in the lock-confirmation copy so a late entrant understands what they will and will not score.
 
 ## Score Configuration
@@ -117,10 +117,11 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 
 ## Substitution Rules
 
-- One substitute per class: `GK`, `DEF`, `MID`, `FWD`.
-- A sub scores only when the linked starter is absent from the official match squad list.
-- Rotation or benching does not trigger substitution.
-- Subs are locked to their slot class.
+- One substitute per class: `GK`, `DEF`, `MID`, `FWD`. Subs are locked to their slot class.
+- **Every reserve always contributes 50% of the points it earns from its own match entries** — controlled by `SUBSTITUTE_POINT_WEIGHT` in `scoringRepository.ts`. Starters contribute 100%.
+- There is no auto-activation: a reserve's contribution does not depend on whether a starter played, was rotated, benched, or absent from the official squad. A reserve with no match entry for a fixture simply scores nothing for it.
+- This is a deliberate temporary failsafe. It removes the need for a live player-availability/injury feed (whose data source is not yet guaranteed) and avoids per-matchday activation bookkeeping across a World Cup round's staggered kickoffs. It may be replaced by an availability-driven model later; if so, update `SUBSTITUTE_POINT_WEIGHT` and this section together.
+- Point counts on the score breakdown (goals, assists, appearances) remain the true match counts; only the *points* are halved for reserves.
 
 ## Hidden Squad Rules
 

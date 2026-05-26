@@ -52,6 +52,9 @@ const englishCopy = {
     title: 'Spend less, score more',
     body:
       'Every player has a wage in Soccerverse Coins (SVC) derived from their rating — the higher the rating, the steeper the wage. You choose a budget cap before you draft, and that cap sets a score multiplier applied to everything your squad earns. Pick a low cap and your points are boosted; load up on superstars under a high cap and your points are cut.',
+    scaleLow: 'Spend less · bigger boost',
+    scaleMid: 'Neutral ×1.0',
+    scaleHigh: 'Spend more · bigger penalty',
     tiersTitle: 'Budget caps and their multipliers',
     boostLabel: 'Boost',
     neutralLabel: 'Neutral',
@@ -106,19 +109,22 @@ const englishCopy = {
 
   subs: {
     eyebrow: 'substitutes',
-    title: 'Reserves cover absences',
+    title: 'Reserves always chip in at 50%',
     body:
-      'Your squad runs itself. For each match, if a starter is not in their team’s official matchday squad, the reserve of the same position steps in and earns full points for that match. One reserve covers one missing starter of its position.',
+      'Your squad runs itself — there is nothing to manage on matchday. Every reserve always banks 50% of the points it earns from its own real performances, every match. Your starters always count at full points.',
     points: [
-      'Reserves activate automatically per match — there is nothing to switch.',
-      'An activated reserve scores on the full rubric, exactly like a starter.',
-      'If every starter of a position plays, that position’s reserve simply sits out the match.',
+      'All four reserves score every match — no activation, no dependency on whether a starter played.',
+      'A reserve earns half of what it generates on the normal rubric: goals, assists, minutes, clean sheets, and performance.',
+      'A reserve that does not feature in a match simply earns nothing for it.',
     ],
   },
 
   boost: {
     eyebrow: 'ownership boost',
     title: 'Reward for backing your players',
+    scaleZero: 'no boost',
+    scaleCaption: '+1% per 10 net shares',
+    scaleCap: '+10% cap',
     body:
       'If you link a Soccerverse account, influence you buy in your own squad’s players during the event adds a small multiplier to the points those players earn for you. It rewards conviction without letting big pre-existing portfolios dominate.',
     points: [
@@ -169,7 +175,7 @@ const englishCopy = {
     note: 'These parts are either provisional or still being built. They are listed here so nothing is hidden.',
     items: [
       'Performance points currently come from match data entered by the event team. Automatic API-Football match ratings are planned.',
-      'The substitute model (auto-activate at full points) is the current implementation; the final model is still being confirmed and may change.',
+      'Reserves currently bank a flat 50% of their points as a failsafe. A richer model — for example activating a reserve when a starter is confirmed out — may replace it later if a reliable player-availability feed is added.',
       'The salary multiplier is set by the budget cap you choose today; a refinement tied to your squad’s actual total wage is under consideration.',
       'Prize amounts and payout logic are provisional — see the Prizes page.',
       'This page is in English first; full translations are on the way.',
@@ -262,6 +268,15 @@ export function RulesPage({ locale }: RulesPageProps) {
         <p className="eyebrow">{copy.salary.eyebrow}</p>
         <h2 className="section-title mt-4 text-white">{copy.salary.title}</h2>
         <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.salary.body}</p>
+
+        <div className="mt-6">
+          <div className="h-3 rounded-full bg-gradient-to-r from-[var(--color-accent)] via-white/25 to-[var(--color-sand)]" />
+          <div className="mono mt-2 flex justify-between text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+            <span className="text-[var(--color-accent)]">{copy.salary.scaleLow}</span>
+            <span className="hidden sm:inline">{copy.salary.scaleMid}</span>
+            <span className="text-[var(--color-sand)]">{copy.salary.scaleHigh}</span>
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
@@ -376,6 +391,16 @@ export function RulesPage({ locale }: RulesPageProps) {
         <p className="eyebrow">{copy.boost.eyebrow}</p>
         <h2 className="section-title mt-4 text-white">{copy.boost.title}</h2>
         <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.boost.body}</p>
+        <div className="mt-6 max-w-[34rem]">
+          <div className="h-3 overflow-hidden rounded-full border border-white/10 bg-black/30">
+            <div className="h-full w-full bg-gradient-to-r from-[var(--color-accent)]/25 to-[var(--color-accent)]" />
+          </div>
+          <div className="mono mt-2 flex justify-between text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+            <span>{copy.boost.scaleZero}</span>
+            <span className="hidden sm:inline">{copy.boost.scaleCaption}</span>
+            <span className="text-[var(--color-accent)]">{copy.boost.scaleCap}</span>
+          </div>
+        </div>
         <ul className="mt-5 space-y-2.5">
           {copy.boost.points.map((point, index) => (
             <li key={point} className="surface-row rounded-[0.9rem] p-3 text-sm leading-relaxed text-[var(--color-paper)]">
