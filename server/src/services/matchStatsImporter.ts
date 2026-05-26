@@ -108,6 +108,8 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
     return {
       fixtureId,
       sourceUrl,
+      homeTeamCode: fixture.homeTeamCode,
+      awayTeamCode: fixture.awayTeamCode,
       homeGoals: json.match.homeGoals,
       awayGoals: json.match.awayGoals,
       rows,

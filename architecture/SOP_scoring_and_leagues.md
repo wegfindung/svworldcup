@@ -22,6 +22,12 @@ Clean sheet — per lineup slot class (the slot the player is placed in, not the
 - MID: `1`
 - FWD: `0`
 
+Clean-sheet points are awarded only when the entry's `clean_sheet_eligible` flag is set. That flag is
+auto-derived during match import — `true` when the player lasted 60+ minutes **and** their team conceded
+none — and is admin-overridable in review (see `SOP_match_data_import.md` "Clean Sheet"). The scoring
+engine itself does not re-check minutes or goals conceded; it trusts the (possibly admin-corrected) flag
+and applies the slot-class weight above (and the reserve half-weight where applicable).
+
 Performance points — derived from the admin-entered match rating via a continuous piecewise-linear curve:
 
 - anchors: `(6.0 → 0.5)`, `(8.0 → 1.0)`, `(9.5 → 1.5)`, `(10.0 → 2.0)`

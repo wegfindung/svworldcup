@@ -63,19 +63,26 @@ export function finalizeSubmission(
       )
     }
 
+    // Fix A: resolve-stage stat edits ride in on the override; each falls back to the
+    // parsed value when not edited (?? not ||, so an edited 0 is kept).
+    const minutes = override?.minutes ?? row.minutes
+    // Auto-derive clean-sheet eligibility from real match data: the player lasted 60+ minutes
+    // and their team conceded none (the opposing side's goals from the match result, which is
+    // more authoritative than summing per-player goals — own goals are the known weak point).
+    // An admin can still override it per row after promotion (UpdateMatchRowInput.cleanSheetEligible);
+    // that manual fix wins. Forwards are zeroed regardless by the position weight in the scoring engine.
+    const concededGoals = row.teamCode === resolution.homeTeamCode ? resolution.awayGoals : resolution.homeGoals
+
     rows.push({
       sourceName: row.sourceName,
       teamCode: row.teamCode,
       playerId,
-      // Fix A: resolve-stage stat edits ride in on the override; each falls back to the
-      // parsed value when not edited (?? not ||, so an edited 0 is kept).
       lineupStatus: override?.lineupStatus ?? row.lineupStatus,
-      minutes: override?.minutes ?? row.minutes,
+      minutes,
       goals: override?.goals ?? row.goals,
       assists: override?.assists ?? row.assists,
       rating: override?.rating ?? row.rating,
-      // D11: clean-sheet eligibility is a review-UI judgement, defaulted false on import.
-      cleanSheetEligible: false,
+      cleanSheetEligible: minutes >= 60 && concededGoals === 0,
     })
   }
 

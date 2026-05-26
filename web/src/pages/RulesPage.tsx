@@ -80,7 +80,7 @@ const englishCopy = {
       { label: 'Assist', value: '+3', detail: 'per assist' },
       { label: 'Appearance', value: '+1', detail: 'for any time on the pitch' },
       { label: '60+ minutes', value: '+1', detail: 'extra, for playing 60 minutes or more' },
-      { label: 'Clean sheet', value: '+4 / +1 / 0', detail: 'GK & DEF +4, MID +1, FWD 0' },
+      { label: 'Clean sheet', value: '+4 / +1 / 0', detail: 'GK & DEF +4, MID +1, FWD 0 — only if the player lasted 60+ minutes and their team conceded none' },
       { label: 'Performance', value: 'up to +2', detail: 'scaled from match rating (6.0→0.5, 8.0→1.0, 9.5→1.5, 10.0→2.0)' },
     ],
     calculatorIntro: 'Try the exact maths yourself — adjust a player, your cap, and your boost:',

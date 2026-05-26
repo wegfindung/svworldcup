@@ -7,6 +7,8 @@ function resolution(): MatchResolution {
   return {
     fixtureId: 'wc-2026-001',
     sourceUrl: 'https://x.test/m',
+    homeTeamCode: 'BRA',
+    awayTeamCode: 'MAR',
     homeGoals: 2,
     awayGoals: 1,
     rows: [
@@ -33,6 +35,39 @@ describe('finalizeSubmission', () => {
     expect(finalized.batchInput.createdBy).toBe('importer@example.com')
     expect(finalized.mappingWrites).toEqual([])
     expect(finalized.skipWrites).toEqual([])
+  })
+
+  it('auto-derives clean-sheet eligibility: 60+ minutes and the team conceded none', () => {
+    // resolution() home side BRA played 90' and the away side scored 1 (awayGoals: 1) → conceded.
+    const conceded = finalizeSubmission(resolution(), [], 'a@example.com')
+    expect(conceded.batchInput.rows[0].cleanSheetEligible).toBe(false)
+
+    // Away side kept a clean sheet (awayGoals: 0); the 90' home player qualifies.
+    const cleanSheet = resolution()
+    cleanSheet.awayGoals = 0
+    const finalized = finalizeSubmission(cleanSheet, [], 'a@example.com')
+    expect(finalized.batchInput.rows[0].cleanSheetEligible).toBe(true)
+  })
+
+  it('denies clean-sheet eligibility under 60 minutes even with a clean sheet', () => {
+    const subbedEarly = resolution()
+    subbedEarly.awayGoals = 0
+    subbedEarly.rows[0].minutes = 59
+    const finalized = finalizeSubmission(subbedEarly, [], 'a@example.com')
+    expect(finalized.batchInput.rows[0].cleanSheetEligible).toBe(false)
+  })
+
+  it('uses the opposing side for the conceded count, mapped by team code', () => {
+    // An away-side (MAR) player; their conceded count is the home goals (homeGoals: 2) → no clean sheet.
+    const awayPlayer = resolution()
+    awayPlayer.rows[0].teamCode = 'MAR'
+    expect(finalizeSubmission(awayPlayer, [], 'a@example.com').batchInput.rows[0].cleanSheetEligible).toBe(false)
+
+    // Same away player, but the home side was kept scoreless (homeGoals: 0).
+    const awayCleanSheet = resolution()
+    awayCleanSheet.rows[0].teamCode = 'MAR'
+    awayCleanSheet.homeGoals = 0
+    expect(finalizeSubmission(awayCleanSheet, [], 'a@example.com').batchInput.rows[0].cleanSheetEligible).toBe(true)
   })
 
   it('rejects a submission with an unresolved row and no override', () => {
