@@ -16,6 +16,7 @@ const englishMessages = {
       { to: '/results', label: 'Results' },
       { to: '/tables', label: 'Tables' },
       { to: '/prizes', label: 'Prizes' },
+      { to: '/rules', label: 'Rules' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -528,6 +529,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tablas' },
       { to: '/prizes', label: 'Premios' },
+      { to: '/rules', label: 'Reglas' },
     ],
     account: [
       { to: '/login', label: 'Acceso' },
@@ -966,6 +968,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: 'Risultati' },
       { to: '/tables', label: 'Classifiche' },
       { to: '/prizes', label: 'Premi' },
+      { to: '/rules', label: 'Regole' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -1404,6 +1407,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: 'Ergebnisse' },
       { to: '/tables', label: 'Tabellen' },
       { to: '/prizes', label: 'Preise' },
+      { to: '/rules', label: 'Regeln' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -1841,6 +1845,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: 'Résultats' },
       { to: '/tables', label: 'Classements' },
       { to: '/prizes', label: 'Prix' },
+      { to: '/rules', label: 'Règles' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -2276,6 +2281,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tabelas' },
       { to: '/prizes', label: 'Prémios' },
+      { to: '/rules', label: 'Regras' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -2711,6 +2717,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: 'Результаты' },
       { to: '/tables', label: 'Таблицы' },
       { to: '/prizes', label: 'Призы' },
+      { to: '/rules', label: 'Правила' },
     ],
     account: [
       { to: '/login', label: 'Вход' },
@@ -3147,6 +3154,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/results', label: '赛果' },
       { to: '/tables', label: '榜单' },
       { to: '/prizes', label: '奖品' },
+      { to: '/rules', label: '规则' },
     ],
     account: [
       { to: '/login', label: '登录' },
