@@ -8,6 +8,10 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://127.0.0.1:3000',
+    httpCredentials: {
+      username: 'soccerverse',
+      password: 'soccerverse',
+    },
     trace: 'retain-on-failure',
   },
   webServer: {
@@ -30,6 +34,7 @@ export default defineConfig({
       ADMIN_API_TOKEN: 'admin-api-token-e2e',
       SHARE_SNAPSHOT_SECRET: 'share-secret-e2e',
       CSRF_TOKEN_SECRET: 'csrf-secret-e2e',
+      CLOSED_BETA_AUTH_ENABLED: 'true',
     },
   },
   projects: [

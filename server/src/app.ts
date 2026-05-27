@@ -5,6 +5,7 @@ import express from 'express'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import { env } from './config/env.js'
+import { createClosedBetaAuth } from './middleware/closedBetaAuth.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { createAuthRouter } from './routes/auth.js'
 import { createAdminRouter } from './routes/admin.js'
@@ -102,6 +103,16 @@ export function createApp() {
     cors({
       origin: true,
       credentials: true,
+    }),
+  )
+  app.use(
+    createClosedBetaAuth({
+      enabled: env.CLOSED_BETA_AUTH_ENABLED,
+      username: env.CLOSED_BETA_AUTH_USERNAME,
+      password: env.CLOSED_BETA_AUTH_PASSWORD,
+      adminApiToken: env.ADMIN_API_TOKEN,
+      adminBootstrapEmails: env.ADMIN_BOOTSTRAP_EMAILS,
+      exemptPaths: ['/api/public/health'],
     }),
   )
   app.use(express.json({ limit: '1mb' }))

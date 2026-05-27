@@ -90,6 +90,17 @@ function mapPlayer(player: SourcePlayer, fallbackTeamCode: string): SoccerverseP
   }
 }
 
+function closedBetaAuthHeader() {
+  if (!env.CLOSED_BETA_AUTH_ENABLED) {
+    return {}
+  }
+
+  const encoded = Buffer.from(`${env.CLOSED_BETA_AUTH_USERNAME}:${env.CLOSED_BETA_AUTH_PASSWORD}`, 'utf8').toString('base64')
+  return {
+    authorization: `Basic ${encoded}`,
+  }
+}
+
 async function main() {
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`Source file not found: ${sourcePath}`)
@@ -148,6 +159,7 @@ async function main() {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        ...closedBetaAuthHeader(),
       },
       body: JSON.stringify({
         email: adminEmail,
@@ -183,6 +195,7 @@ async function main() {
         headers: {
           'content-type': 'application/json',
           cookie: sessionCookie,
+          ...closedBetaAuthHeader(),
         },
         body: JSON.stringify({
           players: [...dedupedPlayers.values()],

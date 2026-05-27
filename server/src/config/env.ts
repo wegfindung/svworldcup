@@ -23,6 +23,11 @@ const booleanFromString = z
   .optional()
   .transform((value) => value === 'true')
 
+const optionalBooleanFromString = z
+  .string()
+  .optional()
+  .transform((value) => (value === undefined ? undefined : value === 'true'))
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -50,6 +55,9 @@ const envSchema = z.object({
   RISK_SIGNAL_SECRET: optionalString,
   TOURNAMENT_KICKOFF_AT: optionalString,
   REGISTRATION_CLOSE_AT: optionalString,
+  CLOSED_BETA_AUTH_ENABLED: optionalBooleanFromString,
+  CLOSED_BETA_AUTH_USERNAME: z.string().default('soccerverse'),
+  CLOSED_BETA_AUTH_PASSWORD: z.string().default('soccerverse'),
   RATE_LIMIT_TRUST_PROXY: booleanFromString,
 })
 
@@ -77,5 +85,6 @@ export const env = {
   ADMIN_BOOTSTRAP_EMAILS: parseAdminEmails(parsed.ADMIN_BOOTSTRAP_EMAILS),
   TOURNAMENT_KICKOFF_AT: parseInstant(parsed.TOURNAMENT_KICKOFF_AT),
   REGISTRATION_CLOSE_AT: parseInstant(parsed.REGISTRATION_CLOSE_AT),
+  CLOSED_BETA_AUTH_ENABLED: parsed.CLOSED_BETA_AUTH_ENABLED ?? parsed.NODE_ENV === 'production',
   RATE_LIMIT_TRUST_PROXY: parsed.RATE_LIMIT_TRUST_PROXY ?? false,
 }
