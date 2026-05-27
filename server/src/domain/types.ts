@@ -1,6 +1,6 @@
 export type LeagueType = 'rookie' | 'veteran'
 
-export type SupportedLocale = 'en' | 'es' | 'it' | 'de' | 'fr' | 'pt' | 'ru' | 'zh'
+export type SupportedLocale = 'en' | 'es' | 'it' | 'de' | 'fr' | 'pt' | 'ru' | 'zh' | 'ja'
 
 export type ParticipantStatus = 'pending_verification' | 'active' | 'locked' | 'withdrawn'
 

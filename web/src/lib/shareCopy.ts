@@ -136,6 +136,7 @@ const copyByLocale: Record<LocaleCode, ShareComposerCopy> = {
   pt: englishCopy,
   ru: englishCopy,
   zh: englishCopy,
+  ja: englishCopy,
 }
 
 export function getShareComposerCopy(locale: LocaleCode) {

@@ -1,6 +1,6 @@
 import type { LeagueType, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
 
-export const supportedLocales: LocaleCode[] = ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh']
+export const supportedLocales: LocaleCode[] = ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja']
 
 export const defaultLocale: LocaleCode = 'en'
 

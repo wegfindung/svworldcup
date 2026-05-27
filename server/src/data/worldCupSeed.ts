@@ -1,6 +1,6 @@
 import type { FixtureSeed, SupportedLocale, TeamSeed } from '../domain/types.js'
 
-export const supportedLocales: SupportedLocale[] = ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh']
+export const supportedLocales: SupportedLocale[] = ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja']
 
 export const defaultLocale: SupportedLocale = 'en'
 

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const supportedShareLocales = ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh'] as const
+export const supportedShareLocales = ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja'] as const
 
 export type ShareLocale = (typeof supportedShareLocales)[number]
 

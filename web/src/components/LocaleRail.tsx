@@ -16,6 +16,7 @@ const localeMeta: Record<LocaleCode, { label: string; flag: string }> = {
   pt: { label: 'Portuguese', flag: '/flags/pt.svg' },
   ru: { label: 'Russian', flag: '/flags/ru.svg' },
   zh: { label: 'Chinese', flag: '/flags/zh.svg' },
+  ja: { label: 'Japanese', flag: '/flags/ja.svg' },
 }
 
 export function LocaleRail({ activeLocale, locales, onChange }: LocaleRailProps) {

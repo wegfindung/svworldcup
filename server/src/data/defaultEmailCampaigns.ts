@@ -251,6 +251,35 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizes: 'PS：这里可以查看你能赢得什么：',
     prizesLink: '奖品概览',
   },
+  ja: {
+    subject: 'Soccerverse World Cup Event - 仕組み',
+    preheader: 'スカッドのための重要なヒントとルール。',
+    title: 'オンボーディング',
+    greeting: 'こんにちは {{first_name}},',
+    intro: '参加してくれてありがとうございます。',
+    notesIntro: '開始前に、重要なポイントを確認してください:',
+    points: [
+      'ポイントは実際の試合での選手のパフォーマンスから発生します。',
+      '試合が入力されると、関連するアクションが評価され、あなたのスカッドに加算されます。',
+      'その後、ポイントとランキングが更新されます。',
+      'スカッドは一度だけ設定します。イベント開始、つまり開幕戦のキックオフ以降は変更できません。',
+      'スタメン11人は満額のポイントを獲得します。出場しない選手がいても自動交代はありません。',
+      '控え選手は獲得ポイントの50%を受け取ります。',
+    ],
+    important: '重要: 1人につき許可されるスカッドは1つだけです。複数アカウントは失格につながります。これにより全員に公平な競争を保ちます。',
+    bonusTitle: 'Veteran としてボーナスを得るには？',
+    bonusSteps: [
+      'スカッドを作成します。',
+      'メインゲームでスカッド内の選手の Influence を購入します: <a href="{{play_url}}" style="color:#22bd93;">{{play_url}}</a>',
+      '100 Influence は、その選手のポイントに対する最大10%ボーナスに相当します。',
+      'スコア計算時に、技術連携がボーナス込みのポイントを算出します。',
+    ],
+    goodLuck: '初戦に向けて幸運を祈ります。',
+    cta: 'スカッドを確認',
+    signoff: 'Community Event Team',
+    prizes: 'PS: 獲得できる賞品はこちら:',
+    prizesLink: '賞品概要',
+  },
 }
 
 function paragraph(text: string) {

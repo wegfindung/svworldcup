@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS participants (
     marketing_opt_in BOOLEAN NOT NULL DEFAULT FALSE,
     marketing_unsubscribed_at TIMESTAMPTZ,
     marketing_unsubscribe_token TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    browser_locale TEXT NOT NULL DEFAULT 'en' CONSTRAINT participants_browser_locale_chk CHECK (browser_locale IN ('en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh')),
+    browser_locale TEXT NOT NULL DEFAULT 'en' CONSTRAINT participants_browser_locale_chk CHECK (browser_locale IN ('en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja')),
     league_type TEXT NOT NULL CHECK (league_type IN ('rookie', 'veteran')),
     -- Nation pick (primary/secondary) is the full Soccerverse nation set, not the 48 WC teams,
     -- so these are free-text nation codes (alpha-2, gb-*, xk) with no FK to teams(code).
@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS email_campaign_recipients (
     secondary_team_code TEXT,
     referrer_soccerverse_username TEXT,
     marketing_unsubscribe_token TEXT,
-    browser_locale TEXT CONSTRAINT email_campaign_recipients_browser_locale_chk CHECK (browser_locale IN ('en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh')),
+    browser_locale TEXT CONSTRAINT email_campaign_recipients_browser_locale_chk CHECK (browser_locale IN ('en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja')),
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'skipped')),
     queued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     sent_at TIMESTAMPTZ,

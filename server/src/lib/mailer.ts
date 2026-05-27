@@ -117,6 +117,15 @@ const verificationCopy: Record<SupportedLocale, ActionMailCopy> = {
     signoff: '球场见，\nSoccerverse World Cup Team',
     linkHelp: '如果按钮无法使用，请打开此链接：',
   },
+  ja: {
+    subject: 'Soccerverse World Cup 登録を確認してください',
+    title: 'Soccerverse World Cup へようこそ！',
+    intro: 'あと1クリックで、Soccerverse World Cup コミュニティイベントでお気に入りの国と選手を管理できます。',
+    actionLabel: '登録を確認',
+    after: '確認が完了すると、スカッド作成を開始できます。',
+    signoff: 'ピッチで会いましょう,\nSoccerverse World Cup Team',
+    linkHelp: 'ボタンが動作しない場合は、このリンクを開いてください:',
+  },
 }
 
 const passwordResetCopy: Record<SupportedLocale, ActionMailCopy> = {
@@ -191,6 +200,15 @@ const passwordResetCopy: Record<SupportedLocale, ActionMailCopy> = {
     after: '如果这不是你发起的请求，可以忽略此邮件。',
     signoff: 'Soccerverse World Cup Team',
     linkHelp: '如果按钮无法使用，请打开此链接：',
+  },
+  ja: {
+    subject: 'Soccerverse World Cup パスワードをリセット',
+    title: '新しいパスワードを設定',
+    intro: 'このリンクを使って Soccerverse World Cup アカウントへのアクセスを復旧してください。',
+    actionLabel: '新しいパスワードを設定',
+    after: 'この操作に心当たりがない場合は、このメールを無視してください。',
+    signoff: 'Soccerverse World Cup Team',
+    linkHelp: 'ボタンが動作しない場合は、このリンクを開いてください:',
   },
 }
 

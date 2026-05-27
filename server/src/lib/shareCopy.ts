@@ -49,6 +49,7 @@ const copyByLocale: Record<ShareLocale, ShareLocaleCopy> = {
   pt: englishCopy,
   ru: englishCopy,
   zh: englishCopy,
+  ja: englishCopy,
 }
 
 export function getShareCopy(locale: ShareLocale): ShareLocaleCopy {
