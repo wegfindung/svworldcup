@@ -1,13 +1,24 @@
 # World Cup squad mapping gaps
 
-Audit date: 2026-05-25
+Audit date: 2026-05-27
 
 Purpose: keep track of official 2026 World Cup squad players that are not yet
 cleanly represented in `server/src/data/initialTeamSelections.ts`.
 
-Sources checked:
+Primary source checked:
+
+- FIFA squad announcements hub:
+  https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/all-world-cup-squad-announcements
+- FIFA article API spot checks:
+  `https://cxm-api.fifa.com/fifaplusweb/api/pages/...` and
+  `https://cxm-api.fifa.com/fifaplusweb/api/sections/article/...`
+
+Secondary cross-checks used only when a FIFA article was not available or when
+we needed an independent spelling check:
 
 - Official roster tracker: https://www.si.com/soccer/2026-world-cup-rosters-full-list-all-official-squads
+- NBC confirmed roster tracker, updated 2026-05-27:
+  https://www.nbcsports.com/soccer/news/2026-world-cup-squads-confirmed-rosters-for-all-48-teams
 - Local seed: `server/src/data/initialTeamSelections.ts`
 - Soccerverse community datapack: `https://elrincondeldt.com/sv/rincon_v2.json`
 - Soccerverse player API spot checks: `https://services.soccerverse.com/api/players/detailed`
@@ -22,16 +33,66 @@ These are the teams currently present in `initialTeamSelections.ts`.
 
 | Team | Local count | Official count | Missing or unresolved players |
 | --- | ---: | ---: | --- |
+| AUT | 26 | 26 | None found. |
 | BEL | 25 | 26 | Diego Moreira |
 | BIH | 26 | 26 | None. `Kerim-Sam Alajbegovic` appears to be the Soccerverse/community-pack name for official `Kerim Alajbegovic`. |
 | CIV | 25 | 26 | Emmanuel Agbadou |
-| FRA | 24 | 26 | Ousmane Dembele, Rayan Cherki |
-| GER | 24 | 26 | Manuel Neuer, Jamal Musiala, Nadiem Amiri, Aleksandar Pavlovic, Felix Nmecha, Jamie Leweling, Maximilian Beier |
-| HAI | 22 | 26 | Duke Lacroix, Keeto Thermoncy, Leverton Pierre, Jean-Ricner Bellegarde |
+| FRA | 26 | 26 | None found. |
+| GER | 26 | 26 | None found. |
+| HAI | 24 | 26 | Duke Lacroix, Keeto Thermoncy |
 | JPN | 26 | 26 | None found. |
-| NZL | 24 | 26 | Tommy Smith, Kosta Barbarouses |
+| NED | 26 | 26 | None found. Rechecked against FIFA's 2026-05-27 Netherlands article; `Jan van Hecke` is the Soccerverse/community-pack display name for official `Jan Paul van Hecke`. |
+| NZL | 25 | 26 | Tommy Smith |
+| SUI | 26 | 26 | None found. |
 | SWE | 23 | 26 | Kristoffer Nordfeldt, Benjamin Nygren, Gustaf Nilsson |
-| TUN | 21 | 26 | Sabri Ben Hessen, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
+| TUN | 21 | 26 | Sabri Ben Hassan, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
+
+## FIFA source URLs for current seeded teams
+
+These FIFA pages were checked on 2026-05-27 and should be treated as the source
+of truth until FIFA publishes the final 26-player lists on 2026-06-02.
+
+| Team | FIFA source |
+| --- | --- |
+| AUT | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/austria-ralf-rangnick-world-cup-squad |
+| BEL | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/belgium-squad-garcia-lukaku-named |
+| BIH | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/bosnia-and-herzegovina-sergej-barbarez-names-squad |
+| CIV | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/cote-divoire-squad-announcement-emerse-fae |
+| FRA | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-world-cup-squad-named |
+| GER | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/germany-squad-neuer-nagelsmann-named |
+| HAI | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/haiti-squad-announcement-sebastien-migne |
+| JPN | https://www.fifa.com/en/news/articles/japan-squad-announcement |
+| NED | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/netherlands-ronald-koeman-squad-announced |
+| NZL | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/new-zealand-squad-named |
+| SUI | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/switzerland-squad-announcement-murat-yakin |
+| SWE | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/sweden-squad-announcement-world-cup-graham-potter |
+| TUN | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/tunisia-squad-named-sabri-lamouchi |
+
+## Confirmed official squads with no local seed
+
+These countries now have a confirmed public 26-player roster in the 2026-05-27
+NBC tracker and/or FIFA squad announcement articles, but they are not present in
+`initialTeamSelections.ts` at all.
+
+| Team | Status | Notes |
+| --- | --- | --- |
+| BRA | No local seed | Confirmed roster published. |
+| COL | No local seed | Confirmed roster published. |
+| COD | No local seed | Confirmed roster published by FIFA/NBC. |
+| CPV | No local seed | Confirmed roster published. |
+| CUW | No local seed | Confirmed roster published by FIFA/NBC. |
+| ENG | No local seed | Confirmed roster published. |
+| KOR | No local seed | Confirmed roster published by FIFA/NBC. |
+| MAR | No local seed | Confirmed roster published by FIFA/NBC on 2026-05-26. |
+| NOR | No local seed | Confirmed roster published by FIFA/NBC. |
+| SCO | No local seed | Confirmed roster published. |
+| SEN | No local seed | Confirmed roster published. |
+| ESP | No local seed | Confirmed roster published. |
+| USA | No local seed | Confirmed roster published by NBC. |
+
+This means the next import pass should not only fill missing players for the
+existing seeded teams; it should also build complete Soccerverse mappings for
+these newly confirmed, currently unseeded countries.
 
 ## Notes from Soccerverse lookup
 
@@ -46,6 +107,14 @@ Likely direct matches found:
 - HAI Leverton Pierre -> `20538`
 - HAI Jean-Ricner Bellegarde -> `20665`
 - NZL Kosta Barbarouses -> `6865`
+- NED Jan Paul van Hecke -> `38695`
+- NED Tijjani Reijnders -> `36902`
+- NED Brian Brobbey -> `38750`
+- SUI Yvon Mvogo -> `1142`
+- SUI Djibril Sow -> `957`
+- SUI Denis Zakaria -> `2810`
+- SUI Zeki Amdouni -> `123469`
+- SUI Ruben Vargas -> `48471`
 
 Ambiguous or unsafe matches:
 
@@ -62,6 +131,14 @@ Ambiguous or unsafe matches:
   from simple search.
 - TUN missing players: simple search only produced partial surname hits or no
   clear match; needs manual/API resolution.
+
+Implementation note:
+
+- `bootstrapInitialTeamPools` now retries missing curated IDs without a
+  `country_id` filter after the normal country-filtered Soccerverse fetch. This
+  covers official eligibility changes that lag in Soccerverse nationality data,
+  such as Carney Chukwuemeka appearing in Austria's official squad while still
+  carrying a non-AUT Soccerverse `country_id`.
 
 ## Follow-up process
 

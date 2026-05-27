@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SoccerversePlayerRecord } from '../domain/types.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 
@@ -27,7 +27,14 @@ function player(playerId: number, nationalityCode: string): SoccerversePlayerRec
 }
 
 describe('bootstrapInitialTeamPools', () => {
+  beforeEach(() => {
+    fetchPlayersByIds.mockClear()
+  })
+
   it('syncs explicitly curated team selections with their Soccerverse country id', async () => {
+    fetchPlayersByIds.mockImplementation(async (playerIds: number[], countryId?: string) =>
+      playerIds.map((playerId) => player(playerId, countryId ?? 'TST')),
+    )
     const syncedTeams: string[] = []
     const repository: TeamPoolRepository = {
       storageKind: 'memory',
@@ -51,5 +58,30 @@ describe('bootstrapInitialTeamPools', () => {
       expect(fetchPlayersByIds.mock.calls[index][0]).toEqual(initialTeamSelections[teamCode])
       expect(fetchPlayersByIds.mock.calls[index][1]).toBe(getSoccerverseCountryId(teamCode))
     }
+  })
+
+  it('retries curated players without country filtering when Soccerverse nationality lags official eligibility', async () => {
+    fetchPlayersByIds.mockImplementation(async (playerIds: number[], countryId?: string) => {
+      const filteredIds = countryId ? playerIds.filter((playerId) => playerId !== 138935) : playerIds
+      return filteredIds.map((playerId) => player(playerId, countryId ?? 'ENG'))
+    })
+
+    const syncedCounts = new Map<string, number>()
+    const repository: TeamPoolRepository = {
+      storageKind: 'memory',
+      listByTeam: vi.fn(async () => []),
+      getTeamPlayerById: vi.fn(async () => null),
+      getTeamSelectionCounts: vi.fn(async () => ({})),
+      replaceTeamPlayers: vi.fn(async (teamCode, players) => {
+        syncedCounts.set(teamCode, players.length)
+        return []
+      }),
+      seedTeamPlayersIfEmpty: vi.fn(async () => {}),
+    }
+
+    await bootstrapInitialTeamPools(repository)
+
+    expect(fetchPlayersByIds.mock.calls).toContainEqual([[138935]])
+    expect(syncedCounts.get('AUT')).toBe(initialTeamSelections.AUT.length)
   })
 })
