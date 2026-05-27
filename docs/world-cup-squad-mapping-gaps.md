@@ -5,13 +5,20 @@ Audit date: 2026-05-27
 Purpose: keep track of official 2026 World Cup squad players that are not yet
 cleanly represented in `server/src/data/initialTeamSelections.ts`.
 
-Sources checked:
+Primary source checked:
+
+- FIFA squad announcements hub:
+  https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/all-world-cup-squad-announcements
+- FIFA article API spot checks:
+  `https://cxm-api.fifa.com/fifaplusweb/api/pages/...` and
+  `https://cxm-api.fifa.com/fifaplusweb/api/sections/article/...`
+
+Secondary cross-checks used only when a FIFA article was not available or when
+we needed an independent spelling check:
 
 - Official roster tracker: https://www.si.com/soccer/2026-world-cup-rosters-full-list-all-official-squads
 - NBC confirmed roster tracker, updated 2026-05-27:
   https://www.nbcsports.com/soccer/news/2026-world-cup-squads-confirmed-rosters-for-all-48-teams
-- FIFA squad announcements hub:
-  https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/all-world-cup-squad-announcements
 - Local seed: `server/src/data/initialTeamSelections.ts`
 - Soccerverse community datapack: `https://elrincondeldt.com/sv/rincon_v2.json`
 - Soccerverse player API spot checks: `https://services.soccerverse.com/api/players/detailed`
@@ -34,11 +41,32 @@ These are the teams currently present in `initialTeamSelections.ts`.
 | GER | 26 | 26 | None found. |
 | HAI | 24 | 26 | Duke Lacroix, Keeto Thermoncy |
 | JPN | 26 | 26 | None found. |
-| NED | 26 | 26 | None found. |
+| NED | 26 | 26 | None found. Rechecked against FIFA's 2026-05-27 Netherlands article; `Jan van Hecke` is the Soccerverse/community-pack display name for official `Jan Paul van Hecke`. |
 | NZL | 25 | 26 | Tommy Smith |
 | SUI | 26 | 26 | None found. |
 | SWE | 23 | 26 | Kristoffer Nordfeldt, Benjamin Nygren, Gustaf Nilsson |
-| TUN | 21 | 26 | Sabri Ben Hessen, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
+| TUN | 21 | 26 | Sabri Ben Hassan, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
+
+## FIFA source URLs for current seeded teams
+
+These FIFA pages were checked on 2026-05-27 and should be treated as the source
+of truth until FIFA publishes the final 26-player lists on 2026-06-02.
+
+| Team | FIFA source |
+| --- | --- |
+| AUT | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/austria-ralf-rangnick-world-cup-squad |
+| BEL | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/belgium-squad-garcia-lukaku-named |
+| BIH | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/bosnia-and-herzegovina-sergej-barbarez-names-squad |
+| CIV | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/cote-divoire-squad-announcement-emerse-fae |
+| FRA | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-world-cup-squad-named |
+| GER | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/germany-squad-neuer-nagelsmann-named |
+| HAI | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/haiti-squad-announcement-sebastien-migne |
+| JPN | https://www.fifa.com/en/news/articles/japan-squad-announcement |
+| NED | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/netherlands-ronald-koeman-squad-announced |
+| NZL | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/new-zealand-squad-named |
+| SUI | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/switzerland-squad-announcement-murat-yakin |
+| SWE | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/sweden-squad-announcement-world-cup-graham-potter |
+| TUN | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/tunisia-squad-named-sabri-lamouchi |
 
 ## Confirmed official squads with no local seed
 
