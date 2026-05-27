@@ -26,14 +26,17 @@ These are the teams currently present in `initialTeamSelections.ts`.
 
 | Team | Local count | Official count | Missing or unresolved players |
 | --- | ---: | ---: | --- |
+| AUT | 26 | 26 | None found. |
 | BEL | 25 | 26 | Diego Moreira |
 | BIH | 26 | 26 | None. `Kerim-Sam Alajbegovic` appears to be the Soccerverse/community-pack name for official `Kerim Alajbegovic`. |
 | CIV | 25 | 26 | Emmanuel Agbadou |
-| FRA | 24 | 26 | Ousmane Dembele, Rayan Cherki |
-| GER | 24 | 26 | Manuel Neuer, Jamal Musiala, Nadiem Amiri, Aleksandar Pavlovic, Felix Nmecha, Jamie Leweling, Maximilian Beier |
-| HAI | 22 | 26 | Duke Lacroix, Keeto Thermoncy, Leverton Pierre, Jean-Ricner Bellegarde |
+| FRA | 26 | 26 | None found. |
+| GER | 26 | 26 | None found. |
+| HAI | 24 | 26 | Duke Lacroix, Keeto Thermoncy |
 | JPN | 26 | 26 | None found. |
-| NZL | 24 | 26 | Tommy Smith, Kosta Barbarouses |
+| NED | 26 | 26 | None found. |
+| NZL | 25 | 26 | Tommy Smith |
+| SUI | 26 | 26 | None found. |
 | SWE | 23 | 26 | Kristoffer Nordfeldt, Benjamin Nygren, Gustaf Nilsson |
 | TUN | 21 | 26 | Sabri Ben Hessen, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
 
@@ -45,7 +48,6 @@ NBC tracker and/or FIFA squad announcement articles, but they are not present in
 
 | Team | Status | Notes |
 | --- | --- | --- |
-| AUT | No local seed | Confirmed roster published. |
 | BRA | No local seed | Confirmed roster published. |
 | COL | No local seed | Confirmed roster published. |
 | COD | No local seed | Confirmed roster published by FIFA/NBC. |
@@ -54,12 +56,10 @@ NBC tracker and/or FIFA squad announcement articles, but they are not present in
 | ENG | No local seed | Confirmed roster published. |
 | KOR | No local seed | Confirmed roster published by FIFA/NBC. |
 | MAR | No local seed | Confirmed roster published by FIFA/NBC on 2026-05-26. |
-| NED | No local seed | Confirmed roster published by FIFA/NBC on 2026-05-27. |
 | NOR | No local seed | Confirmed roster published by FIFA/NBC. |
 | SCO | No local seed | Confirmed roster published. |
 | SEN | No local seed | Confirmed roster published. |
 | ESP | No local seed | Confirmed roster published. |
-| SUI | No local seed | Confirmed roster published by FIFA/NBC. |
 | USA | No local seed | Confirmed roster published by NBC. |
 
 This means the next import pass should not only fill missing players for the
@@ -79,6 +79,14 @@ Likely direct matches found:
 - HAI Leverton Pierre -> `20538`
 - HAI Jean-Ricner Bellegarde -> `20665`
 - NZL Kosta Barbarouses -> `6865`
+- NED Jan Paul van Hecke -> `38695`
+- NED Tijjani Reijnders -> `36902`
+- NED Brian Brobbey -> `38750`
+- SUI Yvon Mvogo -> `1142`
+- SUI Djibril Sow -> `957`
+- SUI Denis Zakaria -> `2810`
+- SUI Zeki Amdouni -> `123469`
+- SUI Ruben Vargas -> `48471`
 
 Ambiguous or unsafe matches:
 
@@ -95,6 +103,14 @@ Ambiguous or unsafe matches:
   from simple search.
 - TUN missing players: simple search only produced partial surname hits or no
   clear match; needs manual/API resolution.
+
+Implementation note:
+
+- `bootstrapInitialTeamPools` now retries missing curated IDs without a
+  `country_id` filter after the normal country-filtered Soccerverse fetch. This
+  covers official eligibility changes that lag in Soccerverse nationality data,
+  such as Carney Chukwuemeka appearing in Austria's official squad while still
+  carrying a non-AUT Soccerverse `country_id`.
 
 ## Follow-up process
 
