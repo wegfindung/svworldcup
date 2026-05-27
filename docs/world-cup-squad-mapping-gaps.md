@@ -1,6 +1,6 @@
 # World Cup squad mapping gaps
 
-Audit date: 2026-05-25
+Audit date: 2026-05-27
 
 Purpose: keep track of official 2026 World Cup squad players that are not yet
 cleanly represented in `server/src/data/initialTeamSelections.ts`.
@@ -8,6 +8,10 @@ cleanly represented in `server/src/data/initialTeamSelections.ts`.
 Sources checked:
 
 - Official roster tracker: https://www.si.com/soccer/2026-world-cup-rosters-full-list-all-official-squads
+- NBC confirmed roster tracker, updated 2026-05-27:
+  https://www.nbcsports.com/soccer/news/2026-world-cup-squads-confirmed-rosters-for-all-48-teams
+- FIFA squad announcements hub:
+  https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/all-world-cup-squad-announcements
 - Local seed: `server/src/data/initialTeamSelections.ts`
 - Soccerverse community datapack: `https://elrincondeldt.com/sv/rincon_v2.json`
 - Soccerverse player API spot checks: `https://services.soccerverse.com/api/players/detailed`
@@ -32,6 +36,35 @@ These are the teams currently present in `initialTeamSelections.ts`.
 | NZL | 24 | 26 | Tommy Smith, Kosta Barbarouses |
 | SWE | 23 | 26 | Kristoffer Nordfeldt, Benjamin Nygren, Gustaf Nilsson |
 | TUN | 21 | 26 | Sabri Ben Hessen, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
+
+## Confirmed official squads with no local seed
+
+These countries now have a confirmed public 26-player roster in the 2026-05-27
+NBC tracker and/or FIFA squad announcement articles, but they are not present in
+`initialTeamSelections.ts` at all.
+
+| Team | Status | Notes |
+| --- | --- | --- |
+| AUT | No local seed | Confirmed roster published. |
+| BRA | No local seed | Confirmed roster published. |
+| COL | No local seed | Confirmed roster published. |
+| COD | No local seed | Confirmed roster published by FIFA/NBC. |
+| CPV | No local seed | Confirmed roster published. |
+| CUW | No local seed | Confirmed roster published by FIFA/NBC. |
+| ENG | No local seed | Confirmed roster published. |
+| KOR | No local seed | Confirmed roster published by FIFA/NBC. |
+| MAR | No local seed | Confirmed roster published by FIFA/NBC on 2026-05-26. |
+| NED | No local seed | Confirmed roster published by FIFA/NBC on 2026-05-27. |
+| NOR | No local seed | Confirmed roster published by FIFA/NBC. |
+| SCO | No local seed | Confirmed roster published. |
+| SEN | No local seed | Confirmed roster published. |
+| ESP | No local seed | Confirmed roster published. |
+| SUI | No local seed | Confirmed roster published by FIFA/NBC. |
+| USA | No local seed | Confirmed roster published by NBC. |
+
+This means the next import pass should not only fill missing players for the
+existing seeded teams; it should also build complete Soccerverse mappings for
+these newly confirmed, currently unseeded countries.
 
 ## Notes from Soccerverse lookup
 
