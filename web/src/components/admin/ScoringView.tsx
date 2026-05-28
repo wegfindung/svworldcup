@@ -132,6 +132,13 @@ export function ScoringView() {
 
       <section className="mt-6">
         <p className="eyebrow">clean sheet — per slot class</p>
+        <p className="mt-2 max-w-[58ch] text-xs text-[var(--color-muted)]">
+          MID is conditional: the configured value is paid only to a MID slot whose snapshot positions include
+          a defensive midfielder code (<span className="mono">DML</span>, <span className="mono">DMR</span>,
+          <span className="mono"> DMC</span>, or plain <span className="mono">DM</span>). Other MID slots earn
+          <span className="mono"> 0</span> regardless of the number entered here. Eligibility also requires
+          the player to have played 60+ minutes with the team conceding none.
+        </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {slotClasses.map((slot) => (
             <label key={slot} className="grid gap-2">

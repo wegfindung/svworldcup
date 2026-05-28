@@ -403,8 +403,9 @@ export function TablesPage({ locale }: TablesPageProps) {
             <div className="surface-row rounded-[0.85rem] p-3">
               <p className="text-[var(--color-muted)]">{copy.cleanSheet}</p>
               <p className="mono mt-2 text-sm text-white">
-                GK {defaultScoring.cleanSheet.GK} · DEF {defaultScoring.cleanSheet.DEF} · MID {defaultScoring.cleanSheet.MID} · FWD {defaultScoring.cleanSheet.FWD}
+                GK {defaultScoring.cleanSheet.GK} · DEF {defaultScoring.cleanSheet.DEF} · MID {defaultScoring.cleanSheet.MID}* · FWD {defaultScoring.cleanSheet.FWD}
               </p>
+              <p className="mt-1 text-[10px] leading-tight text-[var(--color-muted)]">{copy.cleanSheetMidNote}</p>
             </div>
           </div>
         </div>
