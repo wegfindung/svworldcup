@@ -339,10 +339,10 @@ export class PostgresSquadRepository implements SquadRepository {
 
       await client.query(
         `
-          INSERT INTO squad_slots (squad_id, slot_key, slot_group, slot_class, player_id)
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO squad_slots (squad_id, slot_key, slot_group, slot_class, player_id, position_codes)
+          VALUES ($1, $2, $3, $4, $5, $6)
         `,
-        [squad.squad_id, slot.key, slot.slotGroup, slot.slotClass, player.playerId],
+        [squad.squad_id, slot.key, slot.slotGroup, slot.slotClass, player.playerId, player.positions],
       )
       await client.query('UPDATE squads SET budget_used = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, nextBudgetUsed])
       await client.query('COMMIT')

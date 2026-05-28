@@ -59,6 +59,12 @@ Allow participants to register securely with verified email, enter the squad bui
   and `POST /auth/resend-verification` all reject with `403`, and all squad mutations are refused
   regardless of whether the squad was manually locked. Login, password set/reset, and read endpoints
   stay open. A pending registration that is not verified before the close cannot be completed.
+- The closed state is mirrored in the frontend so users never see a raw `403`. `GET /public/bootstrap`
+  ships `registrationCloseEpoch` (same value, follows the env override), and the client compares it
+  against `Date.now()` to render `TournamentClosedPage` instead of the register form on `/register`,
+  instead of the verify CTA on `/verify`, and as an inline banner at the top of `/builder`. The
+  prominent "Register" nav CTA hides in the same condition. The closed-state UI links to `/login`,
+  `/tables`, and `/results` so an already-entered participant can keep tracking their locked squad.
 - Hidden squads remain private until self-reveal or global kickoff reveal.
 - A participant may request a fresh email link if they are pending verification or need to re-enter on another device.
 

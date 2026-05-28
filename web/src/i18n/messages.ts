@@ -106,6 +106,7 @@ const englishMessages = {
       appearance: 'Appearance',
       minutes: '60+ minutes',
       cleanSheet: 'Clean sheet',
+      cleanSheetMidNote: '* MID applies only with DML/DMR/DMC/DM alt position',
       performance: 'Performance',
       performanceMaxPrefix: 'Up to',
       performanceMaxSuffix: 'Points',
@@ -126,6 +127,7 @@ const englishMessages = {
     minutes: 'Minutes',
     rating: 'Match rating',
     cleanSheet: 'Clean sheet eligible',
+    midDmAlt: 'MID has DML/DMR/DMC/DM alt?',
     budget: 'Budget multiplier',
     boost: 'Ownership boost',
     baseScore: 'Base player points',
@@ -146,6 +148,12 @@ const englishMessages = {
     leagueLabels: {
       rookie: 'Rookie',
       veteran: 'Veteran',
+    },
+    registrationClosedBanner: {
+      eyebrow: 'tournament locked',
+      body: 'Registration has closed and squads can no longer be edited. Your locked squad will keep scoring as matches are played.',
+      leaderboardsCta: 'View leaderboards',
+      resultsCta: 'Match results',
     },
     slotClasses: {
       GK: { label: 'Goalkeepers', pickLabel: 'Pick a goalkeeper' },
@@ -441,6 +449,7 @@ const englishMessages = {
     goal: 'Goal',
     assist: 'Assist',
     cleanSheet: 'Clean sheet',
+    cleanSheetMidNote: '* MID only with DML/DMR/DMC/DM alt position',
     avg: 'Avg',
     top: 'Top',
     rating: 'Rating',
@@ -600,6 +609,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       assist: 'Asistencia',
       appearance: 'Participación',
       cleanSheet: 'Portería a cero',
+      cleanSheetMidNote: '* MID solo con DML/DMR/DMC/DM como posición alt',
       performance: 'Rendimiento',
       performanceMaxPrefix: 'Hasta',
       performanceMaxSuffix: 'puntos',
@@ -620,6 +630,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
     minutes: 'Minutos',
     rating: 'Rating del partido',
     cleanSheet: 'Elegible para portería a cero',
+    midDmAlt: '¿MID con DML/DMR/DMC/DM como alt?',
     budget: 'Multiplicador de presupuesto',
     boost: 'Boost de ownership',
     baseScore: 'Puntos base',
@@ -631,6 +642,12 @@ const spanishMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'torneo bloqueado',
+      body: 'Las inscripciones están cerradas y los equipos ya no se pueden editar. Tu equipo bloqueado seguirá puntuando con cada partido.',
+      leaderboardsCta: 'Ver clasificaciones',
+      resultsCta: 'Resultados de partidos',
+    },
     slotClasses: {
       GK: { label: 'Porteros', pickLabel: 'Elige un portero' },
       DEF: { label: 'Defensas', pickLabel: 'Elige un defensa' },
@@ -903,6 +920,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
     goal: 'Gol',
     assist: 'Asistencia',
     cleanSheet: 'Portería a cero',
+    cleanSheetMidNote: '* MID solo con DML/DMR/DMC/DM como alt',
     rating: 'Rating',
   },
   login: {
@@ -1039,6 +1057,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       assist: 'Assist',
       appearance: 'Presenza',
       cleanSheet: 'Clean sheet',
+      cleanSheetMidNote: '* MID solo con DML/DMR/DMC/DM come posizione alt',
       performance: 'Rendimento',
       performanceMaxPrefix: 'Fino a',
       performanceMaxSuffix: 'punti',
@@ -1059,6 +1078,7 @@ const italianMessages: DeepPartial<AppMessages> = {
     minutes: 'Minuti',
     rating: 'Rating partita',
     cleanSheet: 'Idoneo al clean sheet',
+    midDmAlt: 'MID con DML/DMR/DMC/DM come alt?',
     budget: 'Moltiplicatore budget',
     boost: 'Ownership boost',
     baseScore: 'Punti base',
@@ -1070,6 +1090,12 @@ const italianMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'torneo bloccato',
+      body: 'Le iscrizioni sono chiuse e le rose non si possono più modificare. La tua rosa bloccata continuerà a fare punti a ogni partita.',
+      leaderboardsCta: 'Vedi classifiche',
+      resultsCta: 'Risultati partite',
+    },
     slotClasses: {
       GK: { label: 'Portieri', pickLabel: 'Scegli un portiere' },
       DEF: { label: 'Difensori', pickLabel: 'Scegli un difensore' },
@@ -1342,6 +1368,7 @@ const italianMessages: DeepPartial<AppMessages> = {
     goal: 'Gol',
     assist: 'Assist',
     cleanSheet: 'Clean sheet',
+    cleanSheetMidNote: '* MID solo con DML/DMR/DMC/DM come alt',
     rating: 'Rating',
   },
   login: {
@@ -1477,6 +1504,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       assist: 'Assist',
       appearance: 'Einsatz',
       cleanSheet: 'Zu null',
+      cleanSheetMidNote: '* MID nur mit DML/DMR/DMC/DM als Alternativposition',
       performance: 'Performance',
       performanceMaxPrefix: 'Bis zu',
       performanceMaxSuffix: 'Punkte',
@@ -1497,6 +1525,7 @@ const germanMessages: DeepPartial<AppMessages> = {
     minutes: 'Minuten',
     rating: 'Match-Rating',
     cleanSheet: 'Clean-Sheet-berechtigt',
+    midDmAlt: 'MID mit DML/DMR/DMC/DM als Alt?',
     budget: 'Budgetmultiplikator',
     boost: 'Ownership-Boost',
     baseScore: 'Basis-Spielerpunkte',
@@ -1508,6 +1537,12 @@ const germanMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'turnier gesperrt',
+      body: 'Die Registrierung ist geschlossen und Kader können nicht mehr bearbeitet werden. Dein festgelegter Kader sammelt weiter Punkte bei jedem Spiel.',
+      leaderboardsCta: 'Tabellen ansehen',
+      resultsCta: 'Spielergebnisse',
+    },
     slotClasses: {
       GK: { label: 'Torhüter', pickLabel: 'Torhüter wählen' },
       DEF: { label: 'Verteidiger', pickLabel: 'Verteidiger wählen' },
@@ -1780,6 +1815,7 @@ const germanMessages: DeepPartial<AppMessages> = {
     goal: 'Tor',
     assist: 'Assist',
     cleanSheet: 'Zu null',
+    cleanSheetMidNote: '* MID nur mit DML/DMR/DMC/DM als Alt',
     rating: 'Rating',
   },
   login: {
@@ -1915,6 +1951,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       assist: 'Passe',
       appearance: 'Apparition',
       cleanSheet: 'Clean sheet',
+      cleanSheetMidNote: '* MID uniquement avec DML/DMR/DMC/DM en position alternative',
       performance: 'Performance',
       performanceMaxPrefix: 'Jusqu’à',
       performanceMaxSuffix: 'points',
@@ -1934,6 +1971,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
     minutes: 'Minutes',
     rating: 'Note du match',
     cleanSheet: 'Éligible clean sheet',
+    midDmAlt: 'MID avec DML/DMR/DMC/DM en alt ?',
     budget: 'Multiplicateur budget',
     boost: 'Ownership boost',
     baseScore: 'Points joueur de base',
@@ -1945,6 +1983,12 @@ const frenchMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'tournoi verrouillé',
+      body: 'Les inscriptions sont fermées et les effectifs ne sont plus modifiables. Ton effectif verrouillé continuera à marquer à chaque match.',
+      leaderboardsCta: 'Voir les classements',
+      resultsCta: 'Résultats des matchs',
+    },
     slotClasses: {
       GK: { label: 'Gardiens', pickLabel: 'Choisir un gardien' },
       DEF: { label: 'Défenseurs', pickLabel: 'Choisir un défenseur' },
@@ -2216,6 +2260,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
     goal: 'But',
     assist: 'Passe',
     cleanSheet: 'Clean sheet',
+    cleanSheetMidNote: '* MID uniquement avec DML/DMR/DMC/DM en alt',
     rating: 'Note',
   },
   login: {
@@ -2351,6 +2396,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       assist: 'Assistência',
       appearance: 'Presença',
       cleanSheet: 'Clean sheet',
+      cleanSheetMidNote: '* MID só com DML/DMR/DMC/DM como posição alt',
       performance: 'Performance',
       performanceMaxPrefix: 'Até',
       performanceMaxSuffix: 'pontos',
@@ -2370,6 +2416,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     minutes: 'Minutos',
     rating: 'Rating do jogo',
     cleanSheet: 'Elegível para clean sheet',
+    midDmAlt: 'MID com DML/DMR/DMC/DM como alt?',
     budget: 'Multiplicador de orçamento',
     boost: 'Ownership boost',
     baseScore: 'Pontos base',
@@ -2381,6 +2428,12 @@ const portugueseMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'torneio bloqueado',
+      body: 'As inscrições estão fechadas e as equipas já não podem ser editadas. A tua equipa bloqueada continuará a pontuar em cada jogo.',
+      leaderboardsCta: 'Ver classificações',
+      resultsCta: 'Resultados de jogos',
+    },
     slotClasses: {
       GK: { label: 'Guarda-redes', pickLabel: 'Escolher guarda-redes' },
       DEF: { label: 'Defesas', pickLabel: 'Escolher defesa' },
@@ -2652,6 +2705,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     goal: 'Golo',
     assist: 'Assistência',
     cleanSheet: 'Clean sheet',
+    cleanSheetMidNote: '* MID só com DML/DMR/DMC/DM como alt',
     rating: 'Rating',
   },
   login: {
@@ -2787,6 +2841,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       assist: 'Ассист',
       appearance: 'Выход',
       cleanSheet: 'Сухой матч',
+      cleanSheetMidNote: '* MID только с DML/DMR/DMC/DM как альтернативная позиция',
       performance: 'Эффективность',
       performanceMaxPrefix: 'До',
       performanceMaxSuffix: 'очков',
@@ -2806,6 +2861,7 @@ const russianMessages: DeepPartial<AppMessages> = {
     minutes: 'Минуты',
     rating: 'Рейтинг матча',
     cleanSheet: 'Бонус за сухой матч',
+    midDmAlt: 'MID c DML/DMR/DMC/DM как alt?',
     budget: 'Множитель бюджета',
     boost: 'Ownership boost',
     baseScore: 'Базовые очки',
@@ -2817,6 +2873,12 @@ const russianMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'турнир заблокирован',
+      body: 'Регистрация закрыта, составы больше нельзя редактировать. Ваш зафиксированный состав продолжит набирать очки с каждым матчем.',
+      leaderboardsCta: 'Открыть таблицы',
+      resultsCta: 'Результаты матчей',
+    },
     slotClasses: {
       GK: { label: 'Вратари', pickLabel: 'Выбрать вратаря' },
       DEF: { label: 'Защитники', pickLabel: 'Выбрать защитника' },
@@ -3089,6 +3151,7 @@ const russianMessages: DeepPartial<AppMessages> = {
     goal: 'Гол',
     assist: 'Ассист',
     cleanSheet: 'Сухой матч',
+    cleanSheetMidNote: '* MID только с DML/DMR/DMC/DM как alt',
     rating: 'Рейтинг',
   },
   login: {
@@ -3226,6 +3289,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       appearance: '出场',
       minutes: '60+ 分钟',
       cleanSheet: '零封',
+      cleanSheetMidNote: '* MID 仅含 DML/DMR/DMC/DM 替代位置时',
       performance: '表现',
       performanceMaxPrefix: '最高',
       performanceMaxSuffix: '分',
@@ -3245,6 +3309,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
     minutes: '分钟',
     rating: '比赛评分',
     cleanSheet: '可获得零封',
+    midDmAlt: 'MID 含 DML/DMR/DMC/DM 替代位置？',
     budget: '预算倍数',
     boost: 'Ownership boost',
     baseScore: '球员基础分',
@@ -3256,6 +3321,12 @@ const chineseMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: '赛事已锁定',
+      body: '注册已关闭，阵容已无法编辑。你已锁定的阵容将随着每场比赛持续得分。',
+      leaderboardsCta: '查看排行榜',
+      resultsCta: '比赛结果',
+    },
     slotClasses: {
       GK: { label: '门将', pickLabel: '选择门将' },
       DEF: { label: '后卫', pickLabel: '选择后卫' },
@@ -3528,6 +3599,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
     goal: '进球',
     assist: '助攻',
     cleanSheet: '零封',
+    cleanSheetMidNote: '* MID 仅含 DML/DMR/DMC/DM 替代位置时',
     rating: '评分',
   },
   login: {
@@ -3645,6 +3717,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     minutes: '出場時間',
     rating: '試合評価',
     cleanSheet: 'クリーンシート対象',
+    midDmAlt: 'MIDがDML/DMR/DMC/DMを代替に持つ？',
     budget: '予算倍率',
     boost: '所有ボーナス',
     baseScore: '基礎ポイント',
@@ -3665,6 +3738,12 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     leagueLabels: {
       rookie: 'Rookie',
       veteran: 'Veteran',
+    },
+    registrationClosedBanner: {
+      eyebrow: '大会ロック中',
+      body: '登録は終了し、スカッドは編集できなくなりました。ロック済みのスカッドは試合ごとに引き続き得点します。',
+      leaderboardsCta: '順位表を見る',
+      resultsCta: '試合結果',
     },
     slotClasses: {
       GK: { label: 'ゴールキーパー', pickLabel: 'GKを選択' },
@@ -3865,6 +3944,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     goal: 'ゴール',
     assist: 'アシスト',
     cleanSheet: 'クリーンシート',
+    cleanSheetMidNote: '* MIDはDML/DMR/DMC/DMが代替の場合のみ',
     avg: '平均',
     top: 'トップ',
     rating: '評価',

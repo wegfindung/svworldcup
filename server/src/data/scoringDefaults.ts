@@ -5,7 +5,7 @@ export const scoringDefaults: ScoringConfig = {
   assist: 3,
   appearance: 1,
   minutes: 1,
-  cleanSheet: { GK: 4, DEF: 4, MID: 1, FWD: 0 },
+  cleanSheet: { GK: 4, DEF: 3, MID: 1, FWD: 0 },
   performanceCurve: [
     { rating: 6.0, points: 0.5 },
     { rating: 8.0, points: 1.0 },

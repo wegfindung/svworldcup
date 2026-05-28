@@ -99,6 +99,7 @@ export function ScoringCalculator({ budgetOptions, copy, scoring }: ScoringCalcu
   const [minutes, setMinutes] = useState(72)
   const [rating, setRating] = useState(7.4)
   const [cleanSheetEligible, setCleanSheetEligible] = useState(false)
+  const [midDmAlt, setMidDmAlt] = useState(false)
   const [scoreMultiplier, setScoreMultiplier] = useState(1)
   const [boostPercent, setBoostPercent] = useState(0)
 
@@ -107,7 +108,10 @@ export function ScoringCalculator({ budgetOptions, copy, scoring }: ScoringCalcu
     const assistPoints = assists * scoring.assist
     const appearancePoints = minutes > 0 ? scoring.appearance : 0
     const minutePoints = minutes >= 60 ? scoring.minutes : 0
-    const cleanSheetPoints = cleanSheetEligible ? scoring.cleanSheet[slotClass] : 0
+    // MID earns the configured clean-sheet bonus only when a DML/DMR/DMC/DM alt is set;
+    // GK/DEF/FWD ignore the toggle.
+    const slotEarnsCleanSheet = slotClass !== 'MID' || midDmAlt
+    const cleanSheetPoints = cleanSheetEligible && slotEarnsCleanSheet ? scoring.cleanSheet[slotClass] : 0
     const performancePoints = derivePerformancePoints(rating, scoring)
     const baseScore = goalPoints + assistPoints + appearancePoints + minutePoints + cleanSheetPoints + performancePoints
     const bonusScore = baseScore * (boostPercent / 100)
@@ -126,7 +130,7 @@ export function ScoringCalculator({ budgetOptions, copy, scoring }: ScoringCalcu
         [copy.components.performance, performancePoints],
       ] as Array<[string, number]>,
     }
-  }, [assists, boostPercent, cleanSheetEligible, copy.components, goals, minutes, rating, scoreMultiplier, scoring, slotClass])
+  }, [assists, boostPercent, cleanSheetEligible, copy.components, goals, midDmAlt, minutes, rating, scoreMultiplier, scoring, slotClass])
 
   function resetExample() {
     setSlotClass('MID')
@@ -135,6 +139,7 @@ export function ScoringCalculator({ budgetOptions, copy, scoring }: ScoringCalcu
     setMinutes(72)
     setRating(7.4)
     setCleanSheetEligible(false)
+    setMidDmAlt(false)
     setScoreMultiplier(1)
     setBoostPercent(0)
   }
@@ -210,6 +215,18 @@ export function ScoringCalculator({ budgetOptions, copy, scoring }: ScoringCalcu
                 className="h-5 w-5 accent-[var(--color-accent)]"
               />
             </label>
+
+            {slotClass === 'MID' && (
+              <label className="flex min-h-[4.95rem] items-center justify-between gap-4 rounded-[0.9rem] border border-white/8 bg-black/14 p-3">
+                <span className="text-sm font-semibold text-white">{copy.midDmAlt}</span>
+                <input
+                  type="checkbox"
+                  checked={midDmAlt}
+                  onChange={(event) => setMidDmAlt(event.target.checked)}
+                  className="h-5 w-5 accent-[var(--color-accent)]"
+                />
+              </label>
+            )}
           </div>
         </div>
 

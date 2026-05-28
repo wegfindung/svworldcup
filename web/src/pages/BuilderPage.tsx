@@ -8,6 +8,7 @@ import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
 import { soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
+import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from '../lib/competitionWindow'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import {
   ApiError,
@@ -185,6 +186,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const copy = getMessages(locale).builder
   const slotClassCopy = copy.slotClasses
   const { data: bootstrap } = useBootstrap()
+  const registrationClosed = hasRegistrationClosed(resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch))
 
   const initialReadyState = readParticipantReady()
   const [dashboardSeed, setDashboardSeed] = useState<ParticipantReadyState | null>(initialReadyState)
@@ -242,17 +244,13 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     const slots = squad?.slots ?? []
     return slots.find((slot) => slot.key === selectedSlotKey) ?? slots.find((slot) => !slot.player) ?? slots[0] ?? null
   }, [selectedSlotKey, squad])
-  const squadSlotBuckets = useMemo(
-    () =>
-      slotClassOrder
-        .map((slotClass) => ({
-          slotClass,
-          ...slotClassCopy[slotClass],
-          slots: (squad?.slots ?? []).filter((slot) => slot.slotClass === slotClass),
-        }))
-        .filter((bucket) => bucket.slots.length > 0),
-    [squad],
-  )
+  const squadSlotBuckets = slotClassOrder
+    .map((slotClass) => ({
+      slotClass,
+      ...slotClassCopy[slotClass],
+      slots: (squad?.slots ?? []).filter((slot) => slot.slotClass === slotClass),
+    }))
+    .filter((bucket) => bucket.slots.length > 0)
   const visibleTeamPlayers = useMemo(() => {
     return teamPlayers.filter((player) => {
       if (selectedSlot && !player.positionClasses.includes(selectedSlot.slotClass)) {
@@ -382,7 +380,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     }
   }
 
-  const loadTeamPlayersForCode = useCallback(async (teamCode: string) => {
+  const loadTeamPlayersForCode = useCallback(async (teamCode: string, loadErrorMessage: string) => {
     setTeamPlayersLoading(true)
     setBuilderError(null)
 
@@ -394,7 +392,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
       setLoadedTeamCode(teamCode)
       setPlayerSearch('')
     } catch (error) {
-      setBuilderError(error instanceof Error ? error.message : copy.errors.loadTeamPool)
+      setBuilderError(error instanceof Error ? error.message : loadErrorMessage)
       setTeamPlayers([])
       setLoadedTeamCode(null)
     } finally {
@@ -407,7 +405,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
       return
     }
 
-    await loadTeamPlayersForCode(selectedTeamCode)
+    await loadTeamPlayersForCode(selectedTeamCode, copy.errors.loadTeamPool)
   }
 
   useEffect(() => {
@@ -416,11 +414,11 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     }
 
     const timeout = window.setTimeout(() => {
-      void loadTeamPlayersForCode(selectedTeamCode)
+      void loadTeamPlayersForCode(selectedTeamCode, copy.errors.loadTeamPool)
     }, 0)
 
     return () => window.clearTimeout(timeout)
-  }, [accessState, loadedTeamCode, loadTeamPlayersForCode, selectedTeamCode, teamPlayersLoading])
+  }, [accessState, copy.errors.loadTeamPool, loadedTeamCode, loadTeamPlayersForCode, selectedTeamCode, teamPlayersLoading])
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -703,6 +701,26 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
 
   return (
     <div className="space-y-4 pb-10">
+      {registrationClosed ? (
+        <section className="glass-panel rounded-[1.15rem] border border-[var(--color-sand)]/25 bg-[var(--color-sand)]/8 px-5 py-4 sm:px-6">
+          <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)]">{copy.registrationClosedBanner.eyebrow}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-paper)]">{copy.registrationClosedBanner.body}</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Link
+              to="/tables"
+              className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+            >
+              {copy.registrationClosedBanner.leaderboardsCta}
+            </Link>
+            <Link
+              to="/results"
+              className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+            >
+              {copy.registrationClosedBanner.resultsCta}
+            </Link>
+          </div>
+        </section>
+      ) : null}
       {accessState === 'locked' ? (
         <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
           <div className="flex flex-wrap items-center gap-3">

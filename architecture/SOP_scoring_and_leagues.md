@@ -18,15 +18,27 @@ Flat values, all positions:
 Clean sheet — per lineup slot class (the slot the player is placed in, not their listed position):
 
 - GK: `4`
-- DEF: `4`
-- MID: `1`
+- DEF: `3`
+- MID: `1` — paid only when the slot's **snapshot** position codes include a defensive midfielder
+  variant (`DML`, `DMR`, `DMC`, or plain `DM`). A MID slot whose snapshot does not contain any of
+  these earns `0` clean-sheet points regardless of the entry flag.
 - FWD: `0`
 
 Clean-sheet points are awarded only when the entry's `clean_sheet_eligible` flag is set. That flag is
 auto-derived during match import — `true` when the player lasted 60+ minutes **and** their team conceded
 none — and is admin-overridable in review (see `SOP_match_data_import.md` "Clean Sheet"). The scoring
-engine itself does not re-check minutes or goals conceded; it trusts the (possibly admin-corrected) flag
-and applies the slot-class weight above (and the reserve half-weight where applicable).
+engine itself does not re-check minutes or goals conceded; it trusts the (possibly admin-corrected) flag,
+then applies the slot-class weight above, the MID DM-eligibility predicate, and the reserve half-weight
+where applicable.
+
+### Position snapshot
+
+Each `squad_slots` row stores `position_codes TEXT[]`, a copy of the player's Soccerverse `positions`
+list at the moment the slot was written. The snapshot is refreshed on every slot assign/replace and is
+permanently frozen once `assertSquadEditable` blocks further edits (at registration close on
+`2026-07-04T00:00:00Z` or at competition start). Scoring reads only the snapshot column, never the live
+`world_cup_players.position_codes`, so a Soccerverse season-transition rewrite of positions cannot
+change which locked MID slots earn the clean-sheet bonus.
 
 Performance points — derived from the admin-entered match rating via a continuous piecewise-linear curve:
 

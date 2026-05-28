@@ -437,11 +437,14 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                   <dt className="text-[var(--color-muted)]">{homeCopy.rules.minutes}</dt>
                   <dd className="mono text-white">{scoring.minutes}</dd>
                 </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[var(--color-muted)]">{homeCopy.rules.cleanSheet}</dt>
-                  <dd className="mono text-white">
-                    GK {scoring.cleanSheet.GK} · DEF {scoring.cleanSheet.DEF} · MID {scoring.cleanSheet.MID} · FWD {scoring.cleanSheet.FWD}
-                  </dd>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-[var(--color-muted)]">{homeCopy.rules.cleanSheet}</dt>
+                    <dd className="mono text-white">
+                      GK {scoring.cleanSheet.GK} · DEF {scoring.cleanSheet.DEF} · MID {scoring.cleanSheet.MID}* · FWD {scoring.cleanSheet.FWD}
+                    </dd>
+                  </div>
+                  <p className="text-[10px] leading-tight text-[var(--color-muted)]">{homeCopy.rules.cleanSheetMidNote}</p>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[var(--color-muted)]">{homeCopy.rules.performance}</dt>

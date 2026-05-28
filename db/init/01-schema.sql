@@ -161,9 +161,12 @@ CREATE TABLE IF NOT EXISTS squad_slots (
     slot_group TEXT NOT NULL CHECK (slot_group IN ('starter', 'sub')),
     slot_class TEXT NOT NULL CHECK (slot_class IN ('GK', 'DEF', 'MID', 'FWD')),
     player_id BIGINT NOT NULL REFERENCES world_cup_players(player_id),
+    position_codes TEXT[] NOT NULL DEFAULT '{}',
     UNIQUE (squad_id, slot_key),
     UNIQUE (squad_id, player_id)
 );
+
+ALTER TABLE squad_slots ADD COLUMN IF NOT EXISTS position_codes TEXT[] NOT NULL DEFAULT '{}';
 
 CREATE TABLE IF NOT EXISTS participant_fixture_lineups (
     lineup_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

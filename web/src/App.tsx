@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
+import { useBootstrap } from './hooks/useBootstrap'
 import { getMessages } from './i18n/messages'
 import { recordReferralClick } from './lib/api'
+import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from './lib/competitionWindow'
 import {
   readReferralFromSearch,
   resolveReferrerSoccerverseUsername,
@@ -22,6 +24,7 @@ import { RulesPage } from './pages/RulesPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { ShareComposerPage } from './pages/ShareComposerPage'
 import { TablesPage } from './pages/TablesPage'
+import { TournamentClosedPage } from './pages/TournamentClosedPage'
 import { VerifyPage } from './pages/VerifyPage'
 
 function App() {
@@ -46,6 +49,9 @@ function App() {
 
   const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
   const copy = getMessages(locale)
+  const { data: bootstrap } = useBootstrap()
+  const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
+  const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
 
   useEffect(() => {
     const referrer = readReferralFromSearch(location.search)
@@ -102,19 +108,21 @@ function App() {
                   ))}
                 </nav>
 
-                <NavLink
-                  to={withReferral('/register', referrerSoccerverseUsername)}
-                  className={({ isActive }) =>
-                    [
-                      'rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] active:scale-[0.98]',
-                      isActive
-                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
-                        : 'border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-ink)]',
-                    ].join(' ')
-                  }
-                >
-                  {copy.nav.register}
-                </NavLink>
+                {registrationClosed ? null : (
+                  <NavLink
+                    to={withReferral('/register', referrerSoccerverseUsername)}
+                    className={({ isActive }) =>
+                      [
+                        'rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] active:scale-[0.98]',
+                        isActive
+                          ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                          : 'border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-ink)]',
+                      ].join(' ')
+                    }
+                  >
+                    {copy.nav.register}
+                  </NavLink>
+                )}
 
                 <nav className="flex items-center rounded-full border border-white/8 bg-black/14 p-1">
                   {copy.nav.account.map((item) => (
@@ -160,20 +168,22 @@ function App() {
 
           {mobileNavOpen ? (
             <nav className="grid gap-3 border-t border-white/8 pt-3 lg:hidden">
-              <NavLink
-                to={withReferral('/register', referrerSoccerverseUsername)}
-                onClick={() => setMobileNavOpen(false)}
-                className={({ isActive }) =>
-                  [
-                    'rounded-full px-3 py-2.5 text-center text-xs font-bold uppercase tracking-[0.14em]',
-                    isActive
-                      ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
-                      : 'border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
-                  ].join(' ')
-                }
-              >
-                {copy.nav.register}
-              </NavLink>
+              {registrationClosed ? null : (
+                <NavLink
+                  to={withReferral('/register', referrerSoccerverseUsername)}
+                  onClick={() => setMobileNavOpen(false)}
+                  className={({ isActive }) =>
+                    [
+                      'rounded-full px-3 py-2.5 text-center text-xs font-bold uppercase tracking-[0.14em]',
+                      isActive
+                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                        : 'border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+                    ].join(' ')
+                  }
+                >
+                  {copy.nav.register}
+                </NavLink>
+              )}
 
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {copy.nav.primary.map((item) => (
@@ -224,12 +234,16 @@ function App() {
             <Route
               path="/register"
               element={
-                <BuilderPage
-                  key="register"
-                  locale={locale}
-                  referrerSoccerverseUsername={referrerSoccerverseUsername}
-                  mode="register"
-                />
+                registrationClosed ? (
+                  <TournamentClosedPage locale={locale} />
+                ) : (
+                  <BuilderPage
+                    key="register"
+                    locale={locale}
+                    referrerSoccerverseUsername={referrerSoccerverseUsername}
+                    mode="register"
+                  />
+                )
               }
             />
             <Route
@@ -249,7 +263,7 @@ function App() {
             <Route path="/prizes" element={<PrizesPage locale={locale} />} />
             <Route path="/rules" element={<RulesPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage locale={locale} />} />
-            <Route path="/verify" element={<VerifyPage locale={locale} />} />
+            <Route path="/verify" element={<VerifyPage locale={locale} registrationClosed={registrationClosed} />} />
             <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
             <Route path="/admin/*" element={<AdminPage locale={locale} />} />
             <Route path="/profiles/:slug" element={<ProfilePage />} />
