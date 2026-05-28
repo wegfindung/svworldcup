@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { registrationCloseEpoch } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, budgetOptions } from '../data/formation.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import { defaultLocale, isKnownTeamCode, supportedLocales, teams } from '../data/worldCupSeed.js'
@@ -114,6 +115,10 @@ export function createPublicRouter({ configRepository, registrationRepository, f
       budgetOptions,
       teams,
       fixtures: currentFixtures,
+      // Frontend mirrors the backend cutoff so the closed-state UI shows at the same instant
+      // the API starts refusing register/verify/squad-edit calls — and follows the same
+      // REGISTRATION_CLOSE_AT env-override during testing.
+      registrationCloseEpoch: registrationCloseEpoch(),
       leagues: {
         rookie: 'Ownership boost available once you link your Soccerverse account (1% per 10 net influence on drafted players, capped at 10%).',
         veteran: '1% for every 10 net influence accumulated on drafted players since you registered or linked, capped at 10%.',

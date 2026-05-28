@@ -4,6 +4,7 @@ import { getMessages } from '../i18n/messages'
 import { verifyRegistration } from '../lib/api'
 import { writeParticipantReady } from '../lib/participantReady'
 import type { LocaleCode } from '../lib/types'
+import { TournamentClosedPage } from './TournamentClosedPage'
 
 type VerifyState =
   | { status: 'idle' }
@@ -13,15 +14,22 @@ type VerifyState =
 
 interface VerifyPageProps {
   locale: LocaleCode
+  registrationClosed?: boolean
 }
 
-export function VerifyPage({ locale }: VerifyPageProps) {
+export function VerifyPage({ locale, registrationClosed = false }: VerifyPageProps) {
   const copy = getMessages(locale).verify
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
   const [state, setState] = useState<VerifyState>(() =>
     token ? { status: 'idle' } : { status: 'error', message: copy.missingToken },
   )
+
+  // After the Soccerverse season transition, /auth/verify returns 403. Surface the same
+  // closed-state UI the /register route uses so we don't blast users with a raw error.
+  if (registrationClosed) {
+    return <TournamentClosedPage locale={locale} />
+  }
 
   async function handleVerify() {
     if (!token) {

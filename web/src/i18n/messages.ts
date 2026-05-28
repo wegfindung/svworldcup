@@ -149,6 +149,12 @@ const englishMessages = {
       rookie: 'Rookie',
       veteran: 'Veteran',
     },
+    registrationClosedBanner: {
+      eyebrow: 'tournament locked',
+      body: 'Registration has closed and squads can no longer be edited. Your locked squad will keep scoring as matches are played.',
+      leaderboardsCta: 'View leaderboards',
+      resultsCta: 'Match results',
+    },
     slotClasses: {
       GK: { label: 'Goalkeepers', pickLabel: 'Pick a goalkeeper' },
       DEF: { label: 'Defenders', pickLabel: 'Pick a defender' },
@@ -636,6 +642,12 @@ const spanishMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'torneo bloqueado',
+      body: 'Las inscripciones están cerradas y los equipos ya no se pueden editar. Tu equipo bloqueado seguirá puntuando con cada partido.',
+      leaderboardsCta: 'Ver clasificaciones',
+      resultsCta: 'Resultados de partidos',
+    },
     slotClasses: {
       GK: { label: 'Porteros', pickLabel: 'Elige un portero' },
       DEF: { label: 'Defensas', pickLabel: 'Elige un defensa' },
@@ -1078,6 +1090,12 @@ const italianMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'torneo bloccato',
+      body: 'Le iscrizioni sono chiuse e le rose non si possono più modificare. La tua rosa bloccata continuerà a fare punti a ogni partita.',
+      leaderboardsCta: 'Vedi classifiche',
+      resultsCta: 'Risultati partite',
+    },
     slotClasses: {
       GK: { label: 'Portieri', pickLabel: 'Scegli un portiere' },
       DEF: { label: 'Difensori', pickLabel: 'Scegli un difensore' },
@@ -1519,6 +1537,12 @@ const germanMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'turnier gesperrt',
+      body: 'Die Registrierung ist geschlossen und Kader können nicht mehr bearbeitet werden. Dein festgelegter Kader sammelt weiter Punkte bei jedem Spiel.',
+      leaderboardsCta: 'Tabellen ansehen',
+      resultsCta: 'Spielergebnisse',
+    },
     slotClasses: {
       GK: { label: 'Torhüter', pickLabel: 'Torhüter wählen' },
       DEF: { label: 'Verteidiger', pickLabel: 'Verteidiger wählen' },
@@ -1959,6 +1983,12 @@ const frenchMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'tournoi verrouillé',
+      body: 'Les inscriptions sont fermées et les effectifs ne sont plus modifiables. Ton effectif verrouillé continuera à marquer à chaque match.',
+      leaderboardsCta: 'Voir les classements',
+      resultsCta: 'Résultats des matchs',
+    },
     slotClasses: {
       GK: { label: 'Gardiens', pickLabel: 'Choisir un gardien' },
       DEF: { label: 'Défenseurs', pickLabel: 'Choisir un défenseur' },
@@ -2398,6 +2428,12 @@ const portugueseMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'torneio bloqueado',
+      body: 'As inscrições estão fechadas e as equipas já não podem ser editadas. A tua equipa bloqueada continuará a pontuar em cada jogo.',
+      leaderboardsCta: 'Ver classificações',
+      resultsCta: 'Resultados de jogos',
+    },
     slotClasses: {
       GK: { label: 'Guarda-redes', pickLabel: 'Escolher guarda-redes' },
       DEF: { label: 'Defesas', pickLabel: 'Escolher defesa' },
@@ -2837,6 +2873,12 @@ const russianMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: 'турнир заблокирован',
+      body: 'Регистрация закрыта, составы больше нельзя редактировать. Ваш зафиксированный состав продолжит набирать очки с каждым матчем.',
+      leaderboardsCta: 'Открыть таблицы',
+      resultsCta: 'Результаты матчей',
+    },
     slotClasses: {
       GK: { label: 'Вратари', pickLabel: 'Выбрать вратаря' },
       DEF: { label: 'Защитники', pickLabel: 'Выбрать защитника' },
@@ -3279,6 +3321,12 @@ const chineseMessages: DeepPartial<AppMessages> = {
   },
   builder: {
     leagueLabels: { rookie: 'Rookie', veteran: 'Veteran' },
+    registrationClosedBanner: {
+      eyebrow: '赛事已锁定',
+      body: '注册已关闭，阵容已无法编辑。你已锁定的阵容将随着每场比赛持续得分。',
+      leaderboardsCta: '查看排行榜',
+      resultsCta: '比赛结果',
+    },
     slotClasses: {
       GK: { label: '门将', pickLabel: '选择门将' },
       DEF: { label: '后卫', pickLabel: '选择后卫' },
@@ -3690,6 +3738,12 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     leagueLabels: {
       rookie: 'Rookie',
       veteran: 'Veteran',
+    },
+    registrationClosedBanner: {
+      eyebrow: '大会ロック中',
+      body: '登録は終了し、スカッドは編集できなくなりました。ロック済みのスカッドは試合ごとに引き続き得点します。',
+      leaderboardsCta: '順位表を見る',
+      resultsCta: '試合結果',
     },
     slotClasses: {
       GK: { label: 'ゴールキーパー', pickLabel: 'GKを選択' },

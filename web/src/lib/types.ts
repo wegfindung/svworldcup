@@ -72,6 +72,7 @@ export interface BootstrapPayload {
   budgetOptions: BudgetOption[]
   teams: TeamSeed[]
   fixtures: FixtureSeed[]
+  registrationCloseEpoch: number
   leagues: {
     rookie: string
     veteran: string
