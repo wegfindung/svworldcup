@@ -146,8 +146,10 @@ Common to both:
 - The reviewing admin can **override** `clean_sheet_eligible` per player after promotion
   (`UpdateMatchRowInput.clean_sheet_eligible`) to correct own-goal / feed mistakes; that manual
   value wins over the derivation.
-- Position is not gated here: forwards earn zero clean-sheet points regardless, via the
-  position weight in the scoring engine (`SOP_scoring_and_leagues.md`).
+- Position is not gated here: forwards earn zero clean-sheet points regardless, and MID slots
+  earn the configured `+1` only when their snapshot positions include `DML`/`DMR`/`DMC`/`DM`
+  — both decisions live in the scoring engine via the slot-class weight and the MID DM-eligibility
+  predicate (`SOP_scoring_and_leagues.md`).
 
 ## Confirmation Rules
 

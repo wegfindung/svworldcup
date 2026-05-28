@@ -120,3 +120,27 @@ describe('MemorySquadRepository registration close edit window', () => {
     await expect(squads.lockSquad(participantId)).rejects.toThrow('registration has closed')
   })
 })
+
+describe('MemorySquadRepository position snapshot', () => {
+  it('captures the pool positions on the slot at assign time and ignores later pool rewrites', async () => {
+    // Mirror of the post-2026-07-04 SV concern: after we lock our MID-DM eligibility, SV could
+    // rewrite world_cup_players.position_codes and try to flip which slots earn the MID bonus.
+    // Slot must hold the snapshot. The Postgres repo persists this in squad_slots.position_codes;
+    // the Memory repo keeps the captured TeamPoolPlayer on the slot, which is functionally the same.
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers('FRA', [
+      { ...player(106, 'CM'), positions: ['CM', 'DM'] },
+    ])
+    const squads = new MemorySquadRepository(pools)
+    await squads.assignPlayer('participant-1', { slotKey: 'starter-mid-1', playerId: 106 })
+
+    const beforeRewrite = await squads.getOrCreate('participant-1')
+    expect(beforeRewrite.slots.find((slot) => slot.key === 'starter-mid-1')?.player?.positions).toEqual(['CM', 'DM'])
+
+    // Simulate the SV season transition: replace the same player with a different position list.
+    await pools.replaceTeamPlayers('FRA', [{ ...player(106, 'CM'), positions: ['CM'] }])
+
+    const afterRewrite = await squads.getOrCreate('participant-1')
+    expect(afterRewrite.slots.find((slot) => slot.key === 'starter-mid-1')?.player?.positions).toEqual(['CM', 'DM'])
+  })
+})

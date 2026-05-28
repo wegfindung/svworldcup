@@ -651,4 +651,61 @@ describe('MemoryScoringRepository ownership boost', () => {
     const veteranBoard = await scoring.getLeagueLeaderboard('veteran')
     expect(veteranBoard).toHaveLength(0)
   })
+
+  it('pays DEF 3 and the conditional MID 1 per the 2026-05-28 clean-sheet rules', async () => {
+    // Slot mid-1 (playerId 106) is given DM as a Soccerverse alt position; mid-2 (107) is a plain
+    // CM with no DM alt. After both register a clean sheet, mid-1 should bank the +1 and mid-2 0.
+    // DEF starter (102) banks the new flat 3. GK (101) still banks 4. Reserve MID-DM (114) banks 0.5.
+    const pools = new MemoryTeamPoolRepository()
+    const players: SoccerversePlayerRecord[] = slotPlayers.map((slotPlayer) => {
+      if (slotPlayer.playerId === 106 || slotPlayer.playerId === 114) {
+        return { ...player(slotPlayer.playerId, slotPlayer.position), positions: [slotPlayer.position, 'DM'] }
+      }
+      return player(slotPlayer.playerId, slotPlayer.position)
+    })
+    await pools.replaceTeamPlayers('FRA', players)
+
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      { email: 'cs-rule@example.com', displayName: 'Clean Sheet Rule', primaryTeamCode: 'FRA', marketingOptIn: false },
+      'cs-rule-token',
+    )
+    await registrations.verifyByPlainToken('cs-rule-token')
+
+    const squads = new MemorySquadRepository(pools)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+
+    const scoring = new MemoryScoringRepository(
+      new MemoryConfigRepository(),
+      registrations,
+      squads,
+      new MemoryParticipantInfluenceSnapshotRepository(),
+    )
+
+    const cleanSheetEntry = {
+      inOfficialSquad: true,
+      minutes: 90,
+      goals: 0,
+      assists: 0,
+      cleanSheetEligible: true,
+    }
+    await scoring.upsertMatchEntry({ ...cleanSheetEntry, fixtureId: 'fixture-1', playerId: 101 }) // GK starter → +4
+    await scoring.upsertMatchEntry({ ...cleanSheetEntry, fixtureId: 'fixture-1', playerId: 102 }) // DEF starter → +3
+    await scoring.upsertMatchEntry({ ...cleanSheetEntry, fixtureId: 'fixture-1', playerId: 106 }) // MID-DM starter → +1
+    await scoring.upsertMatchEntry({ ...cleanSheetEntry, fixtureId: 'fixture-1', playerId: 107 }) // MID-no-DM → 0
+    await scoring.upsertMatchEntry({ ...cleanSheetEntry, fixtureId: 'fixture-1', playerId: 114 }) // sub MID-DM → 0.5
+
+    const leaderboard = await scoring.getLeagueLeaderboard('rookie')
+    const row = leaderboard[0] as any
+    // appearance(1) + 60+(1) = 2 from each entry → 5 entries × 2 = 10 base appearance/minute points.
+    // Plus clean sheets: 4 + 3 + 1 + 0 = 8 for starters, plus 0.5 for the reserve MID-DM.
+    // Reserve also banks half of its appearance+minutes (2 × 0.5 = 1). Starters bank 2 × 4 = 8.
+    // Total = 8 (starter appear+min) + 8 (CS) + 1 (sub appear+min × 0.5) + 0.5 (sub CS) = 17.5.
+    expect(row.baseScore).toBeCloseTo(17.5, 5)
+    expect(row.breakdown.cleanSheets.count).toBe(4) // GK + DEF + MID-DM starter + MID-DM sub. MID-no-DM excluded.
+    expect(row.breakdown.cleanSheets.points).toBeCloseTo(8.5, 5)
+  })
 })

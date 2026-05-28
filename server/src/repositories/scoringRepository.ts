@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import { fixtureKickoffEpoch } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, getScoreMultiplierForBudget } from '../data/formation.js'
+import { isMidCleanSheetEligible } from '../data/positionClasses.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import type {
   FixtureSeed,
@@ -56,6 +57,9 @@ interface ScoreSlot {
   displayName: string
   teamCode: string
   imageUrl?: string
+  // Snapshot of the player's Soccerverse position codes at slot-write time. Drives the
+  // conditional MID clean-sheet bonus (only paid when this list contains a DM variant).
+  positionCodes: string[]
 }
 
 type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
@@ -232,10 +236,15 @@ function calculateParticipantRows(
 
       let cleanSheetPoints = 0
       if (playerState.cleanSheetEligible) {
-        cleanSheetPoints = scoring.cleanSheet[slot.slotClass] * weight
-        baseScore += cleanSheetPoints
-        breakdown.cleanSheets.count += 1
-        breakdown.cleanSheets.points += cleanSheetPoints
+        // MID slots only earn the configured clean-sheet bonus when the snapshot positions
+        // include a defensive midfielder code (DML/DMR/DMC/DM). Other slot classes pay flat.
+        const slotEarnsCleanSheet = slot.slotClass !== 'MID' || isMidCleanSheetEligible(slot.positionCodes)
+        if (slotEarnsCleanSheet) {
+          cleanSheetPoints = scoring.cleanSheet[slot.slotClass] * weight
+          baseScore += cleanSheetPoints
+          breakdown.cleanSheets.count += 1
+          breakdown.cleanSheets.points += cleanSheetPoints
+        }
       }
 
       const totalPoints = components.total * weight + cleanSheetPoints
@@ -471,6 +480,7 @@ export class MemoryScoringRepository implements ScoringRepository {
             displayName: slot.player.displayName,
             teamCode: slot.player.teamCode,
             imageUrl: slot.player.imageUrl,
+            positionCodes: slot.player.positions ?? [],
           })
         }
       }
@@ -659,10 +669,12 @@ export class PostgresScoringRepository implements ScoringRepository {
       display_name: string
       team_code: string | null
       image_url: string | null
+      position_codes: string[] | null
     }>(
       `
         SELECT s.participant_id, ss.slot_key, ss.slot_group, ss.slot_class, ss.player_id,
-               p.display_name, COALESCE(ts.team_code, p.nationality_code) AS team_code, p.image_url
+               p.display_name, COALESCE(ts.team_code, p.nationality_code) AS team_code, p.image_url,
+               ss.position_codes
         FROM squads s
         JOIN squad_slots ss ON ss.squad_id = s.squad_id
         JOIN world_cup_players p ON p.player_id = ss.player_id
@@ -679,6 +691,7 @@ export class PostgresScoringRepository implements ScoringRepository {
       displayName: row.display_name,
       teamCode: row.team_code ?? '',
       imageUrl: row.image_url ?? undefined,
+      positionCodes: row.position_codes ?? [],
     }))
   }
 }
