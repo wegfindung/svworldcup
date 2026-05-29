@@ -36,6 +36,8 @@ const footballNations = [
   { code: 'URU', label: 'Uruguay' },
 ] as const
 
+const emptyFixtures: FixtureSeed[] = []
+
 const squadShape = [
   { label: 'GK', value: '1' },
   { label: 'DEF', value: '4' },
@@ -377,7 +379,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const minBudget = budgetOptions[0]?.budgetLimit ?? budgetLimit
   const maxBudget = budgetOptions[budgetOptions.length - 1]?.budgetLimit ?? budgetLimit
   const teams = bootstrap?.teams ?? eventTeams
-  const fixtures = bootstrap?.fixtures ?? []
+  const fixtures = bootstrap?.fixtures ?? emptyFixtures
   const fixtureCount = bootstrap?.fixtures.length ?? 104
   const competitionStartMs = useMemo(() => getCompetitionStartMs(fixtures), [fixtures])
 
