@@ -76,7 +76,7 @@ function App() {
               onClick={() => setMobileNavOpen(false)}
               className="group flex shrink-0 items-center transition active:scale-[0.99]"
             >
-              <span className="block h-[3.35rem] w-fit sm:h-[5.25rem]">
+              <span className="block h-[4.25rem] w-fit sm:h-[6.75rem]">
                 <img
                   src="/brand/logo-nav.webp"
                   alt={copy.nav.logoAlt}
