@@ -18,8 +18,8 @@ Admin email marketing must support autoresponders, scheduled newsletters, drafts
 ## Implementation Guardrails
 
 - Newsletter audiences must only include participants with active marketing consent.
-- Autoresponders must not queue for participants without active marketing consent.
-- Every marketing email must include an unsubscribe URL; unsubscribed recipients are skipped before dispatch.
+- Campaigns declare their type via `requiresMarketingOptIn`. Marketing campaigns (`true`) — newsletters and marketing autoresponders — must not queue for participants without active marketing consent. Transactional autoresponders (`false`), such as the registration-verified onboarding welcome, are service communications and may queue without prior marketing consent.
+- Every campaign email — marketing and transactional alike — must include an unsubscribe URL. Any recipient who has unsubscribed is excluded from audience selection and skipped before dispatch (re-checked at send time, so an unsubscribe after queueing is still honoured). Only the never-opted-in consent gate is conditional on the campaign type.
 - Dispatch runs sequentially and records accepted deliveries in `email_delivery_log`.
 - Runtime throttling must keep accepted deliveries below 95 per minute and 1,000 per 10 minutes. The lower per-minute guard gives the scheduler room to respect the official 10-minute limit without opening parallel SMTP connections.
 - Admins compose campaign bodies with the TipTap visual editor or the HTML mode. Both modes update the same stored `body_html` field.
