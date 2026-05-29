@@ -20,6 +20,7 @@ import { PlayerLoginPage } from './pages/PlayerLoginPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { PrizesPage } from './pages/PrizesPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { AboutPage } from './pages/AboutPage'
 import { RulesPage } from './pages/RulesPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { ShareComposerPage } from './pages/ShareComposerPage'
@@ -262,6 +263,7 @@ function App() {
             <Route path="/results" element={<ResultsPage locale={locale} />} />
             <Route path="/prizes" element={<PrizesPage locale={locale} />} />
             <Route path="/rules" element={<RulesPage locale={locale} />} />
+            <Route path="/about" element={<AboutPage locale={locale} />} />
             <Route path="/tables" element={<TablesPage locale={locale} />} />
             <Route path="/verify" element={<VerifyPage locale={locale} registrationClosed={registrationClosed} />} />
             <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />

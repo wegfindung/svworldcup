@@ -17,6 +17,7 @@ const englishMessages = {
       { to: '/tables', label: 'Tables' },
       { to: '/prizes', label: 'Prizes' },
       { to: '/rules', label: 'Rules' },
+      { to: '/about', label: 'About' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -566,6 +567,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tablas' },
       { to: '/prizes', label: 'Premios' },
       { to: '/rules', label: 'Reglas' },
+      { to: '/about', label: 'Acerca de' },
     ],
     account: [
       { to: '/login', label: 'Acceso' },
@@ -1014,6 +1016,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Classifiche' },
       { to: '/prizes', label: 'Premi' },
       { to: '/rules', label: 'Regole' },
+      { to: '/about', label: 'Informazioni' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -1462,6 +1465,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tabellen' },
       { to: '/prizes', label: 'Preise' },
       { to: '/rules', label: 'Regeln' },
+      { to: '/about', label: 'Über uns' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -1909,6 +1913,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Classements' },
       { to: '/prizes', label: 'Prix' },
       { to: '/rules', label: 'Règles' },
+      { to: '/about', label: 'À propos' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -2354,6 +2359,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tabelas' },
       { to: '/prizes', label: 'Prémios' },
       { to: '/rules', label: 'Regras' },
+      { to: '/about', label: 'Sobre' },
     ],
     account: [
       { to: '/login', label: 'Login' },
@@ -2799,6 +2805,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Таблицы' },
       { to: '/prizes', label: 'Призы' },
       { to: '/rules', label: 'Правила' },
+      { to: '/about', label: 'О проекте' },
     ],
     account: [
       { to: '/login', label: 'Вход' },
@@ -3245,6 +3252,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: '榜单' },
       { to: '/prizes', label: '奖品' },
       { to: '/rules', label: '规则' },
+      { to: '/about', label: '关于' },
     ],
     account: [
       { to: '/login', label: '登录' },
@@ -3693,6 +3701,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: '順位表' },
       { to: '/prizes', label: '賞品' },
       { to: '/rules', label: 'ルール' },
+      { to: '/about', label: 'について' },
     ],
     account: [
       { to: '/login', label: 'ログイン' },
