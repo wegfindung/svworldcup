@@ -248,6 +248,10 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     }
     return counts
   }, [squad])
+  const squadViolatesNationCap = useMemo(
+    () => [...teamCountByCode.values()].some((count) => count > MAX_PLAYERS_PER_NATION),
+    [teamCountByCode],
+  )
   const draftedPlayerIds = useMemo(
     () =>
       new Set(
@@ -671,6 +675,11 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   }
 
   async function handleLockSquad() {
+    if (squadViolatesNationCap) {
+      setBuilderError(copy.active.nationCapBreach)
+      return
+    }
+
     const approved = window.confirm(copy.confirms.submit)
     if (!approved) {
       return
@@ -1825,13 +1834,15 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                           ? canEditSquad
                             ? copy.active.editUntilKickoff
                             : copy.active.lockedAfterStart
-                          : copy.active.fillThenSubmit}
+                          : squadViolatesNationCap
+                            ? copy.active.nationCapBreach
+                            : copy.active.fillThenSubmit}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => void handleLockSquad()}
-                      disabled={squad.isLocked || draftedCount !== 15}
+                      disabled={squad.isLocked || draftedCount !== 15 || squadViolatesNationCap}
                       className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                     >
                       {squad.isLocked ? copy.active.submitted : copy.active.submitSquad}

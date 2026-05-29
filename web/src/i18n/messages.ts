@@ -327,6 +327,7 @@ const englishMessages = {
       clearSlotFirst: 'Clear slot first',
       overBudget: 'Over budget',
       nationFull: 'Max 4 from this team',
+      nationCapBreach: 'One team has more than 4 players. Remove players before submitting.',
       addTo: 'Add to',
       budgetMonitor: 'budget monitor',
       remainingOf: 'Remaining of',
