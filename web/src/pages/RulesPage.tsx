@@ -196,7 +196,6 @@ const englishCopy = {
     note: 'These parts are either provisional or still being built. They are listed here so nothing is hidden.',
     items: [
       'Performance points currently come from match data entered by the event team. Automatic API-Football match ratings are planned.',
-      'Reserves currently bank a flat 50% of their points as a failsafe. A richer model — for example activating a reserve when a starter is confirmed out — may replace it later if a reliable player-availability feed is added.',
       'The salary multiplier is set by the budget cap you choose today; a refinement tied to your squad’s actual total wage is under consideration.',
       'Prize amounts and payout logic are provisional — see the Prizes page.',
       'Official Soccerverse player photos are being added; some players currently show a placeholder.',
