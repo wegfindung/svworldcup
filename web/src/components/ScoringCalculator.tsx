@@ -190,7 +190,7 @@ export function ScoringCalculator({ budgetOptions, copy, scoring }: ScoringCalcu
               <select
                 value={scoreMultiplier}
                 onChange={(event) => setScoreMultiplier(Number(event.target.value))}
-                className="h-[3.35rem] rounded-[0.9rem] border border-white/10 bg-[rgba(8,13,12,0.82)] px-3 text-sm text-white outline-none focus:border-[var(--color-accent)]/45"
+                className="form-select h-[3.35rem] px-3 text-sm"
               >
                 {budgetOptions.map((option) => (
                   <option key={option.budgetLimit} value={option.scoreMultiplier}>

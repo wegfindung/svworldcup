@@ -30,6 +30,45 @@ function player(playerId: number, position: string, nationalityCode = 'FRA'): So
   return { playerId, displayName: `Player ${playerId}`, nationalityCode, rating: 50, clubId: 1, positions: [position], positionMain: position }
 }
 
+// Spread the 15-player squad across four Grand Tournament teams so no team holds more than 4 of them
+// (the per-team cap is 4). Same-class swap pairs (e.g. MID 106/114) share a team, so the in-match
+// lock and clean-sheet swap scenarios still operate within one team.
+const slotTeam: Record<string, string> = {
+  'starter-gk-1': 'GER',
+  'starter-def-1': 'ESP',
+  'starter-def-2': 'ESP',
+  'starter-def-3': 'ESP',
+  'starter-def-4': 'ESP',
+  'starter-mid-1': 'FRA',
+  'starter-mid-2': 'FRA',
+  'starter-mid-3': 'FRA',
+  'starter-fwd-1': 'BRA',
+  'starter-fwd-2': 'BRA',
+  'starter-fwd-3': 'BRA',
+  'sub-gk-1': 'GER',
+  'sub-def-1': 'GER',
+  'sub-mid-1': 'FRA',
+  'sub-fwd-1': 'BRA',
+}
+
+// Seed the standard squad into its mapped team pools, one pool per team. `make` builds each player
+// record from its slot, preserving any per-player customization (nationality, position) the caller needs.
+async function seedSquadPools(
+  pools: MemoryTeamPoolRepository,
+  make: (slotPlayer: (typeof slotPlayers)[number]) => SoccerversePlayerRecord,
+) {
+  const byTeam = new Map<string, SoccerversePlayerRecord[]>()
+  for (const slotPlayer of slotPlayers) {
+    const teamCode = slotTeam[slotPlayer.slotKey]
+    const bucket = byTeam.get(teamCode) ?? []
+    bucket.push(make(slotPlayer))
+    byTeam.set(teamCode, bucket)
+  }
+  for (const [teamCode, bucket] of byTeam) {
+    await pools.replaceTeamPlayers(teamCode, bucket)
+  }
+}
+
 const LOCK_TIME = new Date('2026-06-01T00:00:00Z').getTime() // before the tournament starts
 const W1_TIME = new Date('2026-06-18T08:00:00Z').getTime() // inside swap window 1 (targets round 2)
 const W3_LIVE_TIME = new Date('2026-07-08T12:30:00Z').getTime()
@@ -46,7 +85,7 @@ const liveFranceFixture: FixtureSeed = {
 
 async function setup() {
   const pools = new MemoryTeamPoolRepository()
-  await pools.replaceTeamPlayers('FRA', slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)))
+  await seedSquadPools(pools, (slotPlayer) => player(slotPlayer.playerId, slotPlayer.position))
   const registrations = new MemoryRegistrationRepository()
   const created = await registrations.createPending(
     { email: 'manager@example.com', displayName: 'Manager', primaryTeamCode: 'FRA', marketingOptIn: false },
@@ -140,7 +179,7 @@ describe('player swaps — gate enforcement', () => {
 
   it('rejects a swap on an unlocked squad', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers('FRA', slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)))
+    await seedSquadPools(pools, (slotPlayer) => player(slotPlayer.playerId, slotPlayer.position))
     const clock = { value: W1_TIME }
     const squads = new MemorySquadRepository(pools, () => clock.value)
     await expect(squads.swapPlayers('nobody', { playerInId: 114, playerOutId: 106 })).rejects.toBeInstanceOf(SquadValidationError)
@@ -148,7 +187,7 @@ describe('player swaps — gate enforcement', () => {
 
   it('uses the drafted team code, not player nationality, for the in-match lock', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers('FRA', slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position, 'XXX')))
+    await seedSquadPools(pools, (slotPlayer) => player(slotPlayer.playerId, slotPlayer.position, 'XXX'))
     const registrations = new MemoryRegistrationRepository()
     const created = await registrations.createPending(
       { email: 'team-code@example.com', displayName: 'Team Code', primaryTeamCode: 'FRA', marketingOptIn: false },
@@ -176,9 +215,8 @@ describe('player swaps — MID clean-sheet position codes travel with the player
   // clean-sheet bonus to 114 at full weight, and 106 (now a CM reserve) must earn none.
   async function setupCleanSheet() {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
-      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.playerId === 114 ? 'DM' : slotPlayer.position)),
+    await seedSquadPools(pools, (slotPlayer) =>
+      player(slotPlayer.playerId, slotPlayer.playerId === 114 ? 'DM' : slotPlayer.position),
     )
     const registrations = new MemoryRegistrationRepository()
     const created = await registrations.createPending(

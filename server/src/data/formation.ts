@@ -2,15 +2,51 @@ import type { SlotDefinition } from '../domain/types.js'
 
 export const STARTING_BUDGET = 3_000_000
 
+// A squad may contain at most this many players from the same Grand Tournament team (a national team).
+// Counts all 15 squad members — starters and reserves alike. See SOP_registration_and_auth.md.
+export const MAX_PLAYERS_PER_NATION = 4
+
+// True when adding one more player from `incomingTeamCode` would breach the per-team cap, given the
+// team codes already in the squad. Empty/unknown team codes never block a draft (a missing code is
+// treated as "no team" and skipped). Pure — callers throw their own SquadValidationError.
+export function wouldExceedNationCap(existingTeamCodes: readonly string[], incomingTeamCode: string) {
+  if (!incomingTeamCode) {
+    return false
+  }
+  const sameTeam = existingTeamCodes.filter((code) => code === incomingTeamCode).length
+  return sameTeam >= MAX_PLAYERS_PER_NATION
+}
+
+// The first team code that appears more than MAX_PLAYERS_PER_NATION times in a full squad, or null
+// when every team is within the cap. Used as the lock-time backstop. Empty codes are ignored.
+export function findNationCapBreach(teamCodes: readonly string[]): string | null {
+  const counts = new Map<string, number>()
+  for (const code of teamCodes) {
+    if (!code) {
+      continue
+    }
+    const next = (counts.get(code) ?? 0) + 1
+    if (next > MAX_PLAYERS_PER_NATION) {
+      return code
+    }
+    counts.set(code, next)
+  }
+  return null
+}
+
 export const budgetOptions = [
-  { budgetLimit: 1_500_000, scoreMultiplier: 1.3 },
-  { budgetLimit: 2_000_000, scoreMultiplier: 1.18 },
-  { budgetLimit: 2_500_000, scoreMultiplier: 1.08 },
+  { budgetLimit: 1_500_000, scoreMultiplier: 1.5 },
+  { budgetLimit: 2_000_000, scoreMultiplier: 1.25 },
+  { budgetLimit: 2_500_000, scoreMultiplier: 1.12 },
   { budgetLimit: 3_000_000, scoreMultiplier: 1 },
-  { budgetLimit: 4_000_000, scoreMultiplier: 0.9 },
-  { budgetLimit: 5_000_000, scoreMultiplier: 0.82 },
-  { budgetLimit: 6_000_000, scoreMultiplier: 0.75 },
-  { budgetLimit: 9_000_000, scoreMultiplier: 0.5 },
+  { budgetLimit: 3_500_000, scoreMultiplier: 0.87 },
+  { budgetLimit: 4_000_000, scoreMultiplier: 0.8 },
+  { budgetLimit: 4_500_000, scoreMultiplier: 0.7 },
+  { budgetLimit: 5_000_000, scoreMultiplier: 0.6 },
+  { budgetLimit: 5_500_000, scoreMultiplier: 0.52 },
+  { budgetLimit: 6_000_000, scoreMultiplier: 0.45 },
+  { budgetLimit: 8_000_000, scoreMultiplier: 0.28 },
+  { budgetLimit: 9_000_000, scoreMultiplier: 0.2 },
 ] as const
 
 export function getBudgetOption(budgetLimit: number) {

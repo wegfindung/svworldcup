@@ -588,7 +588,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
                     audienceStatus: kind === 'autoresponder' ? 'all' : current.audienceStatus,
                   }))
                 }}
-                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                className="form-select h-11 px-3 text-sm transition"
               >
                 <option value="newsletter">Newsletter</option>
                 <option value="autoresponder">Autoresponder</option>
@@ -600,7 +600,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
               <select
                 value={draft.status}
                 onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as EmailCampaignInput['status'] }))}
-                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                className="form-select h-11 px-3 text-sm transition"
               >
                 {draft.kind === 'newsletter' ? (
                   <>
@@ -634,7 +634,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
                   <select
                     value={draft.triggerKey}
                     onChange={(event) => setDraft((current) => ({ ...current, triggerKey: event.target.value as EmailCampaignInput['triggerKey'] }))}
-                    className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                    className="form-select h-11 px-3 text-sm transition"
                   >
                     <option value="registration_created">Registration created</option>
                     <option value="registration_verified">Registration verified</option>
@@ -659,7 +659,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
               <select
                 value={draft.audienceStatus}
                 onChange={(event) => setDraft((current) => ({ ...current, audienceStatus: event.target.value as EmailCampaignInput['audienceStatus'] }))}
-                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                className="form-select h-11 px-3 text-sm transition"
               >
                 <option value="active">Verified participants</option>
                 <option value="pending_verification">Pending verification</option>
@@ -672,7 +672,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
               <select
                 value={draft.audienceLeague ?? 'all'}
                 onChange={(event) => setDraft((current) => ({ ...current, audienceLeague: event.target.value as EmailCampaignInput['audienceLeague'] }))}
-                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                className="form-select h-11 px-3 text-sm transition"
               >
                 <option value="all">All leagues</option>
                 <option value="rookie">Rookies</option>
@@ -685,7 +685,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
               <select
                 value={draft.audienceTeamCode ?? ''}
                 onChange={(event) => setDraft((current) => ({ ...current, audienceTeamCode: event.target.value || undefined }))}
-                className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                className="form-select h-11 px-3 text-sm transition"
               >
                 <option value="">Any team</option>
                 {eventTeams.map((team) => (
@@ -807,7 +807,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
                 <select
                   value={recipientStatusFilter}
                   onChange={(event) => setRecipientStatusFilter(event.target.value as typeof recipientStatusFilter)}
-                  className="h-10 rounded-[0.85rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
+                  className="form-select h-10 px-3 text-sm transition"
                 >
                   <option value="all">All statuses</option>
                   <option value="pending">Pending</option>

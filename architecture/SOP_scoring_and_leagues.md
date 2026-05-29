@@ -58,18 +58,22 @@ Each participant selects a salary budget when building their squad. The chosen b
 
   | Budget | Multiplier |
   |---|---|
-  | 1,500,000 | 1.30 |
-  | 2,000,000 | 1.18 |
-  | 2,500,000 | 1.08 |
+  | 1,500,000 | 1.50 |
+  | 2,000,000 | 1.25 |
+  | 2,500,000 | 1.12 |
   | 3,000,000 | 1.00 (default / neutral) |
-  | 4,000,000 | 0.90 |
-  | 5,000,000 | 0.82 |
-  | 6,000,000 | 0.75 |
-  | 9,000,000 | 0.50 |
+  | 3,500,000 | 0.87 |
+  | 4,000,000 | 0.80 |
+  | 4,500,000 | 0.70 |
+  | 5,000,000 | 0.60 |
+  | 5,500,000 | 0.52 |
+  | 6,000,000 | 0.45 |
+  | 8,000,000 | 0.28 |
+  | 9,000,000 | 0.20 |
 
 - The default budget is `3,000,000` (multiplier `1.00`). A participant changes it via the squad budget endpoint; an unrecognised budget falls back to multiplier `1.00`.
 - Order of operations per participant: `totalScore = (baseScore + ownershipBoost) * multiplier`. The multiplier is applied last, to the boosted base — it scales both the rubric points and the ownership boost.
-- The multiplier is keyed to the **selected budget tier**, not to actual spend within it: selecting the `9,000,000` budget yields `0.50` even if the squad costs less.
+- The multiplier is keyed to the **selected budget tier**, not to actual spend within it: selecting the `9,000,000` budget yields `0.20` even if the squad costs less.
 
 ## Scoring Slice V1
 

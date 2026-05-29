@@ -82,13 +82,14 @@ Allow participants to register securely with verified email, enter the squad bui
 - cap cost
 - position eligibility
 5. A player can be assigned only into an open eligible slot.
-6. Builder must support:
+6. A squad may contain at most **4 players from the same Grand Tournament team** (`MAX_PLAYERS_PER_NATION = 4`, defined in `server/src/data/formation.ts` and mirrored in `web/src/data/eventConfig.ts`). The cap counts all 15 squad members — starters and reserves alike — and a team here means the player's Grand Tournament team code, which is a national team; it is unrelated to the participant's Nation-League country pick. Enforced server-side at assign time (the fifth player from a team is rejected) and re-checked as a backstop at squad lock. Swaps cannot violate the cap because they only reorder players already in the squad.
+7. Builder must support:
 - remove one drafted player
 - reset the full squad after an explicit warning
 - live remaining budget display
 - slot-by-slot formation state
  - explicit `load team pool` action before player data is requested
-7. The builder must never rely on client-only validation for cap or slot legality.
+8. The builder must never rely on client-only validation for cap or slot legality.
 
 ## Account Linking and League Membership
 
@@ -201,6 +202,7 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - the player is not in the preselected pool for that team
 - the player is not eligible for the slot class
 - the player would push `budgetUsed` above `budgetLimit`
+- the player would be the fifth from the same Grand Tournament team (`MAX_PLAYERS_PER_NATION = 4`); the cap is re-checked as a backstop at squad lock
 - admin login must reject users not in the allowlist or not marked active.
 
 ## Edge Cases
