@@ -23,6 +23,7 @@ import {
 import type { SquadRepository } from '../repositories/squadRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
+import type { AuditRepository } from '../repositories/auditRepository.js'
 import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 
 const registrationSchema = z
@@ -121,6 +122,7 @@ export function createAuthRouter(
   squadRepository: SquadRepository,
   emailMarketingRepository: EmailMarketingRepository,
   participantRiskRepository: ParticipantRiskRepository,
+  auditRepository: AuditRepository,
 ) {
   const router = Router()
   const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
@@ -326,6 +328,14 @@ export function createAuthRouter(
 
     const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
     const delivery = await sendVerificationMail(parsed.email, verificationUrl, result.record.browserLocale)
+
+    await auditRepository.record({
+      actorEmail: parsed.email,
+      actionKey: 'participant.verification_resend',
+      entityType: 'participant',
+      entityId: result.record.participantId,
+      detail: { email: parsed.email },
+    })
 
     res.json({
       participantId: result.record.participantId,

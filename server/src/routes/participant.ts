@@ -241,6 +241,14 @@ export function createParticipantRouter(
       return res.status(404).json({ error: 'Participant not found.' })
     }
 
+    await auditRepository.record({
+      actorEmail: res.locals.participant.email,
+      actionKey: 'participant.reveal',
+      entityType: 'participant',
+      entityId: participantId,
+      detail: { revealSquad: parsed.revealSquad },
+    })
+
     res.json({
       participant: profile,
       publicProfileUrl: `/profiles/${publicProfileSlug(profile.displayName, profile.participantId)}`,
