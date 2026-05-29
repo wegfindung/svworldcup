@@ -174,6 +174,9 @@ export class MemorySquadRepository implements SquadRepository {
       slots: nextSlots,
     }
     this.squads.set(participantId, nextSquad)
+    if (squad.isLocked) {
+      this.roundLineups.delete(participantId)
+    }
     return nextSquad
   }
 
@@ -216,6 +219,9 @@ export class MemorySquadRepository implements SquadRepository {
       slots: squad.slots.map((slotState) => (slotState.key === slotKey ? { ...slotState, player: null } : slotState)),
     }
     this.squads.set(participantId, nextSquad)
+    if (squad.isLocked) {
+      this.roundLineups.delete(participantId)
+    }
     return nextSquad
   }
 
@@ -229,6 +235,7 @@ export class MemorySquadRepository implements SquadRepository {
       slots: squad.slots.map((slot) => ({ ...slot, player: null })),
     }
     this.squads.set(participantId, resetSquad)
+    this.roundLineups.delete(participantId)
     return resetSquad
   }
 
@@ -523,6 +530,9 @@ export class PostgresSquadRepository implements SquadRepository {
         `,
         [squad.squad_id, slot.key, slot.slotGroup, slot.slotClass, player.playerId, player.positions],
       )
+      if (squad.is_locked) {
+        await client.query('DELETE FROM squad_round_lineup WHERE squad_id = $1', [squad.squad_id])
+      }
       await client.query('UPDATE squads SET budget_used = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, nextBudgetUsed])
       await client.query('COMMIT')
       return this.getOrCreate(participantId)
@@ -606,6 +616,9 @@ export class PostgresSquadRepository implements SquadRepository {
       }
 
       await client.query('DELETE FROM squad_slots WHERE squad_id = $1 AND slot_key = $2', [squad.squad_id, slotKey])
+      if (squad.is_locked) {
+        await client.query('DELETE FROM squad_round_lineup WHERE squad_id = $1', [squad.squad_id])
+      }
       const nextBudgetUsed = Math.max(0, squad.budget_used - getCapCostForRating(existing.rating ?? 50))
       await client.query('UPDATE squads SET budget_used = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, nextBudgetUsed])
       await client.query('COMMIT')
@@ -634,6 +647,7 @@ export class PostgresSquadRepository implements SquadRepository {
       assertSquadEditable(squad.is_locked)
 
       await client.query('DELETE FROM squad_slots WHERE squad_id = $1', [squad.squad_id])
+      await client.query('DELETE FROM squad_round_lineup WHERE squad_id = $1', [squad.squad_id])
       await client.query('UPDATE squads SET budget_used = 0, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
       await client.query('COMMIT')
       return this.getOrCreate(participantId)

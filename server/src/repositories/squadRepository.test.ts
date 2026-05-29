@@ -108,6 +108,12 @@ describe('MemorySquadRepository competition edit window', () => {
 
     const afterReset = await squads.resetSquad(participantId)
     expect(afterReset.slots.every((slot) => !slot.player)).toBe(true)
+    expect(await squads.listRoundLineupSlots(participantId)).toEqual([])
+
+    const afterReassign = await squads.assignPlayer(participantId, { slotKey: 'starter-def-1', playerId: 105 })
+    expect(afterReassign.slots.find((slot) => slot.key === 'starter-def-1')?.player?.playerId).toBe(105)
+    expect(afterReassign.slots.find((slot) => slot.key === 'starter-def-4')?.player).toBeNull()
+    expect(await squads.listRoundLineupSlots(participantId)).toEqual([])
   })
 
   it('blocks submitted squad edits after the competition starts', async () => {

@@ -623,6 +623,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     try {
       const response = await assignSquadPlayer(slotKey, playerId)
       syncReadyStateWithSquad(participant, response.squad)
+      setSwapState(null)
       setSquad(response.squad)
       setSelectedSlotKey(getNextDraftSlotKey(response.squad, slotKey))
     } catch (error) {
@@ -635,6 +636,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     try {
       const response = await removeSquadPlayer(slotKey)
       syncReadyStateWithSquad(participant, response.squad)
+      setSwapState(null)
       setSquad(response.squad)
       setSelectedSlotKey(slotKey)
     } catch (error) {
@@ -652,6 +654,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     try {
       const response = await resetSquad()
       syncReadyStateWithSquad(participant, response.squad)
+      setSwapState(null)
       setSquad(response.squad)
       setSelectedSlotKey(getNextDraftSlotKey(response.squad))
     } catch (error) {
@@ -689,6 +692,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     try {
       const response = await lockSquad()
       syncReadyStateWithSquad(participant, response.squad)
+      setSwapState(null)
       setSquad(response.squad)
     } catch (error) {
       setBuilderError(error instanceof Error ? error.message : copy.errors.submitFailed)
