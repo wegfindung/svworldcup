@@ -1,5 +1,14 @@
 # Soccerverse World Cup Community Event — Project Map
 
+> ⚠️ **STALE — do not trust this file as current state (as of 2026-05-29).** This map still describes
+> a pre-build phase, but the system is fully built (server, DB schema + migrations through 2026-05-28,
+> seeded tournament). A docs↔code audit found most concrete claims here are out of date — notably the
+> **scoring numbers** (real values: goal 5 / assist 3 / appearance 1 / minutes 1 / clean sheet
+> GK4·DEF3·MID1(gated)·FWD0 / performance curve to 2.0), the **budget/handicap multiplier mechanic**
+> (undocumented here), **"nation" vs team terminology** (code uses team codes for the 48 WC teams),
+> and the **locale list** (9 incl. `it`/`ja`, not 6). Verify against code before relying on anything
+> below. Full findings + a planned rewrite: `claude-docs/sop-code-audit-2026-05-29.md`.
+
 > Protocol: B.L.A.S.T. | Architecture: A.N.T. 3-Layer
 > Created: 2026-05-08 | Status: Phase 3 Architect In Progress
 
