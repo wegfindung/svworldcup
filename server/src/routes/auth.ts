@@ -1,5 +1,7 @@
 import { Router } from 'express'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { z } from 'zod'
+import { canonicalizeEmail } from '../lib/emailCanonicalization.js'
 import {
   participantSessionCookieName,
   participantSessionTtlSeconds,
@@ -126,6 +128,24 @@ export function createAuthRouter(
 ) {
   const router = Router()
   const requireParticipantCsrf = createRequireCookieCsrf(participantSessionCookieName, 'participant')
+
+  // Dedicated throttle for the email-trigger endpoints (verification resend + password-reset request).
+  // Both re-send an email to a caller-supplied address, so the abuse vector is inbox-bombing — far
+  // stricter than the shared /api/auth limiter. Keyed by the canonical target inbox (gmail dot/plus
+  // aliases collapse to one bucket), falling back to IP when no email is supplied. Defined per-router
+  // so the store is fresh per app instance (no cross-test bleed). SOP_registration_and_auth.md:
+  // "Resend should be rate limited."
+  const emailTriggerLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      const raw = typeof (req.body as { email?: unknown } | undefined)?.email === 'string' ? (req.body as { email: string }).email : ''
+      const canonical = raw.trim() ? canonicalizeEmail(raw).canonicalEmail : ''
+      return canonical ? `email:${canonical}` : `ip:${ipKeyGenerator(req.ip ?? '')}`
+    },
+  })
 
   const registrationClosedMessage = 'Registration has closed for this event.'
 
@@ -313,7 +333,7 @@ export function createAuthRouter(
     res.status(204).end()
   })
 
-  router.post('/resend-verification', async (req, res) => {
+  router.post('/resend-verification', emailTriggerLimiter, async (req, res) => {
     if (hasRegistrationClosed()) {
       return res.status(403).json({ error: registrationClosedMessage })
     }
@@ -348,7 +368,7 @@ export function createAuthRouter(
     })
   })
 
-  router.post('/request-password-reset', async (req, res) => {
+  router.post('/request-password-reset', emailTriggerLimiter, async (req, res) => {
     const parsed = resendSchema.parse(req.body)
     const plainToken = generatePlainToken()
     const participant = await registrationRepository.createPasswordReset(parsed.email, plainToken)
