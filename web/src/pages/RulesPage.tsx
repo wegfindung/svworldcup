@@ -324,9 +324,9 @@ copyByLocale.es = {
       'Tu equipo no es del todo de configurar y olvidar. Dentro de unas pocas ventanas programadas puedes cambiar un reserva por un titular — solo en la misma posición, entre los 15 jugadores que ya bloqueaste. Sin nuevos jugadores y sin cambios en tu presupuesto ni en los salarios; solo cambias quién es titular. Fuera de las ventanas tu equipo está congelado.',
     windowsTitle: 'Ventanas de cambios',
     windows: [
-      { label: 'Ventana 1', value: '18 Jun', detail: '2 swaps' },
-      { label: 'Ventana 2', value: '24 Jun', detail: '2 swaps' },
-      { label: 'Ventana 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: 'Ventana 1', value: '18 Jun', detail: '2 cambios' },
+      { label: 'Ventana 2', value: '24 Jun', detail: '2 cambios' },
+      { label: 'Ventana 3', value: '8–9 Jul', detail: '4 cambios' },
     ],
     points: [
       'Un cambio intercambia un reserva por el titular de la misma posición (GK, DEF, MID o FWD).',
@@ -505,9 +505,9 @@ copyByLocale.it = {
       'La tua rosa non è del tutto imposta e dimentica. All’interno di alcune finestre programmate puoi scambiare una riserva con un titolare — solo nello stesso ruolo, tra i 15 giocatori che hai già bloccato. Nessun nuovo giocatore e nessuna variazione del tuo budget o degli ingaggi; cambi soltanto chi è titolare. Al di fuori delle finestre la tua rosa è congelata.',
     windowsTitle: 'Finestre di cambio',
     windows: [
-      { label: 'Finestra 1', value: '18 Jun', detail: '2 swaps' },
-      { label: 'Finestra 2', value: '24 Jun', detail: '2 swaps' },
-      { label: 'Finestra 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: 'Finestra 1', value: '18 Jun', detail: '2 cambi' },
+      { label: 'Finestra 2', value: '24 Jun', detail: '2 cambi' },
+      { label: 'Finestra 3', value: '8–9 Jul', detail: '4 cambi' },
     ],
     points: [
       'Un cambio scambia una riserva con il titolare dello stesso ruolo (GK, DEF, MID o FWD).',
@@ -686,9 +686,9 @@ copyByLocale.de = {
       'Dein Kader ist nicht vollständig „einstellen und vergessen“. Innerhalb einiger festgelegter Zeitfenster darfst du einen Reservespieler gegen einen Stammspieler tauschen — nur auf derselben Position, innerhalb der 15 Spieler, die du bereits festgelegt hast. Keine neuen Spieler und keine Änderung deines Budgets oder der Gehälter; du änderst nur, wer startet. Außerhalb der Fenster ist dein Kader eingefroren.',
     windowsTitle: 'Tauschfenster',
     windows: [
-      { label: 'Fenster 1', value: '18 Jun', detail: '2 swaps' },
-      { label: 'Fenster 2', value: '24 Jun', detail: '2 swaps' },
-      { label: 'Fenster 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: 'Fenster 1', value: '18 Jun', detail: '2 Wechsel' },
+      { label: 'Fenster 2', value: '24 Jun', detail: '2 Wechsel' },
+      { label: 'Fenster 3', value: '8–9 Jul', detail: '4 Wechsel' },
     ],
     points: [
       'Ein Tausch wechselt einen Reservespieler gegen den Stammspieler auf derselben Position (GK, DEF, MID oder FWD).',
@@ -867,9 +867,9 @@ copyByLocale.fr = {
       'Votre effectif n’est pas entièrement « réglez et oubliez ». Au cours de quelques fenêtres programmées, vous pouvez échanger un remplaçant contre un titulaire — uniquement au même poste, parmi les 15 joueurs que vous avez déjà verrouillés. Aucun nouveau joueur, et aucune modification de votre budget ou des salaires ; vous changez seulement qui est titulaire. En dehors des fenêtres, votre effectif est figé.',
     windowsTitle: 'Fenêtres d’échange',
     windows: [
-      { label: 'Fenêtre 1', value: '18 Jun', detail: '2 swaps' },
-      { label: 'Fenêtre 2', value: '24 Jun', detail: '2 swaps' },
-      { label: 'Fenêtre 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: 'Fenêtre 1', value: '18 Jun', detail: '2 échanges' },
+      { label: 'Fenêtre 2', value: '24 Jun', detail: '2 échanges' },
+      { label: 'Fenêtre 3', value: '8–9 Jul', detail: '4 échanges' },
     ],
     points: [
       'Un échange remplace un remplaçant par le titulaire du même poste (GK, DEF, MID ou FWD).',
@@ -1048,9 +1048,9 @@ copyByLocale.pt = {
       'A tua equipa não é totalmente montar e esquecer. Dentro de algumas janelas programadas podes trocar um reserva por um titular — apenas na mesma posição, entre os 15 jogadores que já bloqueaste. Sem novos jogadores e sem alteração ao teu orçamento ou aos salários; apenas mudas quem é titular. Fora das janelas a tua equipa está congelada.',
     windowsTitle: 'Janelas de troca',
     windows: [
-      { label: 'Janela 1', value: '18 Jun', detail: '2 swaps' },
-      { label: 'Janela 2', value: '24 Jun', detail: '2 swaps' },
-      { label: 'Janela 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: 'Janela 1', value: '18 Jun', detail: '2 trocas' },
+      { label: 'Janela 2', value: '24 Jun', detail: '2 trocas' },
+      { label: 'Janela 3', value: '8–9 Jul', detail: '4 trocas' },
     ],
     points: [
       'Uma troca troca um reserva pelo titular da mesma posição (GK, DEF, MID ou FWD).',
@@ -1229,9 +1229,9 @@ copyByLocale.ru = {
       'Ваш состав не полностью работает по принципу «настроил и забыл». В рамках нескольких отведённых окон вы можете заменить запасного на игрока старта — только в той же позиции и только среди тех 15 игроков, которых вы уже зафиксировали. Никаких новых игроков и никаких изменений вашего бюджета или зарплат; вы меняете только то, кто выходит в старте. Вне окон ваш состав заморожен.',
     windowsTitle: 'Окна замен',
     windows: [
-      { label: 'Окно 1', value: '18 Jun', detail: '2 swaps' },
-      { label: 'Окно 2', value: '24 Jun', detail: '2 swaps' },
-      { label: 'Окно 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: 'Окно 1', value: '18 Jun', detail: '2 замены' },
+      { label: 'Окно 2', value: '24 Jun', detail: '2 замены' },
+      { label: 'Окно 3', value: '8–9 Jul', detail: '4 замены' },
     ],
     points: [
       'Замена меняет местами запасного и игрока старта в той же позиции (GK, DEF, MID или FWD).',
@@ -1410,9 +1410,9 @@ copyByLocale.zh = {
       '你的阵容并非完全设定后即可放手不管。在少数几个限定的时间窗口内，你可以用一名替补换一名首发——仅限同一位置，且只能在你已锁定的 15 名球员之间进行。不可新增球员，也不会改变你的预算或薪资；你只是改变谁首发。窗口之外，你的阵容处于冻结状态。',
     windowsTitle: '调换窗口',
     windows: [
-      { label: '窗口 1', value: '18 Jun', detail: '2 swaps' },
-      { label: '窗口 2', value: '24 Jun', detail: '2 swaps' },
-      { label: '窗口 3', value: '8–9 Jul', detail: '4 swaps' },
+      { label: '窗口 1', value: '18 Jun', detail: '2 次调换' },
+      { label: '窗口 2', value: '24 Jun', detail: '2 次调换' },
+      { label: '窗口 3', value: '8–9 Jul', detail: '4 次调换' },
     ],
     points: [
       '一次调换会用一名替补与同一位置的首发对调（GK、DEF、MID 或 FWD）。',
@@ -1469,6 +1469,187 @@ copyByLocale.zh = {
         label: '不追溯计分',
         value: '开球前锁定',
         detail: '阵容只从其锁定之后开球的比赛中得分。',
+      },
+    ],
+  },
+
+  coming: englishCopy.coming,
+}
+
+copyByLocale.ja = {
+  eyebrow: '仕組み',
+  title: 'イベントルール、すべて。',
+  intro:
+    '1つのスカッド。1度のロック。40日以上にわたる World Cup のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。まだ開発中のものは末尾の「近日公開」に一覧で示しています。',
+  cta: 'スカッドを登録する',
+
+  squad: {
+    eyebrow: '登録とスカッド',
+    title: '1つのスカッドを組み、ロックする',
+    body:
+      '各ポジションに控えを1人ずつ置いた 4-3-3 で、15人の単一スカッドを編成します。選手は Soccerverse にマッピングされた公式 World Cup チームプールから選びます。一度ロックすると、あなたのスカッドは固定されます——移籍も、新規選手の追加もありません。大会期間中に許される唯一の変更は、定められた時間枠内での控えと先発の限定的なスワップです（下記の「選手スワップ」を参照）。',
+    formationTitle: 'スカッドの構成（15人）',
+    starters: [
+      { label: 'GK', value: '1' },
+      { label: 'DEF', value: '4' },
+      { label: 'MID', value: '3' },
+      { label: 'FWD', value: '3' },
+    ],
+    subsTitle: '控え（各ポジション1人）',
+    subs: [
+      { label: 'GK', value: '1' },
+      { label: 'DEF', value: '1' },
+      { label: 'MID', value: '1' },
+      { label: 'FWD', value: '1' },
+    ],
+    points: [
+      'Veteran（Soccerverse アカウントをお持ちの方）または Rookie（お持ちでない方）として登録します。',
+      '2つの国を選びます——母国と、自由に選べる1つです。両者は異なる必要があり、これらが Nation League を決定します。',
+      'すべての選手は誰でも選べます。独占はなく、2人のマネージャーがまったく同じスカッドになることもあり得ます。',
+      'スカッド内で同じ選手を2回選ぶことはできません。',
+      'スカッドビルダーに入る前に、メールアドレスの確認が必要です。',
+    ],
+  },
+
+  salary: {
+    eyebrow: 'サラリーキャップと乗数',
+    title: '少なく使い、多く稼ぐ',
+    body:
+      'すべての選手は、そのレーティングから算出される Soccerverse Coins（SVC）建ての給与を持ちます——レーティングが高いほど、給与は急に上がります。編成前に予算上限を選び、その上限はあなたのスカッドが獲得するすべてに適用されるスコア乗数を決めます。低い上限を選べば得点はブーストされ、高い上限の下でスーパースターを揃えれば得点は削られます。',
+    scaleLow: '少なく使う · ブースト大',
+    scaleMid: 'ニュートラル ×1.0',
+    scaleHigh: '多く使う · ペナルティ大',
+    tiersTitle: '予算上限とその乗数',
+    boostLabel: 'ブースト',
+    neutralLabel: 'ニュートラル',
+    penaltyLabel: 'ペナルティ',
+    capExamplesTitle: 'レーティング別の給与例',
+    capExamplesNote: '給与はレーティングとともに急激に上がります——ひと握りのスーパースターで高い上限の大部分を飲み込んでしまうこともあります。',
+    capExamples: [
+      { rating: '70', cost: '9,288' },
+      { rating: '80', cost: '57,506' },
+      { rating: '90', cost: '356,064' },
+      { rating: '97', cost: '1,275,843' },
+    ],
+    unit: 'SVC',
+  },
+
+  scoring: {
+    eyebrow: '採点基準',
+    title: '得点の稼ぎ方',
+    body:
+      '固定の採点基準が、各選手の実際の World Cup でのパフォーマンスに、試合ごとに適用されます。クリーンシートの価値はポジションによって異なります。これに加えて、各選手は試合レーティングに応じて換算される最大2のパフォーマンスポイントを獲得します。',
+    rubric: [
+      { label: 'ゴール', value: '+5', detail: 'ゴール1点につき' },
+      { label: 'アシスト', value: '+3', detail: 'アシスト1回につき' },
+      { label: '出場', value: '+1', detail: 'ピッチに立った時間があれば' },
+      { label: '60分以上', value: '+1', detail: '追加で、60分以上プレーした場合' },
+      { label: 'クリーンシート', value: '+4 / +3 / +1* / 0', detail: 'GK +4、DEF +3、MID +1 は選手が Soccerverse のオルタネートポジションに DML/DMR/DMC/DM を持つ場合のみ、FWD 0——かつ選手が60分以上プレーし、チームが無失点だった場合のみ' },
+      { label: 'パフォーマンス', value: 'up to +2', detail: '試合レーティングから換算（6.0→0.5, 8.0→1.0, 9.5→1.5, 10.0→2.0）' },
+    ],
+    calculatorIntro: '正確な計算を自分で試してみましょう——選手、上限、ブーストを調整してください：',
+  },
+
+  example: {
+    eyebrow: '計算例',
+    title: '1試合、1選手',
+    intro:
+      'あなたの先発XIのミッドフィルダーが78分プレーし、1ゴール1アシストを記録、クリーンシートを達成し、試合レーティング8.0を獲得します。',
+    steps: [
+      { label: 'ゴール', value: '+5' },
+      { label: 'アシスト', value: '+3' },
+      { label: '出場', value: '+1' },
+      { label: '60分以上', value: '+1' },
+      { label: 'クリーンシート（DM オルタを持つ MID）', value: '+1' },
+      { label: 'パフォーマンス（8.0）', value: '+1' },
+    ],
+    baseLabel: '基礎ポイント',
+    baseValue: '12',
+    boostLabel: '+5% の保有ブースト込み',
+    boostValue: '12.6',
+    finalLabel: '1,500,000 SVC 上限の下で（×1.3）',
+    finalValue: '16.38',
+  },
+
+  subs: {
+    eyebrow: '控え',
+    title: '控えは常に50%で貢献',
+    body:
+      'あなたのスカッドは自動で回ります——試合日に管理することは何もありません。各控えは毎試合、自身の実際のパフォーマンスから稼いだポイントの50%を常に積み立てます。先発は常に全ポイントで計算されます。',
+    points: [
+      '4人の控えはすべて毎試合得点します——アクティベーションは不要で、先発が出場したかどうかにも左右されません。',
+      '控えは通常の基準で生み出すものの半分を稼ぎます：ゴール、アシスト、出場時間、クリーンシート、パフォーマンス。',
+      'ある試合に出場しなかった控えは、その試合では単純に何も稼ぎません。',
+      'スワップ枠で控えを先発XIに入れると、その控えは先発する各ラウンドで全ポイントを稼ぎ——ベンチに下げた先発は50%に下がります。',
+    ],
+  },
+
+  swaps: {
+    eyebrow: '選手スワップ',
+    title: '定められた時間枠内での限定スワップ',
+    body:
+      'あなたのスカッドは完全に「設定したら放置」ではありません。いくつかの定められた時間枠の中で、控えを先発とスワップできます——同じポジションのみ、すでにロックした15人の中でのみです。新規選手はなく、予算や給与の変更もありません。変えられるのは誰が先発するかだけです。枠の外では、あなたのスカッドは凍結されます。',
+    windowsTitle: 'スワップ枠',
+    windows: [
+      { label: '枠 1', value: '18 Jun', detail: '2スワップ' },
+      { label: '枠 2', value: '24 Jun', detail: '2スワップ' },
+      { label: '枠 3', value: '8–9 Jul', detail: '4スワップ' },
+    ],
+    points: [
+      'スワップは控えと同じポジションの先発を入れ替えます（GK、DEF、MID または FWD）。',
+      '各枠には独自のスワップ回数が割り当てられます。未使用のスワップは持ち越されず、スワップを取り消すとさらに1回消費します。',
+      'スワップはまだキックオフしていない次のラウンドから有効になります——すでに獲得したポイントを変えることは決してありません。',
+      '適用されるラウンドから、入れた選手は全ポイントで、ベンチに下げた選手は50%で得点します。これは次のスワップまで続きます。',
+      '枠3はスワップの最後の機会です。それが閉じた後は、あなたのスカッドは大会の残り期間ロックされます。',
+    ],
+  },
+
+  boost: {
+    eyebrow: '保有ブースト',
+    title: '自分の選手を支えることへの報酬',
+    scaleZero: 'ブーストなし',
+    scaleCaption: '正味10株ごとに +1%',
+    scaleCap: '+10% 上限',
+    body:
+      'Soccerverse アカウントを連携すると、イベント中に自分のスカッドの選手で購入したインフルエンスが、それらの選手があなたのために稼ぐポイントに小さな乗数を加えます。大きな既存ポートフォリオが支配することを許さずに、確信を報います。',
+    points: [
+      'イベント枠の期間中に購入したインフルエンスのみが計上されます——イベント開始前から保有していた分は計上されません。',
+      'ブーストは購入した正味10株ごとに +1% で、選手1人あたり +10% が上限です。',
+      '選手ごと、試合ごとに計測され、あなたのスカッド乗数の前に適用されます。',
+      '購入が、すでにキックオフした試合に遡って適用されることは決してありません。',
+      'Soccerverse アカウントを連携したマネージャーなら誰でも利用できます——Veteran でも Rookie でも。',
+    ],
+  },
+
+  leagues: {
+    eyebrow: '3つのリーグ',
+    title: 'あなたが競う場',
+    items: [
+      { name: 'Veteran League', body: 'Veteran 同士が個人として順位づけされます。' },
+      { name: 'Rookie League', body: 'Rookie 同士が個人として順位づけされます。' },
+      {
+        name: 'Nation League',
+        body:
+          '全員が選んだ2つの国の両方を代表します。国が資格を得るには最低2人のメンバーが必要で、国はメンバーの平均スコアで順位づけされます。',
+      },
+    ],
+  },
+
+  timing: {
+    eyebrow: '日程とロック',
+    title: '各イベントのタイミング',
+    items: [
+      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'すべての公式戦が順位表を動かします。' },
+      { label: '登録締切', value: '4 Jul 2026, 00:00 UTC', detail: 'この瞬間以降は新規エントリーはなく、編成したスカッドも確定です——ただし限定的な控えと先発のスワップは各枠内で引き続き行われます（「選手スワップ」を参照）。' },
+      {
+        label: 'スカッドロック',
+        value: '提出時',
+        detail: '15人全員を編成した時点でロックされます。大会開始後に許される唯一の変更は、枠内でのスワップです。',
+      },
+      {
+        label: '遡及得点なし',
+        value: 'キックオフ前にロック',
+        detail: 'スカッドはロック後にキックオフした試合からのみ得点します。',
       },
     ],
   },
