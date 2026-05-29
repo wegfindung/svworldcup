@@ -10,6 +10,9 @@ interface LinkItem {
   label: string
   href: string
   by?: string
+  // Optional hover-revealed background. Drop the file in web/public/link-previews/ and point `src` at it
+  // (e.g. '/link-previews/svbase.jpg'). fit: 'cover' for screenshots, 'contain' for logos. Omit = no preview.
+  preview?: { src: string; fit: 'cover' | 'contain' }
 }
 
 interface AboutCopy {
@@ -46,12 +49,12 @@ const officialLinks: LinkItem[] = [
 ]
 
 const communityLinks: LinkItem[] = [
-  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo' },
-  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone' },
-  { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck' },
-  { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx' },
-  { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky' },
-  { id: 'nickx', label: 'Nickx on Twitch', href: 'https://www.twitch.tv/nickxcrypto', by: 'Nickx' },
+  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/svbase.png', fit: 'cover' } },
+  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone', preview: { src: '/elrincon.png', fit: 'cover' } },
+  { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck', preview: { src: '/svworld.jpg', fit: 'cover' } },
+  { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx', preview: { src: '/svfootball.png', fit: 'cover' } },
+  { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky', preview: { src: '/office.png', fit: 'cover' } },
+  { id: 'nickx', label: 'Nickx on Twitch', href: 'https://www.twitch.tv/nickxcrypto', by: 'Nickx', preview: { src: '/nickx.png', fit: 'cover' } },
 ]
 
 const englishCopy: AboutCopy = {
@@ -433,19 +436,36 @@ function LinkCard({ item, copy }: { item: LinkItem; copy: AboutCopy }) {
       href={item.href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col rounded-[1.1rem] border border-white/8 bg-black/15 p-4 transition duration-300 ease-out hover:border-white/18 hover:bg-white/6 active:scale-[0.99]"
+      className="group relative flex flex-col overflow-hidden rounded-[1.1rem] border border-white/8 bg-black/15 p-4 transition duration-300 ease-out hover:border-white/18 hover:bg-white/6 active:scale-[0.99]"
     >
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-white">{item.label}</p>
-        <span className="mono text-[var(--color-accent)] transition group-hover:translate-x-0.5">↗</span>
-      </div>
-      {item.by ? (
-        <p className="mono mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-sand)]">
-          {copy.by} {item.by}
-        </p>
+      {item.preview ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0">
+          <img
+            src={item.preview.src}
+            alt=""
+            loading="lazy"
+            className={[
+              'absolute inset-0 h-full w-full scale-110 opacity-0 grayscale-[0.25] saturate-[1.05] transition duration-500 ease-out group-hover:scale-100 group-hover:opacity-100',
+              item.preview.fit === 'contain' ? 'object-contain p-6' : 'object-cover',
+            ].join(' ')}
+          />
+          <span className="absolute inset-0 bg-[var(--color-ink)]/80 transition duration-500 group-hover:bg-[var(--color-ink)]/45" />
+        </span>
       ) : null}
-      <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">{copy.blurbs[item.id]}</p>
-      <p className="mono mt-3 truncate text-[10px] text-[var(--color-muted)]/70">{item.href.replace(/^https?:\/\//, '')}</p>
+
+      <span className="relative z-[1] flex flex-col">
+        <span className="flex items-center justify-between gap-3">
+          <span className="text-sm font-semibold text-white">{item.label}</span>
+          <span className="mono text-[var(--color-accent)] transition group-hover:translate-x-0.5">↗</span>
+        </span>
+        {item.by ? (
+          <span className="mono mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-sand)]">
+            {copy.by} {item.by}
+          </span>
+        ) : null}
+        <span className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">{copy.blurbs[item.id]}</span>
+        <span className="mono mt-3 truncate text-[10px] text-[var(--color-muted)]/70">{item.href.replace(/^https?:\/\//, '')}</span>
+      </span>
     </a>
   )
 }
