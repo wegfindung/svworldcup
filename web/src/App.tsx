@@ -77,12 +77,12 @@ function App() {
               onClick={() => setMobileNavOpen(false)}
               className="group flex shrink-0 items-center transition active:scale-[0.99]"
             >
-              <span className="block h-[4.25rem] w-fit sm:h-[6.75rem]">
+              <span className="block h-[4.25rem] w-fit sm:h-[6.75rem] lg:h-[8.25rem] xl:h-[8.75rem]">
                 <img
-                  src="/brand/logo-nav.webp"
+                  src="/brand/logo-nav-tournament-large.webp"
                   alt={copy.nav.logoAlt}
-                  width={960}
-                  height={640}
+                  width={1536}
+                  height={1024}
                   className="h-full w-auto object-contain transition duration-500 group-hover:scale-[1.03]"
                 />
               </span>
