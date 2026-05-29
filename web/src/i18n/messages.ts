@@ -54,6 +54,14 @@ const englishMessages = {
       squad: 'Squad',
       matches: 'Matches',
     },
+    countdown: {
+      eyebrow: 'Grand Tournament countdown',
+      title: 'Starts in',
+      days: 'Days',
+      hours: 'Hours',
+      minutes: 'Min',
+      seconds: 'Sec',
+    },
     proof: {
       eyebrow: 'what moves the table',
       goal: 'Goal',
@@ -594,6 +602,14 @@ const spanishMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: 'plantilla bloqueada', body: 'Una entrada, un límite y una plantilla para todo el torneo.' },
     dataStrip: { teams: 'Equipos', squad: 'Plantilla', matches: 'Partidos' },
+    countdown: {
+      eyebrow: 'cuenta atrás Grand Tournament',
+      title: 'Empieza en',
+      days: 'Días',
+      hours: 'Horas',
+      minutes: 'Min',
+      seconds: 'Seg',
+    },
     proof: { eyebrow: 'lo que mueve la tabla', goal: 'Gol', assist: 'Asistencia', cleanSheet: 'Portería a cero' },
     rankingTracks: {
       eyebrow: 'tres carreras a la vez',
@@ -1043,6 +1059,14 @@ const italianMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: 'rosa bloccata', body: 'Una entry, un cap, una rosa per tutto il torneo.' },
     dataStrip: { teams: 'Squadre', squad: 'Rosa', matches: 'Partite' },
+    countdown: {
+      eyebrow: 'countdown Grand Tournament',
+      title: 'Inizia tra',
+      days: 'Giorni',
+      hours: 'Ore',
+      minutes: 'Min',
+      seconds: 'Sec',
+    },
     proof: { eyebrow: 'cosa muove la classifica', goal: 'Gol', assist: 'Assist', cleanSheet: 'Clean sheet' },
     rankingTracks: {
       eyebrow: 'tre corse insieme',
@@ -1492,6 +1516,14 @@ const germanMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: 'gelockter kader', body: 'Ein Entry, ein Cap, ein Kader für das gesamte Turnier.' },
     dataStrip: { teams: 'Teams', squad: 'Kader', matches: 'Spiele' },
+    countdown: {
+      eyebrow: 'Grand-Tournament-Countdown',
+      title: 'Startet in',
+      days: 'Tage',
+      hours: 'Std',
+      minutes: 'Min',
+      seconds: 'Sek',
+    },
     proof: { eyebrow: 'was die tabelle bewegt', goal: 'Tor', assist: 'Assist', cleanSheet: 'Zu null' },
     rankingTracks: {
       eyebrow: 'drei rennen gleichzeitig',
@@ -1940,6 +1972,14 @@ const frenchMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: 'effectif verrouillé', body: 'Une entrée, un cap, un effectif pour tout le tournoi.' },
     dataStrip: { teams: 'Équipes', squad: 'Effectif', matches: 'Matchs' },
+    countdown: {
+      eyebrow: 'compte à rebours Grand Tournament',
+      title: 'Début dans',
+      days: 'Jours',
+      hours: 'Heures',
+      minutes: 'Min',
+      seconds: 'Sec',
+    },
     proof: { eyebrow: 'ce qui fait bouger la table', goal: 'But', assist: 'Passe', cleanSheet: 'Clean sheet' },
     rankingTracks: {
       eyebrow: 'trois courses en même temps',
@@ -2386,6 +2426,14 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: 'plantel bloqueado', body: 'Uma entrada, um cap, um plantel para todo o torneio.' },
     dataStrip: { teams: 'Equipas', squad: 'Plantel', matches: 'Jogos' },
+    countdown: {
+      eyebrow: 'contagem Grand Tournament',
+      title: 'Começa em',
+      days: 'Dias',
+      hours: 'Horas',
+      minutes: 'Min',
+      seconds: 'Seg',
+    },
     proof: { eyebrow: 'o que mexe na tabela', goal: 'Golo', assist: 'Assistência', cleanSheet: 'Clean sheet' },
     rankingTracks: {
       eyebrow: 'três corridas ao mesmo tempo',
@@ -2832,6 +2880,14 @@ const russianMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: 'зафиксированный состав', body: 'Одна заявка, один лимит, один состав на весь турнир.' },
     dataStrip: { teams: 'Команды', squad: 'Состав', matches: 'Матчи' },
+    countdown: {
+      eyebrow: 'обратный отсчёт Grand Tournament',
+      title: 'Старт через',
+      days: 'Дни',
+      hours: 'Часы',
+      minutes: 'Мин',
+      seconds: 'Сек',
+    },
     proof: { eyebrow: 'что двигает таблицу', goal: 'Гол', assist: 'Ассист', cleanSheet: 'Сухой матч' },
     rankingTracks: {
       eyebrow: 'три гонки одновременно',
@@ -3279,6 +3335,14 @@ const chineseMessages: DeepPartial<AppMessages> = {
     ],
     squadBlueprint: { eyebrow: '锁定阵容', body: '一个参赛名额，一个上限，一个贯穿全赛事的阵容。' },
     dataStrip: { teams: '球队', squad: '阵容', matches: '比赛' },
+    countdown: {
+      eyebrow: 'Grand Tournament 倒计时',
+      title: '距离开始',
+      days: '天',
+      hours: '小时',
+      minutes: '分',
+      seconds: '秒',
+    },
     proof: { eyebrow: '影响排名的动作', goal: '进球', assist: '助攻', cleanSheet: '零封' },
     rankingTracks: {
       eyebrow: '三条排名同时进行',
@@ -3732,6 +3796,14 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       teams: 'チーム',
       squad: 'スカッド',
       matches: '試合',
+    },
+    countdown: {
+      eyebrow: 'Grand Tournament カウントダウン',
+      title: '開始まで',
+      days: '日',
+      hours: '時間',
+      minutes: '分',
+      seconds: '秒',
     },
     rankingTracks: {
       eyebrow: '3つのランキング',

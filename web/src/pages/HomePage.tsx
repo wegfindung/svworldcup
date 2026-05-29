@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
@@ -35,6 +36,8 @@ const footballNations = [
   { code: 'URU', label: 'Uruguay' },
 ] as const
 
+const emptyFixtures: FixtureSeed[] = []
+
 const squadShape = [
   { label: 'GK', value: '1' },
   { label: 'DEF', value: '4' },
@@ -42,6 +45,16 @@ const squadShape = [
   { label: 'FWD', value: '3' },
   { label: 'SUB', value: '4' },
 ] as const
+
+const DEFAULT_COMPETITION_START_MS = Date.UTC(2026, 5, 11, 19, 0, 0)
+
+function getCompetitionStartMs(fixtures: FixtureSeed[]) {
+  const kickoffEpochs = fixtures
+    .map((fixture) => getFixtureKickoffMs(fixture))
+    .filter((epoch) => Number.isFinite(epoch))
+
+  return kickoffEpochs.length ? Math.min(...kickoffEpochs) : DEFAULT_COMPETITION_START_MS
+}
 
 function getFixtureKickoffMs(fixture: FixtureSeed) {
   return new Date(`${fixture.kickoffDate}T${fixture.kickoffTimeUtc}Z`).getTime()
@@ -78,6 +91,63 @@ function getNextKickoffSlot(fixtures: FixtureSeed[], teams: TeamSeed[], now = ne
       }) ?? '',
     matches: nextMatches,
   }
+}
+
+function formatCountdownParts(targetMs: number, nowMs: number) {
+  const remainingSeconds = Math.max(0, Math.floor((targetMs - nowMs) / 1000))
+  const days = Math.floor(remainingSeconds / 86_400)
+  const hours = Math.floor((remainingSeconds % 86_400) / 3_600)
+  const minutes = Math.floor((remainingSeconds % 3_600) / 60)
+  const seconds = remainingSeconds % 60
+
+  return { days, hours, minutes, seconds }
+}
+
+function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['countdown']; locale: LocaleCode; startMs: number }) {
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  const parts = formatCountdownParts(startMs, nowMs)
+  const startDate = useMemo(
+    () =>
+      new Date(startMs).toLocaleString(locale, {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/London',
+        timeZoneName: 'short',
+      }),
+    [locale, startMs],
+  )
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 1_000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="countdown-card">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-accent)]">{copy.eyebrow}</p>
+          <p className="mt-2 text-base font-semibold text-white">{copy.title}</p>
+        </div>
+        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{startDate}</span>
+      </div>
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {[
+          [copy.days, parts.days],
+          [copy.hours, parts.hours],
+          [copy.minutes, parts.minutes],
+          [copy.seconds, parts.seconds],
+        ].map(([label, value]) => (
+          <div key={label} className="countdown-tile">
+            <strong>{String(value).padStart(2, '0')}</strong>
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function HeroPlayerWall({ label }: { label: string }) {
@@ -310,8 +380,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const minBudget = budgetOptions[0]?.budgetLimit ?? budgetLimit
   const maxBudget = budgetOptions[budgetOptions.length - 1]?.budgetLimit ?? budgetLimit
   const teams = bootstrap?.teams ?? eventTeams
-  const fixtures = bootstrap?.fixtures ?? []
+  const fixtures = bootstrap?.fixtures ?? emptyFixtures
   const fixtureCount = bootstrap?.fixtures.length ?? 104
+  const competitionStartMs = useMemo(() => getCompetitionStartMs(fixtures), [fixtures])
 
   return (
     <div className="space-y-4 pb-10">
@@ -376,6 +447,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
         </div>
 
         <div className="landing-side-stack">
+          <CompetitionCountdownCard copy={homeCopy.countdown} locale={locale} startMs={competitionStartMs} />
           <div className="data-strip">
             <div>
               <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{homeCopy.dataStrip.teams}</p>
