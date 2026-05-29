@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerTooltip } from '../components/PlayerTooltip'
 import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
@@ -709,7 +710,20 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
           <span>{slot.slotClass}</span>
         </span>
         {slot.player ? (
-          <span className="mt-2 flex min-w-0 items-center gap-2.5">
+          <PlayerTooltip
+            as="span"
+            className="mt-2 flex min-w-0 items-center gap-2.5"
+            info={{
+              name: slot.player.displayName,
+              nationCode: slot.player.teamCode || slot.player.nationalityCode,
+              imageUrl: slot.player.imageUrl,
+              meta: [
+                { label: 'Rating', value: String(slot.player.rating) },
+                { label: 'Cost', value: formatBudget(slot.player.capCost) },
+                { label: 'Pos', value: slot.player.positionMain ?? slot.player.positions.join('/') },
+              ],
+            }}
+          >
             <span className="pitch-player-portrait">
               <PlayerPortrait
                 src={slot.player.imageUrl}
@@ -733,7 +747,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                 {formatBudget(slot.player.capCost)}
               </span>
             </span>
-          </span>
+          </PlayerTooltip>
         ) : (
           <span className="pitch-empty-copy">{copy.slots.tapToDraft}</span>
         )}
@@ -1659,7 +1673,18 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                           className="scout-player-card rounded-[0.85rem] px-3 py-2.5 transition hover:-translate-y-[1px]"
                         >
                           <div className="grid gap-3 xl:grid-cols-[minmax(16rem,1fr)_minmax(0,35rem)] xl:items-center">
-                            <div className="flex min-w-0 items-center gap-3">
+                            <PlayerTooltip
+                              as="div"
+                              className="flex min-w-0 items-center gap-3"
+                              info={{
+                                name: player.displayName,
+                                nationCode: player.teamCode || player.nationalityCode,
+                                imageUrl: player.imageUrl,
+                                meta: [
+                                  { label: 'Pos', value: player.positionMain ?? player.positions.join('/') },
+                                ],
+                              }}
+                            >
                               <PlayerPortrait
                                 src={player.imageUrl}
                                 alt={player.displayName}
@@ -1693,7 +1718,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                                   ))}
                                 </div>
                               </div>
-                            </div>
+                            </PlayerTooltip>
 
                             <div className="flex min-w-0 flex-wrap gap-1.5 xl:justify-end">
                               <button
