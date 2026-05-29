@@ -82,6 +82,8 @@ export function ProfilePage() {
   }
 
   const squadPlayers = profile.squad?.slots.filter((slot) => slot.player) ?? []
+  const playerNameById = new Map((profile.squad?.slots ?? []).filter((slot) => slot.player).map((slot) => [slot.player!.playerId, slot.player!.displayName]))
+  const playerName = (id: number) => playerNameById.get(id) ?? `#${id}`
 
   return (
     <div className="space-y-4 pb-10">
@@ -170,6 +172,22 @@ export function ProfilePage() {
               <EmptyState title="Squad hidden" body="The manager has not revealed the submitted squad yet." />
             </div>
           )}
+
+          {profile.revealSquad && profile.swaps && profile.swaps.length > 0 ? (
+            <div className="mt-6 border-t border-[var(--color-line)] pt-5">
+              <p className="eyebrow text-[10px]">swap history</p>
+              <ul className="mt-3 space-y-1 text-sm text-white/80">
+                {profile.swaps.map((swap) => (
+                  <li key={swap.swapId} className="flex flex-wrap gap-x-2">
+                    <span className="text-[var(--color-muted)]">{swap.windowKey}</span>
+                    <span>
+                      {playerName(swap.playerInId)} in for {playerName(swap.playerOutId)} ({swap.slotClass})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       </section>
     </div>

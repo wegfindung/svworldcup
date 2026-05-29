@@ -709,5 +709,8 @@ export interface PublicParticipantProfile {
   revealProfile: boolean
   revealSquad: boolean
   score?: ParticipantScoreRow
+  // squad.slots reflect the effective (post-swap) lineup, not the lock-time draft.
   squad?: ParticipantSquad
+  // Public swap history, present when the squad is revealed (empty if no swaps made).
+  swaps?: SwapRecord[]
 }

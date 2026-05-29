@@ -232,7 +232,27 @@ export function createPublicRouter({ configRepository, registrationRepository, f
     const leagueRows = await scoringRepository.getLeagueLeaderboard(participant.leagueType)
     const score = leagueRows.find((row) => row.participantId === participant.participantId)
     const revealableSquad = canShowSquad ? await squadRepository.getOrCreate(participant.participantId) : undefined
-    const squad = revealableSquad?.isLocked ? revealableSquad : undefined
+    let squad = revealableSquad?.isLocked ? revealableSquad : undefined
+    let swaps: Awaited<ReturnType<typeof squadRepository.listSwaps>> | undefined
+
+    if (squad) {
+      // Show the effective (post-swap) lineup, not the lock-time draft, so the displayed XI matches
+      // the score (which already counts swaps). Remap each slot's player to the latest round snapshot.
+      const roundSlots = await squadRepository.listRoundLineupSlots(participant.participantId)
+      if (roundSlots.length > 0) {
+        const maxRound = Math.max(...roundSlots.map((slot) => slot.roundKey))
+        const playerBySlotKey = new Map(roundSlots.filter((slot) => slot.roundKey === maxRound).map((slot) => [slot.slotKey, slot.playerId]))
+        const playerById = new Map(squad.slots.filter((slot) => slot.player).map((slot) => [slot.player!.playerId, slot.player!]))
+        squad = {
+          ...squad,
+          slots: squad.slots.map((slot) => {
+            const playerId = playerBySlotKey.get(slot.key)
+            return playerId === undefined ? slot : { ...slot, player: playerById.get(playerId) ?? slot.player }
+          }),
+        }
+      }
+      swaps = await squadRepository.listSwaps(participant.participantId)
+    }
 
     res.json({
       item: {
@@ -247,6 +267,7 @@ export function createPublicRouter({ configRepository, registrationRepository, f
         revealSquad: Boolean(squad),
         score,
         squad,
+        swaps,
       },
     })
   })
