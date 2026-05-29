@@ -350,7 +350,36 @@ export class MemorySquadRepository implements SquadRepository {
     if (!byRound) {
       return []
     }
-    return [...byRound.values()].flat()
+
+    const squad = this.squads.get(participantId)
+    const currentSlots = squad?.slots.filter((slot) => slot.player).map((slot) => ({ slotKey: slot.key, playerId: slot.player!.playerId })) ?? []
+    const currentPlayerIds = new Set(currentSlots.map((slot) => slot.playerId))
+    const currentPlayerBySlot = new Map(currentSlots.map((slot) => [slot.slotKey, slot.playerId]))
+    const validRows: RoundLineupSlot[] = []
+
+    for (const [roundKey, rows] of byRound) {
+      const rowPlayerIds = new Set(rows.map((row) => row.playerId))
+      const hasSamePlayerSet =
+        rows.length === currentSlots.length &&
+        rowPlayerIds.size === rows.length &&
+        currentPlayerIds.size === currentSlots.length &&
+        rowPlayerIds.size === currentPlayerIds.size &&
+        [...rowPlayerIds].every((playerId) => currentPlayerIds.has(playerId))
+      const baselineMatchesCurrentSlots =
+        roundKey !== BASELINE_ROUND_KEY || rows.every((row) => currentPlayerBySlot.get(row.slotKey) === row.playerId)
+
+      if (hasSamePlayerSet && baselineMatchesCurrentSlots) {
+        validRows.push(...rows)
+      } else {
+        byRound.delete(roundKey)
+      }
+    }
+
+    if (byRound.size === 0) {
+      this.roundLineups.delete(participantId)
+    }
+
+    return validRows
   }
 
   async listSwaps(participantId: string): Promise<SwapRecord[]> {
@@ -876,6 +905,16 @@ export class PostgresSquadRepository implements SquadRepository {
   }
 
   async listRoundLineupSlots(participantId: string): Promise<RoundLineupSlot[]> {
+    const squadResult = await this.pool.query<{ squad_id: string }>('SELECT squad_id FROM squads WHERE participant_id = $1', [participantId])
+    const squadId = squadResult.rows[0]?.squad_id
+    if (!squadId) {
+      return []
+    }
+
+    const currentSlotResult = await this.pool.query<{ slot_key: string; player_id: string }>(
+      'SELECT slot_key, player_id FROM squad_slots WHERE squad_id = $1',
+      [squadId],
+    )
     const result = await this.pool.query<{
       round_key: number
       slot_key: string
@@ -885,14 +924,48 @@ export class PostgresSquadRepository implements SquadRepository {
       position_codes: string[] | null
     }>(
       `
-        SELECT rl.round_key, rl.slot_key, rl.slot_group, rl.slot_class, rl.player_id, rl.position_codes
-        FROM squad_round_lineup rl
-        JOIN squads s ON s.squad_id = rl.squad_id
-        WHERE s.participant_id = $1
+        SELECT round_key, slot_key, slot_group, slot_class, player_id, position_codes
+        FROM squad_round_lineup
+        WHERE squad_id = $1
       `,
-      [participantId],
+      [squadId],
     )
-    return result.rows.map((row) => ({
+    const currentSlots = currentSlotResult.rows.map((row) => ({ slotKey: row.slot_key, playerId: Number(row.player_id) }))
+    const currentPlayerIds = new Set(currentSlots.map((slot) => slot.playerId))
+    const currentPlayerBySlot = new Map(currentSlots.map((slot) => [slot.slotKey, slot.playerId]))
+    const rowsByRound = new Map<number, typeof result.rows>()
+    for (const row of result.rows) {
+      const roundKey = Number(row.round_key)
+      const rows = rowsByRound.get(roundKey) ?? []
+      rows.push(row)
+      rowsByRound.set(roundKey, rows)
+    }
+
+    const invalidRoundKeys: number[] = []
+    const validRows: typeof result.rows = []
+    for (const [roundKey, rows] of rowsByRound) {
+      const rowPlayerIds = new Set(rows.map((row) => Number(row.player_id)))
+      const hasSamePlayerSet =
+        rows.length === currentSlots.length &&
+        rowPlayerIds.size === rows.length &&
+        currentPlayerIds.size === currentSlots.length &&
+        rowPlayerIds.size === currentPlayerIds.size &&
+        [...rowPlayerIds].every((playerId) => currentPlayerIds.has(playerId))
+      const baselineMatchesCurrentSlots =
+        roundKey !== BASELINE_ROUND_KEY || rows.every((row) => currentPlayerBySlot.get(row.slot_key) === Number(row.player_id))
+
+      if (hasSamePlayerSet && baselineMatchesCurrentSlots) {
+        validRows.push(...rows)
+      } else {
+        invalidRoundKeys.push(roundKey)
+      }
+    }
+
+    if (invalidRoundKeys.length > 0) {
+      await this.pool.query('DELETE FROM squad_round_lineup WHERE squad_id = $1 AND round_key = ANY($2::int[])', [squadId, invalidRoundKeys])
+    }
+
+    return validRows.map((row) => ({
       participantId,
       roundKey: Number(row.round_key),
       slotKey: row.slot_key,

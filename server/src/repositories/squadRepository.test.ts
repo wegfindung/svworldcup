@@ -116,6 +116,25 @@ describe('MemorySquadRepository competition edit window', () => {
     expect(await squads.listRoundLineupSlots(participantId)).toEqual([])
   })
 
+  it('ignores stale lineup snapshots left behind by legacy submitted-squad resets', async () => {
+    const beforeKickoff = (competitionStartEpoch() ?? Date.now()) - 1_000
+    const { squads, participantId } = await createLockedSquad(() => beforeKickoff)
+
+    const staleBaseline = await squads.listRoundLineupSlots(participantId)
+    expect(staleBaseline).toHaveLength(15)
+
+    await squads.resetSquad(participantId)
+    await squads.assignPlayer(participantId, { slotKey: 'starter-def-1', playerId: 105 })
+
+    const internals = squads as unknown as {
+      roundLineups: Map<string, Map<number, typeof staleBaseline>>
+    }
+    internals.roundLineups.set(participantId, new Map([[staleBaseline[0].roundKey, staleBaseline]]))
+
+    expect(await squads.listRoundLineupSlots(participantId)).toEqual([])
+    expect(internals.roundLineups.has(participantId)).toBe(false)
+  })
+
   it('blocks submitted squad edits after the competition starts', async () => {
     const start = competitionStartEpoch() ?? Date.now()
     let now = start - 1_000

@@ -188,6 +188,8 @@ function bonusKey(participantId: string, fixtureId: string, playerId: number) {
 // The set of 15 players never changes after lock — a swap only flips starter<->sub within a class —
 // so the snapshot overrides by playerId; player identity (name/team/image) still comes from the live
 // squad slot.
+const BASELINE_ROUND_KEY = 1
+
 interface ParticipantRoundLineups {
   sortedRoundKeys: number[]
   byRound: Map<number, Map<number, RoundLineupSlot>>
@@ -745,23 +747,79 @@ export class PostgresScoringRepository implements ScoringRepository {
   }
 
   private async listRoundLineupSlots(): Promise<RoundLineupSlot[]> {
-    const result = await this.pool.query<{
-      participant_id: string
-      round_key: number
-      player_id: string
-      slot_key: string
-      slot_group: 'starter' | 'sub'
-      slot_class: SlotClass
-      position_codes: string[] | null
-    }>(
-      `
-        SELECT s.participant_id, rl.round_key, rl.player_id, rl.slot_key, rl.slot_group, rl.slot_class, rl.position_codes
-        FROM squad_round_lineup rl
-        JOIN squads s ON s.squad_id = rl.squad_id
-        WHERE s.is_locked = TRUE
-      `,
-    )
-    return result.rows.map((row) => ({
+    const [currentSlotResult, result] = await Promise.all([
+      this.pool.query<{
+        squad_id: string
+        participant_id: string
+        slot_key: string
+        player_id: string
+      }>(
+        `
+          SELECT s.squad_id, s.participant_id, ss.slot_key, ss.player_id
+          FROM squads s
+          JOIN squad_slots ss ON ss.squad_id = s.squad_id
+          WHERE s.is_locked = TRUE
+        `,
+      ),
+      this.pool.query<{
+        squad_id: string
+        participant_id: string
+        round_key: number
+        player_id: string
+        slot_key: string
+        slot_group: 'starter' | 'sub'
+        slot_class: SlotClass
+        position_codes: string[] | null
+      }>(
+        `
+          SELECT rl.squad_id, s.participant_id, rl.round_key, rl.player_id, rl.slot_key, rl.slot_group, rl.slot_class, rl.position_codes
+          FROM squad_round_lineup rl
+          JOIN squads s ON s.squad_id = rl.squad_id
+          WHERE s.is_locked = TRUE
+        `,
+      ),
+    ])
+    const currentBySquad = new Map<string, Array<{ slotKey: string; playerId: number }>>()
+    for (const row of currentSlotResult.rows) {
+      const current = currentBySquad.get(row.squad_id) ?? []
+      current.push({ slotKey: row.slot_key, playerId: Number(row.player_id) })
+      currentBySquad.set(row.squad_id, current)
+    }
+
+    const rowsByRound = new Map<string, typeof result.rows>()
+    for (const row of result.rows) {
+      const key = `${row.squad_id}:${Number(row.round_key)}`
+      const rows = rowsByRound.get(key) ?? []
+      rows.push(row)
+      rowsByRound.set(key, rows)
+    }
+
+    const validRows: typeof result.rows = []
+    for (const rows of rowsByRound.values()) {
+      const firstRow = rows[0]
+      const current = currentBySquad.get(firstRow.squad_id)
+      if (!current) {
+        continue
+      }
+      const currentPlayerIds = new Set(current.map((slot) => slot.playerId))
+      const currentPlayerBySlot = new Map(current.map((slot) => [slot.slotKey, slot.playerId]))
+      const rowPlayerIds = new Set(rows.map((row) => Number(row.player_id)))
+      const roundKey = Number(firstRow.round_key)
+      const hasSamePlayerSet =
+        rows.length === current.length &&
+        rowPlayerIds.size === rows.length &&
+        currentPlayerIds.size === current.length &&
+        rowPlayerIds.size === currentPlayerIds.size &&
+        [...rowPlayerIds].every((playerId) => currentPlayerIds.has(playerId))
+      const baselineMatchesCurrentSlots =
+        roundKey !== BASELINE_ROUND_KEY || rows.every((row) => currentPlayerBySlot.get(row.slot_key) === Number(row.player_id))
+
+      if (hasSamePlayerSet && baselineMatchesCurrentSlots) {
+        validRows.push(...rows)
+      }
+    }
+
+    return validRows.map((row) => ({
       participantId: row.participant_id,
       roundKey: Number(row.round_key),
       playerId: Number(row.player_id),
