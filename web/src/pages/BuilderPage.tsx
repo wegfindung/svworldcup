@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
@@ -1776,6 +1777,8 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     </div>
                   </div>
                 ) : null}
+
+                {squad.isLocked ? <SwapPanel squad={squad} copy={copy.swap} locale={locale} /> : null}
 
                 <div className="mt-5">
                   <div className="squad-pitch">

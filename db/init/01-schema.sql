@@ -221,6 +221,48 @@ CREATE TABLE IF NOT EXISTS participant_influence_snapshot (
 CREATE INDEX IF NOT EXISTS participant_influence_snapshot_by_fixture
     ON participant_influence_snapshot (fixture_id);
 
+-- Per-round lineup snapshot (player-swap feature). See architecture/SOP_scoring_and_leagues.md
+-- "Per-Round Lineup Freeze". round_key is the tournament-wide round ordinal (group matchdays 1/2/3,
+-- then knockout rounds 4..N). Scoring reads the snapshot with the greatest round_key <= the
+-- fixture's round; rounds with no swap window inherit the previous one. Baseline written at squad
+-- lock, later rounds on swap-commit.
+CREATE TABLE IF NOT EXISTS squad_round_lineup (
+    squad_id UUID NOT NULL REFERENCES squads(squad_id) ON DELETE CASCADE,
+    round_key INTEGER NOT NULL,
+    slot_key TEXT NOT NULL,
+    slot_group TEXT NOT NULL CHECK (slot_group IN ('starter', 'sub')),
+    slot_class TEXT NOT NULL CHECK (slot_class IN ('GK', 'DEF', 'MID', 'FWD')),
+    player_id BIGINT NOT NULL REFERENCES world_cup_players(player_id),
+    position_codes TEXT[] NOT NULL DEFAULT '{}',
+    snapshot_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (squad_id, round_key, slot_key),
+    UNIQUE (squad_id, round_key, player_id)
+);
+
+CREATE INDEX IF NOT EXISTS squad_round_lineup_by_squad_round
+    ON squad_round_lineup (squad_id, round_key);
+
+-- Swap event log (player-swap feature). Authoritative record of who swapped what, when: history,
+-- per-window limit counter, and the domain side of the audit trail. One row = one reserve<->starter
+-- exchange within a slot class (player_in promoted to starter slot slot_in; player_out demoted to
+-- sub slot slot_out; round_key = the round the swap sets the lineup for).
+CREATE TABLE IF NOT EXISTS squad_swaps (
+    swap_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    squad_id UUID NOT NULL REFERENCES squads(squad_id) ON DELETE CASCADE,
+    participant_id UUID NOT NULL REFERENCES participants(participant_id) ON DELETE CASCADE,
+    window_key TEXT NOT NULL,
+    round_key INTEGER NOT NULL,
+    slot_class TEXT NOT NULL CHECK (slot_class IN ('GK', 'DEF', 'MID', 'FWD')),
+    slot_in TEXT NOT NULL,
+    slot_out TEXT NOT NULL,
+    player_in BIGINT NOT NULL REFERENCES world_cup_players(player_id),
+    player_out BIGINT NOT NULL REFERENCES world_cup_players(player_id),
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS squad_swaps_by_participant_window
+    ON squad_swaps (participant_id, window_key);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     audit_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     actor_email TEXT NOT NULL,

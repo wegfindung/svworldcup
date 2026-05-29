@@ -15,6 +15,8 @@ import {
 import { SquadValidationError, type SquadRepository } from '../repositories/squadRepository.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
 import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
+import { SwapValidationError } from '../lib/swapGate.js'
+import { buildSwapWindows, getOpenSwapWindow, hasSwapHardStopPassed, swapHardStopEpoch } from '../data/swapWindows.js'
 
 const assignPlayerSchema = z.object({
   slotKey: z.string().trim().min(1),
@@ -27,6 +29,11 @@ const budgetSchema = z.object({
 
 const linkSoccerverseSchema = z.object({
   soccerverseUsername: z.string().trim().min(1).max(60),
+})
+
+const swapSchema = z.object({
+  playerInId: z.coerce.number().int().positive(),
+  playerOutId: z.coerce.number().int().positive(),
 })
 
 export function createParticipantRouter(
@@ -122,6 +129,78 @@ export function createParticipantRouter(
       }
       throw error
     }
+  })
+
+  // Mid-tournament player swap (separate mutation path — bypasses assertSquadEditable, gated by
+  // assertSwapAllowed). See SOP_scoring_and_leagues.md "Player Swaps".
+  router.post('/squad/swap', async (req, res) => {
+    const participant = res.locals.participant
+    const parsed = swapSchema.parse(req.body)
+
+    try {
+      const result = await squadRepository.swapPlayers(participant.participantId, parsed)
+      await auditRepository.record({
+        actorEmail: participant.email,
+        actionKey: 'participant.squad_swap',
+        entityType: 'squad',
+        entityId: result.swap.squadId,
+        detail: {
+          windowKey: result.windowKey,
+          roundKey: result.targetRound,
+          slotClass: result.swap.slotClass,
+          playerIn: result.swap.playerInId,
+          playerOut: result.swap.playerOutId,
+        },
+      })
+      const squad = await squadRepository.getOrCreate(participant.participantId)
+      res.json({ swap: result, squad })
+    } catch (error) {
+      if (error instanceof SwapValidationError || error instanceof SquadValidationError) {
+        return res.status(422).json({ error: error.message })
+      }
+      throw error
+    }
+  })
+
+  // Swap state for the UI: the window list, the open window (if any), per-window usage, the hard
+  // stop, and this participant's swap history.
+  router.get('/squad/swaps', async (_req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const history = await squadRepository.listSwaps(participantId)
+    const windows = buildSwapWindows()
+    const now = Date.now()
+    const swapsUsedByWindow: Record<string, number> = {}
+    for (const window of windows) {
+      swapsUsedByWindow[window.key] = history.filter((record) => record.windowKey === window.key).length
+    }
+
+    // The effective lineup the next swap operates on: the most forward-looking round snapshot, or the
+    // lock-time squad if none exists yet. squad_slots stays the immutable lock-time draft, so the UI
+    // must read the current starter/reserve split from here, not from /squad. Player display info is
+    // joined client-side by playerId against the squad slots.
+    const roundSlots = await squadRepository.listRoundLineupSlots(participantId)
+    let currentLineup: Array<{ slotKey: string; slotGroup: 'starter' | 'sub'; slotClass: 'GK' | 'DEF' | 'MID' | 'FWD'; playerId: number }>
+    if (roundSlots.length > 0) {
+      const maxRound = Math.max(...roundSlots.map((slot) => slot.roundKey))
+      currentLineup = roundSlots
+        .filter((slot) => slot.roundKey === maxRound)
+        .map((slot) => ({ slotKey: slot.slotKey, slotGroup: slot.slotGroup, slotClass: slot.slotClass, playerId: slot.playerId }))
+    } else {
+      const squad = await squadRepository.getOrCreate(participantId)
+      currentLineup = squad.slots
+        .filter((slot) => slot.player)
+        .map((slot) => ({ slotKey: slot.key, slotGroup: slot.slotGroup, slotClass: slot.slotClass, playerId: slot.player!.playerId }))
+    }
+
+    res.json({
+      history,
+      windows,
+      openWindow: getOpenSwapWindow(now),
+      swapsUsedByWindow,
+      hardStopAt: swapHardStopEpoch(),
+      hasHardStopPassed: hasSwapHardStopPassed(now),
+      currentLineup,
+    })
   })
 
   router.post('/link-soccerverse', async (req, res) => {

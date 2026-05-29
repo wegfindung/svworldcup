@@ -4,6 +4,7 @@ import { fixtureKickoffEpoch } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, getScoreMultiplierForBudget } from '../data/formation.js'
 import { isMidCleanSheetEligible } from '../data/positionClasses.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
+import { buildFixtureRoundMap } from '../lib/tournamentRounds.js'
 import type {
   FixtureSeed,
   LeagueType,
@@ -15,6 +16,7 @@ import type {
   ParticipantScorePlayerDetail,
   ParticipantScoreRow,
   PerformanceCurveAnchor,
+  RoundLineupSlot,
   ScoringConfig,
   SlotClass,
   SlotGroup,
@@ -181,6 +183,58 @@ function bonusKey(participantId: string, fixtureId: string, playerId: number) {
   return `${participantId}|${fixtureId}|${playerId}`
 }
 
+// RoundLineupSlot (domain/types) is a per-round lineup snapshot row (squad_round_lineup). For the
+// round a fixture belongs to, it overrides a player's starter/sub status and frozen position codes.
+// The set of 15 players never changes after lock — a swap only flips starter<->sub within a class —
+// so the snapshot overrides by playerId; player identity (name/team/image) still comes from the live
+// squad slot.
+interface ParticipantRoundLineups {
+  sortedRoundKeys: number[]
+  byRound: Map<number, Map<number, RoundLineupSlot>>
+}
+
+function buildRoundLineupsByParticipant(roundLineups: RoundLineupSlot[]): Map<string, ParticipantRoundLineups> {
+  const result = new Map<string, ParticipantRoundLineups>()
+  for (const row of roundLineups) {
+    let entry = result.get(row.participantId)
+    if (!entry) {
+      entry = { sortedRoundKeys: [], byRound: new Map() }
+      result.set(row.participantId, entry)
+    }
+    let playerMap = entry.byRound.get(row.roundKey)
+    if (!playerMap) {
+      playerMap = new Map()
+      entry.byRound.set(row.roundKey, playerMap)
+    }
+    playerMap.set(row.playerId, row)
+  }
+  for (const entry of result.values()) {
+    entry.sortedRoundKeys = [...entry.byRound.keys()].sort((left, right) => left - right)
+  }
+  return result
+}
+
+// As-of-round lookup: the snapshot with the greatest round_key <= the fixture's round. Returns null
+// when the participant has no snapshot at or before this round (legacy / never-swapped squads) — the
+// caller then falls back to the live squad slot, keeping scoring byte-identical to pre-feature.
+function resolveAsOfRoundLineup(
+  lineups: ParticipantRoundLineups | undefined,
+  fixtureRound: number | null,
+): Map<number, RoundLineupSlot> | null {
+  if (!lineups || fixtureRound === null) {
+    return null
+  }
+  let chosen: number | null = null
+  for (const roundKey of lineups.sortedRoundKeys) {
+    if (roundKey <= fixtureRound) {
+      chosen = roundKey
+    } else {
+      break
+    }
+  }
+  return chosen === null ? null : lineups.byRound.get(chosen) ?? null
+}
+
 // Substitutes are not auto-activated on starter absence. Instead every reserve always contributes a
 // reduced share of the points it actually earns. This is a deliberate failsafe: it removes the need
 // for a live player-availability/injury feed and avoids per-matchday activation bookkeeping while a
@@ -195,9 +249,12 @@ function calculateParticipantRows(
   scoring: ScoringConfig,
   kickoffByFixture: Map<string, number>,
   bonusByEntry: Map<string, number>,
+  fixtureRoundByFixture: Map<string, number>,
+  roundLineups: RoundLineupSlot[],
 ): RankableParticipantRow[] {
   const fixtureEntryScores = buildFixtureEntryScoreMap(entries, scoring)
   const slotsByParticipant = new Map<string, ScoreSlot[]>()
+  const roundLineupsByParticipant = buildRoundLineupsByParticipant(roundLineups)
 
   for (const slot of slots) {
     const current = slotsByParticipant.get(slot.participantId) ?? []
@@ -207,6 +264,7 @@ function calculateParticipantRows(
 
   return participants.map((participant) => {
     const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
+    const participantLineups = roundLineupsByParticipant.get(participant.participantId)
     const lockEpoch = participant.lockedAt ? new Date(participant.lockedAt).getTime() : null
     const hasLockCutoff = lockEpoch !== null && Number.isFinite(lockEpoch)
 
@@ -292,14 +350,24 @@ function calculateParticipantRows(
           continue
         }
       }
+      const fixtureRound = fixtureRoundByFixture.get(fixtureId) ?? null
+      const roundOverrides = resolveAsOfRoundLineup(participantLineups, fixtureRound)
+
       for (const slot of participantSlots) {
         const playerState = entryScores.get(slot.playerId)
         if (!playerState) {
           continue
         }
 
-        const weight = slot.slotGroup === 'sub' ? SUBSTITUTE_POINT_WEIGHT : 1
-        addPlayerState(fixtureId, slot, playerState, weight)
+        // Per-round freeze: starter/sub status + position codes come from the round snapshot when one
+        // exists for this round; otherwise fall back to the live squad slot (unchanged behavior).
+        const override = roundOverrides?.get(slot.playerId)
+        const effectiveSlot: ScoreSlot = override
+          ? { ...slot, slotGroup: override.slotGroup, slotKey: override.slotKey, slotClass: override.slotClass, positionCodes: override.positionCodes }
+          : slot
+
+        const weight = effectiveSlot.slotGroup === 'sub' ? SUBSTITUTE_POINT_WEIGHT : 1
+        addPlayerState(fixtureId, effectiveSlot, playerState, weight)
       }
     }
 
@@ -492,7 +560,14 @@ export class MemoryScoringRepository implements ScoringRepository {
     for (const snapshot of snapshots) {
       bonusByEntry.set(bonusKey(snapshot.participantId, snapshot.fixtureId, snapshot.playerId), snapshot.bonusPercent)
     }
-    return calculateParticipantRows(lockedParticipants, slots, entries, scoring, kickoffByFixture, bonusByEntry)
+    const fixtureRoundByFixture = buildFixtureRoundMap(seedFixtures)
+    // Per-round snapshots come from the squad repository (written at lock + on swap-commit). Empty
+    // for any squad that never swapped — scoring then falls back to the live squad slot.
+    const roundLineups: RoundLineupSlot[] = []
+    for (const participant of lockedParticipants) {
+      roundLineups.push(...(await this.squadRepository.listRoundLineupSlots(participant.participantId)))
+    }
+    return calculateParticipantRows(lockedParticipants, slots, entries, scoring, kickoffByFixture, bonusByEntry, fixtureRoundByFixture, roundLineups)
   }
 }
 
@@ -602,14 +677,17 @@ export class PostgresScoringRepository implements ScoringRepository {
 
   private async calculateRows() {
     const scoring = await this.configRepository.getScoringConfig()
-    const [participants, legacySlots, entries, kickoffByFixture, bonusByEntry] = await Promise.all([
+    const [participants, legacySlots, entries, dbFixtures, bonusByEntry, roundLineups] = await Promise.all([
       this.listParticipants(),
       this.listSlots(),
       this.listMatchEntries(),
-      this.listFixtureKickoffs(),
+      this.listFixtureSeeds(),
       this.listBonusByEntry(),
+      this.listRoundLineupSlots(),
     ])
-    return calculateParticipantRows(participants, legacySlots, entries, scoring, kickoffByFixture, bonusByEntry)
+    const kickoffByFixture = buildKickoffByFixture(dbFixtures)
+    const fixtureRoundByFixture = buildFixtureRoundMap(dbFixtures)
+    return calculateParticipantRows(participants, legacySlots, entries, scoring, kickoffByFixture, bonusByEntry, fixtureRoundByFixture, roundLineups)
   }
 
   private async listParticipants(): Promise<ScoreParticipant[]> {
@@ -644,19 +722,54 @@ export class PostgresScoringRepository implements ScoringRepository {
     }))
   }
 
-  private async listFixtureKickoffs(): Promise<Map<string, number>> {
+  // Fixtures from the DB (the live, admin-editable source) including team codes, so both the kickoff
+  // map and the fixture->round map derive from the same rows (round = a team's Nth chronological
+  // fixture — see lib/tournamentRounds.ts).
+  private async listFixtureSeeds(): Promise<FixtureSeed[]> {
     const result = await this.pool.query<{
       fixture_id: string
+      group_key: string
       kickoff_date: string
       kickoff_time_utc: string
-    }>('SELECT fixture_id, kickoff_date, kickoff_time_utc FROM fixtures')
-    return buildKickoffByFixture(
-      result.rows.map((row) => ({
-        fixtureId: row.fixture_id,
-        kickoffDate: typeof row.kickoff_date === 'string' ? row.kickoff_date : new Date(row.kickoff_date).toISOString().slice(0, 10),
-        kickoffTimeUtc: row.kickoff_time_utc,
-      })),
+      home_team_code: string
+      away_team_code: string
+    }>('SELECT fixture_id, group_key, kickoff_date, kickoff_time_utc, home_team_code, away_team_code FROM fixtures')
+    return result.rows.map((row) => ({
+      fixtureId: row.fixture_id,
+      groupKey: row.group_key,
+      kickoffDate: typeof row.kickoff_date === 'string' ? row.kickoff_date : new Date(row.kickoff_date).toISOString().slice(0, 10),
+      kickoffTimeUtc: row.kickoff_time_utc,
+      homeTeamCode: row.home_team_code,
+      awayTeamCode: row.away_team_code,
+    }))
+  }
+
+  private async listRoundLineupSlots(): Promise<RoundLineupSlot[]> {
+    const result = await this.pool.query<{
+      participant_id: string
+      round_key: number
+      player_id: string
+      slot_key: string
+      slot_group: 'starter' | 'sub'
+      slot_class: SlotClass
+      position_codes: string[] | null
+    }>(
+      `
+        SELECT s.participant_id, rl.round_key, rl.player_id, rl.slot_key, rl.slot_group, rl.slot_class, rl.position_codes
+        FROM squad_round_lineup rl
+        JOIN squads s ON s.squad_id = rl.squad_id
+        WHERE s.is_locked = TRUE
+      `,
     )
+    return result.rows.map((row) => ({
+      participantId: row.participant_id,
+      roundKey: Number(row.round_key),
+      playerId: Number(row.player_id),
+      slotKey: row.slot_key,
+      slotGroup: row.slot_group,
+      slotClass: row.slot_class,
+      positionCodes: row.position_codes ?? [],
+    }))
   }
 
   private async listSlots(): Promise<ScoreSlot[]> {

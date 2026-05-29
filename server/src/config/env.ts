@@ -55,6 +55,15 @@ const envSchema = z.object({
   RISK_SIGNAL_SECRET: optionalString,
   TOURNAMENT_KICKOFF_AT: optionalString,
   REGISTRATION_CLOSE_AT: optionalString,
+  // Player-swap windows (see SOP_scoring_and_leagues.md "Player Swaps"). W1/W2 open/close instants
+  // are derived from the fixtures table; only the fixed W3 epoch and the per-window limits / in-match
+  // duration are overridable here. All optional — code defaults apply when unset.
+  SWAP_W3_OPENS_AT: optionalString,
+  SWAP_W3_CLOSES_AT: optionalString,
+  SWAP_LIMIT_W1: optionalPositiveInt,
+  SWAP_LIMIT_W2: optionalPositiveInt,
+  SWAP_LIMIT_W3: optionalPositiveInt,
+  SWAP_IN_MATCH_HOURS: optionalPositiveInt,
   CLOSED_BETA_AUTH_ENABLED: optionalBooleanFromString,
   CLOSED_BETA_AUTH_USERNAME: z.string().default('soccerverse'),
   CLOSED_BETA_AUTH_PASSWORD: z.string().default('soccerverse'),
@@ -85,6 +94,8 @@ export const env = {
   ADMIN_BOOTSTRAP_EMAILS: parseAdminEmails(parsed.ADMIN_BOOTSTRAP_EMAILS),
   TOURNAMENT_KICKOFF_AT: parseInstant(parsed.TOURNAMENT_KICKOFF_AT),
   REGISTRATION_CLOSE_AT: parseInstant(parsed.REGISTRATION_CLOSE_AT),
+  SWAP_W3_OPENS_AT: parseInstant(parsed.SWAP_W3_OPENS_AT),
+  SWAP_W3_CLOSES_AT: parseInstant(parsed.SWAP_W3_CLOSES_AT),
   CLOSED_BETA_AUTH_ENABLED: parsed.CLOSED_BETA_AUTH_ENABLED ?? parsed.NODE_ENV === 'production',
   RATE_LIMIT_TRUST_PROXY: parsed.RATE_LIMIT_TRUST_PROXY ?? false,
 }
