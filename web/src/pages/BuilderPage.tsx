@@ -16,6 +16,7 @@ import {
   assignSquadPlayer,
   fetchParticipantSession,
   fetchParticipantSquad,
+  fetchSwapState,
   fetchTeamPlayers,
   linkSoccerverseAccount,
   logoutParticipant,
@@ -45,6 +46,7 @@ import type {
   ParticipantSquadSummary,
   SlotClass,
   SquadSlotState,
+  SwapState,
   TeamPoolPlayer,
 } from '../lib/types'
 
@@ -197,6 +199,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
   const [budgetLimit, setBudgetLimit] = useState(initialReadyState?.budgetLimit ?? defaultBudgetLimit)
   const [squad, setSquad] = useState<ParticipantSquad | null>(null)
+  const [swapState, setSwapState] = useState<SwapState | null>(null)
   const [selectedTeamCode, setSelectedTeamCode] = useState<string | undefined>()
   const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
@@ -245,11 +248,31 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     const slots = squad?.slots ?? []
     return slots.find((slot) => slot.key === selectedSlotKey) ?? slots.find((slot) => !slot.player) ?? slots[0] ?? null
   }, [selectedSlotKey, squad])
+  // Once a squad is locked, the effective lineup (which 11 start vs which 4 are reserves) is the
+  // round-lineup snapshot, not the lock-time squad_slots — so a committed swap shows on the pitch.
+  // swapState.currentLineup maps slotKey -> playerId for the lineup in effect; remap the displayed
+  // players accordingly. No snapshot (unlocked, or never swapped) => the raw squad slots are used.
+  const effectiveSlots = useMemo<SquadSlotState[]>(() => {
+    const slots = squad?.slots ?? []
+    const lineup = swapState?.currentLineup
+    if (!lineup || lineup.length === 0) {
+      return slots
+    }
+    const playerById = new Map(slots.filter((slot) => slot.player).map((slot) => [slot.player!.playerId, slot.player!]))
+    const playerBySlotKey = new Map(lineup.map((entry) => [entry.slotKey, entry.playerId]))
+    return slots.map((slot) => {
+      const playerId = playerBySlotKey.get(slot.key)
+      if (playerId === undefined) {
+        return slot
+      }
+      return { ...slot, player: playerById.get(playerId) ?? slot.player }
+    })
+  }, [squad, swapState])
   const squadSlotBuckets = slotClassOrder
     .map((slotClass) => ({
       slotClass,
       ...slotClassCopy[slotClass],
-      slots: (squad?.slots ?? []).filter((slot) => slot.slotClass === slotClass),
+      slots: effectiveSlots.filter((slot) => slot.slotClass === slotClass),
     }))
     .filter((bucket) => bucket.slots.length > 0)
   const visibleTeamPlayers = useMemo(() => {
@@ -269,6 +292,24 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
   const competitionStart = useMemo(() => getCompetitionStartEpoch(bootstrap?.fixtures ?? []), [bootstrap?.fixtures])
   const canEditSquad = !squad?.isLocked || !competitionStarted
+
+  // Load swap state (windows + effective lineup) once the squad is locked; the SwapPanel and the
+  // pitch both read from it. Refetched after each committed swap so the pitch updates immediately.
+  const refreshSwapState = useCallback(async () => {
+    if (!squad?.isLocked) {
+      setSwapState(null)
+      return
+    }
+    try {
+      setSwapState(await fetchSwapState())
+    } catch {
+      setSwapState(null)
+    }
+  }, [squad?.isLocked])
+
+  useEffect(() => {
+    void refreshSwapState()
+  }, [refreshSwapState])
   const socialSharingUnlocked = draftedCount === 15
   const totalSlotCount = squad?.slots.length ?? 15
   const draftCompletionRatio = Math.round((draftedCount / Math.max(totalSlotCount, 1)) * 100)
@@ -1778,7 +1819,9 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                   </div>
                 ) : null}
 
-                {squad.isLocked ? <SwapPanel squad={squad} copy={copy.swap} locale={locale} /> : null}
+                {squad.isLocked ? (
+                  <SwapPanel squad={squad} copy={copy.swap} locale={locale} state={swapState} onSwapped={refreshSwapState} />
+                ) : null}
 
                 <div className="mt-5">
                   <div className="squad-pitch">

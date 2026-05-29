@@ -137,3 +137,50 @@ describe('player swaps — gate enforcement', () => {
     await expect(squads.swapPlayers('nobody', { playerInId: 114, playerOutId: 106 })).rejects.toBeInstanceOf(SquadValidationError)
   })
 })
+
+describe('player swaps — MID clean-sheet position codes travel with the player', () => {
+  // Reserve MID 114 is a defensive midfielder (DM → earns the MID clean-sheet bonus); starting MID
+  // 106 is a plain CM (no bonus). After swapping 114 in for 106, the round-2 lineup must credit the
+  // clean-sheet bonus to 114 at full weight, and 106 (now a CM reserve) must earn none.
+  async function setupCleanSheet() {
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.playerId === 114 ? 'DM' : slotPlayer.position)),
+    )
+    const registrations = new MemoryRegistrationRepository()
+    const created = await registrations.createPending(
+      { email: 'cs@example.com', displayName: 'CS', primaryTeamCode: 'FRA', marketingOptIn: false },
+      'token',
+    )
+    await registrations.verifyByPlainToken('token')
+    const clock = { value: LOCK_TIME }
+    const squads = new MemorySquadRepository(pools, () => clock.value)
+    for (const slotPlayer of slotPlayers) {
+      await squads.assignPlayer(created.record.participantId, { slotKey: slotPlayer.slotKey, playerId: slotPlayer.playerId })
+    }
+    await squads.lockSquad(created.record.participantId)
+    const scoring = new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository())
+    for (const playerId of [106, 114]) {
+      await scoring.upsertMatchEntry({ fixtureId: ROUND_2_FIXTURE, playerId, inOfficialSquad: true, minutes: 90, goals: 0, assists: 0, cleanSheetEligible: true })
+    }
+    return { participantId: created.record.participantId, squads, scoring, clock }
+  }
+
+  it('moves the DM clean-sheet bonus to the promoted reserve after a swap', async () => {
+    const { participantId, squads, scoring, clock } = await setupCleanSheet()
+    clock.value = W1_TIME
+    await squads.swapPlayers(participantId, { playerInId: 114, playerOutId: 106 })
+
+    const [row] = await scoring.getLeagueLeaderboard('rookie')
+    const round2 = row.fixtures.find((fixture) => fixture.fixtureId === ROUND_2_FIXTURE)
+    const promoted = round2?.players.find((p) => p.playerId === 114)
+    const demoted = round2?.players.find((p) => p.playerId === 106)
+    // 114 is now a full-weight starter and a DM → full MID clean-sheet bonus (1).
+    expect(promoted?.slotGroup).toBe('starter')
+    expect(promoted?.cleanSheetPoints).toBe(1)
+    // 106 is now a reserve CM → no clean-sheet bonus regardless of weight.
+    expect(demoted?.slotGroup).toBe('sub')
+    expect(demoted?.cleanSheetPoints).toBe(0)
+  })
+})
