@@ -54,6 +54,14 @@ const englishMessages = {
       squad: 'Squad',
       matches: 'Matches',
     },
+    countdown: {
+      eyebrow: 'World Cup countdown',
+      title: 'Starts in',
+      days: 'Days',
+      hours: 'Hours',
+      minutes: 'Min',
+      seconds: 'Sec',
+    },
     proof: {
       eyebrow: 'what moves the table',
       goal: 'Goal',
