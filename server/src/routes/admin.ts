@@ -232,14 +232,34 @@ export function createAdminRouter(
   router.post('/email-marketing/campaigns', async (req, res) => {
     const parsed = emailCampaignSchema.parse(req.body)
     const campaign = await emailMarketingRepository.saveCampaign(parsed, res.locals.admin.email)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.email_campaign_save',
+      entityType: 'email_campaign',
+      entityId: campaign.campaignId,
+      detail: {
+        mode: parsed.campaignId ? 'update' : 'create',
+        kind: campaign.kind,
+        status: campaign.status,
+        subject: campaign.subject,
+      },
+    })
     res.status(parsed.campaignId ? 200 : 201).json({ campaign })
   })
 
   router.delete('/email-marketing/campaigns/:campaignId', async (req, res) => {
-    const deleted = await emailMarketingRepository.deleteCampaign(String(req.params.campaignId))
+    const campaignId = String(req.params.campaignId)
+    const deleted = await emailMarketingRepository.deleteCampaign(campaignId)
     if (!deleted) {
       return res.status(404).json({ error: 'Campaign not found.' })
     }
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.email_campaign_delete',
+      entityType: 'email_campaign',
+      entityId: campaignId,
+      detail: {},
+    })
     res.status(204).end()
   })
 
@@ -249,19 +269,54 @@ export function createAdminRouter(
   })
 
   router.post('/email-marketing/campaigns/:campaignId/send-now', async (req, res) => {
-    const result = await emailMarketingRepository.sendNow(String(req.params.campaignId))
+    const campaignId = String(req.params.campaignId)
+    const result = await emailMarketingRepository.sendNow(campaignId)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.email_campaign_send',
+      entityType: 'email_campaign',
+      entityId: campaignId,
+      detail: {
+        sent: result.sent,
+        failed: result.failed,
+        skipped: result.skipped,
+        pending: result.pending,
+        status: result.status,
+      },
+    })
     res.json({ result })
   })
 
   router.post('/email-marketing/test', async (req, res) => {
     const parsed = emailTestSchema.parse(req.body)
     await emailMarketingRepository.sendTestMail(parsed, res.locals.admin.email)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.email_campaign_test',
+      entityType: 'email_campaign',
+      entityId: parsed.campaignId ?? 'unsaved',
+      detail: { recipient: parsed.recipient, subject: parsed.subject },
+    })
     res.json({ status: 'sent' })
   })
 
   router.post('/email-marketing/run-due', async (req, res) => {
     const limit = z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) }).parse(req.body).limit
     const results = await emailMarketingRepository.runDueCampaigns(limit)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.email_campaign_run_due',
+      entityType: 'email_campaign',
+      entityId: 'due-batch',
+      detail: {
+        processed: results.length,
+        campaigns: results.map((summary) => ({
+          campaignId: summary.campaignId,
+          sent: summary.sent,
+          failed: summary.failed,
+        })),
+      },
+    })
     res.json({ results })
   })
 

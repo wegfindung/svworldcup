@@ -5,7 +5,8 @@ import type { AuditLogEntry, AuditLogInput } from '../domain/types.js'
 // Append-only audit log for durable admin/participant writes. The actions that must be recorded
 // here are enumerated in architecture/SOP_system_overview.md ("Audit log entries are required for"):
 // the match-import lifecycle, admin login/logout, team-pool edits, reveal actions, score-config
-// changes, verification resends, multi-accounting review status changes, and league changes.
+// changes, verification resends, multi-accounting review status changes, league changes, and
+// email-marketing campaign writes (save/delete/send-now/run-due/test).
 export interface AuditRepository {
   storageKind: 'memory' | 'postgres'
   record(input: AuditLogInput): Promise<AuditLogEntry>
