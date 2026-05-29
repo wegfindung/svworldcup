@@ -35,14 +35,18 @@ export function findNationCapBreach(teamCodes: readonly string[]): string | null
 }
 
 export const budgetOptions = [
-  { budgetLimit: 1_500_000, scoreMultiplier: 1.3 },
-  { budgetLimit: 2_000_000, scoreMultiplier: 1.18 },
-  { budgetLimit: 2_500_000, scoreMultiplier: 1.08 },
+  { budgetLimit: 1_500_000, scoreMultiplier: 1.5 },
+  { budgetLimit: 2_000_000, scoreMultiplier: 1.25 },
+  { budgetLimit: 2_500_000, scoreMultiplier: 1.12 },
   { budgetLimit: 3_000_000, scoreMultiplier: 1 },
-  { budgetLimit: 4_000_000, scoreMultiplier: 0.9 },
-  { budgetLimit: 5_000_000, scoreMultiplier: 0.82 },
-  { budgetLimit: 6_000_000, scoreMultiplier: 0.75 },
-  { budgetLimit: 9_000_000, scoreMultiplier: 0.5 },
+  { budgetLimit: 3_500_000, scoreMultiplier: 0.87 },
+  { budgetLimit: 4_000_000, scoreMultiplier: 0.8 },
+  { budgetLimit: 4_500_000, scoreMultiplier: 0.7 },
+  { budgetLimit: 5_000_000, scoreMultiplier: 0.6 },
+  { budgetLimit: 5_500_000, scoreMultiplier: 0.52 },
+  { budgetLimit: 6_000_000, scoreMultiplier: 0.45 },
+  { budgetLimit: 8_000_000, scoreMultiplier: 0.28 },
+  { budgetLimit: 9_000_000, scoreMultiplier: 0.2 },
 ] as const
 
 export function getBudgetOption(budgetLimit: number) {

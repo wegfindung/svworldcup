@@ -206,8 +206,8 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
     const leaderboard = await scoring.getLeagueLeaderboard('rookie')
     expect(leaderboard[0].baseScore).toBe(7)
-    expect(leaderboard[0].scoreMultiplier).toBe(1.3)
-    expect(leaderboard[0].totalScore).toBeCloseTo(9.1)
+    expect(leaderboard[0].scoreMultiplier).toBe(1.5)
+    expect(leaderboard[0].totalScore).toBeCloseTo(10.5)
   })
 
   it('exposes fixture and player scoring details for public table drilldowns', async () => {
