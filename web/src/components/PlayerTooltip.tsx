@@ -27,6 +27,7 @@ interface PlayerTooltipProps {
   // changing the card's layout.
   as?: 'span' | 'div'
   className?: string
+  style?: CSSProperties
 }
 
 type Anchor = { x: number; y: number; placement: 'top' | 'bottom' }
@@ -36,7 +37,7 @@ function resolveNationName(code: string): string {
   return eventTeams.find((team) => team.code === code)?.nameEn ?? getNationName(code)
 }
 
-export function PlayerTooltip({ info, children, as = 'span', className }: PlayerTooltipProps) {
+export function PlayerTooltip({ info, children, as = 'span', className, style }: PlayerTooltipProps) {
   const [anchor, setAnchor] = useState<Anchor | null>(null)
   const id = useId()
 
@@ -57,6 +58,7 @@ export function PlayerTooltip({ info, children, as = 'span', className }: Player
     as,
     {
       className,
+      style,
       onMouseEnter: open,
       onMouseLeave: close,
       onFocus: open,

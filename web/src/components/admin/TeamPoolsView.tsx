@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { EmptyState } from '../EmptyState'
 import { PlayerPortrait } from '../PlayerPortrait'
+import { PlayerTooltip } from '../PlayerTooltip'
 import { TeamFlag } from '../TeamFlag'
 import { eventTeams } from '../../data/eventConfig'
 import { fetchAdminTeams, fetchTeamSelections, saveTeamSelections, searchTeamCandidates } from '../../lib/api'
@@ -248,10 +249,21 @@ export function TeamPoolsView() {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
+                          <PlayerTooltip
+                            as="div"
+                            info={{
+                              name: player.displayName,
+                              nationCode: player.nationalityCode,
+                              imageUrl: player.imageUrl,
+                              meta: [
+                                { label: 'Rating', value: String(player.rating) },
+                                { label: 'Pos', value: player.positionMain ?? player.positions.join('/') },
+                              ],
+                            }}
+                          >
                             <p className="truncate text-base font-semibold text-white">{player.displayName}</p>
                             <p className="mt-1 text-sm text-[var(--color-muted)]">ID {player.playerId}</p>
-                          </div>
+                          </PlayerTooltip>
                           <span className="mono rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--color-accent)]">
                             {player.rating}
                           </span>
@@ -302,10 +314,21 @@ export function TeamPoolsView() {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
+                          <PlayerTooltip
+                            as="div"
+                            info={{
+                              name: player.displayName,
+                              nationCode: player.teamCode || player.nationalityCode,
+                              imageUrl: player.imageUrl,
+                              meta: [
+                                { label: 'Rating', value: String(player.rating) },
+                                { label: 'Pos', value: player.positionMain ?? player.positions.join('/') },
+                              ],
+                            }}
+                          >
                             <p className="truncate text-base font-semibold text-white">{player.displayName}</p>
                             <p className="mt-1 text-sm text-[var(--color-muted)]">ID {player.playerId}</p>
-                          </div>
+                          </PlayerTooltip>
                           <button
                             type="button"
                             onClick={() =>

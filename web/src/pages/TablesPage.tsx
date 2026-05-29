@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
+import { PlayerTooltip } from '../components/PlayerTooltip'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
@@ -86,7 +87,21 @@ function DetailStat({ label, value }: { label: string; value: number }) {
 function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: ParticipantScorePlayerDetail }) {
   return (
     <div className="grid gap-3 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-      <div className="min-w-0">
+      <PlayerTooltip
+        as="div"
+        className="min-w-0"
+        info={{
+          name: player.displayName,
+          nationCode: player.teamCode,
+          imageUrl: player.imageUrl,
+          meta: [
+            { label: 'Min', value: `${player.minutes}'` },
+            { label: 'G', value: String(player.goals) },
+            { label: 'A', value: String(player.assists) },
+            ...(player.rating !== undefined ? [{ label: 'Rating', value: String(player.rating) }] : []),
+          ],
+        }}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
           <p className="truncate text-xs font-semibold text-white">{player.displayName}</p>
@@ -96,7 +111,7 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
           {player.slotGroup} - {player.minutes}' - ID {player.playerId}
           {player.rating !== undefined ? ` - ${copy.rating} ${player.rating}` : ''}
         </p>
-      </div>
+      </PlayerTooltip>
       <div className="flex flex-wrap gap-1.5 sm:justify-end">
         <DetailStat label={copy.breakdown.goals} value={player.goalPoints} />
         <DetailStat label={copy.breakdown.assists} value={player.assistPoints} />
