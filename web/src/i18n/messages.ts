@@ -326,6 +326,7 @@ const englishMessages = {
       selectSlot: 'Select a slot',
       clearSlotFirst: 'Clear slot first',
       overBudget: 'Over budget',
+      nationFull: 'Max 4 from this team',
       addTo: 'Add to',
       budgetMonitor: 'budget monitor',
       remainingOf: 'Remaining of',

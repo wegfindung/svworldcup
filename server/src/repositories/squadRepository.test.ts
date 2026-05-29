@@ -34,10 +34,51 @@ function player(playerId: number, position: string): SoccerversePlayerRecord {
   }
 }
 
+// Spread the 15-player squad across four Grand Tournament teams so no team holds more than 4 of them
+// (the per-team cap is 4). Each base player and its +100 alternate share the slot's team.
+const slotTeam: Record<string, string> = {
+  'starter-gk-1': 'GER',
+  'starter-def-1': 'ESP',
+  'starter-def-2': 'ESP',
+  'starter-def-3': 'ESP',
+  'starter-def-4': 'ESP',
+  'starter-mid-1': 'FRA',
+  'starter-mid-2': 'FRA',
+  'starter-mid-3': 'FRA',
+  'starter-fwd-1': 'BRA',
+  'starter-fwd-2': 'BRA',
+  'starter-fwd-3': 'BRA',
+  'sub-gk-1': 'GER',
+  'sub-def-1': 'GER',
+  'sub-mid-1': 'FRA',
+  'sub-fwd-1': 'BRA',
+}
+
+function teamForPlayer(record: SoccerversePlayerRecord): string {
+  const baseId = record.playerId >= 200 ? record.playerId - 100 : record.playerId
+  const slot = slotPlayers.find((slotPlayer) => slotPlayer.playerId === baseId)
+  return slot ? slotTeam[slot.slotKey] : 'FRA'
+}
+
+// Seed the given squad players into their mapped team pools (replacing the single-FRA-pool pattern
+// that now trips the per-team cap). Buckets by teamForPlayer and seeds one pool per team.
+async function seedSquadPools(pools: MemoryTeamPoolRepository, players: SoccerversePlayerRecord[]) {
+  const byTeam = new Map<string, SoccerversePlayerRecord[]>()
+  for (const record of players) {
+    const teamCode = teamForPlayer(record)
+    const bucket = byTeam.get(teamCode) ?? []
+    bucket.push(record)
+    byTeam.set(teamCode, bucket)
+  }
+  for (const [teamCode, bucket] of byTeam) {
+    await pools.replaceTeamPlayers(teamCode, bucket)
+  }
+}
+
 async function createLockedSquad(now: () => number) {
   const pools = new MemoryTeamPoolRepository()
-  await pools.replaceTeamPlayers(
-    'FRA',
+  await seedSquadPools(
+    pools,
     slotPlayers.flatMap((slotPlayer) => [player(slotPlayer.playerId, slotPlayer.position), player(slotPlayer.playerId + 100, slotPlayer.position)]),
   )
 
@@ -85,8 +126,8 @@ describe('MemorySquadRepository registration close edit window', () => {
     // Build before both the competition start and registration close, so assignment is allowed.
     let now = (competitionStartEpoch() ?? Date.now()) - 1_000
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.flatMap((slotPlayer) => [player(slotPlayer.playerId, slotPlayer.position), player(slotPlayer.playerId + 100, slotPlayer.position)]),
     )
     const squads = new MemorySquadRepository(pools, () => now)
@@ -105,8 +146,8 @@ describe('MemorySquadRepository registration close edit window', () => {
   it('blocks final squad submission once registration has closed', async () => {
     let now = (competitionStartEpoch() ?? Date.now()) - 1_000
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.flatMap((slotPlayer) => [player(slotPlayer.playerId, slotPlayer.position), player(slotPlayer.playerId + 100, slotPlayer.position)]),
     )
     const squads = new MemorySquadRepository(pools, () => now)
@@ -142,5 +183,28 @@ describe('MemorySquadRepository position snapshot', () => {
 
     const afterRewrite = await squads.getOrCreate('participant-1')
     expect(afterRewrite.slots.find((slot) => slot.key === 'starter-mid-1')?.player?.positions).toEqual(['CM', 'DM'])
+  })
+})
+
+describe('MemorySquadRepository per-team cap', () => {
+  it('allows up to 4 players from one team and rejects a 5th from the same team', async () => {
+    // Five DEF-eligible players, all seeded into team FRA. Four fit the four starter DEF slots;
+    // the fifth (going to the reserve DEF slot) breaches the at-most-4-per-team cap.
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers(
+      'FRA',
+      [301, 302, 303, 304, 305].map((playerId) => player(playerId, 'CB')),
+    )
+    const squads = new MemorySquadRepository(pools)
+    const participantId = 'participant-cap'
+
+    await squads.assignPlayer(participantId, { slotKey: 'starter-def-1', playerId: 301 })
+    await squads.assignPlayer(participantId, { slotKey: 'starter-def-2', playerId: 302 })
+    await squads.assignPlayer(participantId, { slotKey: 'starter-def-3', playerId: 303 })
+    await squads.assignPlayer(participantId, { slotKey: 'starter-def-4', playerId: 304 })
+
+    await expect(
+      squads.assignPlayer(participantId, { slotKey: 'sub-def-1', playerId: 305 }),
+    ).rejects.toThrow(/at most 4 players from the same team/)
   })
 })

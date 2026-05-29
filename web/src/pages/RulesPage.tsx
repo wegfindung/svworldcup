@@ -43,6 +43,7 @@ const englishCopy = {
       'Pick two nations — your home country and one free choice. They must be different, and they drive the Nation League.',
       'Every player is available to everyone. There is no exclusivity, and two managers may end up with identical squads.',
       'You cannot pick the same player twice in your squad.',
+      'You can draft at most 4 players from the same team across your 15 — starters and reserves combined.',
       'A verified email is required before you can enter the squad builder.',
     ],
   },

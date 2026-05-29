@@ -39,11 +39,52 @@ function player(playerId: number, position: string): SoccerversePlayerRecord {
   }
 }
 
+// Spread the 15-player squad across four Grand Tournament teams so no team holds more than 4 of
+// them (the per-team cap is 4). Each base player and its +100 alternate share the slot's team.
+const slotTeam: Record<string, string> = {
+  'starter-gk-1': 'GER',
+  'starter-def-1': 'ESP',
+  'starter-def-2': 'ESP',
+  'starter-def-3': 'ESP',
+  'starter-def-4': 'ESP',
+  'starter-mid-1': 'FRA',
+  'starter-mid-2': 'FRA',
+  'starter-mid-3': 'FRA',
+  'starter-fwd-1': 'BRA',
+  'starter-fwd-2': 'BRA',
+  'starter-fwd-3': 'BRA',
+  'sub-gk-1': 'GER',
+  'sub-def-1': 'GER',
+  'sub-mid-1': 'FRA',
+  'sub-fwd-1': 'BRA',
+}
+
+function teamForPlayer(record: SoccerversePlayerRecord): string {
+  const baseId = record.playerId >= 200 ? record.playerId - 100 : record.playerId
+  const slot = slotPlayers.find((slotPlayer) => slotPlayer.playerId === baseId)
+  return slot ? slotTeam[slot.slotKey] : 'FRA'
+}
+
+// Seed the given squad players into their mapped team pools (replacing the single-FRA-pool pattern
+// that now trips the per-team cap). Buckets by teamForPlayer and seeds one pool per team.
+async function seedSquadPools(pools: MemoryTeamPoolRepository, players: SoccerversePlayerRecord[]) {
+  const byTeam = new Map<string, SoccerversePlayerRecord[]>()
+  for (const record of players) {
+    const teamCode = teamForPlayer(record)
+    const bucket = byTeam.get(teamCode) ?? []
+    bucket.push(record)
+    byTeam.set(teamCode, bucket)
+  }
+  for (const [teamCode, bucket] of byTeam) {
+    await pools.replaceTeamPlayers(teamCode, bucket)
+  }
+}
+
 describe('MemoryScoringRepository competition squad scoring', () => {
   it('scores the one locked competition squad across fixtures', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.flatMap((slotPlayer) => [
         player(slotPlayer.playerId, slotPlayer.position),
         player(slotPlayer.playerId + 100, slotPlayer.position),
@@ -94,8 +135,8 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
   it('scores reserves at half their earned points, with no auto-activation', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -129,8 +170,8 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
   it('applies the selected budget multiplier to the final score', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -171,8 +212,8 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
   it('exposes fixture and player scoring details for public table drilldowns', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -227,7 +268,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
         expect.objectContaining({
           playerId: 109,
           displayName: 'Player 109',
-          teamCode: 'FRA',
+          teamCode: 'BRA',
           slotKey: 'starter-fwd-1',
           goals: 2,
           assists: 1,
@@ -238,7 +279,7 @@ describe('MemoryScoringRepository competition squad scoring', () => {
         expect.objectContaining({
           playerId: 101,
           displayName: 'Player 101',
-          teamCode: 'FRA',
+          teamCode: 'GER',
           slotKey: 'starter-gk-1',
           cleanSheetPoints: 4,
           totalPoints: 6,
@@ -249,8 +290,8 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
   it('exposes nation leaderboard contributors for country rankings', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -327,8 +368,8 @@ describe('MemoryScoringRepository competition squad scoring', () => {
 
   it('excludes countries with a single active manager', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -394,8 +435,8 @@ describe('MemoryScoringRepository late-entry rule', () => {
 
   async function buildScenario() {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -483,8 +524,8 @@ describe('MemoryScoringRepository late-entry rule', () => {
 describe('MemoryScoringRepository ownership boost', () => {
   async function buildVeteranScenario() {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -595,8 +636,8 @@ describe('MemoryScoringRepository ownership boost', () => {
 
   it('applies the boost to a linked Rookie on the Rookie leaderboard (boost is not league-gated)', async () => {
     const pools = new MemoryTeamPoolRepository()
-    await pools.replaceTeamPlayers(
-      'FRA',
+    await seedSquadPools(
+      pools,
       slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)),
     )
     const registrations = new MemoryRegistrationRepository()
@@ -663,7 +704,7 @@ describe('MemoryScoringRepository ownership boost', () => {
       }
       return player(slotPlayer.playerId, slotPlayer.position)
     })
-    await pools.replaceTeamPlayers('FRA', players)
+    await seedSquadPools(pools, players)
 
     const registrations = new MemoryRegistrationRepository()
     const created = await registrations.createPending(

@@ -7,7 +7,7 @@ import { PlayerTooltip } from '../components/PlayerTooltip'
 import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
-import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
+import { MAX_PLAYERS_PER_NATION, budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
 import { soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from '../lib/competitionWindow'
@@ -236,6 +236,18 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     [selectedTeamCode],
   )
   const draftedCount = useMemo(() => squad?.slots.filter((slot) => slot.player).length ?? 0, [squad])
+  // How many drafted players each Grand Tournament team already contributes, for the per-team cap
+  // (max 4 from one team). Keyed by teamCode, falling back to nationalityCode like the server does.
+  const teamCountByCode = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const slot of squad?.slots ?? []) {
+      const code = slot.player?.teamCode || slot.player?.nationalityCode
+      if (code) {
+        counts.set(code, (counts.get(code) ?? 0) + 1)
+      }
+    }
+    return counts
+  }, [squad])
   const draftedPlayerIds = useMemo(
     () =>
       new Set(
@@ -1675,7 +1687,10 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     {visibleTeamPlayers.map((player) => {
                       const selectedSlotIsOpen = Boolean(selectedSlot && !selectedSlot.player)
                       const isOverBudget = selectedSlotIsOpen && player.capCost > squad.budgetRemaining
-                      const actionDisabled = !canEditSquad || !selectedSlotIsOpen || isOverBudget
+                      const isNationFull =
+                        selectedSlotIsOpen &&
+                        (teamCountByCode.get(player.teamCode || player.nationalityCode) ?? 0) >= MAX_PLAYERS_PER_NATION
+                      const actionDisabled = !canEditSquad || !selectedSlotIsOpen || isOverBudget || isNationFull
                       const actionLabel = !canEditSquad
                         ? copy.active.lockedAfterKickoff
                         : !selectedSlot
@@ -1684,7 +1699,9 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                             ? copy.active.clearSlotFirst
                             : isOverBudget
                               ? copy.active.overBudget
-                              : `${copy.active.addTo} ${compactSlotLabel(selectedSlot.label, copy)}`
+                              : isNationFull
+                                ? copy.active.nationFull
+                                : `${copy.active.addTo} ${compactSlotLabel(selectedSlot.label, copy)}`
                       return (
                         <article
                           key={player.playerId}

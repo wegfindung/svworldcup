@@ -6,6 +6,10 @@ export const defaultLocale: LocaleCode = 'en'
 
 export const budgetLimit = 3_000_000
 
+// A squad may contain at most this many players from the same Grand Tournament team (a national team).
+// Mirrors MAX_PLAYERS_PER_NATION in server/src/data/formation.ts. See SOP_registration_and_auth.md.
+export const MAX_PLAYERS_PER_NATION = 4
+
 export const budgetOptions = [
   { budgetLimit: 1_500_000, scoreMultiplier: 1.3 },
   { budgetLimit: 2_000_000, scoreMultiplier: 1.18 },

@@ -36,6 +36,40 @@ function player(playerId: number, position: string): SoccerversePlayerRecord {
   return { playerId, displayName: `Player ${playerId}`, nationalityCode: 'FRA', rating: 50, clubId: 1, positions: [position], positionMain: position }
 }
 
+// Spread the 15-player squad across four Grand Tournament teams so no team holds more than 4 of them
+// (the per-team cap is 4). Same-class swap pairs (e.g. MID 106/114) share a team.
+const slotTeam: Record<string, string> = {
+  'starter-gk-1': 'GER',
+  'starter-def-1': 'ESP',
+  'starter-def-2': 'ESP',
+  'starter-def-3': 'ESP',
+  'starter-def-4': 'ESP',
+  'starter-mid-1': 'FRA',
+  'starter-mid-2': 'FRA',
+  'starter-mid-3': 'FRA',
+  'starter-fwd-1': 'BRA',
+  'starter-fwd-2': 'BRA',
+  'starter-fwd-3': 'BRA',
+  'sub-gk-1': 'GER',
+  'sub-def-1': 'GER',
+  'sub-mid-1': 'FRA',
+  'sub-fwd-1': 'BRA',
+}
+
+// Seed the standard squad players into their mapped team pools, one pool per team.
+async function seedSquadPools(pools: MemoryTeamPoolRepository) {
+  const byTeam = new Map<string, SoccerversePlayerRecord[]>()
+  for (const slotPlayer of slotPlayers) {
+    const teamCode = slotTeam[slotPlayer.slotKey]
+    const bucket = byTeam.get(teamCode) ?? []
+    bucket.push(player(slotPlayer.playerId, slotPlayer.position))
+    byTeam.set(teamCode, bucket)
+  }
+  for (const [teamCode, bucket] of byTeam) {
+    await pools.replaceTeamPlayers(teamCode, bucket)
+  }
+}
+
 const roundTwoEarlierFixture: FixtureSeed = {
   fixtureId: '2026-06-18-a-cze-rsa',
   groupKey: 'A',
@@ -52,7 +86,7 @@ const BETWEEN_WINDOWS = new Date('2026-06-20T00:00:00Z').getTime()
 
 async function setup() {
   const pools = new MemoryTeamPoolRepository()
-  await pools.replaceTeamPlayers('FRA', slotPlayers.map((slotPlayer) => player(slotPlayer.playerId, slotPlayer.position)))
+  await seedSquadPools(pools)
 
   const registrations = new MemoryRegistrationRepository()
   const created = await registrations.createPending(

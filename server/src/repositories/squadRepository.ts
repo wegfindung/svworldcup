@@ -1,7 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import { hasCompetitionStarted, hasRegistrationClosed } from '../data/competitionWindow.js'
-import { STARTING_BUDGET, formationSlots, getBudgetOption, getScoreMultiplierForBudget, getSlotDefinition } from '../data/formation.js'
+import {
+  MAX_PLAYERS_PER_NATION,
+  STARTING_BUDGET,
+  findNationCapBreach,
+  formationSlots,
+  getBudgetOption,
+  getScoreMultiplierForBudget,
+  getSlotDefinition,
+  wouldExceedNationCap,
+} from '../data/formation.js'
 import { getPositionClasses, isEligibleForSlot } from '../data/positionClasses.js'
 import { getCapCostForRating } from '../data/salaryTable.js'
 import { getOpenSwapWindow } from '../data/swapWindows.js'
@@ -152,6 +161,11 @@ export class MemorySquadRepository implements SquadRepository {
       throw new SquadValidationError('Player would push the squad over budget.')
     }
 
+    const existingTeamCodes = squad.slots.filter((slotState) => slotState.player).map((slotState) => slotState.player!.teamCode)
+    if (wouldExceedNationCap(existingTeamCodes, player.teamCode)) {
+      throw new SquadValidationError(`A squad may contain at most ${MAX_PLAYERS_PER_NATION} players from the same team.`)
+    }
+
     const nextSlots = squad.slots.map((slotState) => (slotState.key === input.slotKey ? { ...slotState, player } : slotState))
     const nextSquad: ParticipantSquad = {
       ...squad,
@@ -228,6 +242,10 @@ export class MemorySquadRepository implements SquadRepository {
     const missingSlot = squad.slots.find((slot) => !slot.player)
     if (missingSlot) {
       throw new SquadValidationError('Squad must contain all 15 players before final submission.')
+    }
+
+    if (findNationCapBreach(squad.slots.map((slot) => slot.player?.teamCode ?? ''))) {
+      throw new SquadValidationError(`A squad may contain at most ${MAX_PLAYERS_PER_NATION} players from the same team.`)
     }
 
     const lockedSquad: ParticipantSquad = {
@@ -466,6 +484,29 @@ export class PostgresSquadRepository implements SquadRepository {
         throw new SquadValidationError('Player would push the squad over budget.')
       }
 
+      // Per-team cap: count the team codes of players already in the squad (squad_slots is row-locked
+      // by the FOR UPDATE above, so a concurrent assign cannot slip a 5th in). Same team-code
+      // resolution as the swap path: selection override, else the player's nationality.
+      const existingTeamCodesResult = await client.query<{ team_code: string | null }>(
+        `
+          SELECT COALESCE(ts.team_code, p.nationality_code) AS team_code
+          FROM squad_slots s
+          JOIN world_cup_players p ON p.player_id = s.player_id
+          LEFT JOIN LATERAL (
+            SELECT team_code FROM world_cup_team_selections
+            WHERE player_id = s.player_id
+            ORDER BY team_code
+            LIMIT 1
+          ) ts ON TRUE
+          WHERE s.squad_id = $1
+        `,
+        [squad.squad_id],
+      )
+      const existingTeamCodes = existingTeamCodesResult.rows.map((row) => row.team_code ?? '')
+      if (wouldExceedNationCap(existingTeamCodes, player.teamCode)) {
+        throw new SquadValidationError(`A squad may contain at most ${MAX_PLAYERS_PER_NATION} players from the same team.`)
+      }
+
       await client.query(
         `
           INSERT INTO squad_slots (squad_id, slot_key, slot_group, slot_class, player_id, position_codes)
@@ -625,6 +666,26 @@ export class PostgresSquadRepository implements SquadRepository {
       ])
       if (Number(slotCount.rows[0]?.count ?? 0) !== formationSlots.length) {
         throw new SquadValidationError('Squad must contain all 15 players before final submission.')
+      }
+
+      // Per-team cap backstop at lock (assign already enforces it; this guards any path that bypassed assign).
+      const lockTeamCodesResult = await client.query<{ team_code: string | null }>(
+        `
+          SELECT COALESCE(ts.team_code, p.nationality_code) AS team_code
+          FROM squad_slots s
+          JOIN world_cup_players p ON p.player_id = s.player_id
+          LEFT JOIN LATERAL (
+            SELECT team_code FROM world_cup_team_selections
+            WHERE player_id = s.player_id
+            ORDER BY team_code
+            LIMIT 1
+          ) ts ON TRUE
+          WHERE s.squad_id = $1
+        `,
+        [squad.squad_id],
+      )
+      if (findNationCapBreach(lockTeamCodesResult.rows.map((row) => row.team_code ?? ''))) {
+        throw new SquadValidationError(`A squad may contain at most ${MAX_PLAYERS_PER_NATION} players from the same team.`)
       }
 
       await client.query('UPDATE squads SET is_locked = TRUE, locked_at = NOW(), updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
