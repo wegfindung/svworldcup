@@ -16,14 +16,14 @@ const englishCopy = {
   eyebrow: 'how it works',
   title: 'Event rules, in full.',
   intro:
-    'One squad. One lock. Forty-plus days of World Cup football moving your rank. Everything described on this page is live in the current build — only mechanics that already work are written as rules. Anything still in progress is listed under “Coming soon” at the end.',
+    'One squad. One lock. Forty-plus days of Grand Tournament football moving your rank. Everything described on this page is live in the current build — only mechanics that already work are written as rules. Anything still in progress is listed under “Coming soon” at the end.',
   cta: 'Register your squad',
 
   squad: {
     eyebrow: 'registration & squad',
     title: 'Build one squad, then lock it',
     body:
-      'You draft a single 15-player squad in a 4-3-3 with one reserve per position. Players come from the official World Cup team pools mapped into Soccerverse. Once you lock, your squad is fixed — no transfers, no new players. The only mid-tournament change allowed is a limited reserve-for-starter swap inside timed windows (see Player swaps below).',
+      'You draft a single 15-player squad in a 4-3-3 with one reserve per position. Players come from the official Grand Tournament team pools mapped into Soccerverse. Once you lock, your squad is fixed — no transfers, no new players. The only mid-tournament change allowed is a limited reserve-for-starter swap inside timed windows (see Player swaps below).',
     formationTitle: 'Squad shape (15 players)',
     starters: [
       { label: 'GK', value: '1' },
@@ -74,7 +74,7 @@ const englishCopy = {
     eyebrow: 'scoring rubric',
     title: 'How points are earned',
     body:
-      'A fixed rubric is applied to each player’s real World Cup performance, match by match. Clean-sheet value depends on position. On top of that, each player earns up to 2 performance points scaled from their match rating.',
+      'A fixed rubric is applied to each player’s real Grand Tournament performance, match by match. Clean-sheet value depends on position. On top of that, each player earns up to 2 performance points scaled from their match rating.',
     rubric: [
       { label: 'Goal', value: '+5', detail: 'per goal scored' },
       { label: 'Assist', value: '+3', detail: 'per assist' },
@@ -175,7 +175,7 @@ const englishCopy = {
     eyebrow: 'dates & locks',
     title: 'When things happen',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Every official match moves the tables.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Every official match moves the tables.' },
       { label: 'Registration closes', value: '4 Jul 2026, 00:00 UTC', detail: 'No new entries after this instant, and your drafted squad is final — but limited reserve-for-starter swaps still run in their windows (see Player swaps).' },
       {
         label: 'Squad lock',
@@ -212,14 +212,14 @@ copyByLocale.es = {
   eyebrow: 'cómo funciona',
   title: 'Reglas del evento, al completo.',
   intro:
-    'Un equipo. Un bloqueo. Más de cuarenta días de fútbol del World Cup moviendo tu posición. Todo lo descrito en esta página está activo en la versión actual — solo se redactan como reglas las mecánicas que ya funcionan. Cualquier cosa todavía en desarrollo aparece en “Próximamente” al final.',
+    'Un equipo. Un bloqueo. Más de cuarenta días de fútbol del Grand Tournament moviendo tu posición. Todo lo descrito en esta página está activo en la versión actual — solo se redactan como reglas las mecánicas que ya funcionan. Cualquier cosa todavía en desarrollo aparece en “Próximamente” al final.',
   cta: 'Registra tu equipo',
 
   squad: {
     eyebrow: 'registro y equipo',
     title: 'Construye un equipo y luego bloquéalo',
     body:
-      'Eliges un único equipo de 15 jugadores en un 4-3-3 con un reserva por posición. Los jugadores provienen de los grupos oficiales de las selecciones del World Cup mapeados en Soccerverse. Una vez que bloqueas, tu equipo queda fijo — sin traspasos, sin nuevos jugadores. El único cambio permitido durante el torneo es un cambio limitado de reserva por titular dentro de ventanas programadas (consulta Cambios de jugadores más abajo).',
+      'Eliges un único equipo de 15 jugadores en un 4-3-3 con un reserva por posición. Los jugadores provienen de los grupos oficiales de las selecciones del Grand Tournament mapeados en Soccerverse. Una vez que bloqueas, tu equipo queda fijo — sin traspasos, sin nuevos jugadores. El único cambio permitido durante el torneo es un cambio limitado de reserva por titular dentro de ventanas programadas (consulta Cambios de jugadores más abajo).',
     formationTitle: 'Forma del equipo (15 jugadores)',
     starters: [
       { label: 'GK', value: '1' },
@@ -270,7 +270,7 @@ copyByLocale.es = {
     eyebrow: 'tabla de puntuación',
     title: 'Cómo se ganan los puntos',
     body:
-      'Se aplica una tabla fija al rendimiento real de cada jugador en el World Cup, partido a partido. El valor de la portería a cero depende de la posición. Además, cada jugador gana hasta 2 puntos de rendimiento escalados a partir de su valoración del partido.',
+      'Se aplica una tabla fija al rendimiento real de cada jugador en el Grand Tournament, partido a partido. El valor de la portería a cero depende de la posición. Además, cada jugador gana hasta 2 puntos de rendimiento escalados a partir de su valoración del partido.',
     rubric: [
       { label: 'Gol', value: '+5', detail: 'por cada gol marcado' },
       { label: 'Asistencia', value: '+3', detail: 'por cada asistencia' },
@@ -371,7 +371,7 @@ copyByLocale.es = {
     eyebrow: 'fechas y bloqueos',
     title: 'Cuándo ocurren las cosas',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Cada partido oficial mueve las tablas.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Cada partido oficial mueve las tablas.' },
       { label: 'Cierre del registro', value: '4 Jul 2026, 00:00 UTC', detail: 'No se admiten nuevas inscripciones después de este instante, y tu equipo fichado es definitivo — pero los cambios limitados de reserva por titular siguen funcionando en sus ventanas (consulta Cambios de jugadores).' },
       {
         label: 'Bloqueo del equipo',
@@ -393,14 +393,14 @@ copyByLocale.it = {
   eyebrow: 'come funziona',
   title: 'Le regole dell’evento, per intero.',
   intro:
-    'Una sola rosa. Un solo blocco. Oltre quaranta giorni di calcio del World Cup che fanno muovere la tua posizione. Tutto ciò che è descritto in questa pagina è attivo nella build attuale — solo le meccaniche che già funzionano sono scritte come regole. Tutto ciò che è ancora in lavorazione è elencato in “In arrivo” alla fine.',
+    'Una sola rosa. Un solo blocco. Oltre quaranta giorni di calcio del Grand Tournament che fanno muovere la tua posizione. Tutto ciò che è descritto in questa pagina è attivo nella build attuale — solo le meccaniche che già funzionano sono scritte come regole. Tutto ciò che è ancora in lavorazione è elencato in “In arrivo” alla fine.',
   cta: 'Registra la tua rosa',
 
   squad: {
     eyebrow: 'registrazione e rosa',
     title: 'Costruisci una rosa, poi bloccala',
     body:
-      'Componi un’unica rosa di 15 giocatori in un 4-3-3 con una riserva per ruolo. I giocatori provengono dai pool ufficiali delle squadre del World Cup mappati in Soccerverse. Una volta bloccata, la tua rosa è fissa — niente trasferimenti, niente nuovi giocatori. L’unica modifica consentita durante il torneo è un cambio limitato riserva-per-titolare all’interno di finestre programmate (vedi Cambi giocatori più sotto).',
+      'Componi un’unica rosa di 15 giocatori in un 4-3-3 con una riserva per ruolo. I giocatori provengono dai pool ufficiali delle squadre del Grand Tournament mappati in Soccerverse. Una volta bloccata, la tua rosa è fissa — niente trasferimenti, niente nuovi giocatori. L’unica modifica consentita durante il torneo è un cambio limitato riserva-per-titolare all’interno di finestre programmate (vedi Cambi giocatori più sotto).',
     formationTitle: 'Schema della rosa (15 giocatori)',
     starters: [
       { label: 'GK', value: '1' },
@@ -451,7 +451,7 @@ copyByLocale.it = {
     eyebrow: 'criterio di punteggio',
     title: 'Come si guadagnano i punti',
     body:
-      'Un criterio fisso viene applicato alla prestazione reale al World Cup di ogni giocatore, partita per partita. Il valore della porta inviolata dipende dal ruolo. In aggiunta, ogni giocatore guadagna fino a 2 punti prestazione scalati dalla sua valutazione di partita.',
+      'Un criterio fisso viene applicato alla prestazione reale al Grand Tournament di ogni giocatore, partita per partita. Il valore della porta inviolata dipende dal ruolo. In aggiunta, ogni giocatore guadagna fino a 2 punti prestazione scalati dalla sua valutazione di partita.',
     rubric: [
       { label: 'Gol', value: '+5', detail: 'per gol segnato' },
       { label: 'Assist', value: '+3', detail: 'per assist' },
@@ -552,7 +552,7 @@ copyByLocale.it = {
     eyebrow: 'date e blocchi',
     title: 'Quando accadono le cose',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Ogni partita ufficiale fa muovere le classifiche.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Ogni partita ufficiale fa muovere le classifiche.' },
       { label: 'Chiusura registrazioni', value: '4 Jul 2026, 00:00 UTC', detail: 'Nessuna nuova iscrizione dopo questo istante, e la tua rosa composta è definitiva — ma i cambi limitati riserva-per-titolare restano attivi nelle loro finestre (vedi Cambi giocatori).' },
       {
         label: 'Blocco della rosa',
@@ -733,7 +733,7 @@ copyByLocale.de = {
     eyebrow: 'termine & festlegungen',
     title: 'Wann was passiert',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Jedes offizielle Spiel bewegt die Tabellen.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Jedes offizielle Spiel bewegt die Tabellen.' },
       { label: 'Registrierung schließt', value: '4 Jul 2026, 00:00 UTC', detail: 'Nach diesem Zeitpunkt keine neuen Anmeldungen mehr, und dein zusammengestellter Kader ist endgültig — aber begrenzte Wechsel Reservespieler-gegen-Stammspieler laufen weiterhin in ihren Fenstern (siehe Spielertausch).' },
       {
         label: 'Kader-Festlegung',
@@ -755,14 +755,14 @@ copyByLocale.fr = {
   eyebrow: 'comment ça marche',
   title: 'Le règlement de l’événement, en intégralité.',
   intro:
-    'Un effectif. Un verrouillage. Plus de quarante jours de football de World Cup qui font bouger votre classement. Tout ce qui est décrit sur cette page est actif dans la version actuelle — seules les mécaniques qui fonctionnent déjà sont rédigées comme des règles. Tout ce qui est encore en cours est listé sous « Bientôt disponible » à la fin.',
+    'Un effectif. Un verrouillage. Plus de quarante jours de football de Grand Tournament qui font bouger votre classement. Tout ce qui est décrit sur cette page est actif dans la version actuelle — seules les mécaniques qui fonctionnent déjà sont rédigées comme des règles. Tout ce qui est encore en cours est listé sous « Bientôt disponible » à la fin.',
   cta: 'Inscrivez votre effectif',
 
   squad: {
     eyebrow: 'inscription & effectif',
     title: 'Constituez un effectif, puis verrouillez-le',
     body:
-      'Vous composez un seul effectif de 15 joueurs en 4-3-3 avec un remplaçant par poste. Les joueurs proviennent des viviers officiels des équipes du World Cup mappés dans Soccerverse. Une fois verrouillé, votre effectif est figé — aucun transfert, aucun nouveau joueur. La seule modification autorisée en cours de tournoi est un échange limité remplaçant-pour-titulaire dans des fenêtres programmées (voir Échanges de joueurs ci-dessous).',
+      'Vous composez un seul effectif de 15 joueurs en 4-3-3 avec un remplaçant par poste. Les joueurs proviennent des viviers officiels des équipes du Grand Tournament mappés dans Soccerverse. Une fois verrouillé, votre effectif est figé — aucun transfert, aucun nouveau joueur. La seule modification autorisée en cours de tournoi est un échange limité remplaçant-pour-titulaire dans des fenêtres programmées (voir Échanges de joueurs ci-dessous).',
     formationTitle: 'Composition de l’effectif (15 joueurs)',
     starters: [
       { label: 'GK', value: '1' },
@@ -813,7 +813,7 @@ copyByLocale.fr = {
     eyebrow: 'barème de points',
     title: 'Comment les points sont gagnés',
     body:
-      'Un barème fixe est appliqué à la performance réelle de chaque joueur au World Cup, match par match. La valeur du clean sheet dépend du poste. En plus de cela, chaque joueur gagne jusqu’à 2 points de performance calculés à partir de sa note de match.',
+      'Un barème fixe est appliqué à la performance réelle de chaque joueur au Grand Tournament, match par match. La valeur du clean sheet dépend du poste. En plus de cela, chaque joueur gagne jusqu’à 2 points de performance calculés à partir de sa note de match.',
     rubric: [
       { label: 'But', value: '+5', detail: 'par but marqué' },
       { label: 'Passe décisive', value: '+3', detail: 'par passe décisive' },
@@ -914,7 +914,7 @@ copyByLocale.fr = {
     eyebrow: 'dates & verrouillages',
     title: 'Quand les choses se passent',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Chaque match officiel fait bouger les classements.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Chaque match officiel fait bouger les classements.' },
       { label: 'Clôture des inscriptions', value: '4 Jul 2026, 00:00 UTC', detail: 'Aucune nouvelle inscription après cet instant, et votre effectif composé est définitif — mais les échanges limités remplaçant-pour-titulaire continuent dans leurs fenêtres (voir Échanges de joueurs).' },
       {
         label: 'Verrouillage de l’effectif',
@@ -936,14 +936,14 @@ copyByLocale.pt = {
   eyebrow: 'como funciona',
   title: 'Regras do evento, na íntegra.',
   intro:
-    'Uma única equipa. Um bloqueio. Mais de quarenta dias de futebol do World Cup a mexer no teu ranking. Tudo o que está descrito nesta página está ativo na versão atual — só as mecânicas que já funcionam estão escritas como regras. Tudo o que ainda está em desenvolvimento está listado em “Em breve” no final.',
+    'Uma única equipa. Um bloqueio. Mais de quarenta dias de futebol do Grand Tournament a mexer no teu ranking. Tudo o que está descrito nesta página está ativo na versão atual — só as mecânicas que já funcionam estão escritas como regras. Tudo o que ainda está em desenvolvimento está listado em “Em breve” no final.',
   cta: 'Regista a tua equipa',
 
   squad: {
     eyebrow: 'registo & equipa',
     title: 'Monta uma equipa e depois bloqueia-a',
     body:
-      'Montas uma única equipa de 15 jogadores num 4-3-3 com um reserva por posição. Os jogadores vêm dos lotes oficiais das seleções do World Cup mapeados para o Soccerverse. Depois de bloqueares, a tua equipa fica fixa — sem transferências, sem novos jogadores. A única alteração permitida a meio do torneio é uma troca limitada de reserva por titular dentro de janelas programadas (vê Trocas de jogadores mais abaixo).',
+      'Montas uma única equipa de 15 jogadores num 4-3-3 com um reserva por posição. Os jogadores vêm dos lotes oficiais das seleções do Grand Tournament mapeados para o Soccerverse. Depois de bloqueares, a tua equipa fica fixa — sem transferências, sem novos jogadores. A única alteração permitida a meio do torneio é uma troca limitada de reserva por titular dentro de janelas programadas (vê Trocas de jogadores mais abaixo).',
     formationTitle: 'Estrutura da equipa (15 jogadores)',
     starters: [
       { label: 'GK', value: '1' },
@@ -994,7 +994,7 @@ copyByLocale.pt = {
     eyebrow: 'critério de pontuação',
     title: 'Como se ganham pontos',
     body:
-      'Um critério fixo é aplicado ao desempenho real de cada jogador no World Cup, jogo a jogo. O valor da baliza imbatida depende da posição. Além disso, cada jogador ganha até 2 pontos de desempenho escalonados a partir da sua avaliação do jogo.',
+      'Um critério fixo é aplicado ao desempenho real de cada jogador no Grand Tournament, jogo a jogo. O valor da baliza imbatida depende da posição. Além disso, cada jogador ganha até 2 pontos de desempenho escalonados a partir da sua avaliação do jogo.',
     rubric: [
       { label: 'Golo', value: '+5', detail: 'por golo marcado' },
       { label: 'Assistência', value: '+3', detail: 'por assistência' },
@@ -1095,7 +1095,7 @@ copyByLocale.pt = {
     eyebrow: 'datas & bloqueios',
     title: 'Quando as coisas acontecem',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Cada jogo oficial mexe nas tabelas.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Cada jogo oficial mexe nas tabelas.' },
       { label: 'Encerramento do registo', value: '4 Jul 2026, 00:00 UTC', detail: 'Não há novas inscrições após este instante, e a tua equipa montada é definitiva — mas as trocas limitadas de reserva por titular continuam a funcionar nas suas janelas (vê Trocas de jogadores).' },
       {
         label: 'Bloqueio da equipa',
@@ -1117,14 +1117,14 @@ copyByLocale.ru = {
   eyebrow: 'как это работает',
   title: 'Правила события, полностью.',
   intro:
-    'Один состав. Одна фиксация. Более сорока дней футбола World Cup, меняющего ваш ранг. Всё, что описано на этой странице, уже работает в текущей сборке — правилами записаны только те механики, которые уже функционируют. Всё, что ещё в разработке, перечислено в разделе «Скоро» в конце.',
+    'Один состав. Одна фиксация. Более сорока дней футбола Grand Tournament, меняющего ваш ранг. Всё, что описано на этой странице, уже работает в текущей сборке — правилами записаны только те механики, которые уже функционируют. Всё, что ещё в разработке, перечислено в разделе «Скоро» в конце.',
   cta: 'Зарегистрируйте свой состав',
 
   squad: {
     eyebrow: 'регистрация и состав',
     title: 'Соберите один состав, затем зафиксируйте его',
     body:
-      'Вы набираете единый состав из 15 игроков по схеме 4-3-3 с одним запасным на каждую позицию. Игроки берутся из официальных пулов команд World Cup, перенесённых в Soccerverse. После фиксации ваш состав закреплён — никаких трансферов и новых игроков. Единственное изменение, разрешённое по ходу турнира, — это ограниченная замена запасного на игрока старта в рамках отведённых окон (см. Замены игроков ниже).',
+      'Вы набираете единый состав из 15 игроков по схеме 4-3-3 с одним запасным на каждую позицию. Игроки берутся из официальных пулов команд Grand Tournament, перенесённых в Soccerverse. После фиксации ваш состав закреплён — никаких трансферов и новых игроков. Единственное изменение, разрешённое по ходу турнира, — это ограниченная замена запасного на игрока старта в рамках отведённых окон (см. Замены игроков ниже).',
     formationTitle: 'Структура состава (15 игроков)',
     starters: [
       { label: 'GK', value: '1' },
@@ -1175,7 +1175,7 @@ copyByLocale.ru = {
     eyebrow: 'система начисления очков',
     title: 'Как зарабатываются очки',
     body:
-      'К реальной игре каждого игрока на World Cup применяется фиксированная система, матч за матчем. Ценность сухого матча зависит от позиции. Помимо этого, каждый игрок зарабатывает до 2 очков за игру, масштабируемых от его рейтинга за матч.',
+      'К реальной игре каждого игрока на Grand Tournament применяется фиксированная система, матч за матчем. Ценность сухого матча зависит от позиции. Помимо этого, каждый игрок зарабатывает до 2 очков за игру, масштабируемых от его рейтинга за матч.',
     rubric: [
       { label: 'Гол', value: '+5', detail: 'за каждый забитый гол' },
       { label: 'Голевая передача', value: '+3', detail: 'за каждую голевую передачу' },
@@ -1276,7 +1276,7 @@ copyByLocale.ru = {
     eyebrow: 'даты и фиксации',
     title: 'Когда что происходит',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Каждый официальный матч двигает таблицы.' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'Каждый официальный матч двигает таблицы.' },
       { label: 'Регистрация закрывается', value: '4 Jul 2026, 00:00 UTC', detail: 'После этого момента никаких новых заявок, и ваш набранный состав окончателен — но ограниченные замены запасного на игрока старта по-прежнему работают в своих окнах (см. Замены игроков).' },
       {
         label: 'Фиксация состава',
@@ -1298,14 +1298,14 @@ copyByLocale.zh = {
   eyebrow: '运作方式',
   title: '完整赛事规则。',
   intro:
-    '一套阵容。一次锁定。四十多天的 World Cup 足球赛事牵动你的排名。本页所述的一切都已在当前版本中上线——只有已经生效的机制才会写成规则。仍在开发中的内容都列在末尾的“即将推出”部分。',
+    '一套阵容。一次锁定。四十多天的 Grand Tournament 足球赛事牵动你的排名。本页所述的一切都已在当前版本中上线——只有已经生效的机制才会写成规则。仍在开发中的内容都列在末尾的“即将推出”部分。',
   cta: '注册你的阵容',
 
   squad: {
     eyebrow: '注册与阵容',
     title: '组建一套阵容，然后锁定它',
     body:
-      '你以 4-3-3 阵型选出一套 15 名球员的阵容，每个位置配一名替补。球员来自映射进 Soccerverse 的官方 World Cup 球队名单。一旦锁定，你的阵容即固定——不可转会，不可新增球员。赛事进行中唯一允许的变动，是在限定的时间窗口内进行有限的“替补换首发”调换（见下方的球员调换）。',
+      '你以 4-3-3 阵型选出一套 15 名球员的阵容，每个位置配一名替补。球员来自映射进 Soccerverse 的官方 Grand Tournament 球队名单。一旦锁定，你的阵容即固定——不可转会，不可新增球员。赛事进行中唯一允许的变动，是在限定的时间窗口内进行有限的“替补换首发”调换（见下方的球员调换）。',
     formationTitle: '阵容结构（15 名球员）',
     starters: [
       { label: 'GK', value: '1' },
@@ -1356,7 +1356,7 @@ copyByLocale.zh = {
     eyebrow: '计分细则',
     title: '如何赚取分数',
     body:
-      '一套固定的细则会逐场比赛地应用于每名球员在 World Cup 中的真实表现。零封价值取决于位置。在此之上，每名球员还能根据其比赛评分换算出最多 2 个表现分。',
+      '一套固定的细则会逐场比赛地应用于每名球员在 Grand Tournament 中的真实表现。零封价值取决于位置。在此之上，每名球员还能根据其比赛评分换算出最多 2 个表现分。',
     rubric: [
       { label: '进球', value: '+5', detail: '每打进一球' },
       { label: '助攻', value: '+3', detail: '每次助攻' },
@@ -1457,7 +1457,7 @@ copyByLocale.zh = {
     eyebrow: '日期与锁定',
     title: '各项事件的时间',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: '每一场官方比赛都会牵动排行榜。' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: '每一场官方比赛都会牵动排行榜。' },
       { label: '注册截止', value: '4 Jul 2026, 00:00 UTC', detail: '此刻之后不再接受新参赛，你所选定的阵容也已定型——但有限的“替补换首发”调换仍会在各自的窗口内进行（见球员调换）。' },
       {
         label: '阵容锁定',
@@ -1479,14 +1479,14 @@ copyByLocale.ja = {
   eyebrow: '仕組み',
   title: 'イベントルール、すべて。',
   intro:
-    '1つのスカッド。1度のロック。40日以上にわたる World Cup のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。まだ開発中のものは末尾の「近日公開」に一覧で示しています。',
+    '1つのスカッド。1度のロック。40日以上にわたる Grand Tournament のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。まだ開発中のものは末尾の「近日公開」に一覧で示しています。',
   cta: 'スカッドを登録する',
 
   squad: {
     eyebrow: '登録とスカッド',
     title: '1つのスカッドを組み、ロックする',
     body:
-      '各ポジションに控えを1人ずつ置いた 4-3-3 で、15人の単一スカッドを編成します。選手は Soccerverse にマッピングされた公式 World Cup チームプールから選びます。一度ロックすると、あなたのスカッドは固定されます——移籍も、新規選手の追加もありません。大会期間中に許される唯一の変更は、定められた時間枠内での控えと先発の限定的なスワップです（下記の「選手スワップ」を参照）。',
+      '各ポジションに控えを1人ずつ置いた 4-3-3 で、15人の単一スカッドを編成します。選手は Soccerverse にマッピングされた公式 Grand Tournament チームプールから選びます。一度ロックすると、あなたのスカッドは固定されます——移籍も、新規選手の追加もありません。大会期間中に許される唯一の変更は、定められた時間枠内での控えと先発の限定的なスワップです（下記の「選手スワップ」を参照）。',
     formationTitle: 'スカッドの構成（15人）',
     starters: [
       { label: 'GK', value: '1' },
@@ -1537,7 +1537,7 @@ copyByLocale.ja = {
     eyebrow: '採点基準',
     title: '得点の稼ぎ方',
     body:
-      '固定の採点基準が、各選手の実際の World Cup でのパフォーマンスに、試合ごとに適用されます。クリーンシートの価値はポジションによって異なります。これに加えて、各選手は試合レーティングに応じて換算される最大2のパフォーマンスポイントを獲得します。',
+      '固定の採点基準が、各選手の実際の Grand Tournament でのパフォーマンスに、試合ごとに適用されます。クリーンシートの価値はポジションによって異なります。これに加えて、各選手は試合レーティングに応じて換算される最大2のパフォーマンスポイントを獲得します。',
     rubric: [
       { label: 'ゴール', value: '+5', detail: 'ゴール1点につき' },
       { label: 'アシスト', value: '+3', detail: 'アシスト1回につき' },
@@ -1638,7 +1638,7 @@ copyByLocale.ja = {
     eyebrow: '日程とロック',
     title: '各イベントのタイミング',
     items: [
-      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'すべての公式戦が順位表を動かします。' },
+      { label: 'Grand Tournament', value: '11 Jun – 19 Jul 2026', detail: 'すべての公式戦が順位表を動かします。' },
       { label: '登録締切', value: '4 Jul 2026, 00:00 UTC', detail: 'この瞬間以降は新規エントリーはなく、編成したスカッドも確定です——ただし限定的な控えと先発のスワップは各枠内で引き続き行われます（「選手スワップ」を参照）。' },
       {
         label: 'スカッドロック',

@@ -579,7 +579,7 @@ async function renderFallbackShareCardPng() {
   const copy = getShareCopy('en')
   const [titleTextUrl, ctaTextUrl] = await Promise.all([
     renderTextDataUrl(fonts, {
-      lines: ['Soccerverse World Cup'],
+      lines: ['The Grand Tournament'],
       width: 980,
       height: 76,
       fontSize: 58,

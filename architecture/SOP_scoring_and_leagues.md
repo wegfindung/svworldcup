@@ -133,7 +133,7 @@ in the group stage both teams in a fixture play the same matchday, so the mappin
 ## Score Configuration
 
 - Scoring values are stored in backend configuration.
-- Admins may change scoring parameters only until the official 2026 World Cup kickoff timestamp.
+- Admins may change scoring parameters only until the official 2026 Grand Tournament kickoff timestamp.
 - Every config change must be audited.
 
 ## League Rules
@@ -165,7 +165,7 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 
 - Each participant chooses one primary country.
 - Each participant may choose one optional secondary country.
-- Countries are drawn from the full Soccerverse nation set (`server/src/data/soccerverseNations.ts`), not just the 48 World Cup teams — a participant can represent any nation the game recognises, independent of which World Cup pools they draft from.
+- Countries are drawn from the full Soccerverse nation set (`server/src/data/soccerverseNations.ts`), not just the 48 Grand Tournament teams — a participant can represent any nation the game recognises, independent of which Grand Tournament pools they draft from.
 - Participants contribute to:
 - rookie or veteran table
 - primary country table
@@ -176,7 +176,7 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 - One substitute per class: `GK`, `DEF`, `MID`, `FWD`. Subs are locked to their slot class.
 - **Every reserve always contributes 50% of the points it earns from its own match entries** — controlled by `SUBSTITUTE_POINT_WEIGHT` in `scoringRepository.ts`. Starters contribute 100%.
 - There is no auto-activation: a reserve's contribution does not depend on whether a starter played, was rotated, benched, or absent from the official squad. A reserve with no match entry for a fixture simply scores nothing for it.
-- This is a deliberate temporary failsafe. It removes the need for a live player-availability/injury feed (whose data source is not yet guaranteed) and avoids per-matchday activation bookkeeping across a World Cup round's staggered kickoffs. It may be replaced by an availability-driven model later; if so, update `SUBSTITUTE_POINT_WEIGHT` and this section together.
+- This is a deliberate temporary failsafe. It removes the need for a live player-availability/injury feed (whose data source is not yet guaranteed) and avoids per-matchday activation bookkeeping across a Grand Tournament round's staggered kickoffs. It may be replaced by an availability-driven model later; if so, update `SUBSTITUTE_POINT_WEIGHT` and this section together.
 - Point counts on the score breakdown (goals, assists, appearances) remain the true match counts; only the *points* are halved for reserves.
 
 ## Player Swaps

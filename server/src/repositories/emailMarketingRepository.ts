@@ -190,7 +190,7 @@ function stripHtml(value: string) {
 
 function wrapMarketingHtml(content: string, unsubscribeUrl?: string) {
   const unsubscribeFooter = unsubscribeUrl
-    ? `<p style="margin:18px 0 0;font-size:12px;color:#8fa39b;">You can unsubscribe from Soccerverse World Cup marketing emails here: <a href="${escapeHtml(
+    ? `<p style="margin:18px 0 0;font-size:12px;color:#8fa39b;">You can unsubscribe from The Grand Tournament marketing emails here: <a href="${escapeHtml(
         unsubscribeUrl,
       )}" style="color:#22bd93;">unsubscribe</a></p>`
     : ''
@@ -199,7 +199,7 @@ function wrapMarketingHtml(content: string, unsubscribeUrl?: string) {
     <div style="margin:0;padding:28px;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;line-height:1.55;">
       <div style="max-width:640px;margin:0 auto;border:1px solid rgba(242,239,231,0.16);border-radius:18px;padding:28px;background:#101815;">
         ${content}
-        <p style="margin:28px 0 0;font-size:12px;color:#8fa39b;">Soccerverse World Cup</p>
+        <p style="margin:28px 0 0;font-size:12px;color:#8fa39b;">The Grand Tournament</p>
         ${unsubscribeFooter}
       </div>
     </div>

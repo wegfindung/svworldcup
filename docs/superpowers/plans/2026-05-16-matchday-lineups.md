@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let participants update a 4-3-3 + 4 substitutes lineup for each World Cup fixture/day instead of locking one static tournament squad.
+**Goal:** Let participants update a 4-3-3 + 4 substitutes lineup for each Grand Tournament fixture/day instead of locking one static tournament squad.
 
 **Architecture:** Keep the existing submitted squad flow as the legacy/base squad, then add fixture-scoped participant lineups with the same slot rules, budget checks, and team-pool validation. Scoring reads locked fixture lineups when present and falls back to the legacy locked squad for compatibility.
 

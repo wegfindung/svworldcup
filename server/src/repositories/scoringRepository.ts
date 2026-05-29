@@ -238,7 +238,7 @@ function resolveAsOfRoundLineup(
 // Substitutes are not auto-activated on starter absence. Instead every reserve always contributes a
 // reduced share of the points it actually earns. This is a deliberate failsafe: it removes the need
 // for a live player-availability/injury feed and avoids per-matchday activation bookkeeping while a
-// World Cup "round" spans almost a week of staggered kickoffs. Adjust or remove when the full
+// Grand Tournament "round" spans almost a week of staggered kickoffs. Adjust or remove when the full
 // availability mechanic lands — see SOP_scoring_and_leagues.md.
 const SUBSTITUTE_POINT_WEIGHT = 0.5
 

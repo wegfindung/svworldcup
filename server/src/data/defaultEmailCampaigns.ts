@@ -20,7 +20,7 @@ interface VeteranOnboardingCopy {
 
 const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
   en: {
-    subject: 'Soccerverse World Cup Event - How it works',
+    subject: 'The Grand Tournament - How it works',
     preheader: 'The most important tips and rules for your squad.',
     title: 'Onboarding',
     greeting: 'Hi {{first_name}},',
@@ -49,7 +49,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Prizes overview',
   },
   es: {
-    subject: 'Soccerverse World Cup Event - Cómo funciona',
+    subject: 'The Grand Tournament - Cómo funciona',
     preheader: 'Los consejos y reglas más importantes para tu plantilla.',
     title: 'Onboarding',
     greeting: 'Hola {{first_name}},',
@@ -78,7 +78,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Ver premios',
   },
   it: {
-    subject: 'Soccerverse World Cup Event - Come funziona',
+    subject: 'The Grand Tournament - Come funziona',
     preheader: 'I consigli e le regole più importanti per la tua rosa.',
     title: 'Onboarding',
     greeting: 'Ciao {{first_name}},',
@@ -107,7 +107,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Vedi premi',
   },
   de: {
-    subject: 'Soccerverse World Cup Event - So funktioniert es',
+    subject: 'The Grand Tournament - So funktioniert es',
     preheader: 'Die wichtigsten Tipps und Regeln für deinen Kader.',
     title: 'Onboarding',
     greeting: 'Hallo {{first_name}},',
@@ -136,7 +136,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Preisübersicht',
   },
   fr: {
-    subject: 'Soccerverse World Cup Event - Comment ça marche',
+    subject: 'The Grand Tournament - Comment ça marche',
     preheader: 'Les conseils et règles les plus importants pour ton effectif.',
     title: 'Onboarding',
     greeting: 'Bonjour {{first_name}},',
@@ -165,7 +165,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Voir les prix',
   },
   pt: {
-    subject: 'Soccerverse World Cup Event - Como funciona',
+    subject: 'The Grand Tournament - Como funciona',
     preheader: 'As dicas e regras mais importantes para o teu plantel.',
     title: 'Onboarding',
     greeting: 'Olá {{first_name}},',
@@ -194,7 +194,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Ver prémios',
   },
   ru: {
-    subject: 'Soccerverse World Cup Event - Как это работает',
+    subject: 'The Grand Tournament - Как это работает',
     preheader: 'Самые важные советы и правила для твоего состава.',
     title: 'Onboarding',
     greeting: 'Привет, {{first_name}},',
@@ -223,7 +223,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: 'Обзор призов',
   },
   zh: {
-    subject: 'Soccerverse World Cup Event - 玩法说明',
+    subject: 'The Grand Tournament - 玩法说明',
     preheader: '关于你阵容的关键提示和规则。',
     title: 'Onboarding',
     greeting: 'Hi {{first_name}},',
@@ -252,7 +252,7 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
     prizesLink: '奖品概览',
   },
   ja: {
-    subject: 'Soccerverse World Cup Event - 仕組み',
+    subject: 'The Grand Tournament - 仕組み',
     preheader: 'スカッドのための重要なヒントとルール。',
     title: 'オンボーディング',
     greeting: 'こんにちは {{first_name}},',
@@ -295,7 +295,7 @@ function buildVeteranOnboardingBody(copy: VeteranOnboardingCopy) {
 
   return `
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${copy.preheader}</div>
-    <p style="margin:0 0 24px;text-align:center;"><img src="{{logo_url}}" alt="Soccerverse World Cup" width="128" style="display:inline-block;width:128px;max-width:45%;height:auto;"></p>
+    <p style="margin:0 0 24px;text-align:center;"><img src="{{logo_url}}" alt="The Grand Tournament" width="128" style="display:inline-block;width:128px;max-width:45%;height:auto;"></p>
     <h1 style="margin:0 0 18px;font-size:24px;line-height:1.2;color:#f2efe7;">${copy.title}</h1>
     <p style="margin:0 0 16px;color:#c6d3ce;">${copy.greeting}</p>
     <p style="margin:0 0 16px;color:#c6d3ce;">${copy.intro}</p>

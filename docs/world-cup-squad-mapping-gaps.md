@@ -1,8 +1,8 @@
-# World Cup squad mapping gaps
+# Grand Tournament squad mapping gaps
 
 Audit date: 2026-05-27
 
-Purpose: keep track of official 2026 World Cup squad players that are not yet
+Purpose: keep track of official 2026 Grand Tournament squad players that are not yet
 cleanly represented in `server/src/data/initialTeamSelections.ts`.
 
 Primary source checked:

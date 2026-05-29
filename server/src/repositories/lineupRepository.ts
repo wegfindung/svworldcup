@@ -96,7 +96,7 @@ export class MemoryLineupRepository implements LineupRepository {
 
     const player = await this.teamPoolRepository.getTeamPlayerById(input.playerId)
     if (!player) {
-      throw new LineupValidationError('Player is not in the World Cup team pool.')
+      throw new LineupValidationError('Player is not in the Grand Tournament team pool.')
     }
 
     if (!isEligibleForSlot(player.positions, slot.slotClass)) {
@@ -230,7 +230,7 @@ export class PostgresLineupRepository implements LineupRepository {
 
     const player = await this.teamPoolRepository.getTeamPlayerById(input.playerId)
     if (!player) {
-      throw new LineupValidationError('Player is not in the World Cup team pool.')
+      throw new LineupValidationError('Player is not in the Grand Tournament team pool.')
     }
 
     if (!isEligibleForSlot(player.positions, slot.slotClass)) {

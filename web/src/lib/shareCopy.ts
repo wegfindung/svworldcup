@@ -45,7 +45,7 @@ interface ShareComposerCopy {
 
 const englishCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Create a polished World Cup picks card.',
+  title: 'Create a polished Grand Tournament picks card.',
   body: 'Choose two or three featured players, fine-tune the names shown on the artwork, and publish a cleaner public preview link without locking your squad.',
   statementLabel: 'Choose the headline',
   statementHelp: 'Preset headlines adapt automatically to 2 or 3 selected players. You can also write your own.',
@@ -77,17 +77,17 @@ const englishCopy: ShareComposerCopy = {
   loading: 'Loading your current squad…',
   errorTitle: 'Share composer unavailable',
   selectionHint: 'Select at least 2 and at most 3 players.',
-  prizeCta: 'Join the Soccerverse World Cup and compete for prizes.',
+  prizeCta: 'Join The Grand Tournament and compete for prizes.',
   presets: [
-    { id: 'top-picks', template: 'My {count} top picks for the World Cup.' },
-    { id: 'backing', template: 'These are the {count} players I am backing for the World Cup.' },
-    { id: 'featured', template: 'My featured {count} for the Soccerverse World Cup.' },
+    { id: 'top-picks', template: 'My {count} top picks for the Grand Tournament.' },
+    { id: 'backing', template: 'These are the {count} players I am backing for the Grand Tournament.' },
+    { id: 'featured', template: 'My featured {count} for The Grand Tournament.' },
   ],
 }
 
 const germanCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Erstelle eine professionelle WM-Picks-Grafik.',
+  title: 'Erstelle eine professionelle Grand Tournament-Picks-Grafik.',
   body: 'Wähle zwei oder drei Spieler aus, passe die angezeigten Namen bei Bedarf an und veröffentliche einen deutlich besseren Vorschaulink, ohne deinen Kader zu locken.',
   statementLabel: 'Wähle die Überschrift',
   statementHelp: 'Die Vorlagen passen sich automatisch an 2 oder 3 ausgewählte Spieler an. Du kannst auch deine eigene Überschrift schreiben.',
@@ -119,11 +119,11 @@ const germanCopy: ShareComposerCopy = {
   loading: 'Dein aktueller Kader wird geladen…',
   errorTitle: 'Share-Composer nicht verfügbar',
   selectionHint: 'Wähle mindestens 2 und höchstens 3 Spieler.',
-  prizeCta: 'Mach beim Soccerverse World Cup mit und spiele um Preise.',
+  prizeCta: 'Mach bei The Grand Tournament mit und spiele um Preise.',
   presets: [
-    { id: 'top-picks', template: 'Meine {count} Top Picks für die WM.' },
-    { id: 'backing', template: 'Auf diese {count} Spieler setze ich bei der WM.' },
-    { id: 'featured', template: 'Das sind meine {count} Featured Picks für den Soccerverse World Cup.' },
+    { id: 'top-picks', template: 'Meine {count} Top Picks für The Grand Tournament.' },
+    { id: 'backing', template: 'Auf diese {count} Spieler setze ich bei The Grand Tournament.' },
+    { id: 'featured', template: 'Das sind meine {count} Featured Picks für The Grand Tournament.' },
   ],
 }
 

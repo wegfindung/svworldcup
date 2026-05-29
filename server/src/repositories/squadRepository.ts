@@ -130,7 +130,7 @@ export class MemorySquadRepository implements SquadRepository {
 
     const player = await this.teamPoolRepository.getTeamPlayerById(input.playerId)
     if (!player) {
-      throw new SquadValidationError('Player is not in the World Cup team pool.')
+      throw new SquadValidationError('Player is not in the Grand Tournament team pool.')
     }
 
     if (!isEligibleForSlot(player.positions, slot.slotClass)) {
@@ -423,7 +423,7 @@ export class PostgresSquadRepository implements SquadRepository {
 
     const player = await this.teamPoolRepository.getTeamPlayerById(input.playerId)
     if (!player) {
-      throw new SquadValidationError('Player is not in the World Cup team pool.')
+      throw new SquadValidationError('Player is not in the Grand Tournament team pool.')
     }
 
     if (!isEligibleForSlot(player.positions, slot.slotClass)) {
@@ -697,7 +697,7 @@ export class PostgresSquadRepository implements SquadRepository {
         throw new SquadValidationError('Both players must be in your squad to swap them.')
       }
       if (!inTeamCode || !outTeamCode) {
-        throw new SquadValidationError('Both players must have a World Cup team code before they can be swapped.')
+        throw new SquadValidationError('Both players must have a Grand Tournament team code before they can be swapped.')
       }
 
       const history = await client.query<{ window_key: string }>('SELECT window_key FROM squad_swaps WHERE participant_id = $1', [participantId])

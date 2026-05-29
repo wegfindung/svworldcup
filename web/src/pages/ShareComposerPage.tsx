@@ -234,7 +234,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
     try {
       await navigator.share({
-        title: `${sharePayload.managerName} · Soccerverse World Cup`,
+        title: `${sharePayload.managerName} · The Grand Tournament`,
         text: referralInvitationText,
         url: shareUrl,
       })

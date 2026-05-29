@@ -74,7 +74,7 @@ Allow participants to register securely with verified email, enter the squad bui
 2. Builder starts with a team dropdown showing:
 - round local-hosted team flag
 - English team name
-3. Player selection uses the admin-curated World Cup team pool, not arbitrary public search.
+3. Player selection uses the admin-curated Grand Tournament team pool, not arbitrary public search.
 4. Player cards must show:
 - portrait
 - display name
@@ -143,8 +143,8 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - All admin routes require authenticated admin sessions.
 - Admin sessions must be cookie-based, httpOnly, server-issued, and revocable.
 - Admins can resend verification mail.
-- Admins can change scoring parameters only before World Cup kickoff.
-- Admins must be able to maintain the preselected player pool for all 48 World Cup teams before public drafting opens.
+- Admins can change scoring parameters only before Grand Tournament kickoff.
+- Admins must be able to maintain the preselected player pool for all 48 Grand Tournament teams before public drafting opens.
 - Admin team-pool reads must start from explicit operator actions, not automatic page-load fetches.
 - Admins must have a protected multi-accounting review screen for open risk cases and case status changes (`open`, `reviewing`, `confirmed`, `dismissed`).
 
@@ -193,7 +193,7 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - `referrerSoccerverseUsername` is optional, trimmed, safe-character filtered, and length-limited to 60 characters.
 - `primaryCountryCode` is required.
 - `secondaryCountryCode` is optional.
-- `primaryCountryCode` and `secondaryCountryCode` must refer to a Soccerverse nation (the full nation set the game recognises), **not** only the 48 World Cup teams. The nation pick drives the Nation League and is independent of the World Cup team pools used for drafting. Codes are ISO-3166 alpha-2 plus the home-nation specials (`gb` = England, `gb-sct`, `gb-wls`, `gb-nir`) and `xk` (Kosovo); the canonical list lives in `server/src/data/soccerverseNations.ts`. The secondary nation must differ from the primary.
+- `primaryCountryCode` and `secondaryCountryCode` must refer to a Soccerverse nation (the full nation set the game recognises), **not** only the 48 Grand Tournament teams. The nation pick drives the Nation League and is independent of the Grand Tournament team pools used for drafting. Codes are ISO-3166 alpha-2 plus the home-nation specials (`gb` = England, `gb-sct`, `gb-wls`, `gb-nir`) and `xk` (Kosovo); the canonical list lives in `server/src/data/soccerverseNations.ts`. The secondary nation must differ from the primary.
 - `slotKey` must map to one canonical builder slot.
 - player assignment must fail when:
 - the slot is filled

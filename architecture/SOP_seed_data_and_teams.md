@@ -2,7 +2,7 @@
 
 ## Goal
 
-Maintain deterministic backend seed data for World Cup teams, fixtures, and editable tournament configuration.
+Maintain deterministic backend seed data for Grand Tournament teams, fixtures, and editable tournament configuration.
 
 ## Team Seed Requirements
 
@@ -28,11 +28,11 @@ Each team record should include:
 
 ## Admin Controls
 
-- Admin can preselect World Cup squads by Soccerverse `playerId`.
+- Admin can preselect Grand Tournament squads by Soccerverse `playerId`.
 - Admin can maintain the eligible player pool.
 - Builder team dropdowns must read from this preselected team pool instead of a free-form nationality search.
 - Player identity in the team pool should be enriched with community datapack names and portraits when Soccerverse API records omit names.
-- The backend must also support curated external World Cup squad JSON imports when the user provides a reviewed source file.
+- The backend must also support curated external Grand Tournament squad JSON imports when the user provides a reviewed source file.
 - Imported players must preserve any provided portrait URL instead of forcing the community portrait host.
 - Admin changes to seeded teams/fixtures must be auditable.
 

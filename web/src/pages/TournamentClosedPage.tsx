@@ -11,13 +11,13 @@ const englishCopy = {
   eyebrow: 'tournament status',
   title: 'Registration is closed.',
   body:
-    'The Soccerverse World Cup community event has locked. New entries and squad changes are no longer accepted because the Soccerverse season transition has rewritten player ratings, and the event must be scored against the wage table that was live when every locked squad was built.',
+    'The Grand Tournament community event has locked. New entries and squad changes are no longer accepted because the Soccerverse season transition has rewritten player ratings, and the event must be scored against the wage table that was live when every locked squad was built.',
   whyTitle: 'Why now?',
   whyBody:
     'Registration closes at the Soccerverse season transition (2026-07-04, 00:00 UTC). After that instant, ratings — and therefore wages — change. A late entry would draft against a different wage table than everyone else, which would not be fair.',
   alreadyEnteredTitle: 'Already entered?',
   alreadyEnteredBody:
-    'You can still sign in, check your locked squad, and follow your rank across the leagues. Scoring continues to update from every World Cup match through 19 July 2026.',
+    'You can still sign in, check your locked squad, and follow your rank across the leagues. Scoring continues to update from every Grand Tournament match through 19 July 2026.',
   loginCta: 'Sign in to your entry',
   leaderboardsCta: 'View leaderboards',
   resultsCta: 'Match results',
@@ -33,13 +33,13 @@ copyByLocale.es = {
   eyebrow: 'estado del torneo',
   title: 'Las inscripciones están cerradas.',
   body:
-    'El evento comunitario del Soccerverse World Cup está bloqueado. Ya no se aceptan nuevas inscripciones ni cambios de equipo porque la transición de temporada de Soccerverse ha reescrito las valoraciones de los jugadores, y el evento debe puntuarse contra la tabla de salarios que estaba activa cuando se bloqueó cada equipo.',
+    'El evento comunitario de The Grand Tournament está bloqueado. Ya no se aceptan nuevas inscripciones ni cambios de equipo porque la transición de temporada de Soccerverse ha reescrito las valoraciones de los jugadores, y el evento debe puntuarse contra la tabla de salarios que estaba activa cuando se bloqueó cada equipo.',
   whyTitle: '¿Por qué ahora?',
   whyBody:
     'Las inscripciones cierran en la transición de temporada de Soccerverse (4-7-2026, 00:00 UTC). Tras ese instante cambian las valoraciones — y por tanto los salarios. Una entrada tardía competiría contra una tabla de salarios distinta a la del resto, lo que no sería justo.',
   alreadyEnteredTitle: '¿Ya estás inscrito?',
   alreadyEnteredBody:
-    'Todavía puedes iniciar sesión, revisar tu equipo bloqueado y seguir tu clasificación en las ligas. La puntuación sigue actualizándose con cada partido del World Cup hasta el 19 de julio de 2026.',
+    'Todavía puedes iniciar sesión, revisar tu equipo bloqueado y seguir tu clasificación en las ligas. La puntuación sigue actualizándose con cada partido del Grand Tournament hasta el 19 de julio de 2026.',
   loginCta: 'Inicia sesión en tu entrada',
   leaderboardsCta: 'Ver clasificaciones',
   resultsCta: 'Resultados de partidos',
@@ -49,13 +49,13 @@ copyByLocale.it = {
   eyebrow: 'stato del torneo',
   title: 'Le iscrizioni sono chiuse.',
   body:
-    'L’evento community del Soccerverse World Cup è stato bloccato. Non si accettano più nuove iscrizioni né modifiche alla rosa perché la transizione di stagione di Soccerverse ha riscritto le valutazioni dei giocatori, e l’evento deve essere calcolato sulla tabella ingaggi attiva quando ogni rosa è stata bloccata.',
+    'L’evento community di The Grand Tournament è stato bloccato. Non si accettano più nuove iscrizioni né modifiche alla rosa perché la transizione di stagione di Soccerverse ha riscritto le valutazioni dei giocatori, e l’evento deve essere calcolato sulla tabella ingaggi attiva quando ogni rosa è stata bloccata.',
   whyTitle: 'Perché ora?',
   whyBody:
     'Le iscrizioni chiudono alla transizione di stagione Soccerverse (04-07-2026, 00:00 UTC). Dopo quell’istante cambiano le valutazioni — e quindi gli ingaggi. Un’iscrizione tardiva competerebbe contro una tabella ingaggi diversa da quella di tutti gli altri, e non sarebbe corretto.',
   alreadyEnteredTitle: 'Già iscritto?',
   alreadyEnteredBody:
-    'Puoi sempre accedere, controllare la tua rosa bloccata e seguire la tua posizione nelle classifiche. Il punteggio continua ad aggiornarsi a ogni partita del World Cup fino al 19 luglio 2026.',
+    'Puoi sempre accedere, controllare la tua rosa bloccata e seguire la tua posizione nelle classifiche. Il punteggio continua ad aggiornarsi a ogni partita del Grand Tournament fino al 19 luglio 2026.',
   loginCta: 'Accedi alla tua entry',
   leaderboardsCta: 'Vedi classifiche',
   resultsCta: 'Risultati partite',
@@ -65,7 +65,7 @@ copyByLocale.de = {
   eyebrow: 'turnierstatus',
   title: 'Registrierung ist geschlossen.',
   body:
-    'Das Soccerverse World Cup Community-Event ist festgelegt. Neue Einträge und Kaderänderungen werden nicht mehr angenommen, weil die Soccerverse-Saisontransition die Spielerratings neu geschrieben hat und das Event gegen die Gehaltstabelle gewertet werden muss, die beim Festlegen jedes Kaders aktiv war.',
+    'Das The Grand Tournament-Community-Event ist festgelegt. Neue Einträge und Kaderänderungen werden nicht mehr angenommen, weil die Soccerverse-Saisontransition die Spielerratings neu geschrieben hat und das Event gegen die Gehaltstabelle gewertet werden muss, die beim Festlegen jedes Kaders aktiv war.',
   whyTitle: 'Warum jetzt?',
   whyBody:
     'Die Registrierung schließt zur Soccerverse-Saisontransition (04.07.2026, 00:00 UTC). Nach diesem Zeitpunkt ändern sich Ratings — und damit Gehälter. Ein später Einstieg würde gegen eine andere Gehaltstabelle drafteln als alle anderen, was nicht fair wäre.',
@@ -81,13 +81,13 @@ copyByLocale.fr = {
   eyebrow: 'statut du tournoi',
   title: 'Les inscriptions sont fermées.',
   body:
-    'L’événement communautaire Soccerverse World Cup est verrouillé. Les nouvelles inscriptions et modifications d’effectif ne sont plus acceptées car la transition de saison Soccerverse a réécrit les notes des joueurs, et l’événement doit être noté sur la grille salariale en vigueur au moment où chaque effectif a été verrouillé.',
+    'L’événement communautaire The Grand Tournament est verrouillé. Les nouvelles inscriptions et modifications d’effectif ne sont plus acceptées car la transition de saison Soccerverse a réécrit les notes des joueurs, et l’événement doit être noté sur la grille salariale en vigueur au moment où chaque effectif a été verrouillé.',
   whyTitle: 'Pourquoi maintenant ?',
   whyBody:
     'Les inscriptions ferment à la transition de saison Soccerverse (04-07-2026, 00:00 UTC). Après cet instant, les notes — et donc les salaires — changent. Une inscription tardive composerait face à une grille différente de tous les autres, ce qui ne serait pas équitable.',
   alreadyEnteredTitle: 'Déjà inscrit ?',
   alreadyEnteredBody:
-    'Tu peux toujours te connecter, consulter ton effectif verrouillé et suivre ton classement dans les ligues. Le scoring continue à chaque match du World Cup jusqu’au 19 juillet 2026.',
+    'Tu peux toujours te connecter, consulter ton effectif verrouillé et suivre ton classement dans les ligues. Le scoring continue à chaque match du Grand Tournament jusqu’au 19 juillet 2026.',
   loginCta: 'Se connecter à ton entrée',
   leaderboardsCta: 'Voir les classements',
   resultsCta: 'Résultats des matchs',
@@ -97,13 +97,13 @@ copyByLocale.pt = {
   eyebrow: 'estado do torneio',
   title: 'As inscrições estão fechadas.',
   body:
-    'O evento comunitário do Soccerverse World Cup está bloqueado. Já não se aceitam novas inscrições nem alterações à equipa porque a transição de temporada do Soccerverse reescreveu as avaliações dos jogadores, e o evento tem de ser pontuado contra a tabela salarial em vigor quando cada equipa foi bloqueada.',
+    'O evento comunitário de The Grand Tournament está bloqueado. Já não se aceitam novas inscrições nem alterações à equipa porque a transição de temporada do Soccerverse reescreveu as avaliações dos jogadores, e o evento tem de ser pontuado contra a tabela salarial em vigor quando cada equipa foi bloqueada.',
   whyTitle: 'Porquê agora?',
   whyBody:
     'As inscrições fecham na transição de temporada Soccerverse (04-07-2026, 00:00 UTC). A partir desse instante mudam as avaliações — e portanto os salários. Uma inscrição tardia jogaria contra uma tabela salarial diferente da dos restantes, o que não seria justo.',
   alreadyEnteredTitle: 'Já te inscreveste?',
   alreadyEnteredBody:
-    'Ainda podes iniciar sessão, ver a tua equipa bloqueada e acompanhar a tua classificação nas ligas. A pontuação continua a atualizar-se em cada jogo do World Cup até 19 de julho de 2026.',
+    'Ainda podes iniciar sessão, ver a tua equipa bloqueada e acompanhar a tua classificação nas ligas. A pontuação continua a atualizar-se em cada jogo do Grand Tournament até 19 de julho de 2026.',
   loginCta: 'Iniciar sessão na tua entrada',
   leaderboardsCta: 'Ver classificações',
   resultsCta: 'Resultados de jogos',
@@ -113,13 +113,13 @@ copyByLocale.ru = {
   eyebrow: 'статус турнира',
   title: 'Регистрация закрыта.',
   body:
-    'Сообществое событие Soccerverse World Cup зафиксировано. Новые заявки и изменения составов больше не принимаются: переход сезона в Soccerverse переписал рейтинги игроков, а событие должно считаться по таблице зарплат, действовавшей в момент фиксации каждого состава.',
+    'Сообществое событие The Grand Tournament зафиксировано. Новые заявки и изменения составов больше не принимаются: переход сезона в Soccerverse переписал рейтинги игроков, а событие должно считаться по таблице зарплат, действовавшей в момент фиксации каждого состава.',
   whyTitle: 'Почему сейчас?',
   whyBody:
     'Регистрация закрывается при переходе сезона в Soccerverse (04-07-2026, 00:00 UTC). После этого момента рейтинги — а значит и зарплаты — меняются. Поздняя заявка собирала бы состав против другой таблицы зарплат, чем все остальные, что было бы нечестно.',
   alreadyEnteredTitle: 'Уже зарегистрированы?',
   alreadyEnteredBody:
-    'Вы по-прежнему можете войти, посмотреть свой зафиксированный состав и следить за местом в лигах. Подсчёт продолжается по каждому матчу World Cup до 19 июля 2026 года.',
+    'Вы по-прежнему можете войти, посмотреть свой зафиксированный состав и следить за местом в лигах. Подсчёт продолжается по каждому матчу Grand Tournament до 19 июля 2026 года.',
   loginCta: 'Войти в свою заявку',
   leaderboardsCta: 'Открыть таблицы',
   resultsCta: 'Результаты матчей',
@@ -129,13 +129,13 @@ copyByLocale.zh = {
   eyebrow: '赛事状态',
   title: '注册已关闭。',
   body:
-    'Soccerverse World Cup 社区赛事已锁定。不再接受新的参赛或阵容更改，因为 Soccerverse 赛季过渡已重写球员评分，而本赛事必须依据每位参赛者锁定阵容时所用的薪资表进行计分。',
+    'The Grand Tournament 社区赛事已锁定。不再接受新的参赛或阵容更改，因为 Soccerverse 赛季过渡已重写球员评分，而本赛事必须依据每位参赛者锁定阵容时所用的薪资表进行计分。',
   whyTitle: '为什么是现在？',
   whyBody:
     '注册在 Soccerverse 赛季过渡时关闭（2026-07-04 00:00 UTC）。该时刻之后，评分——以及薪资——会变化。迟到的参赛将以不同于其他人的薪资表来组建阵容，这并不公平。',
   alreadyEnteredTitle: '已经参赛？',
   alreadyEnteredBody:
-    '你仍可登录，查看你已锁定的阵容，并跟踪自己在各联赛中的排名。计分将随着每场 World Cup 比赛持续更新，直到 2026 年 7 月 19 日。',
+    '你仍可登录，查看你已锁定的阵容，并跟踪自己在各联赛中的排名。计分将随着每场 Grand Tournament 比赛持续更新，直到 2026 年 7 月 19 日。',
   loginCta: '登录你的参赛',
   leaderboardsCta: '查看排行榜',
   resultsCta: '比赛结果',
@@ -145,13 +145,13 @@ copyByLocale.ja = {
   eyebrow: '大会ステータス',
   title: '登録は終了しました。',
   body:
-    'Soccerverse World Cup コミュニティイベントはロックされました。Soccerverseのシーズン移行により選手のレーティングが書き換えられ、本イベントは各ロック時点の賃金表に基づいて採点されるため、新規参加とスカッド変更は受け付けられません。',
+    'The Grand Tournament コミュニティイベントはロックされました。Soccerverseのシーズン移行により選手のレーティングが書き換えられ、本イベントは各ロック時点の賃金表に基づいて採点されるため、新規参加とスカッド変更は受け付けられません。',
   whyTitle: 'なぜ今？',
   whyBody:
     '登録はSoccerverseのシーズン移行時（2026-07-04 00:00 UTC）に閉じます。その瞬間以降、レーティング——つまり賃金——が変わります。遅い参加は他の全員と異なる賃金表に対してドラフトすることになり、公平ではありません。',
   alreadyEnteredTitle: 'すでに参加していますか？',
   alreadyEnteredBody:
-    'ログインしてロック済みのスカッドを確認し、リーグ内の順位を追うことができます。スコアリングはWorld Cupの各試合で2026年7月19日まで更新され続けます。',
+    'ログインしてロック済みのスカッドを確認し、リーグ内の順位を追うことができます。スコアリングはGrand Tournamentの各試合で2026年7月19日まで更新され続けます。',
   loginCta: 'エントリーにログイン',
   leaderboardsCta: '順位表を見る',
   resultsCta: '試合結果',

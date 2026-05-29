@@ -1,6 +1,6 @@
-# SV World Cup
+# The Grand Tournament
 
-Soccerverse World Cup community event platform.
+The Grand Tournament community event platform.
 
 ## Structure
 
@@ -31,7 +31,7 @@ The frontend proxies `/api` to `http://localhost:3000` in development.
 - Teams and first-matchday fixtures are seeded in English.
 - Registration now runs as a registration-first flow with email verification and participant sessions.
 - Admin backend access supports email + password login plus secure admin sessions.
-- The public builder drafts from admin-curated World Cup team pools, not arbitrary public search.
+- The public builder drafts from admin-curated Grand Tournament team pools, not arbitrary public search.
 - Germany is included as the first bootstrap team pool seed through the backend startup bootstrap.
 
 ## Deployment

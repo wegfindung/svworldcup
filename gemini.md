@@ -1,4 +1,4 @@
-# Soccerverse World Cup Community Event — Project Map
+# The Grand Tournament Community Event — Project Map
 
 > ⚠️ **STALE — do not trust this file as current state (as of 2026-05-29).** This map still describes
 > a pre-build phase, but the system is fully built (server, DB schema + migrations through 2026-05-28,
@@ -28,13 +28,13 @@
 
 ## 2. Working Goal
 
-Build a Soccerverse World Cup community event website using:
+Build a community event website for The Grand Tournament using:
 
 - `vite`
 - `react`
 - `typescript`
 - Soccerverse player data
-- Reusable community-sharing building blocks such as "Look at my World Cup Squad"
+- Reusable community-sharing building blocks such as "Look at my Grand Tournament Squad"
 
 Primary growth goal:
 
@@ -50,7 +50,7 @@ Product intent captured from user brief:
 
 North Star confirmed by user:
 
-- Launch a functioning Soccerverse World Cup event website with team selection and a social share function that helps grow reach.
+- Launch a functioning The Grand Tournament event website with team selection and a social share function that helps grow reach.
 
 ## 3. Known Functional Rules
 
@@ -73,14 +73,14 @@ North Star confirmed by user:
 - Entry is free.
 - Set-and-forget.
 - One submission only.
-- Squad locks immediately before World Cup kickoff.
+- Squad locks immediately before Grand Tournament kickoff.
 - No transfers in v1.
 - No captain mechanic in v1.
 - No chips in v1.
 
 ### Scoring model
 
-Real World Cup performance only:
+Real Grand Tournament performance only:
 
 - Goals: `2`
 - Assists: `2`
@@ -97,11 +97,11 @@ Explicitly excluded in v1:
 Fixed formation rule:
 
 - All teams use `4-3-3`.
-- Scoring parameters must remain editable in the backend until the start of the 2026 FIFA World Cup.
+- Scoring parameters must remain editable in the backend until the start of The Grand Tournament in 2026.
 
 ### Substitution model
 
-- A substitute scores only if the corresponding starter is absent from the official World Cup match squad list.
+- A substitute scores only if the corresponding starter is absent from the official Grand Tournament match squad list.
 - Rotation or benching does not trigger substitution.
 - A sub is locked to its own positional slot class.
 - A sub becomes inactive again once the starter returns to the official squad list.
@@ -184,12 +184,12 @@ Fixed formation rule:
 - authorization
 - structural integrity
 - No `tools/` scripts before Blueprint approval.
-- Public squads remain hidden until participant reveal or global admin reveal at World Cup kickoff.
+- Public squads remain hidden until participant reveal or global admin reveal at Grand Tournament kickoff.
 
 ### Known protected surfaces
 
 - Admin authentication area
-- Admin-only World Cup squad preselection/import actions
+- Admin-only Grand Tournament squad preselection/import actions
 - Admin-only results input actions
 - Admin-only scoreboard recalculation or reveal actions
 - Registration confirmation flow endpoints
@@ -226,7 +226,7 @@ Status:
 
 ## 6. Remaining Unknowns and Future Inputs
 
-- Exact World Cup data source for real-life fixtures, squads, and match stats
+- Exact Grand Tournament data source for real-life fixtures, squads, and match stats
 - Exact fine-code mapping source if different from the local `SVtool` grouping
 - Exact admin bootstrap list
 
@@ -447,7 +447,7 @@ Validation draft:
 
 - player must exist in Soccerverse API by `playerId`
 - player identity may be enriched from the community datapack when the API omits names
-- `teamCode` must be one of the 48 seeded World Cup teams
+- `teamCode` must be one of the 48 seeded Grand Tournament teams
 - only admin-authenticated routes may mutate the team player pool
 
 ### AdminResultInput
@@ -491,7 +491,7 @@ Validation draft:
 - Localized UI architecture with English default and future language packs
 - Public hidden-squad state until self-reveal or admin reveal
 - Protected admin backend for:
-- preselecting World Cup squads by Soccerverse player id
+- preselecting Grand Tournament squads by Soccerverse player id
 - entering official match results
 - revealing all squads at kickoff
 - viewing basic stats
@@ -506,7 +506,7 @@ Validation draft:
 ### Data flow proposal
 
 - Soccerverse API ingests eligible player catalogue
-- Admin preselects all World Cup squads by `playerId`
+- Admin preselects all Grand Tournament squads by `playerId`
 - Public users register with email and double opt-in
 - Verified users enter a participant session and build one hidden squad under salary cap
 - Admin enters official match performance data
@@ -557,7 +557,7 @@ No `tools/` scripts may be created until this section is marked approved.
 - Verify `vite`, `react`, and `typescript` official package names before install
 - Inspect `SVtool` for reusable Soccerverse API patterns
 - Find Soccerverse Office `wageUtils.js` source
-- Identify official or reliable World Cup match/squad/stat data sources
+- Identify official or reliable Grand Tournament match/squad/stat data sources
 
 ### Verified dependency names
 

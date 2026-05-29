@@ -51,9 +51,9 @@ function renderEmailPreferencesPage(input: { token: string; status: 'unsubscribe
         : 'Subscription link not found.'
   const message =
     input.status === 'unsubscribed'
-      ? 'You will no longer receive Soccerverse World Cup marketing emails.'
+      ? 'You will no longer receive The Grand Tournament marketing emails.'
       : input.status === 'resubscribed'
-        ? 'You are subscribed to Soccerverse World Cup marketing emails again.'
+        ? 'You are subscribed to The Grand Tournament marketing emails again.'
         : 'This subscription link is invalid or has already been removed.'
   const undoForm =
     input.status === 'unsubscribed'
@@ -67,7 +67,7 @@ function renderEmailPreferencesPage(input: { token: string; status: 'unsubscribe
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Soccerverse World Cup Email Preferences</title>
+    <title>The Grand Tournament Email Preferences</title>
   </head>
   <body style="margin:0;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;">
     <main style="max-width:620px;margin:0 auto;padding:48px 24px;line-height:1.55;">

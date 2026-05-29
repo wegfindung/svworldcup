@@ -11,7 +11,7 @@ const englishCopy = {
   body:
     'This page mirrors the current infographic so the onboarding mail has a live prize link. Amounts, items, and payout logic are still provisional until the event team confirms them.',
   status: 'Not final confirmed',
-  imageAlt: 'Draft infographic for the Soccerverse World Cup Event prize structure',
+  imageAlt: 'Draft infographic for The Grand Tournament prize structure',
   individualTitle: 'Individual leagues',
   individualBody: 'Rookie and Veteran leagues currently use the same prize ladder.',
   individualItems: [
@@ -42,7 +42,7 @@ copyByLocale.de = {
   body:
     'Diese Seite spiegelt die aktuelle Infografik, damit die Onboarding-Mail bereits einen funktionierenden Preis-Link hat. Beträge, Items und Auszahlungslogik sind noch vorläufig, bis das Event-Team sie final bestätigt.',
   status: 'Noch nicht final bestätigt',
-  imageAlt: 'Entwurf der Infografik zur Soccerverse World Cup Event Preisstruktur',
+  imageAlt: 'Entwurf der Infografik zur The Grand Tournament Preisstruktur',
   individualTitle: 'Individual-Leagues',
   individualBody: 'Rookie und Veteran League nutzen aktuell dieselbe Preisstaffel.',
   individualItems: [
@@ -70,7 +70,7 @@ copyByLocale.es = {
   body:
     'Esta página refleja la infografía actual para que el email de onboarding ya tenga un enlace de premios activo. Cantidades, artículos y lógica de pago siguen siendo provisionales hasta la confirmación final del equipo del evento.',
   status: 'Aún no confirmado',
-  imageAlt: 'Infografía provisional de la estructura de premios del Soccerverse World Cup Event',
+  imageAlt: 'Infografía provisional de la estructura de premios de The Grand Tournament',
   individualTitle: 'Ligas individuales',
   individualBody: 'Las ligas Rookie y Veteran usan actualmente la misma escala de premios.',
   individualItems: [
@@ -98,7 +98,7 @@ copyByLocale.it = {
   body:
     'Questa pagina riprende l’infografica attuale, così l’email di onboarding ha già un link premi attivo. Importi, oggetti e logica di distribuzione restano provvisori fino alla conferma finale del team evento.',
   status: 'Non ancora confermato',
-  imageAlt: 'Infografica provvisoria della struttura premi del Soccerverse World Cup Event',
+  imageAlt: 'Infografica provvisoria della struttura premi di The Grand Tournament',
   individualTitle: 'Leghe individuali',
   individualBody: 'Le leghe Rookie e Veteran usano al momento la stessa scala premi.',
   individualItems: [
@@ -126,7 +126,7 @@ copyByLocale.fr = {
   body:
     'Cette page reprend l’infographie actuelle afin que l’email d’onboarding dispose déjà d’un lien prix actif. Montants, objets et logique de distribution restent provisoires jusqu’à confirmation finale par l’équipe événement.',
   status: 'Pas encore confirmé',
-  imageAlt: 'Infographie provisoire de la structure des prix du Soccerverse World Cup Event',
+  imageAlt: 'Infographie provisoire de la structure des prix de The Grand Tournament',
   individualTitle: 'Ligues individuelles',
   individualBody: 'Les ligues Rookie et Veteran utilisent actuellement la même grille de prix.',
   individualItems: [
@@ -154,7 +154,7 @@ copyByLocale.pt = {
   body:
     'Esta página replica a infografia atual para que o email de onboarding já tenha um link de prémios ativo. Valores, itens e lógica de pagamento ainda são provisórios até confirmação final da equipa do evento.',
   status: 'Ainda não confirmado',
-  imageAlt: 'Infografia provisória da estrutura de prémios do Soccerverse World Cup Event',
+  imageAlt: 'Infografia provisória da estrutura de prémios de The Grand Tournament',
   individualTitle: 'Ligas individuais',
   individualBody: 'As ligas Rookie e Veteran usam atualmente a mesma escala de prémios.',
   individualItems: [
@@ -182,7 +182,7 @@ copyByLocale.ru = {
   body:
     'Эта страница повторяет текущую инфографику, чтобы onboarding email уже вел на рабочую страницу призов. Суммы, предметы и логика выплат остаются предварительными до финального подтверждения команды события.',
   status: 'Еще не подтверждено',
-  imageAlt: 'Черновая инфографика структуры призов Soccerverse World Cup Event',
+  imageAlt: 'Черновая инфографика структуры призов The Grand Tournament',
   individualTitle: 'Индивидуальные лиги',
   individualBody: 'Rookie и Veteran лиги сейчас используют одну и ту же призовую лестницу.',
   individualItems: [
@@ -210,7 +210,7 @@ copyByLocale.zh = {
   body:
     '此页面根据当前信息图制作，方便 onboarding 邮件使用可访问的奖品链接。金额、物品和发放逻辑在活动团队最终确认前仍为临时版本。',
   status: '尚未最终确认',
-  imageAlt: 'Soccerverse World Cup Event 奖品结构草案信息图',
+  imageAlt: 'The Grand Tournament 奖品结构草案信息图',
   individualTitle: '个人联赛',
   individualBody: 'Rookie 和 Veteran 联赛目前使用相同奖品阶梯。',
   individualItems: [

@@ -127,7 +127,7 @@ two distinct admin emails valid at the current version.
 
 Names are normalized diacritic-insensitively by `lib/normalizeName.ts`. Team names are resolved
 to canonical team codes by `lib/teamLookup.ts`, which carries an alias map for source names that
-differ from the canonical World Cup names.
+differ from the canonical Grand Tournament names.
 
 ## Connections — route → repository → table
 

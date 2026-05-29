@@ -1,7 +1,7 @@
 -- Nation pick (registration primary/secondary) now uses the full Soccerverse nation set
--- (ISO-3166 alpha-2 plus gb-sct/gb-wls/gb-nir and xk), not just the 48 World Cup teams.
+-- (ISO-3166 alpha-2 plus gb-sct/gb-wls/gb-nir and xk), not just the 48 Grand Tournament teams.
 -- Widen the nation-code columns from CHAR(3) to TEXT and drop the foreign key to teams(code),
--- since nation codes are no longer constrained to the World Cup team list.
+-- since nation codes are no longer constrained to the Grand Tournament team list.
 --
 -- The 01-schema.sql change only affects fresh containers; this migration pushes it to live DBs.
 

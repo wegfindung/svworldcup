@@ -1,5 +1,5 @@
 // Soccerverse nation list — every nation the game recognises (the Soccerverse flag set).
-// Used for the registration nation pick and the Nation League only; unrelated to the World Cup
+// Used for the registration nation pick and the Nation League only; unrelated to the Grand Tournament
 // draft pools (those use the 48 WC team codes in eventConfig.ts).
 // Codes are ISO-3166 alpha-2 plus the home-nation specials (gb = England, gb-sct/gb-wls/gb-nir)
 // and xk (Kosovo). Keep this file in sync with its twin (server <-> web).

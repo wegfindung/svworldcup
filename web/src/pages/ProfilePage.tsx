@@ -95,7 +95,7 @@ export function ProfilePage() {
             <h2 className="section-title max-w-[11ch]">{profile.displayName}</h2>
             <p className="mt-5 max-w-[62ch] text-base leading-relaxed text-[var(--color-muted)]">
               {profile.revealSquad
-                ? 'This manager has revealed the locked World Cup squad.'
+                ? 'This manager has revealed the locked Grand Tournament squad.'
                 : 'This profile is public, but the squad is still hidden.'}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">

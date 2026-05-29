@@ -43,7 +43,7 @@ const envSchema = z.object({
   SMTP_SECURE: booleanFromString,
   SMTP_USER: optionalString,
   SMTP_PASSWORD: optionalString,
-  SMTP_FROM: z.string().default('Soccerverse World Cup <mailer@example.com>'),
+  SMTP_FROM: z.string().default('The Grand Tournament <mailer@example.com>'),
   SV_SERVICES_API_URL: z.string().url().default('https://services.soccerverse.com/api'),
   COMMUNITY_PACK_URL: z.string().url().default('https://elrincondeldt.com/sv/rincon_v2.json'),
   ADMIN_BOOTSTRAP_EMAILS: z.string().default(''),

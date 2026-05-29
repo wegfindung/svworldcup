@@ -425,7 +425,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
       setSelectedSlotKey(getNextDraftSlotKey(squadResponse.squad))
       setPublicProfileUrl(session.participant.revealProfile ? buildPublicProfileUrl(session.participant) : null)
       // The picked nation only feeds the Nation League — it never selects a draft pool. The user
-      // chooses which World Cup team's players to browse from the pool selector below.
+      // chooses which Grand Tournament team's players to browse from the pool selector below.
       setSelectedTeamCode(undefined)
       setAccessState('active')
     } catch (error) {

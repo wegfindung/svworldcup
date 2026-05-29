@@ -50,7 +50,7 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
     const homeCode = resolveTeamCode(json.match.homeTeam)
     const awayCode = resolveTeamCode(json.match.awayTeam)
     if (!homeCode || !awayCode) {
-      throw new MatchImportValidationError('Could not resolve both team names to World Cup teams.')
+      throw new MatchImportValidationError('Could not resolve both team names to Grand Tournament teams.')
     }
     const fixtureCodes = new Set([homeCode, awayCode])
     if (!fixtureCodes.has(fixture.homeTeamCode) || !fixtureCodes.has(fixture.awayTeamCode)) {

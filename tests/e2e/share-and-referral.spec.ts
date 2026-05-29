@@ -8,7 +8,7 @@ const sharePayload = {
   locale: 'en',
   managerName: 'Haribobo123',
   referrerUsername: 'Libertaerx',
-  statement: 'My 3 top picks for the World Cup.',
+  statement: 'My 3 top picks for the Grand Tournament.',
   featuredPlayers: [
     {
       playerId: 1,

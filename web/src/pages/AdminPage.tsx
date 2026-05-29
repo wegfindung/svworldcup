@@ -100,7 +100,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
           <p className="eyebrow">admin access</p>
           <h2 className="section-title mt-6 max-w-[11ch]">Email and password backend access.</h2>
           <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
-            Use the protected backend to preselect all 48 World Cup team pools before public drafting opens.
+            Use the protected backend to preselect all 48 Grand Tournament team pools before public drafting opens.
           </p>
 
           <form onSubmit={handleLogin} className="mt-7 grid gap-4 rounded-[1.1rem] border border-white/10 bg-black/15 p-4 sm:p-5">
@@ -150,7 +150,7 @@ export function AdminPage({ locale: _locale }: AdminPageProps) {
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="eyebrow">admin backend</p>
-            <h2 className="section-title mt-6 max-w-[14ch]">Soccerverse World Cup control room.</h2>
+            <h2 className="section-title mt-6 max-w-[14ch]">The Grand Tournament control room.</h2>
             <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-[var(--color-muted)]">
               Logged in as <span className="font-medium text-white">{admin?.email}</span>. Pick a section below.
             </p>

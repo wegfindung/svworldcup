@@ -2,7 +2,7 @@
 
 ## Goal
 
-Provide a secure Soccerverse World Cup event platform with:
+Provide a secure The Grand Tournament event platform with:
 
 - public landing page
 - verified-email registration and participant session bootstrap
@@ -36,12 +36,12 @@ Provide a secure Soccerverse World Cup event platform with:
 2. Registration with double opt-in email verification.
 3. Participant session creation after verification.
 4. Squad builder with fixed `4-3-3` plus four locked substitutes.
-5. Admin-curated World Cup team pools that drive builder eligibility.
+5. Admin-curated Grand Tournament team pools that drive builder eligibility.
 6. Public standings for rookie, veteran, primary nation, and secondary nation tables.
 7. Public profile pages and share links.
 8. Admin backend for:
 - email/password login
-- World Cup team player-pool maintenance
+- Grand Tournament team player-pool maintenance
 - score parameter changes until kickoff
 - match result entry
 - match-data import lifecycle: upload, review, two-admin confirm, promote

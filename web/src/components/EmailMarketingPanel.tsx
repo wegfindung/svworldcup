@@ -731,7 +731,7 @@ export function EmailMarketingPanel({ adminEmail }: EmailMarketingPanelProps) {
               required
               value={draft.subject}
               onChange={(event) => setDraft((current) => ({ ...current, subject: event.target.value }))}
-              placeholder="Welcome to Soccerverse World Cup"
+              placeholder="Welcome to The Grand Tournament"
               className="h-11 rounded-[1rem] border border-white/10 bg-black/20 px-3 text-sm text-white outline-none transition focus:border-[var(--color-accent)]"
             />
           </label>

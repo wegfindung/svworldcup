@@ -1,7 +1,7 @@
 import { teams } from '../data/worldCupSeed.js'
 import { normalizeName } from './normalizeName.js'
 
-// Source country names sometimes differ from canonical World Cup team names. Mirrors the
+// Source country names sometimes differ from canonical Grand Tournament team names. Mirrors the
 // alias handling in tools/import-world-cup-squads.ts.
 const explicitAliases = new Map<string, string>([
   ['turkiye', 'TUR'],
@@ -24,7 +24,7 @@ function buildTeamCodeByName(): Map<string, string> {
   return map
 }
 
-// Resolve a source team name to a canonical World Cup team code, or null if unknown.
+// Resolve a source team name to a canonical Grand Tournament team code, or null if unknown.
 export function resolveTeamCode(name: string): string | null {
   if (!teamCodeByName) {
     teamCodeByName = buildTeamCodeByName()

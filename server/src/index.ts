@@ -4,5 +4,5 @@ import { createApp } from './app.js'
 const app = createApp()
 
 app.listen(env.PORT, () => {
-  console.log(`SV World Cup server listening on :${env.PORT}`)
+  console.log(`The Grand Tournament server listening on :${env.PORT}`)
 })
