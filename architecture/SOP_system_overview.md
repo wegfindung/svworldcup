@@ -82,6 +82,8 @@ Provide a secure The Grand Tournament event platform with:
 - email-marketing campaign deletion
 - email-marketing campaign dispatch (manual send-now and the manual due-batch run)
 - email-marketing campaign test sends
+- participant squad lock
+- participant password set or reset
 
 ## Operations Observability
 

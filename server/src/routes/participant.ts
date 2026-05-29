@@ -118,6 +118,13 @@ export function createParticipantRouter(
     const participantId = res.locals.participant.participantId as string
     try {
       const squad = await squadRepository.lockSquad(participantId)
+      await auditRepository.record({
+        actorEmail: res.locals.participant.email,
+        actionKey: 'participant.squad_lock',
+        entityType: 'squad',
+        entityId: squad.squadId,
+        detail: { budgetLimit: squad.budgetLimit, lockedAt: squad.lockedAt },
+      })
       recordParticipantRiskEventAsync({
         repository: participantRiskRepository,
         participant: res.locals.participant,
