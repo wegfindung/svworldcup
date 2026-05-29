@@ -16,7 +16,7 @@ const englishCopy = {
   eyebrow: 'how it works',
   title: 'Event rules, in full.',
   intro:
-    'One squad. One lock. Forty-plus days of Grand Tournament football moving your rank. Everything described on this page is live in the current build — only mechanics that already work are written as rules. Anything still in progress is listed under “Coming soon” at the end.',
+    'One squad. One lock. Forty-plus days of Grand Tournament football moving your rank. Everything described on this page is live in the current build — only mechanics that already work are written as rules.',
   cta: 'Register your squad',
 
   squad: {
@@ -192,14 +192,13 @@ const englishCopy = {
   },
 
   coming: {
-    eyebrow: 'coming soon',
-    title: 'Not final yet',
-    note: 'These parts are either provisional or still being built. They are listed here so nothing is hidden.',
+    eyebrow: 'good to know',
+    title: 'Results & points',
+    note: 'A few things to set expectations, so nothing here catches you off guard.',
     items: [
-      'Performance points currently come from match data entered by the event team. Automatic API-Football match ratings are planned.',
-      'The salary multiplier is set by the budget cap you choose today; a refinement tied to your squad’s actual total wage is under consideration.',
-      'Prize amounts and payout logic are provisional — see the Prizes page.',
-      'Official Soccerverse player photos are being added; some players currently show a placeholder.',
+      'Results may not appear on the site the moment a match ends. Scores update once each match has been processed, so give it a little time after the first games before your points show up.',
+      'Only locked squads are scored. A squad that has not been locked earns no points — points go to locked squads only.',
+      'No points are awarded retroactively. A squad only scores from matches that kick off after it was locked, so entering late never picks up points for games already played.',
     ],
   },
 }
@@ -213,7 +212,7 @@ copyByLocale.es = {
   eyebrow: 'cómo funciona',
   title: 'Reglas del evento, al completo.',
   intro:
-    'Un equipo. Un bloqueo. Más de cuarenta días de fútbol del Grand Tournament moviendo tu posición. Todo lo descrito en esta página está activo en la versión actual — solo se redactan como reglas las mecánicas que ya funcionan. Cualquier cosa todavía en desarrollo aparece en “Próximamente” al final.',
+    'Un equipo. Un bloqueo. Más de cuarenta días de fútbol del Grand Tournament moviendo tu posición. Todo lo descrito en esta página está activo en la versión actual — solo se redactan como reglas las mecánicas que ya funcionan.',
   cta: 'Registra tu equipo',
 
   squad: {
@@ -395,7 +394,7 @@ copyByLocale.it = {
   eyebrow: 'come funziona',
   title: 'Le regole dell’evento, per intero.',
   intro:
-    'Una sola rosa. Un solo blocco. Oltre quaranta giorni di calcio del Grand Tournament che fanno muovere la tua posizione. Tutto ciò che è descritto in questa pagina è attivo nella build attuale — solo le meccaniche che già funzionano sono scritte come regole. Tutto ciò che è ancora in lavorazione è elencato in “In arrivo” alla fine.',
+    'Una sola rosa. Un solo blocco. Oltre quaranta giorni di calcio del Grand Tournament che fanno muovere la tua posizione. Tutto ciò che è descritto in questa pagina è attivo nella build attuale — solo le meccaniche che già funzionano sono scritte come regole.',
   cta: 'Registra la tua rosa',
 
   squad: {
@@ -577,7 +576,7 @@ copyByLocale.de = {
   eyebrow: 'so funktioniert es',
   title: 'Die Eventregeln, vollständig.',
   intro:
-    'Ein Kader. Eine Festlegung. Über vierzig Tage World-Cup-Fußball, die deine Platzierung bewegen. Alles, was auf dieser Seite beschrieben wird, ist im aktuellen Build live — nur Mechaniken, die bereits funktionieren, sind als Regeln formuliert. Was sich noch in Arbeit befindet, ist am Ende unter „Demnächst“ aufgeführt.',
+    'Ein Kader. Eine Festlegung. Über vierzig Tage World-Cup-Fußball, die deine Platzierung bewegen. Alles, was auf dieser Seite beschrieben wird, ist im aktuellen Build live — nur Mechaniken, die bereits funktionieren, sind als Regeln formuliert.',
   cta: 'Registriere deinen Kader',
 
   squad: {
@@ -759,7 +758,7 @@ copyByLocale.fr = {
   eyebrow: 'comment ça marche',
   title: 'Le règlement de l’événement, en intégralité.',
   intro:
-    'Un effectif. Un verrouillage. Plus de quarante jours de football de Grand Tournament qui font bouger votre classement. Tout ce qui est décrit sur cette page est actif dans la version actuelle — seules les mécaniques qui fonctionnent déjà sont rédigées comme des règles. Tout ce qui est encore en cours est listé sous « Bientôt disponible » à la fin.',
+    'Un effectif. Un verrouillage. Plus de quarante jours de football de Grand Tournament qui font bouger votre classement. Tout ce qui est décrit sur cette page est actif dans la version actuelle — seules les mécaniques qui fonctionnent déjà sont rédigées comme des règles.',
   cta: 'Inscrivez votre effectif',
 
   squad: {
@@ -941,7 +940,7 @@ copyByLocale.pt = {
   eyebrow: 'como funciona',
   title: 'Regras do evento, na íntegra.',
   intro:
-    'Uma única equipa. Um bloqueio. Mais de quarenta dias de futebol do Grand Tournament a mexer no teu ranking. Tudo o que está descrito nesta página está ativo na versão atual — só as mecânicas que já funcionam estão escritas como regras. Tudo o que ainda está em desenvolvimento está listado em “Em breve” no final.',
+    'Uma única equipa. Um bloqueio. Mais de quarenta dias de futebol do Grand Tournament a mexer no teu ranking. Tudo o que está descrito nesta página está ativo na versão atual — só as mecânicas que já funcionam estão escritas como regras.',
   cta: 'Regista a tua equipa',
 
   squad: {
@@ -1123,7 +1122,7 @@ copyByLocale.ru = {
   eyebrow: 'как это работает',
   title: 'Правила события, полностью.',
   intro:
-    'Один состав. Одна фиксация. Более сорока дней футбола Grand Tournament, меняющего ваш ранг. Всё, что описано на этой странице, уже работает в текущей сборке — правилами записаны только те механики, которые уже функционируют. Всё, что ещё в разработке, перечислено в разделе «Скоро» в конце.',
+    'Один состав. Одна фиксация. Более сорока дней футбола Grand Tournament, меняющего ваш ранг. Всё, что описано на этой странице, уже работает в текущей сборке — правилами записаны только те механики, которые уже функционируют.',
   cta: 'Зарегистрируйте свой состав',
 
   squad: {
@@ -1305,7 +1304,7 @@ copyByLocale.zh = {
   eyebrow: '运作方式',
   title: '完整赛事规则。',
   intro:
-    '一套阵容。一次锁定。四十多天的 Grand Tournament 足球赛事牵动你的排名。本页所述的一切都已在当前版本中上线——只有已经生效的机制才会写成规则。仍在开发中的内容都列在末尾的“即将推出”部分。',
+    '一套阵容。一次锁定。四十多天的 Grand Tournament 足球赛事牵动你的排名。本页所述的一切都已在当前版本中上线——只有已经生效的机制才会写成规则。',
   cta: '注册你的阵容',
 
   squad: {
@@ -1487,7 +1486,7 @@ copyByLocale.ja = {
   eyebrow: '仕組み',
   title: 'イベントルール、すべて。',
   intro:
-    '1つのスカッド。1度のロック。40日以上にわたる Grand Tournament のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。まだ開発中のものは末尾の「近日公開」に一覧で示しています。',
+    '1つのスカッド。1度のロック。40日以上にわたる Grand Tournament のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。',
   cta: 'スカッドを登録する',
 
   squad: {
