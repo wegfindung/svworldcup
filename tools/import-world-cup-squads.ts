@@ -1,9 +1,14 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { env } from '../server/src/config/env.js'
+import { getSoccerverseCountryId } from '../server/src/data/teamCountryMap.js'
 import { teams } from '../server/src/data/worldCupSeed.js'
 import type { SoccerversePlayerRecord } from '../server/src/domain/types.js'
 import { normalizeDisplayName } from '../server/src/lib/displayName.js'
+import {
+  findSuspiciousTeamPoolCountryMismatch,
+  formatSuspiciousTeamPoolCountryMismatch,
+} from '../server/src/lib/teamPoolCountryGuard.js'
 import { createTeamPoolRepository } from '../server/src/services/repos.js'
 
 interface SourcePlayer {
@@ -77,11 +82,11 @@ function normalizePositions(player: SourcePlayer) {
   return []
 }
 
-function mapPlayer(player: SourcePlayer, fallbackTeamCode: string): SoccerversePlayerRecord {
+function mapPlayer(player: SourcePlayer, fallbackCountryId: string): SoccerversePlayerRecord {
   return {
     playerId: Number(player.id),
     displayName: normalizeDisplayName(String(player.name)),
-    nationalityCode: String(player.country_id ?? fallbackTeamCode).trim().toUpperCase().slice(0, 3) || fallbackTeamCode,
+    nationalityCode: String(player.country_id ?? fallbackCountryId).trim().toUpperCase().slice(0, 3) || fallbackCountryId,
     rating: normalizeRating(player.rating),
     clubId: 0,
     positions: normalizePositions(player),
@@ -126,9 +131,10 @@ async function main() {
       continue
     }
 
+    const expectedCountryId = getSoccerverseCountryId(teamCode) ?? teamCode
     const dedupedPlayers = new Map<number, SoccerversePlayerRecord>()
     for (const sourcePlayer of teamPayload.players ?? []) {
-      const mapped = mapPlayer(sourcePlayer, teamCode)
+      const mapped = mapPlayer(sourcePlayer, expectedCountryId)
       if (!Number.isInteger(mapped.playerId) || mapped.playerId <= 0 || !mapped.displayName) {
         continue
       }
@@ -138,6 +144,11 @@ async function main() {
     }
 
     const players = [...dedupedPlayers.values()]
+    const countryMismatch = findSuspiciousTeamPoolCountryMismatch(teamCode, players)
+    if (countryMismatch) {
+      throw new Error(formatSuspiciousTeamPoolCountryMismatch(teamCode, countryMismatch))
+    }
+
     if (repository) {
       await repository.replaceTeamPlayers(teamCode, players)
     }
@@ -179,9 +190,10 @@ async function main() {
 
     for (const item of imported) {
       const teamPayload = payload[item.teamName]
+      const expectedCountryId = getSoccerverseCountryId(item.teamCode) ?? item.teamCode
       const dedupedPlayers = new Map<number, SoccerversePlayerRecord>()
       for (const sourcePlayer of teamPayload.players ?? []) {
-        const mapped = mapPlayer(sourcePlayer, item.teamCode)
+        const mapped = mapPlayer(sourcePlayer, expectedCountryId)
         if (!Number.isInteger(mapped.playerId) || mapped.playerId <= 0 || !mapped.displayName) {
           continue
         }
