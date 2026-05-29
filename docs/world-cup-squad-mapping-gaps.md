@@ -1,6 +1,6 @@
 # Grand Tournament squad mapping gaps
 
-Audit date: 2026-05-27
+Audit date: 2026-05-30
 
 Purpose: keep track of official 2026 Grand Tournament squad players that are not yet
 cleanly represented in `server/src/data/initialTeamSelections.ts`.
@@ -27,6 +27,11 @@ Important: do not add a player to the seed only from name similarity. Some names
 match multiple Soccerverse IDs or match a player with the wrong nationality.
 Resolve the Soccerverse `playerId` first, then update the seed/import JSON.
 
+FIFA currently labels every published roster as provisional until the final
+26-player lists are submitted and announced on 2026-06-02. The local seed should
+therefore be treated as a reviewed provisional pool, not as the final locked
+World Cup squad list.
+
 ## Current seeded teams
 
 These are the teams currently present in `initialTeamSelections.ts`.
@@ -37,15 +42,20 @@ These are the teams currently present in `initialTeamSelections.ts`.
 | BEL | 25 | 26 | Diego Moreira |
 | BIH | 26 | 26 | None. `Kerim-Sam Alajbegovic` appears to be the Soccerverse/community-pack name for official `Kerim Alajbegovic`. |
 | CIV | 25 | 26 | Emmanuel Agbadou |
+| CZE | 26 | 29 | Provisional FIFA squad mapped for the live pool; unresolved/ambiguous: David Jurasek, Ladislav Krejci, Hugo Sochurek. |
 | FRA | 26 | 26 | None found. |
 | GER | 26 | 26 | None found. |
+| GHA | 23 | 28 | Provisional FIFA squad mapped for the live pool; several Soccerverse IDs remain unresolved. |
 | HAI | 24 | 26 | Duke Lacroix, Keeto Thermoncy |
 | JPN | 26 | 26 | None found. |
 | NED | 26 | 26 | None found. Rechecked against FIFA's 2026-05-27 Netherlands article; `Jan van Hecke` is the Soccerverse/community-pack display name for official `Jan Paul van Hecke`. |
+| NOR | 26 | 26 | Provisional FIFA squad mapped from FIFA announcement. |
 | NZL | 25 | 26 | Tommy Smith |
+| SCO | 25 | 26 | Provisional FIFA squad mapped; Liam Kelly resolved to the Soccerverse GK record (`44937`). |
 | SUI | 26 | 26 | None found. |
 | SWE | 23 | 26 | Kristoffer Nordfeldt, Benjamin Nygren, Gustaf Nilsson |
 | TUN | 21 | 26 | Sabri Ben Hassan, Mohamed Amine Ben Hamida, Mortadha Ben Ouanes, Elias Achouri, Rayan Elloumi |
+| TUR | 28 | 35 | Extended provisional FIFA squad mapped for the live pool; several names remain unresolved in Soccerverse/community data. |
 
 ## FIFA source URLs for current seeded teams
 
@@ -58,15 +68,20 @@ of truth until FIFA publishes the final 26-player lists on 2026-06-02.
 | BEL | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/belgium-squad-garcia-lukaku-named |
 | BIH | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/bosnia-and-herzegovina-sergej-barbarez-names-squad |
 | CIV | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/cote-divoire-squad-announcement-emerse-fae |
+| CZE | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/czechia-world-cup-squad-announced |
 | FRA | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-world-cup-squad-named |
 | GER | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/germany-squad-neuer-nagelsmann-named |
+| GHA | https://www.fifa.com/en/tournaments/mens/worldcup/articles/ghana-squad-world-cup-2026-carlos-queiroz |
 | HAI | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/haiti-squad-announcement-sebastien-migne |
 | JPN | https://www.fifa.com/en/news/articles/japan-squad-announcement |
 | NED | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/netherlands-ronald-koeman-squad-announced |
+| NOR | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/norway-squad-announcement-stale-solbakken |
 | NZL | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/new-zealand-squad-named |
+| SCO | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/scotland-squad-announced-steve-clarke |
 | SUI | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/switzerland-squad-announcement-murat-yakin |
 | SWE | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/sweden-squad-announcement-world-cup-graham-potter |
 | TUN | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/tunisia-squad-named-sabri-lamouchi |
+| TUR | https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/turkiye-preliminary-world-cup-squad-announced |
 
 ## Confirmed official squads with no local seed
 
@@ -76,7 +91,7 @@ NBC tracker and/or FIFA squad announcement articles, but they are not present in
 
 | Team | Status | Notes |
 | --- | --- | --- |
-| BRA | No local seed | Confirmed roster published. |
+| BRA | No local seed | Confirmed roster published; mapping remains too incomplete for a safe seed update. |
 | COL | No local seed | Confirmed roster published. |
 | COD | No local seed | Confirmed roster published by FIFA/NBC. |
 | CPV | No local seed | Confirmed roster published. |
@@ -84,8 +99,6 @@ NBC tracker and/or FIFA squad announcement articles, but they are not present in
 | ENG | No local seed | Confirmed roster published. |
 | KOR | No local seed | Confirmed roster published by FIFA/NBC. |
 | MAR | No local seed | Confirmed roster published by FIFA/NBC on 2026-05-26. |
-| NOR | No local seed | Confirmed roster published by FIFA/NBC. |
-| SCO | No local seed | Confirmed roster published. |
 | SEN | No local seed | Confirmed roster published. |
 | ESP | No local seed | Confirmed roster published. |
 | USA | No local seed | Confirmed roster published by NBC. |
@@ -93,6 +106,12 @@ NBC tracker and/or FIFA squad announcement articles, but they are not present in
 This means the next import pass should not only fill missing players for the
 existing seeded teams; it should also build complete Soccerverse mappings for
 these newly confirmed, currently unseeded countries.
+
+The 2026-05-30 update added provisional local seeds for CZE, GHA, NOR, SCO, and
+TUR because production had obviously shifted pools for those countries (for
+example, TUR showing the JPN pool). Remaining no-local-seed countries should be
+added only after their FIFA names resolve to Soccerverse IDs with acceptable
+confidence.
 
 ## Notes from Soccerverse lookup
 

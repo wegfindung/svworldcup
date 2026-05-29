@@ -6,36 +6,36 @@ import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
-import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { fetchFixtures, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import { publicProfileSlug } from '../lib/profileSlug'
 import type {
+  FixtureSeed,
   LocaleCode,
   NationScoreRow,
   ParticipantScoreFixtureDetail,
   ParticipantScorePlayerDetail,
   ParticipantScoreRow,
-  PublicFixtureResult,
 } from '../lib/types'
 
 interface TablesPayload {
   rookies: ParticipantScoreRow[]
   veterans: ParticipantScoreRow[]
   nations: NationScoreRow[]
-  fixtureLookup: Map<string, PublicFixtureResult>
+  fixtureLookup: Map<string, FixtureSeed>
 }
 
 async function loadTablesPayload(): Promise<TablesPayload> {
-  const [rookieResponse, veteranResponse, nationResponse, matchResponse] = await Promise.all([
+  const [rookieResponse, veteranResponse, nationResponse, fixtureResponse] = await Promise.all([
     fetchRookieLeaderboard(),
     fetchVeteranLeaderboard(),
     fetchNationLeaderboard(),
-    fetchMatchResults(),
+    fetchFixtures(),
   ])
   return {
     rookies: rookieResponse.items,
     veterans: veteranResponse.items,
     nations: nationResponse.items,
-    fixtureLookup: new Map(matchResponse.items.map((result) => [result.fixtureId, result])),
+    fixtureLookup: new Map(fixtureResponse.items.map((fixture) => [fixture.fixtureId, fixture])),
   }
 }
 
@@ -68,14 +68,13 @@ function nationName(code: string) {
   return getNationName(code)
 }
 
-function matchLabel(fixtureId: string, fixtureLookup: Map<string, PublicFixtureResult>) {
+function matchLabel(fixtureId: string, fixtureLookup: Map<string, FixtureSeed>) {
   const fixture = fixtureLookup.get(fixtureId)
   if (!fixture) {
     return fixtureId
   }
 
-  const score = fixture.status === 'final' ? `${fixture.homeGoals}-${fixture.awayGoals}` : 'vs'
-  return `${fixture.homeTeamCode} ${score} ${fixture.awayTeamCode}`
+  return `${fixture.homeTeamCode} vs ${fixture.awayTeamCode}`
 }
 
 function DetailStat({ label, value }: { label: string; value: number }) {
@@ -129,7 +128,7 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
   )
 }
 
-function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy; fixture: ParticipantScoreFixtureDetail; fixtureLookup: Map<string, PublicFixtureResult> }) {
+function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy; fixture: ParticipantScoreFixtureDetail; fixtureLookup: Map<string, FixtureSeed> }) {
   const result = fixtureLookup.get(fixture.fixtureId)
   return (
     <div className="rounded-[0.85rem] border border-white/8 bg-white/[0.025] p-3">
@@ -146,7 +145,7 @@ function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy
   )
 }
 
-function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { copy: TablesCopy; title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, PublicFixtureResult>; onOpenSquad: (target: { displayName: string; slug: string }) => void }) {
+function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { copy: TablesCopy; title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, FixtureSeed>; onOpenSquad: (target: { displayName: string; slug: string }) => void }) {
   const [openParticipantIds, setOpenParticipantIds] = useState<Set<string>>(new Set())
 
   function toggleParticipant(participantId: string) {

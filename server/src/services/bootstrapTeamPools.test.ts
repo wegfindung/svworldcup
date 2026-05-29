@@ -29,6 +29,7 @@ function player(playerId: number, nationalityCode: string): SoccerversePlayerRec
 describe('bootstrapInitialTeamPools', () => {
   beforeEach(() => {
     fetchPlayersByIds.mockClear()
+    vi.restoreAllMocks()
   })
 
   it('syncs explicitly curated team selections with their Soccerverse country id', async () => {
@@ -83,5 +84,32 @@ describe('bootstrapInitialTeamPools', () => {
 
     expect(fetchPlayersByIds.mock.calls).toContainEqual([[138935]])
     expect(syncedCounts.get('AUT')).toBe(initialTeamSelections.AUT.length)
+  })
+
+  it('skips suspicious bootstrap pools instead of replacing a team with the wrong country', async () => {
+    fetchPlayersByIds.mockImplementation(async (playerIds: number[], countryId?: string) => {
+      if (countryId === 'TUR') {
+        return playerIds.map((playerId) => player(playerId, 'JPN'))
+      }
+      return playerIds.map((playerId) => player(playerId, countryId ?? 'TST'))
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const syncedTeams: string[] = []
+    const repository: TeamPoolRepository = {
+      storageKind: 'memory',
+      listByTeam: vi.fn(async () => []),
+      getTeamPlayerById: vi.fn(async () => null),
+      getTeamSelectionCounts: vi.fn(async () => ({})),
+      replaceTeamPlayers: vi.fn(async (teamCode) => {
+        syncedTeams.push(teamCode)
+        return []
+      }),
+      seedTeamPlayersIfEmpty: vi.fn(async () => {}),
+    }
+
+    await bootstrapInitialTeamPools(repository)
+
+    expect(syncedTeams).not.toContain('TUR')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Refusing to save TUR'))
   })
 })

@@ -9,6 +9,7 @@ import type {
   EmailCampaignRecipient,
   EmailCampaignRecord,
   EventControls,
+  FixtureSeed,
   LocaleCode,
   MatchImportInput,
   MatchImportPromotionResult,
@@ -263,6 +264,13 @@ export function fetchVeteranLeaderboard() {
 
 export function fetchNationLeaderboard() {
   return getJson<{ items: NationScoreRow[] }>('/api/public/leaderboards/nations', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchFixtures() {
+  return getJson<{ items: FixtureSeed[] }>('/api/public/fixtures', {
     method: 'GET',
     headers: {},
   })

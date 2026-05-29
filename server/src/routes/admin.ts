@@ -23,6 +23,10 @@ import type { ParticipantRiskRepository } from '../repositories/participantRiskR
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
+import {
+  findSuspiciousTeamPoolCountryMismatch,
+  formatSuspiciousTeamPoolCountryMismatch,
+} from '../lib/teamPoolCountryGuard.js'
 import { searchPlayersByCountryAndName, withImageUrl } from '../services/soccerverse.js'
 import { listOperationEvents } from '../services/operationsMonitor.js'
 
@@ -442,6 +446,18 @@ export function createAdminRouter(
     }
 
     const parsed = teamPlayersSchema.parse(req.body)
+    const countryMismatch = findSuspiciousTeamPoolCountryMismatch(teamCode, parsed.players)
+    if (countryMismatch) {
+      return res.status(422).json({
+        error: formatSuspiciousTeamPoolCountryMismatch(teamCode, countryMismatch),
+        reason: 'suspicious_country_mismatch',
+        expectedCountryId: countryMismatch.expectedCountryId,
+        mismatchCount: countryMismatch.mismatchCount,
+        playerCount: countryMismatch.playerCount,
+        sample: countryMismatch.sample,
+      })
+    }
+
     const items = await teamPoolRepository.replaceTeamPlayers(teamCode, parsed.players)
     await auditRepository.record({
       actorEmail: res.locals.admin.email,

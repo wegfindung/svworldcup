@@ -1,6 +1,10 @@
 import { initialTeamSelections } from '../data/initialTeamSelections.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import type { SoccerversePlayerRecord } from '../domain/types.js'
+import {
+  findSuspiciousTeamPoolCountryMismatch,
+  formatSuspiciousTeamPoolCountryMismatch,
+} from '../lib/teamPoolCountryGuard.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { fetchPlayersByIds } from './soccerverse.js'
 
@@ -22,6 +26,12 @@ export async function bootstrapInitialTeamPools(teamPoolRepository: TeamPoolRepo
     const fallbackPlayers = missingPlayerIds.length > 0 ? await fetchPlayersByIds(missingPlayerIds) : []
     const players = orderPlayersBySelection(playerIds, [...countryMatchedPlayers, ...fallbackPlayers])
     if (players.length === 0) {
+      continue
+    }
+
+    const countryMismatch = findSuspiciousTeamPoolCountryMismatch(teamCode, players)
+    if (countryMismatch) {
+      console.warn(formatSuspiciousTeamPoolCountryMismatch(teamCode, countryMismatch))
       continue
     }
 
