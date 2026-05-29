@@ -306,6 +306,14 @@ export function createAuthRouter(
       return res.status(404).json({ error: 'Participant not found.' })
     }
 
+    await auditRepository.record({
+      actorEmail: participant.email,
+      actionKey: 'participant.password_set',
+      entityType: 'participant',
+      entityId: updated.participantId,
+      detail: {},
+    })
+
     const squadSummary = await buildSquadSummary(updated.participantId, squadRepository)
     res.json({
       participant: updated,
@@ -390,6 +398,14 @@ export function createAuthRouter(
     if (!participant) {
       return res.status(404).json({ error: 'Reset token is invalid or expired.' })
     }
+
+    await auditRepository.record({
+      actorEmail: participant.email,
+      actionKey: 'participant.password_reset',
+      entityType: 'participant',
+      entityId: participant.participantId,
+      detail: {},
+    })
 
     const squadSummary = await buildSquadSummary(participant.participantId, squadRepository)
     const sessionCookie = await issueParticipantSession(participant.participantId, participantSessionRepository)

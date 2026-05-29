@@ -142,7 +142,7 @@ export function ScoringView() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {slotClasses.map((slot) => (
             <label key={slot} className="grid gap-2">
-              <span className={labelClass}>{slot}</span>
+              <span className={labelClass}>{slot === 'MID' ? 'MID *' : slot}</span>
               <input
                 type="number"
                 min={0}
@@ -152,6 +152,12 @@ export function ScoringView() {
                 onChange={(event) => setCleanSheet(slot, Number(event.target.value))}
                 className={inputClass}
               />
+              {slot === 'MID' ? (
+                <span className="text-[10px] leading-tight text-[var(--color-muted)]">
+                  * Paid only to a MID with a defensive-midfielder alt position (DML/DMR/DMC/DM). Every other MID
+                  earns 0 here.
+                </span>
+              ) : null}
             </label>
           ))}
         </div>

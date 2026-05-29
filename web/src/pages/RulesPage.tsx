@@ -9,14 +9,14 @@ interface RulesPageProps {
   locale: LocaleCode
 }
 
-// English is the source of truth. Every locale below translates all sections EXCEPT `coming`, which
-// references englishCopy.coming on purpose (the "coming soon" notices stay in English by request).
-// Unknown locales fall back to englishCopy. The embedded scoring calculator is localised via messages.ts.
+// English is the source of truth. Every locale below translates all sections, including the `coming`
+// "good to know" disclaimer. Unknown locales fall back to englishCopy. The embedded scoring calculator
+// is localised via messages.ts.
 const englishCopy = {
   eyebrow: 'how it works',
   title: 'Event rules, in full.',
   intro:
-    'One squad. One lock. Forty-plus days of Grand Tournament football moving your rank. Everything described on this page is live in the current build — only mechanics that already work are written as rules. Anything still in progress is listed under “Coming soon” at the end.',
+    'One squad. One lock. Forty-plus days of Grand Tournament football moving your rank. Everything described on this page is live in the current build — only mechanics that already work are written as rules.',
   cta: 'Register your squad',
 
   squad: {
@@ -104,8 +104,8 @@ const englishCopy = {
     baseValue: '12',
     boostLabel: 'With +5% ownership boost',
     boostValue: '12.6',
-    finalLabel: 'Under the 1,500,000 SVC cap (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Under the 1,500,000 SVC cap (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -192,14 +192,13 @@ const englishCopy = {
   },
 
   coming: {
-    eyebrow: 'coming soon',
-    title: 'Not final yet',
-    note: 'These parts are either provisional or still being built. They are listed here so nothing is hidden.',
+    eyebrow: 'good to know',
+    title: 'Results & points',
+    note: 'A few things to set expectations, so nothing here catches you off guard.',
     items: [
-      'Performance points currently come from match data entered by the event team. Automatic API-Football match ratings are planned.',
-      'The salary multiplier is set by the budget cap you choose today; a refinement tied to your squad’s actual total wage is under consideration.',
-      'Prize amounts and payout logic are provisional — see the Prizes page.',
-      'Official Soccerverse player photos are being added; some players currently show a placeholder.',
+      'Results may not appear on the site the moment a match ends. Scores update once each match has been processed, so give it a little time after the first games before your points show up.',
+      'Only locked squads are scored. A squad that has not been locked earns no points — points go to locked squads only.',
+      'No points are awarded retroactively. A squad only scores from matches that kick off after it was locked, so entering late never picks up points for games already played.',
     ],
   },
 }
@@ -213,7 +212,7 @@ copyByLocale.es = {
   eyebrow: 'cómo funciona',
   title: 'Reglas del evento, al completo.',
   intro:
-    'Un equipo. Un bloqueo. Más de cuarenta días de fútbol del Grand Tournament moviendo tu posición. Todo lo descrito en esta página está activo en la versión actual — solo se redactan como reglas las mecánicas que ya funcionan. Cualquier cosa todavía en desarrollo aparece en “Próximamente” al final.',
+    'Un equipo. Un bloqueo. Más de cuarenta días de fútbol del Grand Tournament moviendo tu posición. Todo lo descrito en esta página está activo en la versión actual — solo se redactan como reglas las mecánicas que ya funcionan.',
   cta: 'Registra tu equipo',
 
   squad: {
@@ -301,8 +300,8 @@ copyByLocale.es = {
     baseValue: '12',
     boostLabel: 'Con +5% de impulso por posesión',
     boostValue: '12.6',
-    finalLabel: 'Bajo el tope de 1,500,000 SVC (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Bajo el tope de 1,500,000 SVC (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -388,14 +387,23 @@ copyByLocale.es = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'conviene saber',
+    title: 'Resultados y puntos',
+    note: 'Algunas cosas para que sepas qué esperar y nada te tome por sorpresa.',
+    items: [
+      'Los resultados pueden no aparecer en el sitio en cuanto termina un partido. Los puntos se actualizan una vez procesado cada partido, así que dale algo de tiempo tras los primeros encuentros antes de que aparezcan tus puntos.',
+      'Solo se puntúan los equipos bloqueados. Un equipo que no se ha bloqueado no recibe puntos: los puntos se otorgan únicamente a los equipos bloqueados.',
+      'No se otorgan puntos de forma retroactiva. Un equipo solo puntúa en los partidos que comienzan después de bloquearlo, así que registrarte tarde nunca da puntos por partidos ya jugados.',
+    ],
+  },
 }
 
 copyByLocale.it = {
   eyebrow: 'come funziona',
   title: 'Le regole dell’evento, per intero.',
   intro:
-    'Una sola rosa. Un solo blocco. Oltre quaranta giorni di calcio del Grand Tournament che fanno muovere la tua posizione. Tutto ciò che è descritto in questa pagina è attivo nella build attuale — solo le meccaniche che già funzionano sono scritte come regole. Tutto ciò che è ancora in lavorazione è elencato in “In arrivo” alla fine.',
+    'Una sola rosa. Un solo blocco. Oltre quaranta giorni di calcio del Grand Tournament che fanno muovere la tua posizione. Tutto ciò che è descritto in questa pagina è attivo nella build attuale — solo le meccaniche che già funzionano sono scritte come regole.',
   cta: 'Registra la tua rosa',
 
   squad: {
@@ -483,8 +491,8 @@ copyByLocale.it = {
     baseValue: '12',
     boostLabel: 'Con boost di possesso del +5%',
     boostValue: '12.6',
-    finalLabel: 'Sotto il tetto di 1,500,000 SVC (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Sotto il tetto di 1,500,000 SVC (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -570,21 +578,30 @@ copyByLocale.it = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'buono a sapersi',
+    title: 'Risultati e punti',
+    note: 'Alcune cose per chiarire cosa aspettarti, così nulla ti coglie di sorpresa.',
+    items: [
+      'I risultati potrebbero non comparire sul sito nel momento in cui una partita finisce. I punteggi si aggiornano una volta elaborata ogni partita, quindi concedi un po’ di tempo dopo le prime gare prima che i tuoi punti compaiano.',
+      'Vengono conteggiate solo le rose bloccate. Una rosa che non è stata bloccata non riceve punti: i punti vengono assegnati esclusivamente alle rose bloccate.',
+      'Non vengono assegnati punti in modo retroattivo. Una rosa segna punti solo nelle partite che iniziano dopo il suo blocco, quindi iscriversi in ritardo non fa mai recuperare punti per le partite già giocate.',
+    ],
+  },
 }
 
 copyByLocale.de = {
   eyebrow: 'so funktioniert es',
   title: 'Die Eventregeln, vollständig.',
   intro:
-    'Ein Kader. Eine Festlegung. Über vierzig Tage World-Cup-Fußball, die deine Platzierung bewegen. Alles, was auf dieser Seite beschrieben wird, ist im aktuellen Build live — nur Mechaniken, die bereits funktionieren, sind als Regeln formuliert. Was sich noch in Arbeit befindet, ist am Ende unter „Demnächst“ aufgeführt.',
+    'Ein Kader. Eine Festlegung. Über vierzig Tage Grand-Tournament-Fußball, die deine Platzierung bewegen. Alles, was auf dieser Seite beschrieben wird, ist im aktuellen Build live — nur Mechaniken, die bereits funktionieren, sind als Regeln formuliert.',
   cta: 'Registriere deinen Kader',
 
   squad: {
     eyebrow: 'registrierung & kader',
     title: 'Baue einen Kader und lege ihn dann fest',
     body:
-      'Du stellst einen einzigen Kader aus 15 Spielern in einem 4-3-3 mit einem Reservespieler pro Position zusammen. Die Spieler stammen aus den offiziellen World-Cup-Teampools, die in Soccerverse abgebildet sind. Sobald du festlegst, ist dein Kader fix — keine Transfers, keine neuen Spieler. Die einzige während des Turniers erlaubte Änderung ist ein begrenzter Tausch Reservespieler-gegen-Stammspieler innerhalb festgelegter Zeitfenster (siehe Spielertausch weiter unten).',
+      'Du stellst einen einzigen Kader aus 15 Spielern in einem 4-3-3 mit einem Reservespieler pro Position zusammen. Die Spieler stammen aus den offiziellen Grand-Tournament-Teampools, die in Soccerverse abgebildet sind. Sobald du festlegst, ist dein Kader fix — keine Transfers, keine neuen Spieler. Die einzige während des Turniers erlaubte Änderung ist ein begrenzter Tausch Reservespieler-gegen-Stammspieler innerhalb festgelegter Zeitfenster (siehe Spielertausch weiter unten).',
     formationTitle: 'Kaderaufbau (15 Spieler)',
     starters: [
       { label: 'GK', value: '1' },
@@ -636,7 +653,7 @@ copyByLocale.de = {
     eyebrow: 'punktesystem',
     title: 'Wie Punkte verdient werden',
     body:
-      'Ein festes Punktesystem wird auf die echte World-Cup-Leistung jedes Spielers angewendet, Spiel für Spiel. Der Wert für ein zu Null gehaltenes Spiel hängt von der Position ab. Darüber hinaus verdient jeder Spieler bis zu 2 Leistungspunkte, skaliert nach seinem Spiel-Rating.',
+      'Ein festes Punktesystem wird auf die echte Grand-Tournament-Leistung jedes Spielers angewendet, Spiel für Spiel. Der Wert für ein zu Null gehaltenes Spiel hängt von der Position ab. Darüber hinaus verdient jeder Spieler bis zu 2 Leistungspunkte, skaliert nach seinem Spiel-Rating.',
     rubric: [
       { label: 'Tor', value: '+5', detail: 'pro erzieltem Tor' },
       { label: 'Vorlage', value: '+3', detail: 'pro Vorlage' },
@@ -665,8 +682,8 @@ copyByLocale.de = {
     baseValue: '12',
     boostLabel: 'Mit +5% Ownership-Boost',
     boostValue: '12.6',
-    finalLabel: 'Unter der Grenze von 1,500,000 SVC (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Unter der Grenze von 1,500,000 SVC (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -752,14 +769,23 @@ copyByLocale.de = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'gut zu wissen',
+    title: 'Ergebnisse & Punkte',
+    note: 'Ein paar Dinge zur Einordnung, damit dich hier nichts überrascht.',
+    items: [
+      'Ergebnisse erscheinen möglicherweise nicht sofort auf der Seite, sobald ein Spiel endet. Die Punkte werden aktualisiert, sobald jedes Spiel verarbeitet wurde – gib ihm also nach den ersten Spielen etwas Zeit, bevor deine Punkte auftauchen.',
+      'Nur festgelegte Kader werden gewertet. Ein Kader, der nicht festgelegt wurde, erhält keine Punkte – Punkte gibt es ausschließlich für festgelegte Kader.',
+      'Es werden keine Punkte rückwirkend vergeben. Ein Kader punktet nur in Spielen, die nach seiner Festlegung angepfiffen werden – wer sich spät anmeldet, bekommt also nie Punkte für bereits gespielte Spiele.',
+    ],
+  },
 }
 
 copyByLocale.fr = {
   eyebrow: 'comment ça marche',
   title: 'Le règlement de l’événement, en intégralité.',
   intro:
-    'Un effectif. Un verrouillage. Plus de quarante jours de football de Grand Tournament qui font bouger votre classement. Tout ce qui est décrit sur cette page est actif dans la version actuelle — seules les mécaniques qui fonctionnent déjà sont rédigées comme des règles. Tout ce qui est encore en cours est listé sous « Bientôt disponible » à la fin.',
+    'Un effectif. Un verrouillage. Plus de quarante jours de football de Grand Tournament qui font bouger votre classement. Tout ce qui est décrit sur cette page est actif dans la version actuelle — seules les mécaniques qui fonctionnent déjà sont rédigées comme des règles.',
   cta: 'Inscrivez votre effectif',
 
   squad: {
@@ -847,8 +873,8 @@ copyByLocale.fr = {
     baseValue: '12',
     boostLabel: 'Avec un boost de possession de +5%',
     boostValue: '12.6',
-    finalLabel: 'Sous le plafond de 1,500,000 SVC (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Sous le plafond de 1,500,000 SVC (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -934,14 +960,23 @@ copyByLocale.fr = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'bon à savoir',
+    title: 'Résultats et points',
+    note: 'Quelques précisions pour situer les attentes, afin que rien ne vous surprenne.',
+    items: [
+      'Les résultats peuvent ne pas apparaître sur le site dès la fin d’un match. Les points sont mis à jour une fois chaque match traité ; laissez donc un peu de temps après les premières rencontres avant que vos points s’affichent.',
+      'Seuls les effectifs verrouillés sont comptabilisés. Un effectif non verrouillé ne reçoit aucun point : les points ne sont attribués qu’aux effectifs verrouillés.',
+      'Aucun point n’est attribué rétroactivement. Un effectif ne marque que sur les matchs qui débutent après son verrouillage ; s’inscrire tard ne rapporte donc jamais de points pour des matchs déjà joués.',
+    ],
+  },
 }
 
 copyByLocale.pt = {
   eyebrow: 'como funciona',
   title: 'Regras do evento, na íntegra.',
   intro:
-    'Uma única equipa. Um bloqueio. Mais de quarenta dias de futebol do Grand Tournament a mexer no teu ranking. Tudo o que está descrito nesta página está ativo na versão atual — só as mecânicas que já funcionam estão escritas como regras. Tudo o que ainda está em desenvolvimento está listado em “Em breve” no final.',
+    'Uma única equipa. Um bloqueio. Mais de quarenta dias de futebol do Grand Tournament a mexer no teu ranking. Tudo o que está descrito nesta página está ativo na versão atual — só as mecânicas que já funcionam estão escritas como regras.',
   cta: 'Regista a tua equipa',
 
   squad: {
@@ -1029,8 +1064,8 @@ copyByLocale.pt = {
     baseValue: '12',
     boostLabel: 'Com impulso de propriedade de +5%',
     boostValue: '12.6',
-    finalLabel: 'Sob o limite de 1,500,000 SVC (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Sob o limite de 1,500,000 SVC (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -1116,14 +1151,23 @@ copyByLocale.pt = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'bom saber',
+    title: 'Resultados e pontos',
+    note: 'Algumas coisas para definir expectativas, para que nada aqui te apanhe de surpresa.',
+    items: [
+      'Os resultados podem não aparecer no site no momento em que um jogo termina. As pontuações são atualizadas assim que cada jogo é processado, por isso dá algum tempo após os primeiros jogos antes de os teus pontos surgirem.',
+      'Apenas as equipas bloqueadas são pontuadas. Uma equipa que não foi bloqueada não recebe pontos — os pontos vão apenas para as equipas bloqueadas.',
+      'Não são atribuídos pontos retroativamente. Uma equipa só pontua em jogos que começam depois de ter sido bloqueada, por isso registar-te tarde nunca recupera pontos por jogos já disputados.',
+    ],
+  },
 }
 
 copyByLocale.ru = {
   eyebrow: 'как это работает',
   title: 'Правила события, полностью.',
   intro:
-    'Один состав. Одна фиксация. Более сорока дней футбола Grand Tournament, меняющего ваш ранг. Всё, что описано на этой странице, уже работает в текущей сборке — правилами записаны только те механики, которые уже функционируют. Всё, что ещё в разработке, перечислено в разделе «Скоро» в конце.',
+    'Один состав. Одна фиксация. Более сорока дней футбола Grand Tournament, меняющего ваш ранг. Всё, что описано на этой странице, уже работает в текущей сборке — правилами записаны только те механики, которые уже функционируют.',
   cta: 'Зарегистрируйте свой состав',
 
   squad: {
@@ -1211,8 +1255,8 @@ copyByLocale.ru = {
     baseValue: '12',
     boostLabel: 'С надбавкой за владение +5%',
     boostValue: '12.6',
-    finalLabel: 'Под потолком 1,500,000 SVC (×1.3)',
-    finalValue: '16.38',
+    finalLabel: 'Под потолком 1,500,000 SVC (×1.5)',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -1298,14 +1342,23 @@ copyByLocale.ru = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'полезно знать',
+    title: 'Результаты и очки',
+    note: 'Несколько моментов, чтобы вы знали, чего ожидать, и ничто не застало вас врасплох.',
+    items: [
+      'Результаты могут появиться на сайте не сразу после окончания матча. Очки обновляются после обработки каждого матча, поэтому дайте немного времени после первых игр, прежде чем ваши очки отобразятся.',
+      'Очки начисляются только зафиксированным составам. Состав, который не был зафиксирован, не получает очков — очки начисляются исключительно зафиксированным составам.',
+      'Очки не начисляются задним числом. Состав получает очки только за матчи, которые начинаются после его фиксации, поэтому поздняя регистрация никогда не приносит очков за уже сыгранные матчи.',
+    ],
+  },
 }
 
 copyByLocale.zh = {
   eyebrow: '运作方式',
   title: '完整赛事规则。',
   intro:
-    '一套阵容。一次锁定。四十多天的 Grand Tournament 足球赛事牵动你的排名。本页所述的一切都已在当前版本中上线——只有已经生效的机制才会写成规则。仍在开发中的内容都列在末尾的“即将推出”部分。',
+    '一套阵容。一次锁定。四十多天的 Grand Tournament 足球赛事牵动你的排名。本页所述的一切都已在当前版本中上线——只有已经生效的机制才会写成规则。',
   cta: '注册你的阵容',
 
   squad: {
@@ -1393,8 +1446,8 @@ copyByLocale.zh = {
     baseValue: '12',
     boostLabel: '加上 +5% 持股提升',
     boostValue: '12.6',
-    finalLabel: '在 1,500,000 SVC 上限下（×1.3）',
-    finalValue: '16.38',
+    finalLabel: '在 1,500,000 SVC 上限下（×1.5）',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -1480,14 +1533,23 @@ copyByLocale.zh = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: '须知',
+    title: '结果与积分',
+    note: '一些需要事先了解的事项，免得让你感到意外。',
+    items: [
+      '比赛结束后，结果可能不会立即显示在网站上。每场比赛的数据处理完成后积分才会更新，因此在最初的几场比赛后请稍等片刻，你的积分才会出现。',
+      '只有已锁定的阵容才会计分。未锁定的阵容不会获得任何积分——积分只发放给已锁定的阵容。',
+      '积分不会追溯发放。阵容只在锁定之后开赛的比赛中得分，因此过晚注册永远不会为已经进行过的比赛获得积分。',
+    ],
+  },
 }
 
 copyByLocale.ja = {
   eyebrow: '仕組み',
   title: 'イベントルール、すべて。',
   intro:
-    '1つのスカッド。1度のロック。40日以上にわたる Grand Tournament のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。まだ開発中のものは末尾の「近日公開」に一覧で示しています。',
+    '1つのスカッド。1度のロック。40日以上にわたる Grand Tournament のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。',
   cta: 'スカッドを登録する',
 
   squad: {
@@ -1575,8 +1637,8 @@ copyByLocale.ja = {
     baseValue: '12',
     boostLabel: '+5% の保有ブースト込み',
     boostValue: '12.6',
-    finalLabel: '1,500,000 SVC 上限の下で（×1.3）',
-    finalValue: '16.38',
+    finalLabel: '1,500,000 SVC 上限の下で（×1.5）',
+    finalValue: '18.9',
   },
 
   subs: {
@@ -1662,7 +1724,16 @@ copyByLocale.ja = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: '知っておきたいこと',
+    title: '結果とポイント',
+    note: '想定外のことがないよう、いくつか押さえておきたい点です。',
+    items: [
+      '試合終了直後には結果がサイトに表示されないことがあります。各試合のデータが処理されてからポイントが更新されるため、最初の数試合のあとはポイントが表示されるまで少し時間をおいてください。',
+      'ロックされたスカッドのみが採点されます。ロックされていないスカッドはポイントを獲得できません——ポイントはロック済みのスカッドにのみ付与されます。',
+      'ポイントが遡って付与されることはありません。スカッドはロック後にキックオフした試合でのみ得点するため、登録が遅れても、すでに行われた試合のポイントを獲得することはありません。',
+    ],
+  },
 }
 
 function getRulesCopy(locale: LocaleCode): RulesCopy {

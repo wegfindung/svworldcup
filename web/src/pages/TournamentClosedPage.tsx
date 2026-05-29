@@ -71,7 +71,7 @@ copyByLocale.de = {
     'Die Registrierung schließt zur Soccerverse-Saisontransition (04.07.2026, 00:00 UTC). Nach diesem Zeitpunkt ändern sich Ratings — und damit Gehälter. Ein später Einstieg würde gegen eine andere Gehaltstabelle drafteln als alle anderen, was nicht fair wäre.',
   alreadyEnteredTitle: 'Bereits eingetragen?',
   alreadyEnteredBody:
-    'Du kannst dich weiterhin anmelden, deinen festgelegten Kader prüfen und deine Platzierung in den Ligen verfolgen. Die Wertung läuft mit jedem World-Cup-Spiel weiter bis zum 19. Juli 2026.',
+    'Du kannst dich weiterhin anmelden, deinen festgelegten Kader prüfen und deine Platzierung in den Ligen verfolgen. Die Wertung läuft mit jedem Grand-Tournament-Spiel weiter bis zum 19. Juli 2026.',
   loginCta: 'Bei deinem Eintrag anmelden',
   leaderboardsCta: 'Tabellen ansehen',
   resultsCta: 'Spielergebnisse',
