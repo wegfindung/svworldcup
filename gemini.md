@@ -6,8 +6,11 @@
 > **scoring numbers** (real values: goal 5 / assist 3 / appearance 1 / minutes 1 / clean sheet
 > GK4·DEF3·MID1(gated)·FWD0 / performance curve to 2.0), the **budget/handicap multiplier mechanic**
 > (undocumented here), **"nation" vs team terminology** (code uses team codes for the 48 WC teams),
-> and the **locale list** (9 incl. `it`/`ja`, not 6). Verify against code before relying on anything
-> below. Full findings + a planned rewrite: `claude-docs/sop-code-audit-2026-05-29.md`.
+> the **locale list** (9 incl. `it`/`ja`, not 6), the **"set-and-forget / no mid-tournament
+> management"** claim (a mid-tournament **player-swap** feature with timed windows now exists — see
+> `architecture/SOP_scoring_and_leagues.md` "Player Swaps"), and the **substitution model** (now a
+> per-round lineup freeze with reserves scoring at 50% weight, not absence-triggered activation).
+> Verify against the code and the `architecture/SOP_*.md` layer before relying on anything below.
 
 > Protocol: B.L.A.S.T. | Architecture: A.N.T. 3-Layer
 > Created: 2026-05-08 | Status: Phase 3 Architect In Progress
