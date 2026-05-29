@@ -107,7 +107,7 @@ export function SwapPanel({ squad, copy, locale, state, onSwapped }: SwapPanelPr
           <label className="block text-sm">
             <span className="mb-1 block text-[var(--color-muted)]">{copy.bringOn}</span>
             <select
-              className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-ink-soft)] px-3 py-2 text-[var(--color-paper)] [color-scheme:dark]"
+              className="form-select w-full px-3 py-2"
               value={playerInId}
               onChange={(event) => onReserveChange(event.target.value)}
             >
@@ -123,7 +123,7 @@ export function SwapPanel({ squad, copy, locale, state, onSwapped }: SwapPanelPr
           <label className="block text-sm">
             <span className="mb-1 block text-[var(--color-muted)]">{copy.takeOff}</span>
             <select
-              className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-ink-soft)] px-3 py-2 text-[var(--color-paper)] [color-scheme:dark] disabled:opacity-50"
+              className="form-select w-full px-3 py-2"
               value={playerOutId}
               disabled={playerInId === ''}
               onChange={(event) => setPlayerOutId(event.target.value === '' ? '' : Number(event.target.value))}

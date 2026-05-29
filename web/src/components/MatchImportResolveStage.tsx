@@ -317,7 +317,7 @@ export function MatchImportResolveStage({
                 value={effLineup}
                 disabled={busy}
                 onChange={(event) => setStatEdit(key, 'lineupStatus', event.target.value as LineupStatus)}
-                className={statInputClass}
+                className="form-select h-9 w-full px-2 text-sm transition"
               >
                 <option className={optionClass} value="starter">
                   Starter
@@ -378,7 +378,7 @@ export function MatchImportResolveStage({
                       setChoice(key, { kind: 'player', playerId: Number(event.target.value) })
                     }
                   }}
-                  className="mt-2 h-10 w-full rounded-[0.85rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50"
+                  className="form-select mt-2 h-10 w-full px-2 text-sm transition"
                 >
                   <option className={optionClass} value="">Select a player…</option>
                   {pool.map((candidate) => (

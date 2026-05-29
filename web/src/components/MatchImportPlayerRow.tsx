@@ -102,7 +102,7 @@ export function MatchImportPlayerRow({
             value={lineupStatus}
             disabled={disabled || busy}
             onChange={(event) => setLineupStatus(event.target.value as LineupStatus)}
-            className="h-10 rounded-[0.85rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50"
+            className="form-select h-10 px-2 text-sm transition"
           >
             <option className={optionClass} value="starter">Starter</option>
             <option className={optionClass} value="substitute">Substitute</option>
@@ -225,7 +225,7 @@ export function MatchImportPlayerRow({
                   setRemapOpen(false)
                 }
               }}
-              className="mt-2 h-10 w-full rounded-[0.85rem] border border-white/10 bg-black/15 px-2 text-sm text-white outline-none transition focus:border-[var(--color-accent)] disabled:opacity-50"
+              className="form-select mt-2 h-10 w-full px-2 text-sm transition"
             >
               <option className={optionClass} value="">Select a player…</option>
               {candidates.map((candidate) => (

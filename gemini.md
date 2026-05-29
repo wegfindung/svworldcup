@@ -9,7 +9,11 @@
 > the **locale list** (9 incl. `it`/`ja`, not 6), the **"set-and-forget / no mid-tournament
 > management"** claim (a mid-tournament **player-swap** feature with timed windows now exists — see
 > `architecture/SOP_scoring_and_leagues.md` "Player Swaps"), and the **substitution model** (now a
-> per-round lineup freeze with reserves scoring at 50% weight, not absence-triggered activation).
+> per-round lineup freeze with reserves scoring at 50% weight, not absence-triggered activation). Also
+> new since this map: a **max-4-players-per-national-team squad-building cap** (`MAX_PLAYERS_PER_NATION`,
+> see `architecture/SOP_registration_and_auth.md`), and the **budget multiplier table is now 12 tiers**
+> (1.5M→1.50 … 3.0M→1.00 default … 9.0M→0.20; see `architecture/SOP_scoring_and_leagues.md` "Salary
+> Budget Multiplier").
 > Verify against the code and the `architecture/SOP_*.md` layer before relying on anything below.
 
 > Protocol: B.L.A.S.T. | Architecture: A.N.T. 3-Layer
