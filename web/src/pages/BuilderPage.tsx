@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerTooltip } from '../components/PlayerTooltip'
+import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
@@ -15,6 +17,7 @@ import {
   assignSquadPlayer,
   fetchParticipantSession,
   fetchParticipantSquad,
+  fetchSwapState,
   fetchTeamPlayers,
   linkSoccerverseAccount,
   logoutParticipant,
@@ -44,6 +47,7 @@ import type {
   ParticipantSquadSummary,
   SlotClass,
   SquadSlotState,
+  SwapState,
   TeamPoolPlayer,
 } from '../lib/types'
 
@@ -196,6 +200,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
   const [budgetLimit, setBudgetLimit] = useState(initialReadyState?.budgetLimit ?? defaultBudgetLimit)
   const [squad, setSquad] = useState<ParticipantSquad | null>(null)
+  const [swapState, setSwapState] = useState<SwapState | null>(null)
   const [selectedTeamCode, setSelectedTeamCode] = useState<string | undefined>()
   const [loadedTeamCode, setLoadedTeamCode] = useState<string | null>(null)
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
@@ -244,11 +249,32 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     const slots = squad?.slots ?? []
     return slots.find((slot) => slot.key === selectedSlotKey) ?? slots.find((slot) => !slot.player) ?? slots[0] ?? null
   }, [selectedSlotKey, squad])
+  // Once a squad is locked, the effective lineup (which 11 start vs which 4 are reserves) is the
+  // round-lineup snapshot, not the lock-time squad_slots — so a committed swap shows on the pitch.
+  // swapState.currentLineup maps slotKey -> playerId for the lineup in effect; remap the displayed
+  // players accordingly. No snapshot (unlocked, or never swapped) => the raw squad slots are used.
+  const activeSwapState = squad?.isLocked ? swapState : null
+  const effectiveSlots = useMemo<SquadSlotState[]>(() => {
+    const slots = squad?.slots ?? []
+    const lineup = activeSwapState?.currentLineup
+    if (!lineup || lineup.length === 0) {
+      return slots
+    }
+    const playerById = new Map(slots.filter((slot) => slot.player).map((slot) => [slot.player!.playerId, slot.player!]))
+    const playerBySlotKey = new Map(lineup.map((entry) => [entry.slotKey, entry.playerId]))
+    return slots.map((slot) => {
+      const playerId = playerBySlotKey.get(slot.key)
+      if (playerId === undefined) {
+        return slot
+      }
+      return { ...slot, player: playerById.get(playerId) ?? slot.player }
+    })
+  }, [activeSwapState, squad])
   const squadSlotBuckets = slotClassOrder
     .map((slotClass) => ({
       slotClass,
       ...slotClassCopy[slotClass],
-      slots: (squad?.slots ?? []).filter((slot) => slot.slotClass === slotClass),
+      slots: effectiveSlots.filter((slot) => slot.slotClass === slotClass),
     }))
     .filter((bucket) => bucket.slots.length > 0)
   const visibleTeamPlayers = useMemo(() => {
@@ -268,6 +294,41 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
   const competitionStart = useMemo(() => getCompetitionStartEpoch(bootstrap?.fixtures ?? []), [bootstrap?.fixtures])
   const canEditSquad = !squad?.isLocked || !competitionStarted
+
+  // Load swap state (windows + effective lineup) once the squad is locked; the SwapPanel and the
+  // pitch both read from it. Refetched after each committed swap so the pitch updates immediately.
+  const refreshSwapState = useCallback(async () => {
+    if (!squad?.isLocked) {
+      return
+    }
+    try {
+      setSwapState(await fetchSwapState())
+    } catch {
+      setSwapState(null)
+    }
+  }, [squad?.isLocked])
+
+  useEffect(() => {
+    if (!squad?.isLocked) {
+      return
+    }
+    let active = true
+    void (async () => {
+      try {
+        const nextSwapState = await fetchSwapState()
+        if (active) {
+          setSwapState(nextSwapState)
+        }
+      } catch {
+        if (active) {
+          setSwapState(null)
+        }
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [squad?.isLocked])
   const socialSharingUnlocked = draftedCount === 15
   const totalSlotCount = squad?.slots.length ?? 15
   const draftCompletionRatio = Math.round((draftedCount / Math.max(totalSlotCount, 1)) * 100)
@@ -667,7 +728,20 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
           <span>{slot.slotClass}</span>
         </span>
         {slot.player ? (
-          <span className="mt-2 flex min-w-0 items-center gap-2.5">
+          <PlayerTooltip
+            as="span"
+            className="mt-2 flex min-w-0 items-center gap-2.5"
+            info={{
+              name: slot.player.displayName,
+              nationCode: slot.player.teamCode || slot.player.nationalityCode,
+              imageUrl: slot.player.imageUrl,
+              meta: [
+                { label: 'Rating', value: String(slot.player.rating) },
+                { label: 'Cost', value: formatBudget(slot.player.capCost) },
+                { label: 'Pos', value: slot.player.positionMain ?? slot.player.positions.join('/') },
+              ],
+            }}
+          >
             <span className="pitch-player-portrait">
               <PlayerPortrait
                 src={slot.player.imageUrl}
@@ -691,7 +765,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                 {formatBudget(slot.player.capCost)}
               </span>
             </span>
-          </span>
+          </PlayerTooltip>
         ) : (
           <span className="pitch-empty-copy">{copy.slots.tapToDraft}</span>
         )}
@@ -1617,7 +1691,18 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                           className="scout-player-card rounded-[0.85rem] px-3 py-2.5 transition hover:-translate-y-[1px]"
                         >
                           <div className="grid gap-3 xl:grid-cols-[minmax(16rem,1fr)_minmax(0,35rem)] xl:items-center">
-                            <div className="flex min-w-0 items-center gap-3">
+                            <PlayerTooltip
+                              as="div"
+                              className="flex min-w-0 items-center gap-3"
+                              info={{
+                                name: player.displayName,
+                                nationCode: player.teamCode || player.nationalityCode,
+                                imageUrl: player.imageUrl,
+                                meta: [
+                                  { label: 'Pos', value: player.positionMain ?? player.positions.join('/') },
+                                ],
+                              }}
+                            >
                               <PlayerPortrait
                                 src={player.imageUrl}
                                 alt={player.displayName}
@@ -1651,7 +1736,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                                   ))}
                                 </div>
                               </div>
-                            </div>
+                            </PlayerTooltip>
 
                             <div className="flex min-w-0 flex-wrap gap-1.5 xl:justify-end">
                               <button
@@ -1775,6 +1860,10 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                       </div>
                     </div>
                   </div>
+                ) : null}
+
+                {squad.isLocked ? (
+                  <SwapPanel squad={squad} copy={copy.swap} locale={locale} state={activeSwapState} onSwapped={refreshSwapState} />
                 ) : null}
 
                 <div className="mt-5">

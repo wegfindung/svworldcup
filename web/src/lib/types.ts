@@ -210,6 +210,56 @@ export interface ParticipantLineup {
   slots: SquadSlotState[]
 }
 
+// Player-swap feature (mid-tournament reserve<->starter exchange). See SOP "Player Swaps".
+export interface SwapWindow {
+  key: string
+  opensAt: number
+  closesAt: number
+  swapLimit: number
+  targetRound: number
+}
+
+export interface SwapRecord {
+  swapId: string
+  squadId: string
+  participantId: string
+  windowKey: string
+  roundKey: number
+  slotClass: SlotClass
+  slotIn: string
+  slotOut: string
+  playerInId: number
+  playerOutId: number
+  appliedAt: string
+}
+
+export interface SwapResultSummary {
+  swap: SwapRecord
+  windowKey: string
+  targetRound: number
+  swapsUsedInWindow: number
+  swapLimit: number
+}
+
+export interface SwapLineupSlot {
+  slotKey: string
+  slotGroup: SlotGroup
+  slotClass: SlotClass
+  playerId: number
+}
+
+export interface SwapState {
+  history: SwapRecord[]
+  windows: SwapWindow[]
+  openWindow: SwapWindow | null
+  swapsUsedByWindow: Record<string, number>
+  hardStopAt: number
+  hasHardStopPassed: boolean
+  // The effective lineup the next swap operates on (latest round snapshot, or lock-time squad).
+  // Player display info is joined by playerId against the squad slots.
+  currentLineup: SwapLineupSlot[]
+}
+
 export interface ParticipantSquadSummary {
   budgetLimit: number
   scoreMultiplier: number
@@ -326,7 +376,10 @@ export interface PublicParticipantProfile {
   revealProfile: boolean
   revealSquad: boolean
   score?: ParticipantScoreRow
+  // squad.slots reflect the effective (post-swap) lineup, not the lock-time draft.
   squad?: ParticipantSquad
+  // Public swap history, present when the squad is revealed (empty if no swaps made).
+  swaps?: SwapRecord[]
 }
 
 export type EmailCampaignKind = 'newsletter' | 'autoresponder'

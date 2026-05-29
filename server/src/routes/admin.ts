@@ -157,6 +157,14 @@ export function createAdminRouter(
       }),
     )
 
+    await auditRepository.record({
+      actorEmail: admin.email,
+      actionKey: 'admin.login',
+      entityType: 'admin',
+      entityId: admin.adminId,
+      detail: {},
+    })
+
     res.json({
       admin: {
         adminId: admin.adminId,
@@ -181,6 +189,14 @@ export function createAdminRouter(
     if (token) {
       await adminRepository.revokeSession(token)
     }
+
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.logout',
+      entityType: 'admin',
+      entityId: res.locals.admin.adminId,
+      detail: {},
+    })
 
     res.setHeader(
       'Set-Cookie',
@@ -372,6 +388,13 @@ export function createAdminRouter(
 
     const parsed = teamPlayersSchema.parse(req.body)
     const items = await teamPoolRepository.replaceTeamPlayers(teamCode, parsed.players)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.team_pool_edit',
+      entityType: 'team',
+      entityId: teamCode,
+      detail: { playerCount: items.length },
+    })
     res.json({ items })
   })
 
@@ -402,6 +425,13 @@ export function createAdminRouter(
 
     const parsed = scoringSchema.parse(req.body)
     const updated = await configRepository.updateScoringConfig(parsed)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.score_config_change',
+      entityType: 'scoring_config',
+      entityId: 'scoring',
+      detail: { config: updated },
+    })
     res.json({ item: updated })
   })
 
@@ -410,6 +440,13 @@ export function createAdminRouter(
     const eventControls = await configRepository.updateEventControls({
       globalRevealProfiles: parsed.revealProfiles,
       globalRevealSquads: parsed.revealSquads,
+    })
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.reveal_global',
+      entityType: 'event_controls',
+      entityId: 'global',
+      detail: { revealProfiles: parsed.revealProfiles, revealSquads: parsed.revealSquads },
     })
     res.json({ eventControls })
   })
@@ -425,6 +462,14 @@ export function createAdminRouter(
 
     const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
     const delivery = await sendVerificationMail(parsed.email, verificationUrl)
+
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.verification_resend',
+      entityType: 'participant',
+      entityId: result.record.participantId,
+      detail: { email: parsed.email },
+    })
 
     res.json({
       participantId: result.record.participantId,

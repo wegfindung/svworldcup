@@ -23,6 +23,8 @@ import type {
   ParticipantLineup,
   ParticipantSquad,
   ParticipantSquadSummary,
+  SwapState,
+  SwapResultSummary,
   ParticipantScoreRow,
   ParticipantRiskCase,
   ParticipantRiskCaseStatus,
@@ -319,6 +321,20 @@ export function lockSquad() {
   return getJson<{ squad: ParticipantSquad }>('/api/participant/squad/lock', {
     method: 'POST',
     body: JSON.stringify({}),
+  })
+}
+
+export function fetchSwapState() {
+  return getJson<SwapState>('/api/participant/squad/swaps', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function swapSquadPlayers(playerInId: number, playerOutId: number) {
+  return getJson<{ swap: SwapResultSummary; squad: ParticipantSquad }>('/api/participant/squad/swap', {
+    method: 'POST',
+    body: JSON.stringify({ playerInId, playerOutId }),
   })
 }
 

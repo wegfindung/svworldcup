@@ -115,4 +115,32 @@ describe('MemoryEmailMarketingRepository', () => {
     expect(runs).toHaveLength(1)
     expect(recipients[0]).toMatchObject({ browserLocale: 'de', email: 'manager@example.com', status: 'sent' })
   })
+
+  it('skips explicitly-unsubscribed participants even for transactional autoresponders', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+    const campaign = await repository.saveCampaign(
+      {
+        kind: 'autoresponder',
+        status: 'active',
+        triggerKey: 'registration_verified',
+        subject: 'Veteran onboarding',
+        bodyHtml: 'Welcome {{first_name}}.',
+        audienceStatus: 'active',
+        audienceLeague: 'veteran',
+        requiresMarketingOptIn: false,
+      },
+      'admin@example.com',
+    )
+
+    const runs = await repository.queueAutoresponders('registration_verified', {
+      ...participant,
+      leagueType: 'veteran',
+      marketingOptIn: false,
+      marketingUnsubscribedAt: new Date().toISOString(),
+    })
+    const recipients = await repository.listRecipients(campaign.campaignId)
+
+    expect(runs).toHaveLength(0)
+    expect(recipients).toHaveLength(0)
+  })
 })

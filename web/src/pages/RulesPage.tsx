@@ -23,7 +23,7 @@ const englishCopy = {
     eyebrow: 'registration & squad',
     title: 'Build one squad, then lock it',
     body:
-      'You draft a single 15-player squad in a 4-3-3 with one reserve per position. Players come from the official World Cup team pools mapped into Soccerverse. It is set-and-forget: once you lock, there is no mid-tournament management.',
+      'You draft a single 15-player squad in a 4-3-3 with one reserve per position. Players come from the official World Cup team pools mapped into Soccerverse. Once you lock, your squad is fixed — no transfers, no new players. The only mid-tournament change allowed is a limited reserve-for-starter swap inside timed windows (see Player swaps below).',
     formationTitle: 'Squad shape (15 players)',
     starters: [
       { label: 'GK', value: '1' },
@@ -116,6 +116,27 @@ const englishCopy = {
       'All four reserves score every match — no activation, no dependency on whether a starter played.',
       'A reserve earns half of what it generates on the normal rubric: goals, assists, minutes, clean sheets, and performance.',
       'A reserve that does not feature in a match simply earns nothing for it.',
+      'If you swap a reserve into your starting XI in a swap window, it scores full points for the rounds it starts — and the starter you bench drops to 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'player swaps',
+    title: 'Limited swaps inside timed windows',
+    body:
+      'Your squad is not fully set-and-forget. Inside a few timed windows you may swap a reserve for a starter — same position only, within the 15 players you already locked. No new players, and no change to your budget or wages; you are only changing who starts. Outside the windows your squad is frozen.',
+    windowsTitle: 'Swap windows',
+    windows: [
+      { label: 'Window 1', value: '18 Jun', detail: '2 swaps' },
+      { label: 'Window 2', value: '24 Jun', detail: '2 swaps' },
+      { label: 'Window 3', value: '8–9 Jul', detail: '4 swaps' },
+    ],
+    points: [
+      'A swap exchanges one reserve for the starter in the same position (GK, DEF, MID or FWD).',
+      'Each window has its own swap allowance; unused swaps do not carry over, and undoing a swap spends another.',
+      'A swap takes effect from the next round that has not yet kicked off — it never changes points already earned.',
+      'From the round it applies, the player you bring in scores full points and the one you move to the bench scores 50%, until your next swap.',
+      'Window 3 is the final chance to swap; after it closes your squad is locked for the rest of the tournament.',
     ],
   },
 
@@ -155,11 +176,11 @@ const englishCopy = {
     title: 'When things happen',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Every official match moves the tables.' },
-      { label: 'Registration closes', value: '4 Jul 2026, 00:00 UTC', detail: 'No new entries or squad changes after this instant.' },
+      { label: 'Registration closes', value: '4 Jul 2026, 00:00 UTC', detail: 'No new entries after this instant, and your drafted squad is final — but limited reserve-for-starter swaps still run in their windows (see Player swaps).' },
       {
         label: 'Squad lock',
         value: 'On submission',
-        detail: 'You lock once all 15 players are drafted; edits also freeze once the competition starts.',
+        detail: 'You lock once all 15 players are drafted; after the competition starts the only change allowed is a swap inside a window.',
       },
       {
         label: 'No retroactive points',
@@ -175,7 +196,6 @@ const englishCopy = {
     note: 'These parts are either provisional or still being built. They are listed here so nothing is hidden.',
     items: [
       'Performance points currently come from match data entered by the event team. Automatic API-Football match ratings are planned.',
-      'Reserves currently bank a flat 50% of their points as a failsafe. A richer model — for example activating a reserve when a starter is confirmed out — may replace it later if a reliable player-availability feed is added.',
       'The salary multiplier is set by the budget cap you choose today; a refinement tied to your squad’s actual total wage is under consideration.',
       'Prize amounts and payout logic are provisional — see the Prizes page.',
       'Official Soccerverse player photos are being added; some players currently show a placeholder.',
@@ -199,7 +219,7 @@ copyByLocale.es = {
     eyebrow: 'registro y equipo',
     title: 'Construye un equipo y luego bloquéalo',
     body:
-      'Eliges un único equipo de 15 jugadores en un 4-3-3 con un reserva por posición. Los jugadores provienen de los grupos oficiales de las selecciones del World Cup mapeados en Soccerverse. Es de configurar y olvidar: una vez que bloqueas, no hay gestión durante el torneo.',
+      'Eliges un único equipo de 15 jugadores en un 4-3-3 con un reserva por posición. Los jugadores provienen de los grupos oficiales de las selecciones del World Cup mapeados en Soccerverse. Una vez que bloqueas, tu equipo queda fijo — sin traspasos, sin nuevos jugadores. El único cambio permitido durante el torneo es un cambio limitado de reserva por titular dentro de ventanas programadas (consulta Cambios de jugadores más abajo).',
     formationTitle: 'Forma del equipo (15 jugadores)',
     starters: [
       { label: 'GK', value: '1' },
@@ -292,6 +312,27 @@ copyByLocale.es = {
       'Los cuatro reservas puntúan en cada partido — sin activación, sin depender de si jugó un titular.',
       'Un reserva gana la mitad de lo que genera en la tabla normal: goles, asistencias, minutos, porterías a cero y rendimiento.',
       'Un reserva que no participa en un partido simplemente no gana nada por él.',
+      'Si en una ventana de cambios pasas a un reserva a tu once titular, puntúa con puntos completos en las jornadas que sea titular — y el titular que mandas al banquillo baja al 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'cambios de jugadores',
+    title: 'Cambios limitados dentro de ventanas programadas',
+    body:
+      'Tu equipo no es del todo de configurar y olvidar. Dentro de unas pocas ventanas programadas puedes cambiar un reserva por un titular — solo en la misma posición, entre los 15 jugadores que ya bloqueaste. Sin nuevos jugadores y sin cambios en tu presupuesto ni en los salarios; solo cambias quién es titular. Fuera de las ventanas tu equipo está congelado.',
+    windowsTitle: 'Ventanas de cambios',
+    windows: [
+      { label: 'Ventana 1', value: '18 Jun', detail: '2 cambios' },
+      { label: 'Ventana 2', value: '24 Jun', detail: '2 cambios' },
+      { label: 'Ventana 3', value: '8–9 Jul', detail: '4 cambios' },
+    ],
+    points: [
+      'Un cambio intercambia un reserva por el titular de la misma posición (GK, DEF, MID o FWD).',
+      'Cada ventana tiene su propia asignación de cambios; los cambios no usados no se acumulan, y deshacer un cambio gasta otro.',
+      'Un cambio surte efecto a partir de la siguiente jornada que aún no haya comenzado — nunca altera los puntos ya ganados.',
+      'Desde la jornada en que se aplica, el jugador que incorporas puntúa con puntos completos y el que mandas al banquillo puntúa al 50%, hasta tu siguiente cambio.',
+      'La Ventana 3 es la última oportunidad de cambiar; una vez que cierra, tu equipo queda bloqueado para el resto del torneo.',
     ],
   },
 
@@ -331,11 +372,11 @@ copyByLocale.es = {
     title: 'Cuándo ocurren las cosas',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Cada partido oficial mueve las tablas.' },
-      { label: 'Cierre del registro', value: '4 Jul 2026, 00:00 UTC', detail: 'No se admiten nuevas inscripciones ni cambios de equipo después de este instante.' },
+      { label: 'Cierre del registro', value: '4 Jul 2026, 00:00 UTC', detail: 'No se admiten nuevas inscripciones después de este instante, y tu equipo fichado es definitivo — pero los cambios limitados de reserva por titular siguen funcionando en sus ventanas (consulta Cambios de jugadores).' },
       {
         label: 'Bloqueo del equipo',
         value: 'On submission',
-        detail: 'Bloqueas una vez que los 15 jugadores están fichados; las ediciones también se congelan cuando empieza la competición.',
+        detail: 'Bloqueas una vez que los 15 jugadores están fichados; tras el inicio de la competición el único cambio permitido es un cambio dentro de una ventana.',
       },
       {
         label: 'Sin puntos retroactivos',
@@ -359,7 +400,7 @@ copyByLocale.it = {
     eyebrow: 'registrazione e rosa',
     title: 'Costruisci una rosa, poi bloccala',
     body:
-      'Componi un’unica rosa di 15 giocatori in un 4-3-3 con una riserva per ruolo. I giocatori provengono dai pool ufficiali delle squadre del World Cup mappati in Soccerverse. È imposta e dimentica: una volta bloccata, non c’è alcuna gestione durante il torneo.',
+      'Componi un’unica rosa di 15 giocatori in un 4-3-3 con una riserva per ruolo. I giocatori provengono dai pool ufficiali delle squadre del World Cup mappati in Soccerverse. Una volta bloccata, la tua rosa è fissa — niente trasferimenti, niente nuovi giocatori. L’unica modifica consentita durante il torneo è un cambio limitato riserva-per-titolare all’interno di finestre programmate (vedi Cambi giocatori più sotto).',
     formationTitle: 'Schema della rosa (15 giocatori)',
     starters: [
       { label: 'GK', value: '1' },
@@ -452,6 +493,27 @@ copyByLocale.it = {
       'Tutte e quattro le riserve segnano ogni partita — nessuna attivazione, nessuna dipendenza dal fatto che un titolare abbia giocato.',
       'Una riserva guadagna metà di ciò che genera secondo il criterio normale: gol, assist, minuti, porte inviolate e prestazione.',
       'Una riserva che non scende in campo in una partita semplicemente non guadagna nulla per essa.',
+      'Se in una finestra di cambi inserisci una riserva nel tuo undici titolare, segna a punti pieni nelle giornate in cui è titolare — e il titolare che mandi in panchina scende al 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'cambi giocatori',
+    title: 'Cambi limitati all’interno di finestre programmate',
+    body:
+      'La tua rosa non è del tutto imposta e dimentica. All’interno di alcune finestre programmate puoi scambiare una riserva con un titolare — solo nello stesso ruolo, tra i 15 giocatori che hai già bloccato. Nessun nuovo giocatore e nessuna variazione del tuo budget o degli ingaggi; cambi soltanto chi è titolare. Al di fuori delle finestre la tua rosa è congelata.',
+    windowsTitle: 'Finestre di cambio',
+    windows: [
+      { label: 'Finestra 1', value: '18 Jun', detail: '2 cambi' },
+      { label: 'Finestra 2', value: '24 Jun', detail: '2 cambi' },
+      { label: 'Finestra 3', value: '8–9 Jul', detail: '4 cambi' },
+    ],
+    points: [
+      'Un cambio scambia una riserva con il titolare dello stesso ruolo (GK, DEF, MID o FWD).',
+      'Ogni finestra ha la propria dotazione di cambi; i cambi non utilizzati non si accumulano, e annullare un cambio ne consuma un altro.',
+      'Un cambio ha effetto dalla giornata successiva non ancora iniziata — non altera mai i punti già guadagnati.',
+      'Dalla giornata in cui si applica, il giocatore che inserisci segna a punti pieni e quello che mandi in panchina segna al 50%, fino al tuo prossimo cambio.',
+      'La Finestra 3 è l’ultima occasione per cambiare; dopo la sua chiusura la tua rosa è bloccata per il resto del torneo.',
     ],
   },
 
@@ -491,11 +553,11 @@ copyByLocale.it = {
     title: 'Quando accadono le cose',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Ogni partita ufficiale fa muovere le classifiche.' },
-      { label: 'Chiusura registrazioni', value: '4 Jul 2026, 00:00 UTC', detail: 'Nessuna nuova iscrizione o modifica alla rosa dopo questo istante.' },
+      { label: 'Chiusura registrazioni', value: '4 Jul 2026, 00:00 UTC', detail: 'Nessuna nuova iscrizione dopo questo istante, e la tua rosa composta è definitiva — ma i cambi limitati riserva-per-titolare restano attivi nelle loro finestre (vedi Cambi giocatori).' },
       {
         label: 'Blocco della rosa',
         value: 'All’invio',
-        detail: 'Blocchi una volta che tutti e 15 i giocatori sono stati composti; anche le modifiche si congelano una volta iniziata la competizione.',
+        detail: 'Blocchi una volta che tutti e 15 i giocatori sono stati composti; dopo l’inizio della competizione l’unica modifica consentita è un cambio all’interno di una finestra.',
       },
       {
         label: 'Nessun punto retroattivo',
@@ -519,7 +581,7 @@ copyByLocale.de = {
     eyebrow: 'registrierung & kader',
     title: 'Baue einen Kader und lege ihn dann fest',
     body:
-      'Du stellst einen einzigen Kader aus 15 Spielern in einem 4-3-3 mit einem Reservespieler pro Position zusammen. Die Spieler stammen aus den offiziellen World-Cup-Teampools, die in Soccerverse abgebildet sind. Es gilt das Prinzip „einstellen und vergessen“: Sobald du festlegst, gibt es kein Management während des Turniers.',
+      'Du stellst einen einzigen Kader aus 15 Spielern in einem 4-3-3 mit einem Reservespieler pro Position zusammen. Die Spieler stammen aus den offiziellen World-Cup-Teampools, die in Soccerverse abgebildet sind. Sobald du festlegst, ist dein Kader fix — keine Transfers, keine neuen Spieler. Die einzige während des Turniers erlaubte Änderung ist ein begrenzter Tausch Reservespieler-gegen-Stammspieler innerhalb festgelegter Zeitfenster (siehe Spielertausch weiter unten).',
     formationTitle: 'Kaderaufbau (15 Spieler)',
     starters: [
       { label: 'GK', value: '1' },
@@ -612,6 +674,27 @@ copyByLocale.de = {
       'Alle vier Reservespieler punkten in jedem Spiel — keine Aktivierung, keine Abhängigkeit davon, ob ein Stammspieler gespielt hat.',
       'Ein Reservespieler verdient die Hälfte dessen, was er nach dem normalen Punktesystem generiert: Tore, Vorlagen, Minuten, Spiele zu Null und Leistung.',
       'Ein Reservespieler, der in einem Spiel nicht zum Einsatz kommt, verdient dafür einfach nichts.',
+      'Wenn du in einem Tauschfenster einen Reservespieler in deine Start-XI tauschst, zählt er in den Runden, in denen er startet, mit vollen Punkten — und der Stammspieler, den du auf die Bank setzt, fällt auf 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'spielertausch',
+    title: 'Begrenzte Wechsel innerhalb festgelegter Zeitfenster',
+    body:
+      'Dein Kader ist nicht vollständig „einstellen und vergessen“. Innerhalb einiger festgelegter Zeitfenster darfst du einen Reservespieler gegen einen Stammspieler tauschen — nur auf derselben Position, innerhalb der 15 Spieler, die du bereits festgelegt hast. Keine neuen Spieler und keine Änderung deines Budgets oder der Gehälter; du änderst nur, wer startet. Außerhalb der Fenster ist dein Kader eingefroren.',
+    windowsTitle: 'Tauschfenster',
+    windows: [
+      { label: 'Fenster 1', value: '18 Jun', detail: '2 Wechsel' },
+      { label: 'Fenster 2', value: '24 Jun', detail: '2 Wechsel' },
+      { label: 'Fenster 3', value: '8–9 Jul', detail: '4 Wechsel' },
+    ],
+    points: [
+      'Ein Tausch wechselt einen Reservespieler gegen den Stammspieler auf derselben Position (GK, DEF, MID oder FWD).',
+      'Jedes Fenster hat sein eigenes Tauschkontingent; ungenutzte Wechsel werden nicht übertragen, und das Rückgängigmachen eines Tauschs verbraucht einen weiteren.',
+      'Ein Tausch wirkt ab der nächsten Runde, die noch nicht angepfiffen wurde — er ändert niemals bereits erzielte Punkte.',
+      'Ab der Runde, in der er greift, zählt der eingewechselte Spieler mit vollen Punkten und der auf die Bank gesetzte mit 50%, bis zu deinem nächsten Tausch.',
+      'Fenster 3 ist die letzte Gelegenheit zum Tauschen; nach seinem Schließen ist dein Kader für den Rest des Turniers gesperrt.',
     ],
   },
 
@@ -651,11 +734,11 @@ copyByLocale.de = {
     title: 'Wann was passiert',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Jedes offizielle Spiel bewegt die Tabellen.' },
-      { label: 'Registrierung schließt', value: '4 Jul 2026, 00:00 UTC', detail: 'Nach diesem Zeitpunkt keine neuen Anmeldungen oder Kaderänderungen mehr.' },
+      { label: 'Registrierung schließt', value: '4 Jul 2026, 00:00 UTC', detail: 'Nach diesem Zeitpunkt keine neuen Anmeldungen mehr, und dein zusammengestellter Kader ist endgültig — aber begrenzte Wechsel Reservespieler-gegen-Stammspieler laufen weiterhin in ihren Fenstern (siehe Spielertausch).' },
       {
         label: 'Kader-Festlegung',
         value: 'Bei Einreichung',
-        detail: 'Du legst fest, sobald alle 15 Spieler ausgewählt sind; Bearbeitungen werden außerdem eingefroren, sobald der Wettbewerb beginnt.',
+        detail: 'Du legst fest, sobald alle 15 Spieler ausgewählt sind; nach Beginn des Wettbewerbs ist die einzige erlaubte Änderung ein Tausch innerhalb eines Fensters.',
       },
       {
         label: 'Keine rückwirkenden Punkte',
@@ -679,7 +762,7 @@ copyByLocale.fr = {
     eyebrow: 'inscription & effectif',
     title: 'Constituez un effectif, puis verrouillez-le',
     body:
-      'Vous composez un seul effectif de 15 joueurs en 4-3-3 avec un remplaçant par poste. Les joueurs proviennent des viviers officiels des équipes du World Cup mappés dans Soccerverse. C’est « réglez et oubliez » : une fois verrouillé, il n’y a aucune gestion en cours de tournoi.',
+      'Vous composez un seul effectif de 15 joueurs en 4-3-3 avec un remplaçant par poste. Les joueurs proviennent des viviers officiels des équipes du World Cup mappés dans Soccerverse. Une fois verrouillé, votre effectif est figé — aucun transfert, aucun nouveau joueur. La seule modification autorisée en cours de tournoi est un échange limité remplaçant-pour-titulaire dans des fenêtres programmées (voir Échanges de joueurs ci-dessous).',
     formationTitle: 'Composition de l’effectif (15 joueurs)',
     starters: [
       { label: 'GK', value: '1' },
@@ -772,6 +855,27 @@ copyByLocale.fr = {
       'Les quatre remplaçants marquent à chaque match — sans activation, sans dépendre du fait qu’un titulaire ait joué ou non.',
       'Un remplaçant gagne la moitié de ce qu’il génère selon le barème normal : buts, passes décisives, minutes, clean sheets et performance.',
       'Un remplaçant qui ne figure pas dans un match ne gagne tout simplement rien pour celui-ci.',
+      'Si vous faites entrer un remplaçant dans votre onze de départ lors d’une fenêtre d’échange, il marque en points pleins pour les journées où il est titulaire — et le titulaire que vous mettez sur le banc tombe à 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'échanges de joueurs',
+    title: 'Échanges limités dans des fenêtres programmées',
+    body:
+      'Votre effectif n’est pas entièrement « réglez et oubliez ». Au cours de quelques fenêtres programmées, vous pouvez échanger un remplaçant contre un titulaire — uniquement au même poste, parmi les 15 joueurs que vous avez déjà verrouillés. Aucun nouveau joueur, et aucune modification de votre budget ou des salaires ; vous changez seulement qui est titulaire. En dehors des fenêtres, votre effectif est figé.',
+    windowsTitle: 'Fenêtres d’échange',
+    windows: [
+      { label: 'Fenêtre 1', value: '18 Jun', detail: '2 échanges' },
+      { label: 'Fenêtre 2', value: '24 Jun', detail: '2 échanges' },
+      { label: 'Fenêtre 3', value: '8–9 Jul', detail: '4 échanges' },
+    ],
+    points: [
+      'Un échange remplace un remplaçant par le titulaire du même poste (GK, DEF, MID ou FWD).',
+      'Chaque fenêtre a sa propre allocation d’échanges ; les échanges non utilisés ne sont pas reportés, et annuler un échange en consomme un autre.',
+      'Un échange prend effet à partir de la prochaine journée dont le coup d’envoi n’a pas encore eu lieu — il ne modifie jamais les points déjà gagnés.',
+      'À partir de la journée où il s’applique, le joueur que vous faites entrer marque en points pleins et celui que vous mettez sur le banc marque à 50%, jusqu’à votre prochain échange.',
+      'La Fenêtre 3 est la dernière occasion d’échanger ; une fois qu’elle se ferme, votre effectif est verrouillé pour le reste du tournoi.',
     ],
   },
 
@@ -811,11 +915,11 @@ copyByLocale.fr = {
     title: 'Quand les choses se passent',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Chaque match officiel fait bouger les classements.' },
-      { label: 'Clôture des inscriptions', value: '4 Jul 2026, 00:00 UTC', detail: 'Aucune nouvelle inscription ni modification d’effectif après cet instant.' },
+      { label: 'Clôture des inscriptions', value: '4 Jul 2026, 00:00 UTC', detail: 'Aucune nouvelle inscription après cet instant, et votre effectif composé est définitif — mais les échanges limités remplaçant-pour-titulaire continuent dans leurs fenêtres (voir Échanges de joueurs).' },
       {
         label: 'Verrouillage de l’effectif',
         value: 'À la soumission',
-        detail: 'Vous verrouillez une fois les 15 joueurs composés ; les modifications gèlent aussi dès le début de la compétition.',
+        detail: 'Vous verrouillez une fois les 15 joueurs composés ; après le début de la compétition, la seule modification autorisée est un échange dans une fenêtre.',
       },
       {
         label: 'Aucun point rétroactif',
@@ -839,7 +943,7 @@ copyByLocale.pt = {
     eyebrow: 'registo & equipa',
     title: 'Monta uma equipa e depois bloqueia-a',
     body:
-      'Montas uma única equipa de 15 jogadores num 4-3-3 com um reserva por posição. Os jogadores vêm dos lotes oficiais das seleções do World Cup mapeados para o Soccerverse. É montar e esquecer: depois de bloqueares, não há gestão a meio do torneio.',
+      'Montas uma única equipa de 15 jogadores num 4-3-3 com um reserva por posição. Os jogadores vêm dos lotes oficiais das seleções do World Cup mapeados para o Soccerverse. Depois de bloqueares, a tua equipa fica fixa — sem transferências, sem novos jogadores. A única alteração permitida a meio do torneio é uma troca limitada de reserva por titular dentro de janelas programadas (vê Trocas de jogadores mais abaixo).',
     formationTitle: 'Estrutura da equipa (15 jogadores)',
     starters: [
       { label: 'GK', value: '1' },
@@ -932,6 +1036,27 @@ copyByLocale.pt = {
       'Os quatro reservas pontuam em todos os jogos — sem ativação, sem dependência de se um titular jogou.',
       'Um reserva ganha metade do que gera no critério normal: golos, assistências, minutos, balizas imbatidas e desempenho.',
       'Um reserva que não participa num jogo simplesmente não ganha nada por isso.',
+      'Se numa janela de trocas colocares um reserva no teu onze inicial, pontua com pontos completos nas jornadas em que for titular — e o titular que mandas para o banco desce para 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'trocas de jogadores',
+    title: 'Trocas limitadas dentro de janelas programadas',
+    body:
+      'A tua equipa não é totalmente montar e esquecer. Dentro de algumas janelas programadas podes trocar um reserva por um titular — apenas na mesma posição, entre os 15 jogadores que já bloqueaste. Sem novos jogadores e sem alteração ao teu orçamento ou aos salários; apenas mudas quem é titular. Fora das janelas a tua equipa está congelada.',
+    windowsTitle: 'Janelas de troca',
+    windows: [
+      { label: 'Janela 1', value: '18 Jun', detail: '2 trocas' },
+      { label: 'Janela 2', value: '24 Jun', detail: '2 trocas' },
+      { label: 'Janela 3', value: '8–9 Jul', detail: '4 trocas' },
+    ],
+    points: [
+      'Uma troca troca um reserva pelo titular da mesma posição (GK, DEF, MID ou FWD).',
+      'Cada janela tem a sua própria quota de trocas; as trocas não usadas não transitam, e desfazer uma troca gasta outra.',
+      'Uma troca produz efeito a partir da próxima jornada que ainda não começou — nunca altera os pontos já ganhos.',
+      'A partir da jornada em que se aplica, o jogador que colocas pontua com pontos completos e o que mandas para o banco pontua a 50%, até à tua próxima troca.',
+      'A Janela 3 é a última oportunidade de trocar; depois de fechar, a tua equipa fica bloqueada para o resto do torneio.',
     ],
   },
 
@@ -971,11 +1096,11 @@ copyByLocale.pt = {
     title: 'Quando as coisas acontecem',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Cada jogo oficial mexe nas tabelas.' },
-      { label: 'Encerramento do registo', value: '4 Jul 2026, 00:00 UTC', detail: 'Não há novas inscrições nem alterações à equipa após este instante.' },
+      { label: 'Encerramento do registo', value: '4 Jul 2026, 00:00 UTC', detail: 'Não há novas inscrições após este instante, e a tua equipa montada é definitiva — mas as trocas limitadas de reserva por titular continuam a funcionar nas suas janelas (vê Trocas de jogadores).' },
       {
         label: 'Bloqueio da equipa',
         value: 'Na submissão',
-        detail: 'Bloqueias assim que todos os 15 jogadores estiverem montados; as edições também congelam assim que a competição começa.',
+        detail: 'Bloqueias assim que todos os 15 jogadores estiverem montados; depois de a competição começar, a única alteração permitida é uma troca dentro de uma janela.',
       },
       {
         label: 'Sem pontos retroativos',
@@ -999,7 +1124,7 @@ copyByLocale.ru = {
     eyebrow: 'регистрация и состав',
     title: 'Соберите один состав, затем зафиксируйте его',
     body:
-      'Вы набираете единый состав из 15 игроков по схеме 4-3-3 с одним запасным на каждую позицию. Игроки берутся из официальных пулов команд World Cup, перенесённых в Soccerverse. Это принцип «настроил и забыл»: после фиксации никакого управления в ходе турнира нет.',
+      'Вы набираете единый состав из 15 игроков по схеме 4-3-3 с одним запасным на каждую позицию. Игроки берутся из официальных пулов команд World Cup, перенесённых в Soccerverse. После фиксации ваш состав закреплён — никаких трансферов и новых игроков. Единственное изменение, разрешённое по ходу турнира, — это ограниченная замена запасного на игрока старта в рамках отведённых окон (см. Замены игроков ниже).',
     formationTitle: 'Структура состава (15 игроков)',
     starters: [
       { label: 'GK', value: '1' },
@@ -1092,6 +1217,27 @@ copyByLocale.ru = {
       'Все четыре запасных набирают очки в каждом матче — без активации и без зависимости от того, играл ли кто-то из старта.',
       'Запасной зарабатывает половину того, что он набирает по обычной системе: голы, голевые передачи, минуты, сухие матчи и игра.',
       'Запасной, который не появился в матче, просто ничего за него не зарабатывает.',
+      'Если в окне замен вы выводите запасного в стартовую одиннадцатку, он набирает полные очки в турах, где выходит в старте, — а игрок старта, которого вы отправляете на скамейку, опускается до 50%.',
+    ],
+  },
+
+  swaps: {
+    eyebrow: 'замены игроков',
+    title: 'Ограниченные замены в рамках отведённых окон',
+    body:
+      'Ваш состав не полностью работает по принципу «настроил и забыл». В рамках нескольких отведённых окон вы можете заменить запасного на игрока старта — только в той же позиции и только среди тех 15 игроков, которых вы уже зафиксировали. Никаких новых игроков и никаких изменений вашего бюджета или зарплат; вы меняете только то, кто выходит в старте. Вне окон ваш состав заморожен.',
+    windowsTitle: 'Окна замен',
+    windows: [
+      { label: 'Окно 1', value: '18 Jun', detail: '2 замены' },
+      { label: 'Окно 2', value: '24 Jun', detail: '2 замены' },
+      { label: 'Окно 3', value: '8–9 Jul', detail: '4 замены' },
+    ],
+    points: [
+      'Замена меняет местами запасного и игрока старта в той же позиции (GK, DEF, MID или FWD).',
+      'У каждого окна свой лимит замен; неиспользованные замены не переносятся, а отмена замены тратит ещё одну.',
+      'Замена вступает в силу со следующего тура, который ещё не стартовал, — она никогда не меняет уже набранные очки.',
+      'С тура, в котором она применяется, выводимый игрок набирает полные очки, а отправленный на скамейку — 50%, вплоть до вашей следующей замены.',
+      'Окно 3 — последняя возможность сделать замену; после его закрытия ваш состав заблокирован до конца турнира.',
     ],
   },
 
@@ -1131,11 +1277,11 @@ copyByLocale.ru = {
     title: 'Когда что происходит',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'Каждый официальный матч двигает таблицы.' },
-      { label: 'Регистрация закрывается', value: '4 Jul 2026, 00:00 UTC', detail: 'После этого момента никаких новых заявок или изменений состава.' },
+      { label: 'Регистрация закрывается', value: '4 Jul 2026, 00:00 UTC', detail: 'После этого момента никаких новых заявок, и ваш набранный состав окончателен — но ограниченные замены запасного на игрока старта по-прежнему работают в своих окнах (см. Замены игроков).' },
       {
         label: 'Фиксация состава',
         value: 'При отправке',
-        detail: 'Вы фиксируете состав, как только набраны все 15 игроков; правки также замораживаются с началом соревнования.',
+        detail: 'Вы фиксируете состав, как только набраны все 15 игроков; после начала соревнования единственное разрешённое изменение — это замена в рамках окна.',
       },
       {
         label: 'Никаких очков задним числом',
@@ -1159,7 +1305,7 @@ copyByLocale.zh = {
     eyebrow: '注册与阵容',
     title: '组建一套阵容，然后锁定它',
     body:
-      '你以 4-3-3 阵型选出一套 15 名球员的阵容，每个位置配一名替补。球员来自映射进 Soccerverse 的官方 World Cup 球队名单。设定后即可放手不管：一旦锁定，赛事进行中便无需任何管理。',
+      '你以 4-3-3 阵型选出一套 15 名球员的阵容，每个位置配一名替补。球员来自映射进 Soccerverse 的官方 World Cup 球队名单。一旦锁定，你的阵容即固定——不可转会，不可新增球员。赛事进行中唯一允许的变动，是在限定的时间窗口内进行有限的“替补换首发”调换（见下方的球员调换）。',
     formationTitle: '阵容结构（15 名球员）',
     starters: [
       { label: 'GK', value: '1' },
@@ -1252,6 +1398,27 @@ copyByLocale.zh = {
       '全部四名替补每场比赛都得分——无需激活，也不取决于首发是否出场。',
       '替补按常规细则赚取其所产生分数的一半：进球、助攻、出场时间、零封和表现。',
       '某场比赛未出场的替补，该场便不得分。',
+      '如果你在调换窗口内把一名替补换入首发 XI，他在首发的那些轮次按全额分数计分——而你下放替补席的那名首发则降至 50%。',
+    ],
+  },
+
+  swaps: {
+    eyebrow: '球员调换',
+    title: '在限定时间窗口内进行有限调换',
+    body:
+      '你的阵容并非完全设定后即可放手不管。在少数几个限定的时间窗口内，你可以用一名替补换一名首发——仅限同一位置，且只能在你已锁定的 15 名球员之间进行。不可新增球员，也不会改变你的预算或薪资；你只是改变谁首发。窗口之外，你的阵容处于冻结状态。',
+    windowsTitle: '调换窗口',
+    windows: [
+      { label: '窗口 1', value: '18 Jun', detail: '2 次调换' },
+      { label: '窗口 2', value: '24 Jun', detail: '2 次调换' },
+      { label: '窗口 3', value: '8–9 Jul', detail: '4 次调换' },
+    ],
+    points: [
+      '一次调换会用一名替补与同一位置的首发对调（GK、DEF、MID 或 FWD）。',
+      '每个窗口有各自的调换次数额度；未使用的调换不会累计到下一窗口，撤销一次调换会再消耗一次。',
+      '调换从下一个尚未开球的轮次起生效——绝不会改变已经获得的分数。',
+      '从生效的那一轮起，你换入的球员按全额分数计分，被你下放替补席的球员按 50% 计分，直到你的下一次调换。',
+      '窗口 3 是最后的调换机会；它关闭后，你的阵容在本届赛事余下时间内将被锁定。',
     ],
   },
 
@@ -1291,16 +1458,197 @@ copyByLocale.zh = {
     title: '各项事件的时间',
     items: [
       { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: '每一场官方比赛都会牵动排行榜。' },
-      { label: '注册截止', value: '4 Jul 2026, 00:00 UTC', detail: '此刻之后不再接受新参赛或阵容变更。' },
+      { label: '注册截止', value: '4 Jul 2026, 00:00 UTC', detail: '此刻之后不再接受新参赛，你所选定的阵容也已定型——但有限的“替补换首发”调换仍会在各自的窗口内进行（见球员调换）。' },
       {
         label: '阵容锁定',
         value: '提交时',
-        detail: '一旦 15 名球员全部选定，你便锁定；比赛一开始，编辑同样冻结。',
+        detail: '一旦 15 名球员全部选定，你便锁定；比赛开始后，唯一允许的变动是在窗口内进行的调换。',
       },
       {
         label: '不追溯计分',
         value: '开球前锁定',
         detail: '阵容只从其锁定之后开球的比赛中得分。',
+      },
+    ],
+  },
+
+  coming: englishCopy.coming,
+}
+
+copyByLocale.ja = {
+  eyebrow: '仕組み',
+  title: 'イベントルール、すべて。',
+  intro:
+    '1つのスカッド。1度のロック。40日以上にわたる World Cup のサッカーがあなたの順位を動かします。このページに記載されている内容はすべて現行ビルドで稼働中です——すでに機能しているメカニクスのみをルールとして記載しています。まだ開発中のものは末尾の「近日公開」に一覧で示しています。',
+  cta: 'スカッドを登録する',
+
+  squad: {
+    eyebrow: '登録とスカッド',
+    title: '1つのスカッドを組み、ロックする',
+    body:
+      '各ポジションに控えを1人ずつ置いた 4-3-3 で、15人の単一スカッドを編成します。選手は Soccerverse にマッピングされた公式 World Cup チームプールから選びます。一度ロックすると、あなたのスカッドは固定されます——移籍も、新規選手の追加もありません。大会期間中に許される唯一の変更は、定められた時間枠内での控えと先発の限定的なスワップです（下記の「選手スワップ」を参照）。',
+    formationTitle: 'スカッドの構成（15人）',
+    starters: [
+      { label: 'GK', value: '1' },
+      { label: 'DEF', value: '4' },
+      { label: 'MID', value: '3' },
+      { label: 'FWD', value: '3' },
+    ],
+    subsTitle: '控え（各ポジション1人）',
+    subs: [
+      { label: 'GK', value: '1' },
+      { label: 'DEF', value: '1' },
+      { label: 'MID', value: '1' },
+      { label: 'FWD', value: '1' },
+    ],
+    points: [
+      'Veteran（Soccerverse アカウントをお持ちの方）または Rookie（お持ちでない方）として登録します。',
+      '2つの国を選びます——母国と、自由に選べる1つです。両者は異なる必要があり、これらが Nation League を決定します。',
+      'すべての選手は誰でも選べます。独占はなく、2人のマネージャーがまったく同じスカッドになることもあり得ます。',
+      'スカッド内で同じ選手を2回選ぶことはできません。',
+      'スカッドビルダーに入る前に、メールアドレスの確認が必要です。',
+    ],
+  },
+
+  salary: {
+    eyebrow: 'サラリーキャップと乗数',
+    title: '少なく使い、多く稼ぐ',
+    body:
+      'すべての選手は、そのレーティングから算出される Soccerverse Coins（SVC）建ての給与を持ちます——レーティングが高いほど、給与は急に上がります。編成前に予算上限を選び、その上限はあなたのスカッドが獲得するすべてに適用されるスコア乗数を決めます。低い上限を選べば得点はブーストされ、高い上限の下でスーパースターを揃えれば得点は削られます。',
+    scaleLow: '少なく使う · ブースト大',
+    scaleMid: 'ニュートラル ×1.0',
+    scaleHigh: '多く使う · ペナルティ大',
+    tiersTitle: '予算上限とその乗数',
+    boostLabel: 'ブースト',
+    neutralLabel: 'ニュートラル',
+    penaltyLabel: 'ペナルティ',
+    capExamplesTitle: 'レーティング別の給与例',
+    capExamplesNote: '給与はレーティングとともに急激に上がります——ひと握りのスーパースターで高い上限の大部分を飲み込んでしまうこともあります。',
+    capExamples: [
+      { rating: '70', cost: '9,288' },
+      { rating: '80', cost: '57,506' },
+      { rating: '90', cost: '356,064' },
+      { rating: '97', cost: '1,275,843' },
+    ],
+    unit: 'SVC',
+  },
+
+  scoring: {
+    eyebrow: '採点基準',
+    title: '得点の稼ぎ方',
+    body:
+      '固定の採点基準が、各選手の実際の World Cup でのパフォーマンスに、試合ごとに適用されます。クリーンシートの価値はポジションによって異なります。これに加えて、各選手は試合レーティングに応じて換算される最大2のパフォーマンスポイントを獲得します。',
+    rubric: [
+      { label: 'ゴール', value: '+5', detail: 'ゴール1点につき' },
+      { label: 'アシスト', value: '+3', detail: 'アシスト1回につき' },
+      { label: '出場', value: '+1', detail: 'ピッチに立った時間があれば' },
+      { label: '60分以上', value: '+1', detail: '追加で、60分以上プレーした場合' },
+      { label: 'クリーンシート', value: '+4 / +3 / +1* / 0', detail: 'GK +4、DEF +3、MID +1 は選手が Soccerverse のオルタネートポジションに DML/DMR/DMC/DM を持つ場合のみ、FWD 0——かつ選手が60分以上プレーし、チームが無失点だった場合のみ' },
+      { label: 'パフォーマンス', value: 'up to +2', detail: '試合レーティングから換算（6.0→0.5, 8.0→1.0, 9.5→1.5, 10.0→2.0）' },
+    ],
+    calculatorIntro: '正確な計算を自分で試してみましょう——選手、上限、ブーストを調整してください：',
+  },
+
+  example: {
+    eyebrow: '計算例',
+    title: '1試合、1選手',
+    intro:
+      'あなたの先発XIのミッドフィルダーが78分プレーし、1ゴール1アシストを記録、クリーンシートを達成し、試合レーティング8.0を獲得します。',
+    steps: [
+      { label: 'ゴール', value: '+5' },
+      { label: 'アシスト', value: '+3' },
+      { label: '出場', value: '+1' },
+      { label: '60分以上', value: '+1' },
+      { label: 'クリーンシート（DM オルタを持つ MID）', value: '+1' },
+      { label: 'パフォーマンス（8.0）', value: '+1' },
+    ],
+    baseLabel: '基礎ポイント',
+    baseValue: '12',
+    boostLabel: '+5% の保有ブースト込み',
+    boostValue: '12.6',
+    finalLabel: '1,500,000 SVC 上限の下で（×1.3）',
+    finalValue: '16.38',
+  },
+
+  subs: {
+    eyebrow: '控え',
+    title: '控えは常に50%で貢献',
+    body:
+      'あなたのスカッドは自動で回ります——試合日に管理することは何もありません。各控えは毎試合、自身の実際のパフォーマンスから稼いだポイントの50%を常に積み立てます。先発は常に全ポイントで計算されます。',
+    points: [
+      '4人の控えはすべて毎試合得点します——アクティベーションは不要で、先発が出場したかどうかにも左右されません。',
+      '控えは通常の基準で生み出すものの半分を稼ぎます：ゴール、アシスト、出場時間、クリーンシート、パフォーマンス。',
+      'ある試合に出場しなかった控えは、その試合では単純に何も稼ぎません。',
+      'スワップ枠で控えを先発XIに入れると、その控えは先発する各ラウンドで全ポイントを稼ぎ——ベンチに下げた先発は50%に下がります。',
+    ],
+  },
+
+  swaps: {
+    eyebrow: '選手スワップ',
+    title: '定められた時間枠内での限定スワップ',
+    body:
+      'あなたのスカッドは完全に「設定したら放置」ではありません。いくつかの定められた時間枠の中で、控えを先発とスワップできます——同じポジションのみ、すでにロックした15人の中でのみです。新規選手はなく、予算や給与の変更もありません。変えられるのは誰が先発するかだけです。枠の外では、あなたのスカッドは凍結されます。',
+    windowsTitle: 'スワップ枠',
+    windows: [
+      { label: '枠 1', value: '18 Jun', detail: '2スワップ' },
+      { label: '枠 2', value: '24 Jun', detail: '2スワップ' },
+      { label: '枠 3', value: '8–9 Jul', detail: '4スワップ' },
+    ],
+    points: [
+      'スワップは控えと同じポジションの先発を入れ替えます（GK、DEF、MID または FWD）。',
+      '各枠には独自のスワップ回数が割り当てられます。未使用のスワップは持ち越されず、スワップを取り消すとさらに1回消費します。',
+      'スワップはまだキックオフしていない次のラウンドから有効になります——すでに獲得したポイントを変えることは決してありません。',
+      '適用されるラウンドから、入れた選手は全ポイントで、ベンチに下げた選手は50%で得点します。これは次のスワップまで続きます。',
+      '枠3はスワップの最後の機会です。それが閉じた後は、あなたのスカッドは大会の残り期間ロックされます。',
+    ],
+  },
+
+  boost: {
+    eyebrow: '保有ブースト',
+    title: '自分の選手を支えることへの報酬',
+    scaleZero: 'ブーストなし',
+    scaleCaption: '正味10株ごとに +1%',
+    scaleCap: '+10% 上限',
+    body:
+      'Soccerverse アカウントを連携すると、イベント中に自分のスカッドの選手で購入したインフルエンスが、それらの選手があなたのために稼ぐポイントに小さな乗数を加えます。大きな既存ポートフォリオが支配することを許さずに、確信を報います。',
+    points: [
+      'イベント枠の期間中に購入したインフルエンスのみが計上されます——イベント開始前から保有していた分は計上されません。',
+      'ブーストは購入した正味10株ごとに +1% で、選手1人あたり +10% が上限です。',
+      '選手ごと、試合ごとに計測され、あなたのスカッド乗数の前に適用されます。',
+      '購入が、すでにキックオフした試合に遡って適用されることは決してありません。',
+      'Soccerverse アカウントを連携したマネージャーなら誰でも利用できます——Veteran でも Rookie でも。',
+    ],
+  },
+
+  leagues: {
+    eyebrow: '3つのリーグ',
+    title: 'あなたが競う場',
+    items: [
+      { name: 'Veteran League', body: 'Veteran 同士が個人として順位づけされます。' },
+      { name: 'Rookie League', body: 'Rookie 同士が個人として順位づけされます。' },
+      {
+        name: 'Nation League',
+        body:
+          '全員が選んだ2つの国の両方を代表します。国が資格を得るには最低2人のメンバーが必要で、国はメンバーの平均スコアで順位づけされます。',
+      },
+    ],
+  },
+
+  timing: {
+    eyebrow: '日程とロック',
+    title: '各イベントのタイミング',
+    items: [
+      { label: 'World Cup', value: '11 Jun – 19 Jul 2026', detail: 'すべての公式戦が順位表を動かします。' },
+      { label: '登録締切', value: '4 Jul 2026, 00:00 UTC', detail: 'この瞬間以降は新規エントリーはなく、編成したスカッドも確定です——ただし限定的な控えと先発のスワップは各枠内で引き続き行われます（「選手スワップ」を参照）。' },
+      {
+        label: 'スカッドロック',
+        value: '提出時',
+        detail: '15人全員を編成した時点でロックされます。大会開始後に許される唯一の変更は、枠内でのスワップです。',
+      },
+      {
+        label: '遡及得点なし',
+        value: 'キックオフ前にロック',
+        detail: 'スカッドはロック後にキックオフした試合からのみ得点します。',
       },
     ],
   },
@@ -1499,6 +1847,35 @@ export function RulesPage({ locale }: RulesPageProps) {
         <ul className="mt-5 grid gap-2.5 md:grid-cols-3">
           {copy.subs.points.map((point) => (
             <li key={point} className="surface-row rounded-[0.9rem] p-3 text-sm leading-relaxed text-[var(--color-paper)]">
+              {point}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Player swaps */}
+      <section className="glass-panel rounded-[1.25rem] p-5 sm:p-6">
+        <p className="eyebrow">{copy.swaps.eyebrow}</p>
+        <h2 className="section-title mt-4 text-white">{copy.swaps.title}</h2>
+        <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.swaps.body}</p>
+
+        <p className="mono mt-6 text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.swaps.windowsTitle}</p>
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+          {copy.swaps.windows.map((window) => (
+            <div key={window.label} className="surface-row rounded-[0.9rem] p-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-semibold text-white">{window.label}</span>
+                <span className="mono text-sm text-[var(--color-accent)]">{window.value}</span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">{window.detail}</p>
+            </div>
+          ))}
+        </div>
+
+        <ul className="mt-5 space-y-2.5">
+          {copy.swaps.points.map((point, index) => (
+            <li key={point} className="surface-row rounded-[0.9rem] p-3 text-sm leading-relaxed text-[var(--color-paper)]">
+              <span className="mono mr-2 text-[var(--color-accent)]">{String(index + 1).padStart(2, '0')}</span>
               {point}
             </li>
           ))}

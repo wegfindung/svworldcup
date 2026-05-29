@@ -270,6 +270,48 @@ export interface AssignPlayerInput {
   playerId: number
 }
 
+// A mid-tournament player swap: bring a reserve on for a same-class starter. Identified by player
+// ids (the server validates class + current starter/reserve status). See SOP "Player Swaps".
+export interface SwapPlayersInput {
+  playerInId: number // the reserve being promoted to starter
+  playerOutId: number // the starter being demoted to reserve
+}
+
+// One per-round lineup snapshot slot (squad_round_lineup row), used by scoring's as-of-round lookup.
+export interface RoundLineupSlot {
+  participantId: string
+  roundKey: number
+  slotKey: string
+  slotGroup: SlotGroup
+  slotClass: SlotClass
+  playerId: number
+  positionCodes: string[]
+}
+
+// One recorded swap (squad_swaps row): the queryable history + per-window limit counter.
+export interface SwapRecord {
+  swapId: string
+  squadId: string
+  participantId: string
+  windowKey: string
+  roundKey: number
+  slotClass: SlotClass
+  slotIn: string
+  slotOut: string
+  playerInId: number
+  playerOutId: number
+  appliedAt: string
+}
+
+// Outcome of a committed swap, returned to the endpoint/UI.
+export interface SwapResultSummary {
+  swap: SwapRecord
+  windowKey: string
+  targetRound: number
+  swapsUsedInWindow: number // including this swap
+  swapLimit: number
+}
+
 export interface SoccerversePlayerRecord {
   playerId: number
   displayName: string
@@ -667,5 +709,8 @@ export interface PublicParticipantProfile {
   revealProfile: boolean
   revealSquad: boolean
   score?: ParticipantScoreRow
+  // squad.slots reflect the effective (post-swap) lineup, not the lock-time draft.
   squad?: ParticipantSquad
+  // Public swap history, present when the squad is revealed (empty if no swaps made).
+  swaps?: SwapRecord[]
 }

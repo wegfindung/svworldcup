@@ -289,14 +289,13 @@ function campaignConsentMatchesParticipant(
   campaign: Pick<EmailCampaignRecord, 'requiresMarketingOptIn'>,
   participant: ParticipantProfile,
 ) {
-  return campaign.requiresMarketingOptIn === false || (participant.marketingOptIn && !participant.marketingUnsubscribedAt)
+  // An explicit unsubscribe always excludes, even from transactional (no-opt-in) campaigns.
+  // The never-opted-in gate applies only when the campaign requires marketing consent.
+  return !participant.marketingUnsubscribedAt && (campaign.requiresMarketingOptIn === false || participant.marketingOptIn)
 }
 
 function campaignRowConsentMatchesParticipant(campaign: EmailCampaignRow, participant: ParticipantProfile) {
-  return (
-    campaign.requires_marketing_opt_in === false ||
-    (participant.marketingOptIn && !participant.marketingUnsubscribedAt)
-  )
+  return !participant.marketingUnsubscribedAt && (campaign.requires_marketing_opt_in === false || participant.marketingOptIn)
 }
 
 function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubscribeUrl?: string) {
@@ -388,11 +387,13 @@ function mapCampaignRow(row: EmailCampaignRow, stats: CampaignStats): EmailCampa
 }
 
 async function sendCampaignMail(
-  campaign: Pick<EmailCampaignRecord, 'subject' | 'bodyHtml' | 'subjectByLocale' | 'bodyHtmlByLocale' | 'requiresMarketingOptIn'>,
+  campaign: Pick<EmailCampaignRecord, 'subject' | 'bodyHtml' | 'subjectByLocale' | 'bodyHtmlByLocale'>,
   recipient: EmailRecipientSeed,
 ) {
-  const requiresMarketingOptIn = campaign.requiresMarketingOptIn ?? true
-  const unsubscribeUrl = requiresMarketingOptIn && recipient.marketingUnsubscribeToken
+  // Every campaign email — marketing or transactional — must carry an unsubscribe link
+  // (SOP_email_marketing.md line 22). The token is always present (participants
+  // .marketing_unsubscribe_token is NOT NULL), so this is unconditional.
+  const unsubscribeUrl = recipient.marketingUnsubscribeToken
     ? `${env.PUBLIC_WEB_URL.replace(/\/+$/, '')}/api/public/email/unsubscribe?token=${encodeURIComponent(
         recipient.marketingUnsubscribeToken,
       )}`
@@ -885,7 +886,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
           FROM participants
           WHERE email IS NOT NULL
             AND email <> ''
-            AND ($5::boolean = FALSE OR (marketing_opt_in = TRUE AND marketing_unsubscribed_at IS NULL))
+            AND marketing_unsubscribed_at IS NULL
+            AND ($5::boolean = FALSE OR marketing_opt_in = TRUE)
             AND ($1 = 'all' OR status = $1)
             AND ($2 = 'all' OR league_type = $2)
             AND ($3::text IS NULL OR primary_team_code = $3 OR secondary_team_code = $3)
@@ -954,7 +956,8 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
         FROM participants
         WHERE email IS NOT NULL
           AND email <> ''
-          AND ($5::boolean = FALSE OR (marketing_opt_in = TRUE AND marketing_unsubscribed_at IS NULL))
+          AND marketing_unsubscribed_at IS NULL
+          AND ($5::boolean = FALSE OR marketing_opt_in = TRUE)
           AND ($1 = 'all' OR status = $1)
           AND ($2 = 'all' OR league_type = $2)
           AND ($3::text IS NULL OR primary_team_code = $3 OR secondary_team_code = $3)
@@ -1120,22 +1123,21 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
   }
 
   private async skipUnsubscribedRecipients(campaignId: string, requiresMarketingOptIn: boolean) {
-    if (!requiresMarketingOptIn) {
-      return 0
-    }
-
+    // Explicitly-unsubscribed recipients are skipped before dispatch for every campaign
+    // (SOP_email_marketing.md line 22) — even transactional ones, and even if they unsubscribed
+    // after being queued. The never-opted-in skip applies only when the campaign requires consent.
     const result = await this.pool.query(
       `
         UPDATE email_campaign_recipients r
         SET status = 'skipped',
-            error = 'Recipient has no active marketing consent.'
+            error = 'Recipient unsubscribed or has no active marketing consent.'
         FROM participants p
         WHERE r.participant_id = p.participant_id
           AND r.campaign_id = $1
           AND r.status = 'pending'
-          AND (p.marketing_opt_in = FALSE OR p.marketing_unsubscribed_at IS NOT NULL)
+          AND (p.marketing_unsubscribed_at IS NOT NULL OR ($2::boolean = TRUE AND p.marketing_opt_in = FALSE))
       `,
-      [campaignId],
+      [campaignId, requiresMarketingOptIn],
     )
     return result.rowCount ?? 0
   }

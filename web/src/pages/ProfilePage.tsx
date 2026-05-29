@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerTooltip } from '../components/PlayerTooltip'
 import { StatTile } from '../components/StatTile'
 import { TeamFlag } from '../components/TeamFlag'
 import { getNationName } from '../data/soccerverseNations'
@@ -82,6 +83,8 @@ export function ProfilePage() {
   }
 
   const squadPlayers = profile.squad?.slots.filter((slot) => slot.player) ?? []
+  const playerNameById = new Map((profile.squad?.slots ?? []).filter((slot) => slot.player).map((slot) => [slot.player!.playerId, slot.player!.displayName]))
+  const playerName = (id: number) => playerNameById.get(id) ?? `#${id}`
 
   return (
     <div className="space-y-4 pb-10">
@@ -147,7 +150,21 @@ export function ProfilePage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {squadPlayers.map((slot) => (
                 <article key={slot.key} className="surface-row rounded-[0.9rem] p-3 transition hover:bg-white/5">
-                  <div className="flex items-center gap-3">
+                  <PlayerTooltip
+                    as="div"
+                    className="flex items-center gap-3"
+                    info={{
+                      name: slot.player?.displayName ?? slot.label,
+                      nationCode: slot.player?.teamCode || slot.player?.nationalityCode,
+                      imageUrl: slot.player?.imageUrl,
+                      meta: slot.player
+                        ? [
+                            { label: 'Rating', value: String(slot.player.rating) },
+                            { label: 'Pos', value: slot.player.positionMain ?? slot.player.positions.join('/') },
+                          ]
+                        : undefined,
+                    }}
+                  >
                     <PlayerPortrait
                       src={slot.player?.imageUrl ?? '/placeholders/player.svg'}
                       alt={slot.player?.displayName ?? slot.label}
@@ -161,7 +178,7 @@ export function ProfilePage() {
                         {slot.label} · {slot.slotClass}
                       </p>
                     </div>
-                  </div>
+                  </PlayerTooltip>
                 </article>
               ))}
             </div>
@@ -170,6 +187,22 @@ export function ProfilePage() {
               <EmptyState title="Squad hidden" body="The manager has not revealed the submitted squad yet." />
             </div>
           )}
+
+          {profile.revealSquad && profile.swaps && profile.swaps.length > 0 ? (
+            <div className="mt-6 border-t border-[var(--color-line)] pt-5">
+              <p className="eyebrow text-[10px]">swap history</p>
+              <ul className="mt-3 space-y-1 text-sm text-white/80">
+                {profile.swaps.map((swap) => (
+                  <li key={swap.swapId} className="flex flex-wrap gap-x-2">
+                    <span className="text-[var(--color-muted)]">{swap.windowKey}</span>
+                    <span>
+                      {playerName(swap.playerInId)} in for {playerName(swap.playerOutId)} ({swap.slotClass})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       </section>
     </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerTooltip } from '../components/PlayerTooltip'
 import { TeamFlag } from '../components/TeamFlag'
 import { createSignedShareSnapshot, fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
 import { buildReferralInvitationText, resolveShareReferrerSoccerverseUsername } from '../lib/referral'
@@ -402,7 +403,19 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                       selectionLocked ? 'cursor-not-allowed opacity-55' : '',
                     ].join(' ')}
                   >
-                    <div className="flex items-start gap-3">
+                    <PlayerTooltip
+                      as="div"
+                      className="flex items-start gap-3"
+                      info={{
+                        name: entry.player.displayName,
+                        nationCode: entry.player.teamCode || entry.player.nationalityCode,
+                        imageUrl: entry.player.imageUrl,
+                        meta: [
+                          { label: 'Rating', value: String(entry.player.rating) },
+                          { label: 'Pos', value: entry.player.positionMain ?? entry.player.positions.join('/') },
+                        ],
+                      }}
+                    >
                       <PlayerPortrait
                         src={entry.player.imageUrl}
                         alt={entry.player.displayName}
@@ -430,7 +443,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </PlayerTooltip>
                   </button>
                 )
               })}

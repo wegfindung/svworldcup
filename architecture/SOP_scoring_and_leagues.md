@@ -36,9 +36,10 @@ where applicable.
 Each `squad_slots` row stores `position_codes TEXT[]`, a copy of the player's Soccerverse `positions`
 list at the moment the slot was written. The snapshot is refreshed on every slot assign/replace and is
 permanently frozen once `assertSquadEditable` blocks further edits (at registration close on
-`2026-07-04T00:00:00Z` or at competition start). Scoring reads only the snapshot column, never the live
-`world_cup_players.position_codes`, so a Soccerverse season-transition rewrite of positions cannot
-change which locked MID slots earn the clean-sheet bonus.
+`2026-07-04T00:00:00Z` or at competition start). Each per-round lineup snapshot copies the slot's
+frozen `position_codes` forward, so scoring reads the codes from the round snapshot (see "Per-Round
+Lineup Freeze"), never the live `world_cup_players.position_codes`. A Soccerverse season-transition
+rewrite of positions therefore cannot change which MID slots earn the clean-sheet bonus, in any round.
 
 Performance points — derived from the admin-entered match rating via a continuous piecewise-linear curve:
 
@@ -76,11 +77,48 @@ Each participant selects a salary budget when building their squad. The chosen b
 - Player match entries reach `admin_match_entries` only through the match-data import lifecycle (upload, review, two-admin confirm, promote) — see `SOP_match_data_import.md`. The scoring engine reads `admin_match_entries` and is otherwise unaffected by that lifecycle.
 - A player entry stores official-squad presence, minutes, goals, assists, clean-sheet eligibility, the match rating, and a source note. Performance points are not stored on the entry; they are derived from the rating via the performance curve at calculation time.
 - Public league leaderboards are calculated from locked squads only.
-- Starter slots score from their player match entries at full weight.
+- Starter/substitute status is read **per round** from the round lineup snapshot, not from the live
+  squad slots — see "Per-Round Lineup Freeze". A slot that is a starter in the snapshot for the round
+  a fixture belongs to scores at full weight; a substitute slot scores at half weight (`0.5`).
 - Substitute slots always score, at half weight: every point a reserve earns from its own match entry is multiplied by `0.5`. There is no auto-activation and no dependency on starter absence or official-squad presence (see "Substitution Rules").
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
 - Nations qualify for the public table once they have at least two scored entries.
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
+
+## Per-Round Lineup Freeze
+
+The unit of scoring is the **round** (group matchday 1/2/3, then round of 32, round of 16,
+quarter-final, semi-final, third-place, final). A fixture's round is the matchday/round it belongs to;
+in the group stage both teams in a fixture play the same matchday, so the mapping is unambiguous.
+
+- **One lineup snapshot per round.** For each round, exactly which 11 of a participant's 15 are
+  starters (1 GK / 4 DEF / 3 MID / 3 FWD) and which 4 are reserves is captured as a single immutable
+  snapshot in `squad_round_lineup`, keyed by `(squad_id, round_key)`. Each snapshot row records the
+  slot, slot group (starter/sub), slot class, player, and the `position_codes` that apply for the MID
+  clean-sheet predicate.
+- **The snapshot locks at the round's first kickoff** and never changes after. This is the FPL
+  gameweek-deadline model: every staggered fixture inside a round scores against the one lineup that
+  was frozen when the round's first match kicked off.
+- **≤ 11 full-point players per round, by construction.** Because each round has exactly one lineup
+  snapshot with exactly 11 starters, no participant can earn full points for more than 11 players in a
+  round — even across staggered matchdays. A reserve promoted mid-tournament earns full points only
+  from the round its promotion takes effect onward, and the starter it replaced drops to half weight
+  from that same round; neither banks full points for a round the other already owns.
+- **No retroactive recompute.** A swap only sets the lineup for the next round whose first match has
+  not yet kicked off. A round whose first match has already started is frozen and is never re-weighted
+  by a later swap. This satisfies the rule that already-earned points are never recomputed.
+- **As-of-round lookup.** Scoring resolves a fixture's weight and `position_codes` by reading the
+  snapshot with the greatest `round_key ≤ the fixture's round`. Rounds with no swap window (e.g. round
+  of 32, round of 16) therefore **inherit** the previous round's lineup with no extra rows written.
+- **Baseline snapshot at squad lock.** The round-1 baseline is materialized when the squad locks
+  (`squads.locked_at`); later snapshots are written when a swap commits for the round that swap
+  targets. There is no scheduled job — snapshots exist by the time scoring reads them because they are
+  written on the squad-lock and swap-commit paths. A swap targeting a round copies the current lineup
+  forward and applies the one slot-group exchange. This mirrors the per-fixture
+  `participant_influence_snapshot` read-model one level up (at the round grain).
+- The per-round freeze generalises the squad lock to every round: the squad composition is fixed at
+  registration close (no wage-affecting edits), and the starter/reserve split is fixed per round at
+  that round's first kickoff.
 
 ## Late Entry
 
@@ -140,6 +178,89 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 - There is no auto-activation: a reserve's contribution does not depend on whether a starter played, was rotated, benched, or absent from the official squad. A reserve with no match entry for a fixture simply scores nothing for it.
 - This is a deliberate temporary failsafe. It removes the need for a live player-availability/injury feed (whose data source is not yet guaranteed) and avoids per-matchday activation bookkeeping across a World Cup round's staggered kickoffs. It may be replaced by an availability-driven model later; if so, update `SUBSTITUTE_POINT_WEIGHT` and this section together.
 - Point counts on the score breakdown (goals, assists, appearances) remain the true match counts; only the *points* are halved for reserves.
+
+## Player Swaps
+
+A swap is a **mid-tournament reshuffle within the already-drafted 15-man squad**: a manager exchanges a
+**reserve** with the **starter of the same slot class** (GK / DEF / MID / FWD — one reserve per class).
+The two players trade `slot_group` (starter ↔ sub). It pulls no new players from the pool and
+recomputes no budget or wage, because both players are already in the squad and already paid for. A
+swap's only effect is which player scores at full weight vs reserve half weight, and which slot's
+frozen `position_codes` apply (the MID clean-sheet predicate), from the target round onward.
+
+### Why swaps bypass the registration freeze
+
+The registration-close freeze (`2026-07-04T00:00:00Z`) exists for **wage fairness**: at the Soccerverse
+season transition every rating is rewritten, and ratings drive the wage/cap table, so no squad may be
+*built or re-priced* against a different wage table than everyone else's. A swap re-prices nothing — it
+only reorders players already inside a locked, paid-for squad. Therefore swaps are a **separate
+mutation path** that deliberately does **not** go through `assertSquadEditable`. The squad builder
+methods (`assignPlayer` / `removePlayer` / `setBudget` / `resetSquad` / initial `lockSquad`) keep
+`assertSquadEditable` unchanged; swaps run through a dedicated `assertSwapAllowed` gate instead.
+
+### Swap windows
+
+Swaps are only allowed inside timed windows, defined as **data, not hardcoded constants** (a list of
+`{ key, opens, closes, swapLimit }`), so adding or retiming a window is a config change. Each window
+**closes at the next round's first kickoff** — this is forced by the ≤ 11-full-points-per-round rule
+(a window that stayed open into the next round could set a lineup after that round had already
+started). All times UTC:
+
+| Window | Opens | Closes | Swap limit |
+|---|---|---|---|
+| W1 | `2026-06-18 05:00` | `2026-06-18 16:00` (round 2 first kickoff) | 2 |
+| W2 | `2026-06-24 05:00` | `2026-06-24 19:00` (round 3 first kickoff) | 2 |
+| W3 | `2026-07-08` (rest day before quarter-finals) | end of that day = **hard stop** | 4 |
+
+- W1/W2 open instants are derived from the fixtures table: window N opens at
+  `max over all 48 teams of (their Nth group fixture's kickoff + D)`, `D = 3h` (completion basis — a
+  team has "played N" once its Nth match has had time to finish, not at kickoff). Deriving from
+  fixtures keeps the windows self-correcting if a kickoff is rescheduled. W3 is a fixed env-overridable
+  epoch (`2026-07-08`), same pattern as `REGISTRATION_CLOSE_AT`.
+- There is deliberately **no window at group-stage completion**; the swap-free stretch from W2 through
+  the round of 32 and round of 16 is intended. W3 is the final swap opportunity; its close is the
+  tournament-wide hard stop after which no swap is ever allowed.
+- A swap made in a window sets the lineup for the **next not-yet-locked round** (the round whose first
+  kickoff has not yet passed). It never alters a round already in progress.
+- Round ordinals: group matchdays = `1/2/3`, round of 32 = `4`, round of 16 = `5`, quarter-final =
+  `6`, semi-final = `7`, final/third-place = `8`. **W1 targets round 2, W2 targets round 3, W3 targets
+  the quarter-final (round 6).** The round of 32 and round of 16 (rounds 4-5) run swap-free and
+  inherit the round-3 lineup via the as-of-round lookup — which is the intended W2→W3 coverage gap.
+
+### Per-window swap limits
+
+Per-window caps: **W1 = 2, W2 = 2, W3 = 4** (product parameters; stored as env-overridable config).
+
+- One swap = one reserve ↔ starter exchange within a slot class.
+- Limits are **per window, no roll-over** — unused W1 swaps do not carry into W2.
+- A **reversal counts** as a swap (undoing a swap spends another of the window's allowance).
+- This cap (swap *actions per window*) is independent of the ≤ 11-full-points-*per-round* cap.
+- The limit is enforced by counting the participant's `squad_swaps` rows in the current window.
+
+### In-match lock
+
+A swap is blocked while either involved player's national team is mid-match, detected as
+`kickoff ≤ now < kickoff + D` with `D = 3h` (one tier; no live feed exists — kickoff + a conservative
+fixed duration). This is a **UX/product guard, not a scoring-correctness guard**: scoring is already
+protected because a swap only affects rounds whose first kickoff is still in the future. Under the
+final window design every window sits in a match-free gap, so this lock is **dormant** — requirement
+holds by construction — and fires only if a window is ever reconfigured to overlap live matches.
+
+### The `assertSwapAllowed` gate
+
+A swap is permitted only when **all** hold:
+
+1. the squad is **locked and complete** (all 15 slots filled);
+2. **now is inside an open swap window**;
+3. **neither involved player's nation is in-match** (`D = 3h`);
+4. the participant is **under the current window's swap limit**;
+5. **now is before the hard stop** (the W3 close).
+
+Each allowed swap, in one transaction: writes/updates the `squad_round_lineup` snapshot for the target
+round, appends a `squad_swaps` event row (`swap_id, squad_id, participant_id, window_key, round_key,
+slot_out, slot_in, player_out, player_in, applied_at`), and writes an `audit_logs` entry. The
+`squad_swaps` table is the authoritative event log — it serves as the queryable per-participant /
+per-window history, the per-window limit counter, and the domain side of the audit trail.
 
 ## Hidden Squad Rules
 

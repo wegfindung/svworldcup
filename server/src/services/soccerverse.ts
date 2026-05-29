@@ -4,8 +4,8 @@ import { normalizeDisplayName } from '../lib/displayName.js'
 import { getCommunityPlayerName } from './communityPack.js'
 import { recordOperationEvent } from './operationsMonitor.js'
 
-// Soccerverse's services.soccerverse.com REST API enforces a hard ~3 req/s limit
-// (claude-docs/soccerverse.md "Soccerverse rate limit-läge"). Over-rate returns 429
+// Soccerverse's services.soccerverse.com REST API enforces a hard ~3 req/s limit.
+// Over-rate returns 429
 // + "STOP SPAMMING" body + dropped CORS headers, and repeated triggering risks an IP
 // ban. We pace at 2.5 req/s (400ms slots) to match the sister project's throttle, with
 // exponential backoff (base 1s, ×2 per retry, capped at 30s, max 4 retries) on 429 —

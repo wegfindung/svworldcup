@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
+import { PlayerTooltip } from '../components/PlayerTooltip'
+import { SquadPitchModal } from '../components/SquadPitchModal'
 import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { publicProfileSlug } from '../lib/profileSlug'
 import type {
   LocaleCode,
   NationScoreRow,
@@ -86,7 +89,21 @@ function DetailStat({ label, value }: { label: string; value: number }) {
 function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: ParticipantScorePlayerDetail }) {
   return (
     <div className="grid gap-3 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-      <div className="min-w-0">
+      <PlayerTooltip
+        as="div"
+        className="min-w-0"
+        info={{
+          name: player.displayName,
+          nationCode: player.teamCode,
+          imageUrl: player.imageUrl,
+          meta: [
+            { label: 'Min', value: `${player.minutes}'` },
+            { label: 'G', value: String(player.goals) },
+            { label: 'A', value: String(player.assists) },
+            ...(player.rating !== undefined ? [{ label: 'Rating', value: String(player.rating) }] : []),
+          ],
+        }}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
           <p className="truncate text-xs font-semibold text-white">{player.displayName}</p>
@@ -96,7 +113,7 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
           {player.slotGroup} - {player.minutes}' - ID {player.playerId}
           {player.rating !== undefined ? ` - ${copy.rating} ${player.rating}` : ''}
         </p>
-      </div>
+      </PlayerTooltip>
       <div className="flex flex-wrap gap-1.5 sm:justify-end">
         <DetailStat label={copy.breakdown.goals} value={player.goalPoints} />
         <DetailStat label={copy.breakdown.assists} value={player.assistPoints} />
@@ -129,7 +146,7 @@ function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy
   )
 }
 
-function ParticipantTable({ copy, title, rows, fixtureLookup }: { copy: TablesCopy; title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, PublicFixtureResult> }) {
+function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { copy: TablesCopy; title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, PublicFixtureResult>; onOpenSquad: (target: { displayName: string; slug: string }) => void }) {
   const [openParticipantIds, setOpenParticipantIds] = useState<Set<string>>(new Set())
 
   function toggleParticipant(participantId: string) {
@@ -164,7 +181,13 @@ function ParticipantTable({ copy, title, rows, fixtureLookup }: { copy: TablesCo
                   <div className="grid grid-cols-[3.25rem_1fr] gap-3 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
                     <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">{row.displayName}</p>
+                      <button
+                        type="button"
+                        onClick={() => onOpenSquad({ displayName: row.displayName, slug: publicProfileSlug(row.displayName, row.participantId) })}
+                        className="block max-w-full truncate text-left text-sm font-semibold text-white underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
+                      >
+                        {row.displayName}
+                      </button>
                       <div className="mt-1 flex items-center gap-2 text-xs text-[var(--color-muted)]">
                         <TeamFlag teamCode={row.primaryTeamCode} label={nationName(row.primaryTeamCode)} size="sm" />
                         <span>{nationName(row.primaryTeamCode)}</span>
@@ -221,7 +244,7 @@ function ParticipantTable({ copy, title, rows, fixtureLookup }: { copy: TablesCo
   )
 }
 
-function NationTable({ copy, rows }: { copy: TablesCopy; rows: NationScoreRow[] }) {
+function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: NationScoreRow[]; onOpenSquad: (target: { displayName: string; slug: string }) => void }) {
   const [openTeamCodes, setOpenTeamCodes] = useState<Set<string>>(new Set())
 
   function toggleTeam(teamCode: string) {
@@ -292,7 +315,14 @@ function NationTable({ copy, rows }: { copy: TablesCopy; rows: NationScoreRow[] 
                         >
                           <div className="min-w-0">
                             <p className="truncate text-xs font-semibold text-white">
-                              #{contributor.rank} {contributor.displayName}
+                              <span className="text-[var(--color-accent)]">#{contributor.rank}</span>{' '}
+                              <button
+                                type="button"
+                                onClick={() => onOpenSquad({ displayName: contributor.displayName, slug: publicProfileSlug(contributor.displayName, contributor.participantId) })}
+                                className="underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
+                              >
+                                {contributor.displayName}
+                              </button>
                             </p>
                             <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--color-muted)]">
                               <TeamFlag teamCode={contributor.primaryTeamCode} label={nationName(contributor.primaryTeamCode)} size="sm" />
@@ -337,6 +367,7 @@ export function TablesPage({ locale }: TablesPageProps) {
   const [tablesPromise, setTablesPromise] = useState<Promise<TablesPayload> | null>(() => loadTablesPayload())
   const [tables, setTables] = useState<TablesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
 
   useEffect(() => {
     const promise = tablesPromise
@@ -435,13 +466,15 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {tables ? (
         <>
-          <NationTable copy={copy} rows={tables.nations} />
+          <NationTable copy={copy} rows={tables.nations} onOpenSquad={setSquadTarget} />
           <section className="grid gap-4 xl:grid-cols-2">
-            <ParticipantTable copy={copy} title="Rookie" rows={tables.rookies} fixtureLookup={tables.fixtureLookup} />
-            <ParticipantTable copy={copy} title="Veteran" rows={tables.veterans} fixtureLookup={tables.fixtureLookup} />
+            <ParticipantTable copy={copy} title="Rookie" rows={tables.rookies} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+            <ParticipantTable copy={copy} title="Veteran" rows={tables.veterans} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
           </section>
         </>
       ) : null}
+
+      <SquadPitchModal target={squadTarget} onClose={() => setSquadTarget(null)} />
     </div>
   )
 }

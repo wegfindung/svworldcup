@@ -2,8 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import type { AuditLogEntry, AuditLogInput } from '../domain/types.js'
 
-// Append-only audit log. The match data import engine records every import-path admin write
-// here (D13); other admin writes already audited elsewhere are out of scope for this work.
+// Append-only audit log for durable admin/participant writes. The actions that must be recorded
+// here are enumerated in architecture/SOP_system_overview.md ("Audit log entries are required for"):
+// the match-import lifecycle, admin login/logout, team-pool edits, reveal actions, score-config
+// changes, verification resends, multi-accounting review status changes, and league changes.
 export interface AuditRepository {
   storageKind: 'memory' | 'postgres'
   record(input: AuditLogInput): Promise<AuditLogEntry>

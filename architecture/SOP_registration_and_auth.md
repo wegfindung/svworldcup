@@ -206,7 +206,7 @@ participant between Rookie and Veteran public-table membership is an admin-media
 ## Edge Cases
 
 - Re-registering an already verified email should not create duplicates.
-- Resend should be rate limited.
+- Verification-resend and password-reset requests must be rate limited per target email address (not only per IP), since the abuse vector is inbox-bombing. A dedicated limiter — separate from and stricter than the shared `/api/auth` limiter — caps these by canonical recipient inbox (so provider aliases such as Gmail dot/plus variants share one bucket), with an IP fallback when no address is supplied.
 - Expired verification tokens must be replaced, not reused.
 - A user can be public in multiple tables while still hiding squad details.
 - An admin password must never be returned from any endpoint.

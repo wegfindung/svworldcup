@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerTooltip } from '../components/PlayerTooltip'
 import { ScoringCalculator } from '../components/ScoringCalculator'
 import { TeamFlag } from '../components/TeamFlag'
 import { getMessages, type AppMessages } from '../i18n/messages'
@@ -11,14 +12,14 @@ import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/ty
 type HomeCopy = AppMessages['home']
 
 const superstarPlayers = [
-  { playerId: 133609, name: 'Pedri', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png' },
-  { playerId: 278, name: 'Kylian Mbappe', imageUrl: 'https://elrincondeldt.com/sv/photos/players/278.png' },
-  { playerId: 181812, name: 'Jamal Musiala', imageUrl: 'https://elrincondeldt.com/sv/photos/players/181812.png' },
-  { playerId: 9, name: 'Achraf Hakimi', imageUrl: 'https://elrincondeldt.com/sv/photos/players/9.png' },
-  { playerId: 927, name: 'Kang-In Lee', imageUrl: 'https://elrincondeldt.com/sv/photos/players/927.png' },
-  { playerId: 129718, name: 'Jude Bellingham', imageUrl: 'https://elrincondeldt.com/sv/photos/players/129718.png' },
-  { playerId: 762, name: 'Vinicius Paixao', imageUrl: 'https://elrincondeldt.com/sv/photos/players/762.png' },
-  { playerId: 162511, name: 'Senne Lammens', imageUrl: 'https://elrincondeldt.com/sv/photos/players/162511.png' },
+  { playerId: 133609, name: 'Pedri', nationCode: 'ESP', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png' },
+  { playerId: 278, name: 'Kylian Mbappe', nationCode: 'FRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/278.png' },
+  { playerId: 181812, name: 'Jamal Musiala', nationCode: 'GER', imageUrl: 'https://elrincondeldt.com/sv/photos/players/181812.png' },
+  { playerId: 9, name: 'Achraf Hakimi', nationCode: 'MAR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/9.png' },
+  { playerId: 927, name: 'Kang-In Lee', nationCode: 'KOR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/927.png' },
+  { playerId: 129718, name: 'Jude Bellingham', nationCode: 'ENG', imageUrl: 'https://elrincondeldt.com/sv/photos/players/129718.png' },
+  { playerId: 762, name: 'Vinicius Paixao', nationCode: 'BRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/762.png' },
+  { playerId: 162511, name: 'Senne Lammens', nationCode: 'BEL', imageUrl: 'https://elrincondeldt.com/sv/photos/players/162511.png' },
 ] as const
 
 const footballNations = [
@@ -83,7 +84,13 @@ function HeroPlayerWall({ label }: { label: string }) {
   return (
     <div className="hero-player-wall" aria-label={label}>
       {superstarPlayers.slice(0, 6).map((player, index) => (
-        <div key={player.playerId} className="hero-player-tile" style={{ ['--tile-delay' as string]: `${index * 60}ms` }}>
+        <PlayerTooltip
+          key={player.playerId}
+          as="div"
+          className="hero-player-tile"
+          style={{ ['--tile-delay' as string]: `${index * 60}ms` }}
+          info={{ name: player.name, nationCode: player.nationCode, imageUrl: player.imageUrl }}
+        >
           <PlayerPortrait
             src={player.imageUrl}
             alt={player.name}
@@ -92,7 +99,7 @@ function HeroPlayerWall({ label }: { label: string }) {
             className="h-full w-full object-cover"
           />
           <span>{player.name}</span>
-        </div>
+        </PlayerTooltip>
       ))}
     </div>
   )
