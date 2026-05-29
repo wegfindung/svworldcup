@@ -9,9 +9,9 @@ interface RulesPageProps {
   locale: LocaleCode
 }
 
-// English is the source of truth. Every locale below translates all sections EXCEPT `coming`, which
-// references englishCopy.coming on purpose (the "coming soon" notices stay in English by request).
-// Unknown locales fall back to englishCopy. The embedded scoring calculator is localised via messages.ts.
+// English is the source of truth. Every locale below translates all sections, including the `coming`
+// "good to know" disclaimer. Unknown locales fall back to englishCopy. The embedded scoring calculator
+// is localised via messages.ts.
 const englishCopy = {
   eyebrow: 'how it works',
   title: 'Event rules, in full.',
@@ -387,7 +387,16 @@ copyByLocale.es = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'conviene saber',
+    title: 'Resultados y puntos',
+    note: 'Algunas cosas para que sepas qué esperar y nada te tome por sorpresa.',
+    items: [
+      'Los resultados pueden no aparecer en el sitio en cuanto termina un partido. Los puntos se actualizan una vez procesado cada partido, así que dale algo de tiempo tras los primeros encuentros antes de que aparezcan tus puntos.',
+      'Solo se puntúan los equipos bloqueados. Un equipo que no se ha bloqueado no recibe puntos: los puntos se otorgan únicamente a los equipos bloqueados.',
+      'No se otorgan puntos de forma retroactiva. Un equipo solo puntúa en los partidos que comienzan después de bloquearlo, así que registrarte tarde nunca da puntos por partidos ya jugados.',
+    ],
+  },
 }
 
 copyByLocale.it = {
@@ -569,7 +578,16 @@ copyByLocale.it = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'buono a sapersi',
+    title: 'Risultati e punti',
+    note: 'Alcune cose per chiarire cosa aspettarti, così nulla ti coglie di sorpresa.',
+    items: [
+      'I risultati potrebbero non comparire sul sito nel momento in cui una partita finisce. I punteggi si aggiornano una volta elaborata ogni partita, quindi concedi un po’ di tempo dopo le prime gare prima che i tuoi punti compaiano.',
+      'Vengono conteggiate solo le rose bloccate. Una rosa che non è stata bloccata non riceve punti: i punti vengono assegnati esclusivamente alle rose bloccate.',
+      'Non vengono assegnati punti in modo retroattivo. Una rosa segna punti solo nelle partite che iniziano dopo il suo blocco, quindi iscriversi in ritardo non fa mai recuperare punti per le partite già giocate.',
+    ],
+  },
 }
 
 copyByLocale.de = {
@@ -751,7 +769,16 @@ copyByLocale.de = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'gut zu wissen',
+    title: 'Ergebnisse & Punkte',
+    note: 'Ein paar Dinge zur Einordnung, damit dich hier nichts überrascht.',
+    items: [
+      'Ergebnisse erscheinen möglicherweise nicht sofort auf der Seite, sobald ein Spiel endet. Die Punkte werden aktualisiert, sobald jedes Spiel verarbeitet wurde – gib ihm also nach den ersten Spielen etwas Zeit, bevor deine Punkte auftauchen.',
+      'Nur festgelegte Kader werden gewertet. Ein Kader, der nicht festgelegt wurde, erhält keine Punkte – Punkte gibt es ausschließlich für festgelegte Kader.',
+      'Es werden keine Punkte rückwirkend vergeben. Ein Kader punktet nur in Spielen, die nach seiner Festlegung angepfiffen werden – wer sich spät anmeldet, bekommt also nie Punkte für bereits gespielte Spiele.',
+    ],
+  },
 }
 
 copyByLocale.fr = {
@@ -933,7 +960,16 @@ copyByLocale.fr = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'bon à savoir',
+    title: 'Résultats et points',
+    note: 'Quelques précisions pour situer les attentes, afin que rien ne vous surprenne.',
+    items: [
+      'Les résultats peuvent ne pas apparaître sur le site dès la fin d’un match. Les points sont mis à jour une fois chaque match traité ; laissez donc un peu de temps après les premières rencontres avant que vos points s’affichent.',
+      'Seuls les effectifs verrouillés sont comptabilisés. Un effectif non verrouillé ne reçoit aucun point : les points ne sont attribués qu’aux effectifs verrouillés.',
+      'Aucun point n’est attribué rétroactivement. Un effectif ne marque que sur les matchs qui débutent après son verrouillage ; s’inscrire tard ne rapporte donc jamais de points pour des matchs déjà joués.',
+    ],
+  },
 }
 
 copyByLocale.pt = {
@@ -1115,7 +1151,16 @@ copyByLocale.pt = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'bom saber',
+    title: 'Resultados e pontos',
+    note: 'Algumas coisas para definir expectativas, para que nada aqui te apanhe de surpresa.',
+    items: [
+      'Os resultados podem não aparecer no site no momento em que um jogo termina. As pontuações são atualizadas assim que cada jogo é processado, por isso dá algum tempo após os primeiros jogos antes de os teus pontos surgirem.',
+      'Apenas as equipas bloqueadas são pontuadas. Uma equipa que não foi bloqueada não recebe pontos — os pontos vão apenas para as equipas bloqueadas.',
+      'Não são atribuídos pontos retroativamente. Uma equipa só pontua em jogos que começam depois de ter sido bloqueada, por isso registar-te tarde nunca recupera pontos por jogos já disputados.',
+    ],
+  },
 }
 
 copyByLocale.ru = {
@@ -1297,7 +1342,16 @@ copyByLocale.ru = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: 'полезно знать',
+    title: 'Результаты и очки',
+    note: 'Несколько моментов, чтобы вы знали, чего ожидать, и ничто не застало вас врасплох.',
+    items: [
+      'Результаты могут появиться на сайте не сразу после окончания матча. Очки обновляются после обработки каждого матча, поэтому дайте немного времени после первых игр, прежде чем ваши очки отобразятся.',
+      'Очки начисляются только зафиксированным составам. Состав, который не был зафиксирован, не получает очков — очки начисляются исключительно зафиксированным составам.',
+      'Очки не начисляются задним числом. Состав получает очки только за матчи, которые начинаются после его фиксации, поэтому поздняя регистрация никогда не приносит очков за уже сыгранные матчи.',
+    ],
+  },
 }
 
 copyByLocale.zh = {
@@ -1479,7 +1533,16 @@ copyByLocale.zh = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: '须知',
+    title: '结果与积分',
+    note: '一些需要事先了解的事项，免得让你感到意外。',
+    items: [
+      '比赛结束后，结果可能不会立即显示在网站上。每场比赛的数据处理完成后积分才会更新，因此在最初的几场比赛后请稍等片刻，你的积分才会出现。',
+      '只有已锁定的阵容才会计分。未锁定的阵容不会获得任何积分——积分只发放给已锁定的阵容。',
+      '积分不会追溯发放。阵容只在锁定之后开赛的比赛中得分，因此过晚注册永远不会为已经进行过的比赛获得积分。',
+    ],
+  },
 }
 
 copyByLocale.ja = {
@@ -1661,7 +1724,16 @@ copyByLocale.ja = {
     ],
   },
 
-  coming: englishCopy.coming,
+  coming: {
+    eyebrow: '知っておきたいこと',
+    title: '結果とポイント',
+    note: '想定外のことがないよう、いくつか押さえておきたい点です。',
+    items: [
+      '試合終了直後には結果がサイトに表示されないことがあります。各試合のデータが処理されてからポイントが更新されるため、最初の数試合のあとはポイントが表示されるまで少し時間をおいてください。',
+      'ロックされたスカッドのみが採点されます。ロックされていないスカッドはポイントを獲得できません——ポイントはロック済みのスカッドにのみ付与されます。',
+      'ポイントが遡って付与されることはありません。スカッドはロック後にキックオフした試合でのみ得点するため、登録が遅れても、すでに行われた試合のポイントを獲得することはありません。',
+    ],
+  },
 }
 
 function getRulesCopy(locale: LocaleCode): RulesCopy {
