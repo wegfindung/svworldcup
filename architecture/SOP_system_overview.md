@@ -123,10 +123,16 @@ coupled by design — partial render does not apply there.
   the returned promise; no call site changes). A query whose duration meets `DB_SLOW_QUERY_MS`
   (default 500 ms) is logged at `warn` with the truncated SQL text and duration. This complements,
   not replaces, `statement_timeout` (hard cap on runaway queries) and end-to-end request-timing.
-- The veteran influence-snapshot capture is fire-and-forget and paced by the Soccerverse gate (so it
-  is I/O-bound and yields the event loop while waiting). To keep it from piling up it (a) refuses a
-  duplicate run for a fixture already in progress and (b) yields periodically through its work list.
-  A true off-process job queue is the long-term fix but out of scope for the single-process service.
+- The veteran influence-snapshot capture runs **off the request path** via a durable job queue. A
+  successful promotion enqueues a snapshot job (`participant_influence_snapshot_jobs`) and the request
+  returns immediately; an in-process background worker drains pending jobs **one fixture at a time**
+  (so two near-simultaneous promotions can't pile parallel runs onto the paced Soccerverse gate),
+  running the same I/O-bound capture. The queue is durable: a job survives a restart, the worker
+  requeues any job a crash left `running` when it starts, and a job gets a bounded number of attempts
+  before it is marked `failed` for admin visibility. Each run still records an `operationsMonitor`
+  event. The capture's own in-flight guard + periodic yield remain as belt-and-suspenders. (The worker
+  is in-process, not a separate OS process — appropriate for the single-process service; a separate
+  worker process stays the long-term option if the job ever needs full CPU isolation.)
 
 ## Runtime Resilience
 

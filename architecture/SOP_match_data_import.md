@@ -58,16 +58,21 @@ Out of scope:
 - Promotion runs under a fixture-scoped Postgres advisory lock (`pg_try_advisory_lock`), so two
   admins confirming the same batch at the same moment can't both pass the promotable check and
   double-promote (which would write duplicate audit rows). The second caller skips cleanly.
-- The promotion loop is intentionally NOT wrapped in a single transaction. The upserts are
-  idempotent `(fixture_id, player_id)` upserts and the batch is only deleted after they all succeed,
-  so a mid-loop failure leaves the batch intact and re-running promotion completes it safely.
-  Atomic all-or-nothing across the three repositories would be a larger refactor for a failure mode
-  that already self-heals; deferred unless a need appears.
+- The promotion loop runs as a single all-or-nothing transaction. The fixture-scoped advisory lock
+  and the transaction share one connection: `ScoringRepository.withFixtureLock` checks out a client,
+  takes the advisory lock, then wraps the work in `BEGIN`/`COMMIT` and passes that client to every
+  write as an `executor`. The three promotion writes — each resolved row's upsert into
+  `admin_match_entries`, the pending-batch delete, and the `match_import.promote` audit row —
+  therefore commit together or not at all. A failure anywhere rolls the whole set back, leaving the
+  pending batch intact; re-running promotion completes it cleanly (the upserts stay idempotent
+  `(fixture_id, player_id)` upserts). The Memory repository has no real transaction (single test
+  process) and just runs the work.
 - To keep the public board from showing a half-promoted fixture, promotion suppresses the per-row
-  leaderboard-cache invalidation and invalidates the board ONCE, after every row, the batch delete,
-  and the audit row have all landed. So the board flips only on a fully successful promotion; a
-  mid-loop failure never invalidates, leaving the pre-promotion board live until a re-promote. (This
-  also removes the redundant N recomputes a multi-row promotion would otherwise trigger.)
+  leaderboard-cache invalidation and invalidates the board ONCE, after the transaction COMMITs.
+  Invalidating only after commit avoids the cache-ordering trap where a concurrent read could
+  otherwise re-cache pre-commit rows. So the board flips atomically on a fully successful promotion;
+  a rolled-back promotion never invalidates. (This also removes the redundant N recomputes a
+  multi-row promotion would otherwise trigger.)
 
 ## Input Contract
 

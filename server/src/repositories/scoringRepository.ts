@@ -26,6 +26,7 @@ import type { RegistrationRepository } from './registrationRepository.js'
 import type { SquadRepository } from './squadRepository.js'
 import type { ParticipantInfluenceSnapshotRepository } from './participantInfluenceSnapshotRepository.js'
 import type { CacheableRow, LeaderboardCache } from './leaderboardCache.js'
+import type { Queryable } from '../lib/db.js'
 
 interface ScoreParticipant {
   participantId: string
@@ -74,6 +75,9 @@ type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
 // failure leaves the pre-promotion board intact (re-promote heals it via idempotent upserts).
 export interface UpsertMatchEntryOptions {
   suppressLeaderboardInvalidation?: boolean
+  // When set, the upsert runs on this transactional client instead of the pool, so a promotion can
+  // commit every row + the batch delete + the audit row together (see services/matchPromotion.ts).
+  executor?: Queryable
 }
 
 export interface ScoringRepository {
@@ -85,9 +89,11 @@ export interface ScoringRepository {
   // Force a leaderboard cache invalidation (used after a suppressed multi-row promotion completes).
   invalidateLeaderboard(): void
   // Runs fn while holding a fixture-scoped advisory lock so two concurrent promotions of the same
-  // fixture can't both proceed. Returns null WITHOUT running fn when the lock is already held. The
-  // Memory impl has no real lock and always runs fn.
-  withFixtureLock<T>(fixtureId: string, fn: () => Promise<T>): Promise<T | null>
+  // fixture can't both proceed, AND inside a single BEGIN/COMMIT transaction on that same connection.
+  // fn receives the transactional client as `executor` to thread onto every write so they commit
+  // together or roll back together. Returns null WITHOUT running fn when the lock is already held.
+  // The Memory impl has no real lock or transaction and always runs fn with no executor.
+  withFixtureLock<T>(fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null>
 }
 
 function derivePerformancePoints(rating: number | undefined, curve: PerformanceCurveAnchor[]) {
@@ -516,8 +522,9 @@ export class MemoryScoringRepository implements ScoringRepository {
     return fixtureId ? entries.filter((entry) => entry.fixtureId === fixtureId) : entries
   }
 
-  // No cross-process locking in memory — single test process, so just run the work.
-  async withFixtureLock<T>(_fixtureId: string, fn: () => Promise<T>): Promise<T | null> {
+  // No cross-process locking or transaction in memory — single test process, so just run the work
+  // with no executor (the Memory write methods ignore it and mutate their in-process maps directly).
+  async withFixtureLock<T>(_fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null> {
     return fn()
   }
 
@@ -642,7 +649,9 @@ export class PostgresScoringRepository implements ScoringRepository {
   }
 
   async upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions) {
-    const result = await this.pool.query<{
+    // Run on the caller's transactional client when given (promotion threads one), else the pool.
+    const db = options?.executor ?? this.pool
+    const result = await db.query<{
       entry_id: string
       fixture_id: string
       player_id: string
@@ -724,7 +733,10 @@ export class PostgresScoringRepository implements ScoringRepository {
   // Session-level advisory lock keyed by a stable hash of the fixture id (hashtext). Held on a
   // dedicated connection for the duration of fn, then released. pg_try_advisory_lock returns
   // false immediately when another connection already holds it → we skip rather than block.
-  async withFixtureLock<T>(fixtureId: string, fn: () => Promise<T>): Promise<T | null> {
+  // fn runs inside a BEGIN/COMMIT on that same client and receives it as `executor`, so the caller
+  // can thread all its writes onto one transaction (all-or-nothing). A throw rolls the work back;
+  // the advisory lock is released after COMMIT/ROLLBACK regardless.
+  async withFixtureLock<T>(fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null> {
     const client = await this.pool.connect()
     try {
       const lockResult = await client.query<{ locked: boolean }>(
@@ -735,7 +747,15 @@ export class PostgresScoringRepository implements ScoringRepository {
         return null
       }
       try {
-        return await fn()
+        await client.query('BEGIN')
+        try {
+          const result = await fn(client)
+          await client.query('COMMIT')
+          return result
+        } catch (error) {
+          await client.query('ROLLBACK')
+          throw error
+        }
       } finally {
         await client.query('SELECT pg_advisory_unlock(hashtext($1))', [fixtureId])
       }

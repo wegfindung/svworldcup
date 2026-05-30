@@ -77,6 +77,12 @@ is promotable — two distinct admins have valid confirmations on the current da
 2. Deletes the pending batch.
 3. Writes an `audit_logs` entry: `match_import.promote`.
 
+These three writes run under a fixture-scoped advisory lock and inside one `BEGIN`/`COMMIT`
+transaction (the lock and the transaction share a single connection threaded through as an
+`executor`), so a promotion is all-or-nothing — a failure rolls back the upserts, the batch delete,
+and the audit row together, and the leaderboard cache is invalidated once after COMMIT. See
+`SOP_match_data_import.md` for the rationale.
+
 Promotion is the **only** path from this engine into `admin_match_entries`.
 
 ## Patterns

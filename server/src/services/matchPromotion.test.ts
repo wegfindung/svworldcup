@@ -28,22 +28,28 @@ function makeDeps(withFixtureLock: ScoringLock) {
   return { deps, upsertMatchEntry, invalidateLeaderboard, deleteBatch, record }
 }
 
-type ScoringLock = <T>(fixtureId: string, fn: () => Promise<T>) => Promise<T | null>
+type ScoringLock = <T>(fixtureId: string, fn: (executor?: unknown) => Promise<T>) => Promise<T | null>
 
 describe('promoteBatchIfReady', () => {
-  it('promotes resolved rows when the fixture lock is acquired (skips unresolved rows)', async () => {
-    const runLock: ScoringLock = (_id, fn) => fn()
+  it('promotes resolved rows on the lock transaction client (skips unresolved rows)', async () => {
+    // Stand in for the transactional client withFixtureLock hands to fn; assert every write gets it.
+    const txClient = { query: vi.fn() }
+    const runLock: ScoringLock = (_id, fn) => fn(txClient)
     const { deps, upsertMatchEntry, invalidateLeaderboard, deleteBatch, record } = makeDeps(runLock)
 
     const result = await promoteBatchIfReady(makeBatch(), deps)
 
     expect(result).toEqual({ promoted: true, promotedRowCount: 1 })
     expect(upsertMatchEntry).toHaveBeenCalledTimes(1)
-    // C1: rows are upserted with per-row invalidation suppressed...
-    expect(upsertMatchEntry).toHaveBeenCalledWith(expect.anything(), { suppressLeaderboardInvalidation: true })
-    expect(deleteBatch).toHaveBeenCalledOnce()
-    expect(record).toHaveBeenCalledOnce()
-    // ...and the board is invalidated exactly once, after the writes land.
+    // C1: rows are upserted with per-row invalidation suppressed and threaded onto the tx client...
+    expect(upsertMatchEntry).toHaveBeenCalledWith(expect.anything(), {
+      suppressLeaderboardInvalidation: true,
+      executor: txClient,
+    })
+    // ...as are the batch delete and the audit row, so all three commit together.
+    expect(deleteBatch).toHaveBeenCalledWith('batch-1', txClient)
+    expect(record).toHaveBeenCalledWith(expect.anything(), txClient)
+    // ...and the board is invalidated exactly once, after the transaction commits.
     expect(invalidateLeaderboard).toHaveBeenCalledOnce()
   })
 
