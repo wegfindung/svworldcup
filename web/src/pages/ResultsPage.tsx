@@ -267,7 +267,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
     return () => {
       active = false
     }
-  }, [copy.loadErrorTitle])
+  }, [copy.loadErrorBody, copy.loadErrorTitle, copy.unavailableBody, copy.unavailableTitle])
 
   const groupedResults = useMemo(() => {
     const groups = new Map<string, PublicFixtureResult[]>()

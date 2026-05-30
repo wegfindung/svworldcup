@@ -404,7 +404,7 @@ export function TablesPage({ locale }: TablesPageProps) {
     return () => {
       active = false
     }
-  }, [copy.loadError, tablesPromise])
+  }, [copy.loadError, copy.loadErrorTitle, copy.unavailableBody, copy.unavailableTitle, tablesPromise])
 
   function refreshTables() {
     setTables(null)
