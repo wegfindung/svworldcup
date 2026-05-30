@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
 import { useBootstrap } from './hooks/useBootstrap'
@@ -241,8 +242,9 @@ function App() {
         </header>
 
         <main className="flex-1 reveal-in">
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
+          <ErrorBoundary key={location.pathname} copy={copy.errorBoundary}>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
               <Route path="/" element={<HomePage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
               <Route
                 path="/register"
@@ -281,8 +283,9 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
               <Route path="/admin/*" element={<AdminPage locale={locale} />} />
               <Route path="/profiles/:slug" element={<ProfilePage />} />
-            </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

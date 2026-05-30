@@ -145,7 +145,7 @@ function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy
         </div>
         <span className="mono text-xs text-[var(--color-accent)]">{formatScore(fixture.totalPoints)} {copy.pts}</span>
       </div>
-      <div className="grid gap-1.5">{fixture.players.map((player) => <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} copy={copy} player={player} />)}</div>
+      <div className="grid gap-1.5">{(fixture.players ?? []).map((player) => <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} copy={copy} player={player} />)}</div>
     </div>
   )
 }

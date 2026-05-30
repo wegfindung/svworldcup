@@ -569,6 +569,11 @@ const englishMessages = {
     loading: 'Loading live tournament bootstrap...',
     backendOffline: 'Backend not reachable. Start the server on port 3000 to load live data.',
   },
+  errorBoundary: {
+    title: 'Something went wrong.',
+    body: 'An unexpected error interrupted this page. You can try again.',
+    retry: 'Try again',
+  },
 }
 
 export type AppMessages = typeof englishMessages

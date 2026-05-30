@@ -50,6 +50,9 @@ Provide a secure The Grand Tournament event platform with:
 - analytics overview
 - multi-accounting review cases
 - operations overview for audit logs, pending import state, email queue health, scheduler runs, and Soccerverse API warnings/errors
+9. Web client render-failure isolation: a top-level React error boundary catches render-time throws and
+shows a localized, retryable fallback instead of white-screening the whole app. Public pages must
+defensively handle partial or malformed API payloads (optional chaining on nested data).
 
 ## Security Rules
 
