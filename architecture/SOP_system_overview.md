@@ -52,7 +52,9 @@ Provide a secure The Grand Tournament event platform with:
 - operations overview for audit logs, pending import state, email queue health, scheduler runs, and Soccerverse API warnings/errors
 9. Web client render-failure isolation: a top-level React error boundary catches render-time throws and
 shows a localized, retryable fallback instead of white-screening the whole app. Public pages must
-defensively handle partial or malformed API payloads (optional chaining on nested data).
+defensively handle partial or malformed API payloads (optional chaining on nested data). When the
+event bootstrap fetch fails, the client renders on safe defaults but must surface a localized
+degraded-state notice rather than silently hiding the failure.
 
 ## Security Rules
 
@@ -61,6 +63,11 @@ defensively handle partial or malformed API payloads (optional chaining on neste
 - All admin routes require authenticated admin role.
 - Participant mutations require an authenticated participant session.
 - Public APIs must be rate limited.
+- Expensive public endpoints (player search, match results) must carry a tighter per-endpoint rate
+  limit on top of the general public limit, since they are uncached and the costliest to hammer.
+- Rate limiting must key on the real client IP. In production the service runs behind a single
+  trusted proxy (Traefik), so `trust proxy` defaults on in production (overridable via
+  `RATE_LIMIT_TRUST_PROXY`); otherwise every visitor shares the proxy's IP and the limiter mis-keys.
 - Public read-only API requests may load automatically when they directly improve public screens, including event bootstrap, fixture results, public standings, and public profiles.
 - Session restore checks may run automatically when they only read existing cookies and do not create, consume, or mutate sessions.
 - Registration, email verification, protected builder data, admin tools, team-pool edits, and any write or import action must require explicit participant or admin intent.
@@ -94,6 +101,28 @@ defensively handle partial or malformed API payloads (optional chaining on neste
 - The operations screen may compose existing admin data sources such as account counts, team-pool counts, pending match-import batches, email campaign queue counts, and audit log rows.
 - Short-lived runtime events may be kept in process memory for low-friction visibility into scheduler runs and external Soccerverse API warnings/errors.
 - Runtime events are operational signals, not a durable audit log. Durable admin writes still belong in `audit_logs`.
+
+## Runtime Resilience
+
+- The Postgres connection pool must cap its worst case explicitly, not rely on driver defaults:
+  - a bounded `max` connection count,
+  - a `connectionTimeoutMillis` so a request fails fast when the pool is saturated instead of hanging,
+  - an `idleTimeoutMillis` to release idle connections,
+  - a server-side `statement_timeout` so a single runaway query cannot pin a connection forever.
+- These limits are environment-overridable (`DB_POOL_MAX`, `DB_CONNECTION_TIMEOUT_MS`,
+  `DB_IDLE_TIMEOUT_MS`, `DB_STATEMENT_TIMEOUT_MS`) with safe defaults; deploys tune them to the
+  database plan without a code change.
+- On `SIGTERM`/`SIGINT` the process shuts down gracefully: stop accepting new connections, let
+  in-flight requests drain, then close the database pool before exiting. A bounded timeout forces
+  exit if draining stalls, so a deploy cannot hang.
+- Static assets served by Node carry explicit `Cache-Control`: fingerprinted build assets (under
+  `/assets/`) are `immutable` with a long max-age so browsers/CDN never re-fetch them; `index.html`
+  (the SPA shell) is `no-cache` so a new deploy is picked up immediately; other static files get a
+  short max-age. This keeps repeat asset loads off the Node process so they don't compete with API
+  traffic.
+- `unhandledRejection` and `uncaughtException` are logged as a last-resort net for visibility. The
+  single-process service is kept running rather than crashed, so a stray error in a background path
+  does not take the whole site down (route errors are already handled by the Express error handler).
 
 ## Testing
 

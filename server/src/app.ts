@@ -82,6 +82,14 @@ export function createApp() {
     standardHeaders: true,
     legacyHeaders: false,
   })
+  // Tighter cap for the uncached, costliest public endpoints (player search hits the paced
+  // Soccerverse gate; match-results runs 2 + N queries). See SOP_system_overview.md "Security Rules".
+  const expensivePublicLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
 
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
     console.error('Failed to bootstrap initial team pools', error)
@@ -123,6 +131,14 @@ export function createApp() {
     app.use(
       express.static(publicDir, {
         index: false,
+        setHeaders: (res, filePath) => {
+          if (/[/\\]assets[/\\]/.test(filePath)) {
+            // Vite fingerprints these — the content can never change under the same name.
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+          } else {
+            res.setHeader('Cache-Control', 'public, max-age=3600')
+          }
+        },
       }),
     )
     app.use((req, res, next) => {
@@ -132,10 +148,16 @@ export function createApp() {
       if (extname(req.path)) {
         return res.status(404).end()
       }
+      // The SPA shell must never be cached, or a deploy won't be picked up until the asset expires.
+      res.setHeader('Cache-Control', 'no-cache')
       res.sendFile(resolve(publicDir, 'index.html'))
     })
   }
 
+  // Per-endpoint caps run before the general public limiter so the expensive routes get the tighter
+  // budget on top of the shared one.
+  app.use('/api/public/player-search', expensivePublicLimiter)
+  app.use('/api/public/match-results', expensivePublicLimiter)
   app.use(
     '/api/public',
     publicApiLimiter,

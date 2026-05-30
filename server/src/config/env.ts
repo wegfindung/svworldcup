@@ -38,6 +38,12 @@ const envSchema = z.object({
   DB_NAME: optionalString,
   DB_USER: optionalString,
   DB_PASS: optionalString,
+  // Connection-pool hardening (see SOP_system_overview.md "Runtime Resilience"). Optional —
+  // safe defaults apply when unset; deploys tune to the database plan without a code change.
+  DB_POOL_MAX: z.coerce.number().int().positive().default(10),
+  DB_CONNECTION_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  DB_IDLE_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   SMTP_HOST: optionalString,
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_SECURE: booleanFromString,
@@ -67,7 +73,7 @@ const envSchema = z.object({
   CLOSED_BETA_AUTH_ENABLED: optionalBooleanFromString,
   CLOSED_BETA_AUTH_USERNAME: z.string().default('soccerverse'),
   CLOSED_BETA_AUTH_PASSWORD: z.string().default('soccerverse'),
-  RATE_LIMIT_TRUST_PROXY: booleanFromString,
+  RATE_LIMIT_TRUST_PROXY: optionalBooleanFromString,
 })
 
 const parsed = envSchema.parse(process.env)
@@ -97,5 +103,5 @@ export const env = {
   SWAP_W3_OPENS_AT: parseInstant(parsed.SWAP_W3_OPENS_AT),
   SWAP_W3_CLOSES_AT: parseInstant(parsed.SWAP_W3_CLOSES_AT),
   CLOSED_BETA_AUTH_ENABLED: parsed.CLOSED_BETA_AUTH_ENABLED ?? parsed.NODE_ENV === 'production',
-  RATE_LIMIT_TRUST_PROXY: parsed.RATE_LIMIT_TRUST_PROXY ?? false,
+  RATE_LIMIT_TRUST_PROXY: parsed.RATE_LIMIT_TRUST_PROXY ?? parsed.NODE_ENV === 'production',
 }

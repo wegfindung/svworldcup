@@ -574,6 +574,10 @@ const englishMessages = {
     body: 'An unexpected error interrupted this page. You can try again.',
     retry: 'Try again',
   },
+  bootstrapError: {
+    message:
+      'Live tournament data could not be loaded — showing default information, so some details may be out of date.',
+  },
 }
 
 export type AppMessages = typeof englishMessages

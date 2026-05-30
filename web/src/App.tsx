@@ -62,7 +62,7 @@ function App() {
 
   const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
   const copy = getMessages(locale)
-  const { data: bootstrap } = useBootstrap()
+  const { data: bootstrap, error: bootstrapError } = useBootstrap()
   const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
   const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
 
@@ -242,6 +242,14 @@ function App() {
         </header>
 
         <main className="flex-1 reveal-in">
+          {bootstrapError ? (
+            <div
+              role="status"
+              className="mb-4 rounded-[1rem] border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"
+            >
+              {copy.bootstrapError.message}
+            </div>
+          ) : null}
           <ErrorBoundary key={location.pathname} copy={copy.errorBoundary}>
             <Suspense fallback={<RouteFallback />}>
               <Routes>

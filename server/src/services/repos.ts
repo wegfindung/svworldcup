@@ -88,6 +88,11 @@ function getPool(): Pool | null {
   if (!pool) {
     pool = new Pool({
       connectionString,
+      max: env.DB_POOL_MAX,
+      connectionTimeoutMillis: env.DB_CONNECTION_TIMEOUT_MS,
+      idleTimeoutMillis: env.DB_IDLE_TIMEOUT_MS,
+      // Server-side cap so a single runaway query can't pin a connection forever.
+      statement_timeout: env.DB_STATEMENT_TIMEOUT_MS,
     })
   }
 
