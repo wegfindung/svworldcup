@@ -1,5 +1,6 @@
 import { Pool } from 'pg'
 import type { ParticipantInfluenceSnapshotRecord } from '../domain/types.js'
+import type { LeaderboardCache } from './leaderboardCache.js'
 
 export interface ParticipantInfluenceSnapshotInput {
   participantId: string
@@ -34,6 +35,8 @@ export class MemoryParticipantInfluenceSnapshotRepository implements Participant
   private readonly snapshots = new Map<string, ParticipantInfluenceSnapshotRecord>()
   private readonly workQueueByFixture = new Map<string, SnapshotWorkItem[]>()
 
+  constructor(private readonly leaderboardCache?: LeaderboardCache) {}
+
   setWorkForFixture(fixtureId: string, work: SnapshotWorkItem[]) {
     this.workQueueByFixture.set(fixtureId, work)
   }
@@ -48,6 +51,9 @@ export class MemoryParticipantInfluenceSnapshotRepository implements Participant
       snapshotAt: new Date().toISOString(),
     }
     this.snapshots.set(snapshotKey(input.participantId, input.fixtureId, input.playerId), record)
+    // Closes the ordering trap: the veteran bonus lands here (fire-and-forget, after promotion), so
+    // invalidating on each snapshot write makes the veteran board recompute with the bonus included.
+    this.leaderboardCache?.invalidate()
     return record
   }
 
@@ -67,7 +73,10 @@ export class MemoryParticipantInfluenceSnapshotRepository implements Participant
 export class PostgresParticipantInfluenceSnapshotRepository implements ParticipantInfluenceSnapshotRepository {
   storageKind: 'postgres' = 'postgres'
 
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly leaderboardCache?: LeaderboardCache,
+  ) {}
 
   async upsert(input: ParticipantInfluenceSnapshotInput): Promise<ParticipantInfluenceSnapshotRecord> {
     const result = await this.pool.query<{
@@ -91,6 +100,9 @@ export class PostgresParticipantInfluenceSnapshotRepository implements Participa
       [input.participantId, input.fixtureId, input.playerId, input.netShares, input.bonusPercent],
     )
     const row = result.rows[0]
+    // Closes the ordering trap: the veteran bonus lands here (fire-and-forget, after promotion), so
+    // invalidating on each snapshot write makes the veteran board recompute with the bonus included.
+    this.leaderboardCache?.invalidate()
     return {
       participantId: row.participant_id,
       fixtureId: row.fixture_id,

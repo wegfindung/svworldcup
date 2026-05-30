@@ -4,6 +4,7 @@ import { getCapCostForRating } from '../data/salaryTable.js'
 import type { SoccerversePlayerRecord, TeamPoolPlayer } from '../domain/types.js'
 import { normalizeDisplayName } from '../lib/displayName.js'
 import { compareTeamPoolPlayersForBuilder } from '../lib/teamPoolSort.js'
+import type { LeaderboardCache } from './leaderboardCache.js'
 
 function defaultPlayerImageUrl(playerId: number) {
   return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
@@ -37,6 +38,8 @@ export class MemoryTeamPoolRepository implements TeamPoolRepository {
   storageKind: 'memory' = 'memory'
   private readonly byTeam = new Map<string, TeamPoolPlayer[]>()
 
+  constructor(private readonly leaderboardCache?: LeaderboardCache) {}
+
   async listByTeam(teamCode: string) {
     return [...(this.byTeam.get(teamCode) ?? [])].sort(compareTeamPoolPlayersForBuilder)
   }
@@ -58,6 +61,8 @@ export class MemoryTeamPoolRepository implements TeamPoolRepository {
   async replaceTeamPlayers(teamCode: string, players: SoccerversePlayerRecord[]) {
     const normalized = players.map((player) => toTeamPoolPlayer(teamCode, player))
     this.byTeam.set(teamCode, normalized)
+    // team-pool rewrite changes team codes / names shown on the board (cosmetic, not score).
+    this.leaderboardCache?.invalidate()
     return this.listByTeam(teamCode)
   }
 
@@ -72,7 +77,10 @@ export class MemoryTeamPoolRepository implements TeamPoolRepository {
 export class PostgresTeamPoolRepository implements TeamPoolRepository {
   storageKind: 'postgres' = 'postgres'
 
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly leaderboardCache?: LeaderboardCache,
+  ) {}
 
   async listByTeam(teamCode: string) {
     const result = await this.pool.query<{
@@ -205,6 +213,8 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
       }
 
       await client.query('COMMIT')
+      // team-pool rewrite changes team codes / names shown on the board (cosmetic, not score).
+      this.leaderboardCache?.invalidate()
       return this.listByTeam(teamCode)
     } catch (error) {
       await client.query('ROLLBACK')

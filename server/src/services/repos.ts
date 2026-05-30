@@ -113,7 +113,9 @@ function getLeaderboardCache(): LeaderboardCache {
 export function createRegistrationRepository(): RegistrationRepository {
   if (!registrationRepository) {
     const existingPool = getPool()
-    registrationRepository = existingPool ? new PostgresRegistrationRepository(existingPool) : new MemoryRegistrationRepository()
+    registrationRepository = existingPool
+      ? new PostgresRegistrationRepository(existingPool, getLeaderboardCache())
+      : new MemoryRegistrationRepository(getLeaderboardCache())
   }
   return registrationRepository
 }
@@ -121,7 +123,9 @@ export function createRegistrationRepository(): RegistrationRepository {
 export function createConfigRepository(): ConfigRepository {
   if (!configRepository) {
     const existingPool = getPool()
-    configRepository = existingPool ? new PostgresConfigRepository(existingPool) : new MemoryConfigRepository()
+    configRepository = existingPool
+      ? new PostgresConfigRepository(existingPool, getLeaderboardCache())
+      : new MemoryConfigRepository(getLeaderboardCache())
   }
   return configRepository
 }
@@ -147,7 +151,9 @@ export function createParticipantSessionRepository(): ParticipantSessionReposito
 export function createTeamPoolRepository(): TeamPoolRepository {
   if (!teamPoolRepository) {
     const existingPool = getPool()
-    teamPoolRepository = existingPool ? new PostgresTeamPoolRepository(existingPool) : new MemoryTeamPoolRepository()
+    teamPoolRepository = existingPool
+      ? new PostgresTeamPoolRepository(existingPool, getLeaderboardCache())
+      : new MemoryTeamPoolRepository(getLeaderboardCache())
   }
   return teamPoolRepository
 }
@@ -156,8 +162,8 @@ export function createSquadRepository(): SquadRepository {
   if (!squadRepository) {
     const existingPool = getPool()
     squadRepository = existingPool
-      ? new PostgresSquadRepository(existingPool, createTeamPoolRepository())
-      : new MemorySquadRepository(createTeamPoolRepository())
+      ? new PostgresSquadRepository(existingPool, createTeamPoolRepository(), getLeaderboardCache())
+      : new MemorySquadRepository(createTeamPoolRepository(), undefined, getLeaderboardCache())
   }
   return squadRepository
 }
@@ -238,8 +244,8 @@ export function createParticipantInfluenceSnapshotRepository(): ParticipantInflu
   if (!participantInfluenceSnapshotRepository) {
     const existingPool = getPool()
     participantInfluenceSnapshotRepository = existingPool
-      ? new PostgresParticipantInfluenceSnapshotRepository(existingPool)
-      : new MemoryParticipantInfluenceSnapshotRepository()
+      ? new PostgresParticipantInfluenceSnapshotRepository(existingPool, getLeaderboardCache())
+      : new MemoryParticipantInfluenceSnapshotRepository(getLeaderboardCache())
   }
   return participantInfluenceSnapshotRepository
 }
