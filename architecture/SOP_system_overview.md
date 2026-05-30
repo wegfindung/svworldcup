@@ -117,9 +117,12 @@ coupled by design — partial render does not apply there.
 - Background-job failures (snapshot capture, email scheduler, promotion) are both logged structurally
   AND recorded to `operationsMonitor` so the admin operations screen surfaces them live. The
   structured log is the durable trail; `operationsMonitor` is the at-a-glance view (lost on restart).
-- Per-statement slow-query logging is intentionally not implemented: `statement_timeout` caps runaway
-  queries and request-timing surfaces slow paths end-to-end, so wrapping the shared pool/clients
-  across every call site is not worth the risk. Revisit if a query-level breakdown is ever needed.
+- Per-statement slow-query logging instruments the shared pool centrally — the pool's `connect`
+  event patches each physical connection's `query` once, so both `pool.query` and transaction
+  `client.query` calls are timed transparently (the patch delegates to the original and only observes
+  the returned promise; no call site changes). A query whose duration meets `DB_SLOW_QUERY_MS`
+  (default 500 ms) is logged at `warn` with the truncated SQL text and duration. This complements,
+  not replaces, `statement_timeout` (hard cap on runaway queries) and end-to-end request-timing.
 - The veteran influence-snapshot capture is fire-and-forget and paced by the Soccerverse gate (so it
   is I/O-bound and yields the event loop while waiting). To keep it from piling up it (a) refuses a
   duplicate run for a fixture already in progress and (b) yields periodically through its work list.

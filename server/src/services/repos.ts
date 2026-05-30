@@ -48,6 +48,7 @@ import {
   type ParticipantRiskRepository,
 } from '../repositories/participantRiskRepository.js'
 import { LeaderboardCache } from '../repositories/leaderboardCache.js'
+import { instrumentSlowQueries } from '../lib/dbInstrumentation.js'
 
 let pool: Pool | null = null
 let leaderboardCache: LeaderboardCache | null = null
@@ -94,6 +95,8 @@ function getPool(): Pool | null {
       // Server-side cap so a single runaway query can't pin a connection forever.
       statement_timeout: env.DB_STATEMENT_TIMEOUT_MS,
     })
+    // Per-statement slow-query logging — patches each connection's query once via the connect event.
+    instrumentSlowQueries(pool)
   }
 
   return pool

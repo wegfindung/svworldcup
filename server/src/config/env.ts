@@ -47,6 +47,9 @@ const envSchema = z.object({
   DB_CONNECTION_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   DB_IDLE_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+  // Slow-query logging threshold (see SOP_system_overview.md "Operations Observability"). A query at
+  // or above this duration is logged at warn with its truncated SQL. Tunable per deploy.
+  DB_SLOW_QUERY_MS: z.coerce.number().int().positive().default(500),
   SMTP_HOST: optionalString,
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_SECURE: booleanFromString,
