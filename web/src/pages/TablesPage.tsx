@@ -30,17 +30,25 @@ interface TablesError {
 }
 
 async function loadTablesPayload(): Promise<TablesPayload> {
-  const [rookieResponse, veteranResponse, nationResponse, matchResponse] = await Promise.all([
+  const [rookieResult, veteranResult, nationResult, matchResult] = await Promise.allSettled([
     fetchRookieLeaderboard(),
     fetchVeteranLeaderboard(),
     fetchNationLeaderboard(),
     fetchMatchResults(),
   ])
+
+  const results = [rookieResult, veteranResult, nationResult, matchResult]
+  const allFailed = results.every((result) => result.status === 'rejected')
+  if (allFailed) {
+    const firstFailure = results.find((result) => result.status === 'rejected')
+    throw firstFailure?.reason ?? new Error('Could not load public tables')
+  }
+
   return {
-    rookies: rookieResponse.items,
-    veterans: veteranResponse.items,
-    nations: nationResponse.items,
-    fixtureLookup: new Map(matchResponse.items.map((result) => [result.fixtureId, result])),
+    rookies: rookieResult.status === 'fulfilled' ? rookieResult.value.items : [],
+    veterans: veteranResult.status === 'fulfilled' ? veteranResult.value.items : [],
+    nations: nationResult.status === 'fulfilled' ? nationResult.value.items : [],
+    fixtureLookup: matchResult.status === 'fulfilled' ? new Map(matchResult.value.items.map((result) => [result.fixtureId, result])) : new Map(),
   }
 }
 
@@ -369,19 +377,15 @@ interface TablesPageProps {
 
 export function TablesPage({ locale }: TablesPageProps) {
   const copy = getMessages(locale).tables
-  const [tablesPromise, setTablesPromise] = useState<Promise<TablesPayload> | null>(() => loadTablesPayload())
+  const [reloadKey, setReloadKey] = useState(0)
   const [tables, setTables] = useState<TablesPayload | null>(null)
   const [error, setError] = useState<TablesError | null>(null)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
 
   useEffect(() => {
-    const promise = tablesPromise
-    if (!promise) {
-      return
-    }
-
     let active = true
-    promise
+
+    void loadTablesPayload()
       .then((payload) => {
         if (active) {
           setTables(payload)
@@ -404,12 +408,12 @@ export function TablesPage({ locale }: TablesPageProps) {
     return () => {
       active = false
     }
-  }, [copy.loadError, tablesPromise])
+  }, [copy.loadError, copy.loadErrorTitle, copy.unavailableBody, copy.unavailableTitle, reloadKey])
 
   function refreshTables() {
     setTables(null)
     setError(null)
-    setTablesPromise(loadTablesPayload())
+    setReloadKey((current) => current + 1)
   }
 
   return (
