@@ -939,8 +939,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
     loadErrorTitle: 'No se pudieron cargar los resultados',
     loadErrorBody: 'El backend devolvió una respuesta inesperada.',
     unavailableTitle: 'Los resultados se están preparando',
-    unavailableBody:
-      'Los datos de partidos aún no se han publicado aquí. Esta página se rellenará automáticamente cuando el servicio de datos esté disponible.',
+    unavailableBody: 'Los datos de partidos aún no se han publicado aquí. Esta página se completará automáticamente cuando el servicio de datos del evento esté disponible.',
     finalSuffix: 'final',
   },
   tables: {
@@ -956,9 +955,8 @@ const spanishMessages: DeepPartial<AppMessages> = {
     tieBreakBody: 'Si hay igualdad de puntos, el registro anterior obtiene mejor ranking.',
     loadError: 'No se pudieron cargar las tablas públicas.',
     loadErrorTitle: 'No se pudo cargar la clasificación',
-    unavailableTitle: 'La clasificación se está preparando',
-    unavailableBody:
-      'Las tablas públicas aún no están publicadas. Aparecerán automáticamente cuando haya entradas verificadas y datos de scoring.',
+    unavailableTitle: 'Las clasificaciones se están preparando',
+    unavailableBody: 'Las tablas públicas aún no se han publicado. Aparecerán automáticamente cuando haya entradas verificadas y datos de puntuación.',
     tableEyebrow: 'tabla de liga',
     entriesSuffix: 'entradas',
     base: 'base',
@@ -1402,9 +1400,8 @@ const italianMessages: DeepPartial<AppMessages> = {
     rating: 'Rating',
     loadErrorTitle: 'Impossibile caricare i risultati',
     loadErrorBody: 'Il backend ha restituito una risposta inattesa.',
-    unavailableTitle: 'I risultati sono in preparazione',
-    unavailableBody:
-      'I dati delle partite non sono ancora stati pubblicati qui. La pagina si compilerà automaticamente quando il servizio dati sarà disponibile.',
+    unavailableTitle: 'Risultati in preparazione',
+    unavailableBody: "I dati delle partite non sono ancora stati pubblicati qui. La pagina si compilerà automaticamente quando il servizio dati dell'evento sarà disponibile.",
     finalSuffix: 'finale',
   },
   tables: {
@@ -1420,9 +1417,8 @@ const italianMessages: DeepPartial<AppMessages> = {
     tieBreakBody: 'A parità di punti, la registrazione precedente ottiene il ranking più alto.',
     loadError: 'Impossibile caricare le classifiche pubbliche.',
     loadErrorTitle: 'Impossibile caricare le classifiche',
-    unavailableTitle: 'Le classifiche sono in preparazione',
-    unavailableBody:
-      'Le leaderboard pubbliche non sono ancora pubblicate. Compariranno automaticamente quando ci saranno entry verificate e dati di scoring.',
+    unavailableTitle: 'Classifiche in preparazione',
+    unavailableBody: 'Le classifiche pubbliche non sono ancora pubblicate. Appariranno automaticamente quando saranno disponibili iscrizioni verificate e dati di punteggio.',
     tableEyebrow: 'classifica lega',
     entriesSuffix: 'entry',
     base: 'base',
@@ -1866,8 +1862,7 @@ const germanMessages: DeepPartial<AppMessages> = {
     loadErrorTitle: 'Ergebnisse konnten nicht geladen werden',
     loadErrorBody: 'Das Backend hat eine unerwartete Antwort geliefert.',
     unavailableTitle: 'Ergebnisse werden vorbereitet',
-    unavailableBody:
-      'Matchdaten wurden hier noch nicht veröffentlicht. Diese Seite füllt sich automatisch, sobald der Event-Datendienst verfügbar ist.',
+    unavailableBody: 'Die Matchdaten wurden hier noch nicht veröffentlicht. Diese Seite füllt sich automatisch, sobald der Event-Datendienst verfügbar ist.',
     finalSuffix: 'final',
   },
   tables: {
@@ -1883,9 +1878,8 @@ const germanMessages: DeepPartial<AppMessages> = {
     tieBreakBody: 'Bei Punktgleichheit erhält die frühere Registrierung den höheren Rang.',
     loadError: 'Öffentliche Tabellen konnten nicht geladen werden.',
     loadErrorTitle: 'Standings konnten nicht geladen werden',
-    unavailableTitle: 'Standings werden vorbereitet',
-    unavailableBody:
-      'Die öffentlichen Leaderboards sind noch nicht veröffentlicht. Sie erscheinen automatisch, sobald verifizierte Entries und Scoring-Daten verfügbar sind.',
+    unavailableTitle: 'Tabellen werden vorbereitet',
+    unavailableBody: 'Die öffentlichen Ranglisten sind noch nicht veröffentlicht. Sie erscheinen automatisch, sobald verifizierte Einträge und Scoring-Daten verfügbar sind.',
     tableEyebrow: 'league-table',
     entriesSuffix: 'Einträge',
     base: 'basis',
@@ -2326,9 +2320,8 @@ const frenchMessages: DeepPartial<AppMessages> = {
     rating: 'Note',
     loadErrorTitle: 'Impossible de charger les résultats',
     loadErrorBody: 'Le backend a renvoyé une réponse inattendue.',
-    unavailableTitle: 'Les résultats sont en préparation',
-    unavailableBody:
-      'Les données de match ne sont pas encore publiées ici. Cette page se remplira automatiquement dès que le service de données sera disponible.',
+    unavailableTitle: 'Résultats en préparation',
+    unavailableBody: 'Les données de matchs ne sont pas encore publiées ici. Cette page se remplira automatiquement dès que le service de données de l’événement sera disponible.',
     finalSuffix: 'final',
   },
   tables: {
@@ -2344,9 +2337,8 @@ const frenchMessages: DeepPartial<AppMessages> = {
     tieBreakBody: 'En cas d’égalité, l’inscription la plus ancienne prend le rang supérieur.',
     loadError: 'Impossible de charger les classements publics.',
     loadErrorTitle: 'Impossible de charger les classements',
-    unavailableTitle: 'Les classements sont en préparation',
-    unavailableBody:
-      'Les classements publics ne sont pas encore publiés. Ils apparaîtront automatiquement quand les entrées vérifiées et les données de scoring seront disponibles.',
+    unavailableTitle: 'Classements en préparation',
+    unavailableBody: 'Les classements publics ne sont pas encore publiés. Ils apparaîtront automatiquement dès que des entrées vérifiées et des données de scoring seront disponibles.',
     tableEyebrow: 'table de ligue',
     entriesSuffix: 'entrées',
     base: 'base',
@@ -2787,9 +2779,8 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     rating: 'Rating',
     loadErrorTitle: 'Não foi possível carregar resultados',
     loadErrorBody: 'O backend devolveu uma resposta inesperada.',
-    unavailableTitle: 'Os resultados estão a ser preparados',
-    unavailableBody:
-      'Os dados dos jogos ainda não foram publicados aqui. Esta página será preenchida automaticamente quando o serviço de dados estiver disponível.',
+    unavailableTitle: 'Resultados em preparação',
+    unavailableBody: 'Os dados dos jogos ainda não foram publicados aqui. Esta página será preenchida automaticamente quando o serviço de dados do evento estiver disponível.',
     finalSuffix: 'final',
   },
   tables: {
@@ -2805,9 +2796,8 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     tieBreakBody: 'Se os pontos forem iguais, o registo mais antigo fica acima.',
     loadError: 'Não foi possível carregar as tabelas públicas.',
     loadErrorTitle: 'Não foi possível carregar classificações',
-    unavailableTitle: 'As classificações estão a ser preparadas',
-    unavailableBody:
-      'As leaderboards públicas ainda não foram publicadas. Aparecerão automaticamente quando existirem entradas verificadas e dados de scoring.',
+    unavailableTitle: 'Classificações em preparação',
+    unavailableBody: 'As tabelas públicas ainda não foram publicadas. Aparecerão automaticamente quando existirem entradas verificadas e dados de pontuação.',
     tableEyebrow: 'tabela da liga',
     entriesSuffix: 'entradas',
     base: 'base',
@@ -3250,8 +3240,7 @@ const russianMessages: DeepPartial<AppMessages> = {
     loadErrorTitle: 'Не удалось загрузить результаты',
     loadErrorBody: 'Backend вернул неожиданный ответ.',
     unavailableTitle: 'Результаты готовятся',
-    unavailableBody:
-      'Данные матчей здесь еще не опубликованы. Страница заполнится автоматически, когда сервис данных события станет доступен.',
+    unavailableBody: 'Данные матчей здесь еще не опубликованы. Страница заполнится автоматически, когда сервис данных события станет доступен.',
     finalSuffix: 'завершен',
   },
   tables: {
@@ -3268,8 +3257,7 @@ const russianMessages: DeepPartial<AppMessages> = {
     loadError: 'Не удалось загрузить публичные таблицы.',
     loadErrorTitle: 'Не удалось загрузить таблицы',
     unavailableTitle: 'Таблицы готовятся',
-    unavailableBody:
-      'Публичные рейтинги еще не опубликованы. Они появятся автоматически, когда будут доступны подтвержденные заявки и данные скоринга.',
+    unavailableBody: 'Публичные таблицы еще не опубликованы. Они появятся автоматически, когда будут доступны подтвержденные заявки и данные подсчета очков.',
     tableEyebrow: 'таблица лиги',
     entriesSuffix: 'заявок',
     base: 'база',
@@ -3714,8 +3702,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
     loadErrorTitle: '无法加载赛果',
     loadErrorBody: '后端返回了意外响应。',
     unavailableTitle: '赛果正在准备中',
-    unavailableBody:
-      '比赛数据尚未在此发布。活动数据服务可用后，此页面会自动填充。',
+    unavailableBody: '比赛数据尚未在此发布。赛事数据服务可用后，本页面会自动更新。',
     finalSuffix: '结束',
   },
   tables: {
@@ -3731,9 +3718,8 @@ const chineseMessages: DeepPartial<AppMessages> = {
     tieBreakBody: '如果分数相同，注册更早者排名更高。',
     loadError: '无法加载公开榜单。',
     loadErrorTitle: '无法加载排名',
-    unavailableTitle: '排名正在准备中',
-    unavailableBody:
-      '公开排行榜尚未发布。验证参赛和计分数据可用后会自动显示。',
+    unavailableTitle: '榜单正在准备中',
+    unavailableBody: '公开榜单尚未发布。已验证报名和计分数据可用后会自动显示。',
     tableEyebrow: '联赛榜',
     entriesSuffix: '参赛',
     base: '基础',
@@ -4071,8 +4057,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     loadErrorTitle: '結果を読み込めませんでした',
     loadErrorBody: 'バックエンドが予期しない応答を返しました。',
     unavailableTitle: '結果を準備中です',
-    unavailableBody:
-      '試合データはまだ公開されていません。イベントデータサービスが利用可能になると、このページは自動で更新されます。',
+    unavailableBody: '試合データはまだ公開されていません。イベントデータサービスが利用可能になると、このページは自動で更新されます。',
     finalSuffix: '確定',
   },
   tables: {
@@ -4090,8 +4075,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     loadError: '公開順位表を読み込めませんでした。',
     loadErrorTitle: '順位表を読み込めませんでした',
     unavailableTitle: '順位表を準備中です',
-    unavailableBody:
-      '公開ランキングはまだ公開されていません。確認済みエントリーとスコアデータが利用可能になると自動で表示されます。',
+    unavailableBody: '公開順位表はまだ公開されていません。認証済みエントリーとスコアデータが利用可能になると自動で表示されます。',
     tableEyebrow: 'リーグ順位',
     entriesSuffix: 'エントリー',
     base: '基礎',
