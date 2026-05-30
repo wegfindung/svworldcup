@@ -47,8 +47,10 @@ import {
   PostgresParticipantRiskRepository,
   type ParticipantRiskRepository,
 } from '../repositories/participantRiskRepository.js'
+import { LeaderboardCache } from '../repositories/leaderboardCache.js'
 
 let pool: Pool | null = null
+let leaderboardCache: LeaderboardCache | null = null
 let registrationRepository: RegistrationRepository | null = null
 let configRepository: ConfigRepository | null = null
 let adminRepository: AdminRepository | null = null
@@ -97,6 +99,15 @@ export async function closeRepositoryPool() {
     await pool.end()
     pool = null
   }
+}
+
+// One shared in-memory leaderboard cache injected into the scoring repo (read-through) and every
+// board-input write repo (invalidate-on-write). See repositories/leaderboardCache.ts.
+function getLeaderboardCache(): LeaderboardCache {
+  if (!leaderboardCache) {
+    leaderboardCache = new LeaderboardCache()
+  }
+  return leaderboardCache
 }
 
 export function createRegistrationRepository(): RegistrationRepository {
@@ -173,12 +184,13 @@ export function createScoringRepository(): ScoringRepository {
   if (!scoringRepository) {
     const existingPool = getPool()
     scoringRepository = existingPool
-      ? new PostgresScoringRepository(existingPool, createConfigRepository())
+      ? new PostgresScoringRepository(existingPool, createConfigRepository(), getLeaderboardCache())
       : new MemoryScoringRepository(
           createConfigRepository(),
           createRegistrationRepository(),
           createSquadRepository(),
           createParticipantInfluenceSnapshotRepository(),
+          getLeaderboardCache(),
         )
   }
   return scoringRepository

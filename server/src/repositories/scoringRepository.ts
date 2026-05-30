@@ -25,6 +25,7 @@ import type { ConfigRepository } from './configRepository.js'
 import type { RegistrationRepository } from './registrationRepository.js'
 import type { SquadRepository } from './squadRepository.js'
 import type { ParticipantInfluenceSnapshotRepository } from './participantInfluenceSnapshotRepository.js'
+import type { CacheableRow, LeaderboardCache } from './leaderboardCache.js'
 
 interface ScoreParticipant {
   participantId: string
@@ -457,7 +458,18 @@ export class MemoryScoringRepository implements ScoringRepository {
     private readonly registrationRepository: RegistrationRepository,
     private readonly squadRepository: SquadRepository,
     private readonly snapshotRepository: ParticipantInfluenceSnapshotRepository,
+    private readonly leaderboardCache?: LeaderboardCache,
   ) {}
+
+  // Read-through the cache when one is injected; otherwise compute directly (keeps every existing
+  // test that constructs this repo without a cache byte-identical). See leaderboardCache.ts.
+  private getCachedRows(compute: () => Promise<CacheableRow[]>): Promise<CacheableRow[]> {
+    return this.leaderboardCache ? this.leaderboardCache.getRows(compute) : compute()
+  }
+
+  private async calculateAllRows() {
+    return this.calculateRows(await this.listMemoryParticipants())
+  }
 
   async upsertMatchEntry(input: MatchEntryInput) {
     const entryKey = `${input.fixtureId}:${input.playerId}`
@@ -476,6 +488,7 @@ export class MemoryScoringRepository implements ScoringRepository {
       sourceNote: input.sourceNote ?? 'manual admin entry',
     }
     this.entries.set(entryKey, entry)
+    this.leaderboardCache?.invalidate()
     return entry
   }
 
@@ -484,14 +497,17 @@ export class MemoryScoringRepository implements ScoringRepository {
     return fixtureId ? entries.filter((entry) => entry.fixtureId === fixtureId) : entries
   }
 
+  // Compute-once-per-payload: both boards read the same cached full row set, then filter/rank in
+  // memory (each row is independent of the others, so filtering after compute is equivalent to the
+  // old compute-per-league path).
   async getLeagueLeaderboard(leagueType: LeagueType) {
-    const participants = await this.listMemoryParticipants()
-    const rows = await this.calculateRows(participants.filter((participant) => participant.leagueType === leagueType))
-    return rankParticipants(rows)
+    const rows = await this.getCachedRows(() => this.calculateAllRows())
+    return rankParticipants(rows.filter((row) => row.leagueType === leagueType))
   }
 
   async getNationLeaderboard() {
-    return buildNationLeaderboard(rankParticipants(await this.calculateRows(await this.listMemoryParticipants())))
+    const rows = await this.getCachedRows(() => this.calculateAllRows())
+    return buildNationLeaderboard(rankParticipants(rows))
   }
 
   private async listMemoryParticipants(): Promise<ScoreParticipant[]> {
@@ -579,7 +595,13 @@ export class PostgresScoringRepository implements ScoringRepository {
   constructor(
     private readonly pool: Pool,
     private readonly configRepository: ConfigRepository,
+    private readonly leaderboardCache?: LeaderboardCache,
   ) {}
+
+  // Read-through the cache when one is injected; otherwise compute directly. See leaderboardCache.ts.
+  private getCachedRows(compute: () => Promise<CacheableRow[]>): Promise<CacheableRow[]> {
+    return this.leaderboardCache ? this.leaderboardCache.getRows(compute) : compute()
+  }
 
   private async listBonusByEntry(): Promise<Map<string, number>> {
     const result = await this.pool.query<{
@@ -640,6 +662,7 @@ export class PostgresScoringRepository implements ScoringRepository {
       ],
     )
 
+    this.leaderboardCache?.invalidate()
     return mapEntryRow(result.rows[0])
   }
 
@@ -669,12 +692,12 @@ export class PostgresScoringRepository implements ScoringRepository {
   }
 
   async getLeagueLeaderboard(leagueType: LeagueType) {
-    const rows = await this.calculateRows()
+    const rows = await this.getCachedRows(() => this.calculateRows())
     return rankParticipants(rows.filter((row) => row.leagueType === leagueType))
   }
 
   async getNationLeaderboard() {
-    return buildNationLeaderboard(rankParticipants(await this.calculateRows()))
+    return buildNationLeaderboard(rankParticipants(await this.getCachedRows(() => this.calculateRows())))
   }
 
   private async calculateRows() {
