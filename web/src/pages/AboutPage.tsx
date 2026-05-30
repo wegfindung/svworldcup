@@ -51,12 +51,12 @@ const officialLinks: LinkItem[] = [
 ]
 
 const communityLinks: LinkItem[] = [
-  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/svbase.png', fit: 'contain' } },
-  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone', preview: { src: '/elrincon.png', fit: 'cover' } },
-  { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck', preview: { src: '/svworld.jpg', fit: 'cover' } },
-  { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx', preview: { src: '/svfootball.png', fit: 'cover' } },
-  { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky', preview: { src: '/office.png', fit: 'cover' } },
-  { id: 'nickx', label: 'Nickx on Twitch', href: 'https://www.twitch.tv/nickxcrypto', by: 'Nickx', preview: { src: '/nickx.png', fit: 'cover' } },
+  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/link-previews/svbase.jpg', fit: 'contain' } },
+  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone', preview: { src: '/link-previews/elrincon.jpg', fit: 'cover' } },
+  { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck', preview: { src: '/link-previews/svworld.jpg', fit: 'cover' } },
+  { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx', preview: { src: '/link-previews/svfootball.jpg', fit: 'cover' } },
+  { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky', preview: { src: '/link-previews/office.jpg', fit: 'cover' } },
+  { id: 'nickx', label: 'Nickx on Twitch', href: 'https://www.twitch.tv/nickxcrypto', by: 'Nickx', preview: { src: '/link-previews/nickx.jpg', fit: 'cover' } },
 ]
 
 const englishCopy: AboutCopy = {
