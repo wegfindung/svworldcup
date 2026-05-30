@@ -220,6 +220,7 @@ const englishMessages = {
         'Beginner-friendly entry. Link a Soccerverse account later to earn the ownership boost while keeping your Rookie standing.',
       veteranBody:
         'Provide your main Soccerverse account and enter the veteran league. Ownership boost earned from post-registration buys.',
+      steps: ['League', 'Profile', 'Countries', 'Email'],
       nickname: 'Nickname',
       displayNamePlaceholder: 'Display name',
       emailAddress: 'Email address',
@@ -446,6 +447,9 @@ const englishMessages = {
     rating: 'Rating',
     loadErrorTitle: 'Could not load results',
     loadErrorBody: 'The backend returned an unexpected response.',
+    unavailableTitle: 'Results are being prepared',
+    unavailableBody:
+      'Match data has not been published here yet. This page will fill automatically once the event data service is available.',
     finalSuffix: 'final',
   },
   tables: {
@@ -462,6 +466,9 @@ const englishMessages = {
     tieBreakBody: 'If points are level, the earlier registration date earns the higher rank.',
     loadError: 'Could not load public tables.',
     loadErrorTitle: 'Could not load standings',
+    unavailableTitle: 'Standings are being prepared',
+    unavailableBody:
+      'Public leaderboards are not published yet. They will appear automatically once verified entries and scoring data are available.',
     tableEyebrow: 'league table',
     entriesSuffix: 'entries',
     base: 'base',

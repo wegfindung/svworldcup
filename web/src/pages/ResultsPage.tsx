@@ -4,11 +4,15 @@ import { PlayerTooltip } from '../components/PlayerTooltip'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { getMessages, type AppMessages } from '../i18n/messages'
-import { fetchMatchResults } from '../lib/api'
+import { ApiError, fetchMatchResults } from '../lib/api'
 import type { LocaleCode, PublicFixturePlayerResult, PublicFixtureResult } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
 type ResultsCopy = AppMessages['results']
+type ErrorCopy = {
+  title: string
+  body: string
+}
 
 function teamName(teamCode: string) {
   return eventTeams.find((team) => team.code === teamCode)?.nameEn ?? teamCode
@@ -221,7 +225,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
   const copy = getMessages(locale).results
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [results, setResults] = useState<PublicFixtureResult[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ErrorCopy | null>(null)
   const [openFixtureIds, setOpenFixtureIds] = useState<Set<string>>(new Set())
 
   function toggleFixtureDetails(fixtureId: string) {
@@ -247,7 +251,14 @@ export function ResultsPage({ locale }: ResultsPageProps) {
         }
       } catch (loadError) {
         if (active) {
-          setError(loadError instanceof Error ? loadError.message : copy.loadErrorTitle)
+          setError(
+            loadError instanceof ApiError && loadError.status === 404
+              ? { title: copy.unavailableTitle, body: copy.unavailableBody }
+              : {
+                title: copy.loadErrorTitle,
+                body: copy.loadErrorBody,
+              },
+          )
           setLoadState('error')
         }
       }
@@ -308,7 +319,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
 
       {loadState === 'error' ? (
         <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title={copy.loadErrorTitle} body={error ?? copy.loadErrorBody} />
+          <EmptyState title={error?.title ?? copy.loadErrorTitle} body={error?.body ?? copy.loadErrorBody} />
         </section>
       ) : null}
 

@@ -6,7 +6,7 @@ import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
-import { fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { ApiError, fetchMatchResults, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import { publicProfileSlug } from '../lib/profileSlug'
 import type {
   LocaleCode,
@@ -22,6 +22,11 @@ interface TablesPayload {
   veterans: ParticipantScoreRow[]
   nations: NationScoreRow[]
   fixtureLookup: Map<string, PublicFixtureResult>
+}
+
+interface TablesError {
+  title: string
+  body: string
 }
 
 async function loadTablesPayload(): Promise<TablesPayload> {
@@ -366,7 +371,7 @@ export function TablesPage({ locale }: TablesPageProps) {
   const copy = getMessages(locale).tables
   const [tablesPromise, setTablesPromise] = useState<Promise<TablesPayload> | null>(() => loadTablesPayload())
   const [tables, setTables] = useState<TablesPayload | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<TablesError | null>(null)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
 
   useEffect(() => {
@@ -385,7 +390,14 @@ export function TablesPage({ locale }: TablesPageProps) {
       })
       .catch((loadError) => {
         if (active) {
-          setError(loadError instanceof Error ? loadError.message : copy.loadError)
+          setError(
+            loadError instanceof ApiError && loadError.status === 404
+              ? { title: copy.unavailableTitle, body: copy.unavailableBody }
+              : {
+                title: copy.loadErrorTitle,
+                body: copy.loadError,
+              },
+          )
         }
       })
 
@@ -458,7 +470,7 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {error ? (
         <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title={copy.loadErrorTitle} body={error} />
+          <EmptyState title={error.title} body={error.body} />
         </section>
       ) : null}
 
