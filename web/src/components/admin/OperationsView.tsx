@@ -104,7 +104,6 @@ export function OperationsView() {
   useEffect(() => {
     const controller = new AbortController()
     let active = true
-    setLoading(true)
     void (async () => {
       const [overviewResult, auditResult, batchesResult, campaignsResult, eventsResult] = await Promise.allSettled([
         fetchAdminOverview(controller.signal),
@@ -204,7 +203,12 @@ export function OperationsView() {
           </div>
           <button
             type="button"
-            onClick={() => setReloadKey((key) => key + 1)}
+            onClick={() => {
+              // Re-show the skeleton on refresh from the click handler — loading starts true on mount,
+              // so the effect itself never needs a synchronous setState.
+              setLoading(true)
+              setReloadKey((key) => key + 1)
+            }}
             disabled={loading}
             className="premium-button h-11 px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
           >

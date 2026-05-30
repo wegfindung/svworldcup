@@ -18,7 +18,7 @@ import type { MatchMappingRepository } from '../repositories/matchMappingReposit
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import { LeagueChangeError } from '../repositories/registrationRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
-import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
@@ -135,7 +135,7 @@ export function createAdminRouter(
   matchMappingRepository: MatchMappingRepository,
   auditRepository: AuditRepository,
   emailMarketingRepository: EmailMarketingRepository,
-  participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository,
+  snapshotJobRepository: SnapshotJobRepository,
   participantRiskRepository: ParticipantRiskRepository,
 ) {
   const router = Router()
@@ -224,7 +224,7 @@ export function createAdminRouter(
       teamPoolRepository,
       scoringRepository,
       auditRepository,
-      participantInfluenceSnapshotRepository,
+      snapshotJobRepository,
     }),
   )
 

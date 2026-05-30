@@ -105,7 +105,32 @@ export class ApiError extends Error {
 // (used by TablesPage to abort superseded loads).
 const DEFAULT_TIMEOUT_MS = 15_000
 
-async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
+// B2: bounded, selective retry for safe (GET/HEAD) reads only. A transient failure — a network error,
+// our own timeout (408), or a gateway 5xx (502/503/504) — is retried up to MAX_GET_RETRIES times with a
+// short linear backoff. A 4xx, a non-GET, a malformed-body parse error, or a caller-initiated abort is
+// never retried, so this tolerates blips without amplifying load on real errors or replaying a write.
+const MAX_GET_RETRIES = 2
+const RETRY_BASE_DELAY_MS = 300
+
+function isSafeMethod(method?: string) {
+  const normalizedMethod = (method ?? 'GET').toUpperCase()
+  return normalizedMethod === 'GET' || normalizedMethod === 'HEAD'
+}
+
+function isTransientFailure(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return error.status === 408 || error.status === 502 || error.status === 503 || error.status === 504
+  }
+  // A network-level fetch failure rejects with TypeError → retry. Anything else (e.g. a malformed JSON
+  // body throwing SyntaxError) is treated as non-transient. Caller aborts are filtered out before here.
+  return error instanceof TypeError
+}
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+}
+
+function buildHeaders(path: string, init?: RequestInit): Record<string, string> {
   const csrfToken = isUnsafeMethod(init?.method) ? csrfTokenForPath(path) : ''
   const headers: Record<string, string> = {
     'content-type': 'application/json',
@@ -123,7 +148,10 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   } else if (init?.headers) {
     Object.assign(headers, init.headers)
   }
+  return headers
+}
 
+async function fetchJsonOnce<T>(path: string, init: RequestInit | undefined, headers: Record<string, string>): Promise<T> {
   // Internal timeout controller, linked to the caller's signal (if any) so either source aborts fetch.
   const timeoutController = new AbortController()
   const callerSignal = init?.signal ?? undefined
@@ -149,8 +177,8 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
     })
   } catch (error) {
     // Our timeout fired without the caller aborting → surface a clean 408 so the UI shows a load
-    // error. A caller-initiated abort (unmount / superseded request) propagates unchanged so the
-    // caller's cancellation guard can ignore it.
+    // error (and the retry layer can treat it as transient). A caller-initiated abort (unmount /
+    // superseded request) propagates unchanged so the caller's cancellation guard can ignore it.
     if (timeoutController.signal.aborted && !callerSignal?.aborted) {
       throw new ApiError('Request timed out', null, 408)
     }
@@ -174,11 +202,29 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   return payload
 }
 
+async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = buildHeaders(path, init)
+  const callerSignal = init?.signal ?? undefined
+  const maxRetries = isSafeMethod(init?.method) ? MAX_GET_RETRIES : 0
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fetchJsonOnce<T>(path, init, headers)
+    } catch (error) {
+      // A caller-initiated abort (unmount / superseded request) is intentional — never retry it.
+      if (callerSignal?.aborted || attempt >= maxRetries || !isTransientFailure(error)) {
+        throw error
+      }
+      await delay(RETRY_BASE_DELAY_MS * (attempt + 1))
+    }
+  }
+}
+
 // Step 14 (B2): a tiny GET cache + in-flight dedup so revisiting a page doesn't refetch data that
 // was just loaded, and two components asking for the same path at once share one request. Public
 // reads only; callers that pass an AbortSignal use getJson directly so their cancellation semantics
-// stay intact. Client-side retry is intentionally omitted — the server is hardened (timeouts, caps)
-// and blind client retries would only amplify load.
+// stay intact. The underlying getJson retries safe reads on transient failures (see its comment), so
+// these cached reads inherit that resilience; a real error (4xx, malformed body) still rejects at once.
 interface ApiCacheEntry {
   value: unknown
   expiresAt: number

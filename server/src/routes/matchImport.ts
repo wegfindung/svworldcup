@@ -8,7 +8,6 @@ import { finalizeSubmission } from '../lib/matchImportSubmission.js'
 import { normalizeName } from '../lib/normalizeName.js'
 import { promoteBatchIfReady } from '../services/matchPromotion.js'
 import { JsonMatchStatsImporter } from '../services/matchStatsImporter.js'
-import { captureParticipantInfluenceSnapshotForFixture } from '../services/participantInfluenceSnapshot.js'
 import { logger } from '../lib/logger.js'
 import type { MatchImportJson } from '../domain/types.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
@@ -16,7 +15,7 @@ import type { MatchImportRepository } from '../repositories/matchImportRepositor
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
-import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 
 export interface MatchImportRouterDeps {
   matchImportRepository: MatchImportRepository
@@ -24,7 +23,7 @@ export interface MatchImportRouterDeps {
   teamPoolRepository: TeamPoolRepository
   scoringRepository: ScoringRepository
   auditRepository: AuditRepository
-  participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository
+  snapshotJobRepository: SnapshotJobRepository
 }
 
 // A fixture's data is submitted as either JSON or CSV/TSV (Fix 12). CSV/TSV is a pure
@@ -239,14 +238,16 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
     })
 
     if (promotion.promoted) {
-      // Fire-and-forget: snapshot Veteran ownership boost for this fixture so scoring uses
-      // the holdings as of stats-promotion time. Failures here must not block promotion —
-      // missing snapshot rows simply yield bonusPercent = 0, matching the SOP fallback.
-      void captureParticipantInfluenceSnapshotForFixture(batch.fixtureId, {
-        snapshotRepository: deps.participantInfluenceSnapshotRepository,
-      }).catch((error: Error) => {
-        logger.warn({ fixtureId: batch.fixtureId, err: error }, 'veteran influence snapshot capture failed')
-      })
+      // Enqueue a durable snapshot job (Veteran ownership boost for this fixture, captured as of
+      // stats-promotion time) instead of running the ~100s Soccerverse capture inline. An in-process
+      // worker drains it off the request path. Enqueue failure must not fail the response — promotion
+      // already committed, and a missing snapshot only yields bonusPercent = 0 (SOP fallback) until a
+      // re-promote re-enqueues. See SOP_match_data_import.md + services/snapshotWorker.ts.
+      try {
+        await deps.snapshotJobRepository.enqueue(batch.fixtureId)
+      } catch (error) {
+        logger.warn({ fixtureId: batch.fixtureId, err: error }, 'failed to enqueue veteran influence snapshot job')
+      }
     }
 
     // When promoted, the pending batch no longer exists — the confirmed rows are in

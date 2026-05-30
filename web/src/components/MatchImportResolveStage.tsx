@@ -78,9 +78,11 @@ export function MatchImportResolveStage({
   useEffect(() => {
     const controller = new AbortController()
     let cancelled = false
-    setPoolsSettled(false)
     const teamCodes = [homeTeam.code, awayTeam.code]
     void (async () => {
+      // Reset inside the async load (not the effect body) so a team change re-shows the skeleton
+      // without a synchronous setState directly in the effect.
+      setPoolsSettled(false)
       const results = await Promise.allSettled(teamCodes.map((code) => fetchTeamSelections(code, controller.signal)))
       if (cancelled) return
       const nextPools: Record<string, TeamPoolPlayer[]> = {}

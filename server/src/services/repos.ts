@@ -47,6 +47,11 @@ import {
   PostgresParticipantRiskRepository,
   type ParticipantRiskRepository,
 } from '../repositories/participantRiskRepository.js'
+import {
+  MemorySnapshotJobRepository,
+  PostgresSnapshotJobRepository,
+  type SnapshotJobRepository,
+} from '../repositories/snapshotJobRepository.js'
 import { LeaderboardCache } from '../repositories/leaderboardCache.js'
 import { instrumentSlowQueries } from '../lib/dbInstrumentation.js'
 
@@ -67,6 +72,7 @@ let auditRepository: AuditRepository | null = null
 let emailMarketingRepository: EmailMarketingRepository | null = null
 let participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository | null = null
 let participantRiskRepository: ParticipantRiskRepository | null = null
+let snapshotJobRepository: SnapshotJobRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -264,4 +270,14 @@ export function createParticipantRiskRepository(): ParticipantRiskRepository {
     participantRiskRepository = existingPool ? new PostgresParticipantRiskRepository(existingPool) : new MemoryParticipantRiskRepository()
   }
   return participantRiskRepository
+}
+
+export function createSnapshotJobRepository(): SnapshotJobRepository {
+  if (!snapshotJobRepository) {
+    const existingPool = getPool()
+    snapshotJobRepository = existingPool
+      ? new PostgresSnapshotJobRepository(existingPool)
+      : new MemorySnapshotJobRepository()
+  }
+  return snapshotJobRepository
 }

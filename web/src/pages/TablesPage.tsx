@@ -431,7 +431,6 @@ export function TablesPage({ locale }: TablesPageProps) {
   useEffect(() => {
     const controller = new AbortController()
     let active = true
-    setLoading(true)
     loadTablesPayload(controller.signal)
       .then((payload) => {
         if (active) {
@@ -454,6 +453,9 @@ export function TablesPage({ locale }: TablesPageProps) {
   }, [reloadKey])
 
   function refreshTables() {
+    // loading starts true on mount; set it here (a user event, not the effect body) so a refresh
+    // re-shows the skeleton without a synchronous setState inside the effect.
+    setLoading(true)
     setTables(null)
     setReloadKey((key) => key + 1)
   }

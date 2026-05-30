@@ -17,6 +17,7 @@ import { handleShareSnapshotPage } from './routes/share.js'
 import { bootstrapDefaultEmailCampaigns } from './services/bootstrapEmailCampaigns.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
+import { startSnapshotWorker } from './services/snapshotWorker.js'
 import {
   createAdminRepository,
   createAuditRepository,
@@ -32,6 +33,7 @@ import {
   createTeamPoolRepository,
   createParticipantInfluenceSnapshotRepository,
   createParticipantRiskRepository,
+  createSnapshotJobRepository,
 } from './services/repos.js'
 
 export function createApp() {
@@ -50,6 +52,7 @@ export function createApp() {
   const emailMarketingRepository = createEmailMarketingRepository()
   const participantInfluenceSnapshotRepository = createParticipantInfluenceSnapshotRepository()
   const participantRiskRepository = createParticipantRiskRepository()
+  const snapshotJobRepository = createSnapshotJobRepository()
   const cwd = process.cwd()
   const publicDirCandidates = [
     resolve(cwd, 'public'),
@@ -100,6 +103,8 @@ export function createApp() {
     logger.error({ err: error }, 'Failed to bootstrap default email campaigns')
   })
   startEmailMarketingScheduler(emailMarketingRepository)
+  // Drain the durable veteran-influence-snapshot queue off the request path (no-op under test).
+  startSnapshotWorker({ jobRepository: snapshotJobRepository, snapshotRepository: participantInfluenceSnapshotRepository })
 
   app.set('trust proxy', env.RATE_LIMIT_TRUST_PROXY ? 1 : false)
   app.use(
@@ -191,7 +196,7 @@ export function createApp() {
       matchMappingRepository,
       auditRepository,
       emailMarketingRepository,
-      participantInfluenceSnapshotRepository,
+      snapshotJobRepository,
       participantRiskRepository,
     ),
   )

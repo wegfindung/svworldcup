@@ -73,6 +73,12 @@ Out of scope:
   otherwise re-cache pre-commit rows. So the board flips atomically on a fully successful promotion;
   a rolled-back promotion never invalidates. (This also removes the redundant N recomputes a
   multi-row promotion would otherwise trigger.)
+- After a successful promotion the confirm route enqueues a **durable** veteran influence-snapshot job
+  for the fixture (`participant_influence_snapshot_jobs`) instead of running the ~100 s Soccerverse
+  capture inline. An in-process background worker drains the queue off the request path, one fixture at
+  a time — see `SOP_system_overview.md` "Operations Observability". Enqueue happens after the
+  promotion transaction commits; the rare commit-then-crash-before-enqueue gap self-heals on the next
+  (idempotent) re-promote.
 
 ## Input Contract
 

@@ -56,8 +56,11 @@ defensively handle partial or malformed API payloads (optional chaining on neste
 event bootstrap fetch fails, the client renders on safe defaults but must surface a localized
 degraded-state notice rather than silently hiding the failure. Public read GETs go through a small
 client-side cache + in-flight dedup so revisiting a page doesn't refetch just-loaded data; requests
-that pass an AbortSignal bypass it to keep their cancellation semantics. No client-side retry — the
-server is hardened and blind retries would only amplify load. Views that load several independent
+that pass an AbortSignal bypass it to keep their cancellation semantics. Safe (GET/HEAD) reads retry a
+transient failure — a network error, the client-side timeout, or a gateway 5xx (502/503/504) — up to a
+small bounded count with a short backoff. A 4xx, a non-GET request, a malformed-body parse error, or a
+caller-initiated abort is never retried, so the retry tolerates blips without amplifying load on real
+errors or ever replaying a write. Views that load several independent
 data sources at once (public standings, admin dashboard/operations, match-import team pools) must
 fetch each source independently and render partially: one failed or slow fetch degrades only its own
 block (its own load-error/"unavailable" state) and never drops the whole view. Use `Promise.allSettled`

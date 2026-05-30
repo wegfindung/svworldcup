@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { clearApiCache, fetchTeamPlayers } from './api'
+import { clearApiCache, fetchRookieLeaderboard, fetchTeamPlayers, loginParticipant } from './api'
 
 function jsonResponse(body: unknown): Response {
   return { ok: true, status: 200, json: async () => body } as Response
+}
+
+function errorResponse(status: number, body: unknown = {}): Response {
+  return { ok: false, status, json: async () => body } as Response
 }
 
 afterEach(() => {
@@ -38,5 +42,61 @@ describe('api GET cache + dedup', () => {
     await Promise.all([fetchTeamPlayers('BRA'), fetchTeamPlayers('ENG')])
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('api selective GET retry', () => {
+  it('retries a safe GET after a transient network error, then resolves', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(jsonResponse({ items: [{ rank: 1 }] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await fetchRookieLeaderboard()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(result).toEqual({ items: [{ rank: 1 }] })
+  })
+
+  it('retries a safe GET on a gateway 5xx, then resolves', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(errorResponse(503))
+      .mockResolvedValueOnce(jsonResponse({ items: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fetchRookieLeaderboard()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a 4xx — it is a deterministic client error', async () => {
+    const fetchMock = vi.fn(async () => errorResponse(400, { error: 'bad request' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchRookieLeaderboard()).rejects.toMatchObject({ status: 400 })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives up after the bounded number of retries on a persistent network error', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchRookieLeaderboard()).rejects.toBeInstanceOf(TypeError)
+    // 1 initial attempt + MAX_GET_RETRIES (2) = 3.
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('never retries a non-GET write, even on a transient network error', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(loginParticipant('a@b.c', 'pw')).rejects.toBeInstanceOf(TypeError)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
