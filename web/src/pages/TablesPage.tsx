@@ -17,31 +17,59 @@ import type {
   ParticipantScoreRow,
 } from '../lib/types'
 
-interface TablesPayload {
-  rookies: ParticipantScoreRow[]
-  veterans: ParticipantScoreRow[]
-  nations: NationScoreRow[]
-  fixtureLookup: Map<string, FixtureSeed>
-}
-
 interface TablesError {
   title: string
   body: string
 }
 
-async function loadTablesPayload(): Promise<TablesPayload> {
-  const [rookieResponse, veteranResponse, nationResponse, fixtureResponse] = await Promise.all([
-    fetchRookieLeaderboard(),
-    fetchVeteranLeaderboard(),
-    fetchNationLeaderboard(),
-    fetchFixtures(),
-  ])
-  return {
-    rookies: rookieResponse.items,
-    veterans: veteranResponse.items,
-    nations: nationResponse.items,
-    fixtureLookup: new Map(fixtureResponse.items.map((fixture) => [fixture.fixtureId, fixture])),
+// B3: each board loads independently — one slow/failed call must not drop the whole standings page.
+type BoardErrorKind = 'unavailable' | 'failed'
+interface BoardState<T> {
+  rows: T | null
+  error: BoardErrorKind | null
+}
+
+interface TablesPayload {
+  rookies: BoardState<ParticipantScoreRow[]>
+  veterans: BoardState<ParticipantScoreRow[]>
+  nations: BoardState<NationScoreRow[]>
+  fixtureLookup: Map<string, FixtureSeed>
+}
+
+// A 404 means "being prepared" (PR #37 semantics); anything else is a generic load failure.
+function settleBoard<T>(result: PromiseSettledResult<{ items: T }>): BoardState<T> {
+  if (result.status === 'fulfilled') {
+    return { rows: result.value.items, error: null }
   }
+  const reason = result.reason
+  const kind: BoardErrorKind = reason instanceof ApiError && reason.status === 404 ? 'unavailable' : 'failed'
+  return { rows: null, error: kind }
+}
+
+// Never rejects: allSettled means a failed board degrades to its own error state while the others
+// still render. Fixtures failing only drops match labels (matchLabel already falls back to the id).
+async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
+  const [rookieResult, veteranResult, nationResult, fixtureResult] = await Promise.allSettled([
+    fetchRookieLeaderboard(signal),
+    fetchVeteranLeaderboard(signal),
+    fetchNationLeaderboard(signal),
+    fetchFixtures(signal),
+  ])
+  const fixtures = fixtureResult.status === 'fulfilled' ? fixtureResult.value.items : []
+  return {
+    rookies: settleBoard(rookieResult),
+    veterans: settleBoard(veteranResult),
+    nations: settleBoard(nationResult),
+    fixtureLookup: new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture])),
+  }
+}
+
+type TablesCopy = AppMessages['tables']
+
+function boardErrorCopy(copy: TablesCopy, kind: BoardErrorKind): TablesError {
+  return kind === 'unavailable'
+    ? { title: copy.unavailableTitle, body: copy.unavailableBody }
+    : { title: copy.loadErrorTitle, body: copy.loadError }
 }
 
 function formatScore(value: number) {
@@ -360,7 +388,34 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
   )
 }
 
-type TablesCopy = AppMessages['tables']
+// Renders a participant board, its own load error, or nothing — so a single failed board degrades
+// in place instead of dropping the whole standings page (B3).
+function ParticipantBoardSection({
+  copy,
+  title,
+  board,
+  fixtureLookup,
+  onOpenSquad,
+}: {
+  copy: TablesCopy
+  title: string
+  board: BoardState<ParticipantScoreRow[]>
+  fixtureLookup: Map<string, FixtureSeed>
+  onOpenSquad: (target: { displayName: string; slug: string }) => void
+}) {
+  if (board.rows) {
+    return <ParticipantTable copy={copy} title={title} rows={board.rows} fixtureLookup={fixtureLookup} onOpenSquad={onOpenSquad} />
+  }
+  if (board.error) {
+    const error = boardErrorCopy(copy, board.error)
+    return (
+      <section className="glass-panel rounded-[1.15rem] p-4">
+        <EmptyState title={error.title} body={error.body} />
+      </section>
+    )
+  }
+  return null
+}
 
 interface TablesPageProps {
   locale: LocaleCode
@@ -368,47 +423,39 @@ interface TablesPageProps {
 
 export function TablesPage({ locale }: TablesPageProps) {
   const copy = getMessages(locale).tables
-  const [tablesPromise, setTablesPromise] = useState<Promise<TablesPayload> | null>(() => loadTablesPayload())
   const [tables, setTables] = useState<TablesPayload | null>(null)
-  const [error, setError] = useState<TablesError | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
 
   useEffect(() => {
-    const promise = tablesPromise
-    if (!promise) {
-      return
-    }
-
+    const controller = new AbortController()
     let active = true
-    promise
+    setLoading(true)
+    loadTablesPayload(controller.signal)
       .then((payload) => {
         if (active) {
           setTables(payload)
-          setError(null)
+          setLoading(false)
         }
       })
-      .catch((loadError) => {
+      .catch(() => {
+        // loadTablesPayload settles per board and never rejects; this is a defensive fallback only.
         if (active) {
-          setError(
-            loadError instanceof ApiError && loadError.status === 404
-              ? { title: copy.unavailableTitle, body: copy.unavailableBody }
-              : {
-                title: copy.loadErrorTitle,
-                body: copy.loadError,
-              },
-          )
+          setLoading(false)
         }
       })
 
+    // B5: abort in-flight fetches when the effect is superseded (refresh) or the page unmounts.
     return () => {
       active = false
+      controller.abort()
     }
-  }, [copy.loadError, copy.loadErrorTitle, copy.unavailableBody, copy.unavailableTitle, tablesPromise])
+  }, [reloadKey])
 
   function refreshTables() {
     setTables(null)
-    setError(null)
-    setTablesPromise(loadTablesPayload())
+    setReloadKey((key) => key + 1)
   }
 
   return (
@@ -467,20 +514,20 @@ export function TablesPage({ locale }: TablesPageProps) {
         </div>
       </section>
 
-      {error ? (
-        <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title={error.title} body={error.body} />
-        </section>
-      ) : null}
-
-      {!tables && !error ? <div className="skeleton h-40 rounded-[1.15rem]" /> : null}
+      {loading && !tables ? <div className="skeleton h-40 rounded-[1.15rem]" /> : null}
 
       {tables ? (
         <>
-          <NationTable copy={copy} rows={tables.nations} onOpenSquad={setSquadTarget} />
+          {tables.nations.rows ? (
+            <NationTable copy={copy} rows={tables.nations.rows} onOpenSquad={setSquadTarget} />
+          ) : tables.nations.error ? (
+            <section className="glass-panel rounded-[1.15rem] p-5">
+              <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
+            </section>
+          ) : null}
           <section className="grid gap-4 xl:grid-cols-2">
-            <ParticipantTable copy={copy} title="Rookie" rows={tables.rookies} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
-            <ParticipantTable copy={copy} title="Veteran" rows={tables.veterans} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+            <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+            <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
           </section>
         </>
       ) : null}

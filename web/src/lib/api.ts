@@ -100,6 +100,11 @@ export class ApiError extends Error {
   }
 }
 
+// B2: fetch has no built-in timeout. Cap every request so a slow/hung backend can't leave a request
+// pending until the browser default. Callers may also pass their own AbortSignal via init.signal
+// (used by TablesPage to abort superseded loads).
+const DEFAULT_TIMEOUT_MS = 15_000
+
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const csrfToken = isUnsafeMethod(init?.method) ? csrfTokenForPath(path) : ''
   const headers: Record<string, string> = {
@@ -119,11 +124,40 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
     Object.assign(headers, init.headers)
   }
 
-  const response = await fetch(path, {
-    credentials: 'same-origin',
-    ...init,
-    headers,
-  })
+  // Internal timeout controller, linked to the caller's signal (if any) so either source aborts fetch.
+  const timeoutController = new AbortController()
+  const callerSignal = init?.signal ?? undefined
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      timeoutController.abort(callerSignal.reason)
+    } else {
+      callerSignal.addEventListener('abort', () => timeoutController.abort(callerSignal.reason), { once: true })
+    }
+  }
+  const timeoutId = setTimeout(
+    () => timeoutController.abort(new DOMException('Request timed out', 'TimeoutError')),
+    DEFAULT_TIMEOUT_MS,
+  )
+
+  let response: Response
+  try {
+    response = await fetch(path, {
+      credentials: 'same-origin',
+      ...init,
+      headers,
+      signal: timeoutController.signal,
+    })
+  } catch (error) {
+    // Our timeout fired without the caller aborting → surface a clean 408 so the UI shows a load
+    // error. A caller-initiated abort (unmount / superseded request) propagates unchanged so the
+    // caller's cancellation guard can ignore it.
+    if (timeoutController.signal.aborted && !callerSignal?.aborted) {
+      throw new ApiError('Request timed out', null, 408)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null
@@ -248,31 +282,35 @@ export function fetchTeamPlayers(teamCode: string) {
   })
 }
 
-export function fetchRookieLeaderboard() {
+export function fetchRookieLeaderboard(signal?: AbortSignal) {
   return getJson<{ items: ParticipantScoreRow[] }>('/api/public/leaderboards/rookie', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
-export function fetchVeteranLeaderboard() {
+export function fetchVeteranLeaderboard(signal?: AbortSignal) {
   return getJson<{ items: ParticipantScoreRow[] }>('/api/public/leaderboards/veteran', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
-export function fetchNationLeaderboard() {
+export function fetchNationLeaderboard(signal?: AbortSignal) {
   return getJson<{ items: NationScoreRow[] }>('/api/public/leaderboards/nations', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
-export function fetchFixtures() {
+export function fetchFixtures(signal?: AbortSignal) {
   return getJson<{ items: FixtureSeed[] }>('/api/public/fixtures', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
