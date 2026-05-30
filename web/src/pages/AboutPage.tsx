@@ -12,7 +12,8 @@ interface LinkItem {
   by?: string
   // Optional hover-revealed background. Drop the file in web/public/link-previews/ and point `src` at it
   // (e.g. '/link-previews/svbase.jpg'). fit: 'cover' for screenshots, 'contain' for logos. Omit = no preview.
-  preview?: { src: string; fit: 'cover' | 'contain' }
+  // position: Tailwind object-position class (e.g. 'object-top') to control which part of a cropped cover image shows.
+  preview?: { src: string; fit: 'cover' | 'contain'; position?: string }
 }
 
 interface AboutCopy {
@@ -49,7 +50,7 @@ const officialLinks: LinkItem[] = [
 ]
 
 const communityLinks: LinkItem[] = [
-  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/svbase.png', fit: 'cover' } },
+  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/svbase.png', fit: 'contain' } },
   { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone', preview: { src: '/elrincon.png', fit: 'cover' } },
   { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck', preview: { src: '/svworld.jpg', fit: 'cover' } },
   { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx', preview: { src: '/svfootball.png', fit: 'cover' } },
@@ -470,6 +471,7 @@ function LinkCard({ item, copy, showMark = false }: { item: LinkItem; copy: Abou
             className={[
               'absolute inset-0 h-full w-full scale-110 opacity-0 grayscale-[0.25] saturate-[1.05] transition duration-500 ease-out group-hover:scale-100 group-hover:opacity-100',
               item.preview.fit === 'contain' ? 'object-contain p-6' : 'object-cover',
+              item.preview.position ?? '',
             ].join(' ')}
           />
           <span className="absolute inset-0 bg-[var(--color-ink)]/80 transition duration-500 group-hover:bg-[var(--color-ink)]/45" />
