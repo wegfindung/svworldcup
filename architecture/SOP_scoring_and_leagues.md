@@ -104,6 +104,10 @@ from an in-memory read-through cache of the computed participant rows.
   promotion (`upsertMatchEntry`), and the per-fixture influence snapshot upsert. Reveal flags,
   marketing, password, referral, and event-control writes are deliberately not hooked — they do not
   change a board.
+- **Profile score reads the cached rows too.** `/profiles/:slug` resolves a participant's rank/score
+  by reading the same cached league board (`getLeagueLeaderboard`) and picking their row, rather than
+  recomputing a whole league per profile view. Profile score and the public leaderboard therefore
+  always derive from one computation and can never diverge.
 - **Ordering trap.** The Veteran influence snapshot is written fire-and-forget *after* promotion. The
   snapshot repo's `upsert` invalidates the cache, and a generation guard prevents an in-flight
   recompute (started before the snapshot landed) from caching a board missing the not-yet-written
