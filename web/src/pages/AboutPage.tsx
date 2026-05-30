@@ -10,6 +10,10 @@ interface LinkItem {
   label: string
   href: string
   by?: string
+  // Optional hover-revealed background. Drop the file in web/public/link-previews/ and point `src` at it
+  // (e.g. '/link-previews/svbase.jpg'). fit: 'cover' for screenshots, 'contain' for logos. Omit = no preview.
+  // position: Tailwind object-position class (e.g. 'object-top') to control which part of a cropped cover image shows.
+  preview?: { src: string; fit: 'cover' | 'contain'; position?: string }
 }
 
 interface AboutCopy {
@@ -43,15 +47,16 @@ const officialLinks: LinkItem[] = [
   { id: 'ratings', label: 'Player ratings', href: 'https://soccerratings.org/' },
   { id: 'wiki', label: 'Wiki', href: 'https://wiki.soccerverse.com/index.php/Main_Page' },
   { id: 'discord', label: 'Discord', href: 'https://discord.com/invite/ze5xJgg7AM' },
+  { id: 'x', label: 'X', href: 'https://x.com/soccerverse' },
 ]
 
 const communityLinks: LinkItem[] = [
-  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo' },
-  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone' },
-  { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck' },
-  { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx' },
-  { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky' },
-  { id: 'nickx', label: 'Nickx on Twitch', href: 'https://www.twitch.tv/nickxcrypto', by: 'Nickx' },
+  { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/link-previews/svbase.jpg', fit: 'contain' } },
+  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone', preview: { src: '/link-previews/elrincon.jpg', fit: 'cover' } },
+  { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck', preview: { src: '/link-previews/svworld.jpg', fit: 'cover' } },
+  { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx', preview: { src: '/link-previews/svfootball.jpg', fit: 'cover' } },
+  { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky', preview: { src: '/link-previews/office.jpg', fit: 'cover' } },
+  { id: 'nickx', label: 'Nickx on Twitch', href: 'https://www.twitch.tv/nickxcrypto', by: 'Nickx', preview: { src: '/link-previews/nickx.jpg', fit: 'cover' } },
 ]
 
 const englishCopy: AboutCopy = {
@@ -85,6 +90,7 @@ const englishCopy: AboutCopy = {
     ratings: 'Browse and compare Soccerverse player ratings.',
     wiki: 'The community knowledge base and game mechanics.',
     discord: 'Join the community chat — the fastest way into the event.',
+    x: 'Follow Soccerverse for news and updates on X.',
     svbase: 'Community tools and stats for Soccerverse.',
     elrincon: 'Community guide and resources (Spanish).',
     svworld: 'Community site for Soccerverse managers.',
@@ -125,6 +131,7 @@ const spanishCopy: AboutCopy = {
     ratings: 'Consulta y compara las valoraciones de jugadores de Soccerverse.',
     wiki: 'La base de conocimiento de la comunidad y las mecánicas del juego.',
     discord: 'Únete al chat de la comunidad: la vía más rápida al evento.',
+    x: 'Sigue a Soccerverse en X para noticias y novedades.',
     svbase: 'Herramientas y estadísticas comunitarias para Soccerverse.',
     elrincon: 'Guía y recursos de la comunidad (en español).',
     svworld: 'Sitio comunitario para managers de Soccerverse.',
@@ -165,6 +172,7 @@ const italianCopy: AboutCopy = {
     ratings: 'Sfoglia e confronta le valutazioni dei giocatori di Soccerverse.',
     wiki: 'La knowledge base della community e le meccaniche di gioco.',
     discord: 'Entra nella chat della community: la via più rapida all’evento.',
+    x: 'Segui Soccerverse su X per notizie e aggiornamenti.',
     svbase: 'Strumenti e statistiche della community per Soccerverse.',
     elrincon: 'Guida e risorse della community (in spagnolo).',
     svworld: 'Sito della community per i manager di Soccerverse.',
@@ -205,6 +213,7 @@ const germanCopy: AboutCopy = {
     ratings: 'Soccerverse-Spielerbewertungen durchsuchen und vergleichen.',
     wiki: 'Die Wissensdatenbank der Community und die Spielmechaniken.',
     discord: 'Tritt dem Community-Chat bei – der schnellste Weg ins Event.',
+    x: 'Folge Soccerverse auf X für News und Updates.',
     svbase: 'Community-Tools und -Statistiken für Soccerverse.',
     elrincon: 'Community-Guide und -Ressourcen (auf Spanisch).',
     svworld: 'Community-Seite für Soccerverse-Manager.',
@@ -245,6 +254,7 @@ const frenchCopy: AboutCopy = {
     ratings: 'Parcourez et comparez les notes des joueurs Soccerverse.',
     wiki: 'La base de connaissances de la communauté et les mécaniques de jeu.',
     discord: 'Rejoignez le chat de la communauté : la voie la plus rapide vers l’événement.',
+    x: 'Suivez Soccerverse sur X pour les actus et les mises à jour.',
     svbase: 'Outils et statistiques communautaires pour Soccerverse.',
     elrincon: 'Guide et ressources de la communauté (en espagnol).',
     svworld: 'Site communautaire pour les managers Soccerverse.',
@@ -285,6 +295,7 @@ const portugueseCopy: AboutCopy = {
     ratings: 'Explora e compara as avaliações de jogadores do Soccerverse.',
     wiki: 'A base de conhecimento da comunidade e as mecânicas do jogo.',
     discord: 'Junta-te ao chat da comunidade: a via mais rápida para o evento.',
+    x: 'Segue o Soccerverse no X para notícias e novidades.',
     svbase: 'Ferramentas e estatísticas da comunidade para o Soccerverse.',
     elrincon: 'Guia e recursos da comunidade (em espanhol).',
     svworld: 'Site da comunidade para managers do Soccerverse.',
@@ -326,6 +337,7 @@ const russianCopy: AboutCopy = {
     ratings: 'Просматривайте и сравнивайте рейтинги игроков Soccerverse.',
     wiki: 'База знаний сообщества и игровые механики.',
     discord: 'Присоединяйтесь к чату сообщества — самый быстрый путь в событие.',
+    x: 'Следите за Soccerverse в X — новости и обновления.',
     svbase: 'Инструменты и статистика сообщества для Soccerverse.',
     elrincon: 'Руководство и ресурсы сообщества (на испанском).',
     svworld: 'Сайт сообщества для менеджеров Soccerverse.',
@@ -366,6 +378,7 @@ const chineseCopy: AboutCopy = {
     ratings: '浏览并比较 Soccerverse 球员评分。',
     wiki: '社区知识库与游戏机制。',
     discord: '加入社区聊天——进入活动的最快方式。',
+    x: '在 X 上关注 Soccerverse，获取新闻和动态。',
     svbase: '面向 Soccerverse 的社区工具与数据。',
     elrincon: '社区指南与资源（西班牙语）。',
     svworld: '面向 Soccerverse 经理的社区网站。',
@@ -406,6 +419,7 @@ const japaneseCopy: AboutCopy = {
     ratings: 'Soccerverse の選手レーティングを閲覧・比較。',
     wiki: 'コミュニティのナレッジベースとゲームの仕組み。',
     discord: 'コミュニティチャットに参加——イベントへの最速ルート。',
+    x: 'X で Soccerverse をフォローして最新情報をチェック。',
     svbase: 'Soccerverse 向けのコミュニティツールと統計。',
     elrincon: 'コミュニティのガイドとリソース（スペイン語）。',
     svworld: 'Soccerverse マネージャー向けのコミュニティサイト。',
@@ -427,25 +441,66 @@ const copyByLocale: Record<LocaleCode, AboutCopy> = {
   ja: japaneseCopy,
 }
 
-function LinkCard({ item, copy }: { item: LinkItem; copy: AboutCopy }) {
+// The official Soccerverse mark, rendered behind official link cards as a hover watermark.
+// Uses currentColor so the tint/dimness is controlled by the wrapping element's text color + opacity.
+function SoccerverseMark({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 698.12 826.77" className={className} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M144.86,486.75l196.93,196.88c4.69,4.69,12.29,4.69,16.98,0l29.24-29.21c4.69-4.69,4.7-12.3,0-16.99l-238.16-238.16c-3.77-3.77-10.23-1.1-10.23,4.24v70.58c0,4.75,1.89,9.3,5.24,12.65Z"
+      />
+      <path
+        fill="currentColor"
+        d="M486.43,349.28h-163.99c-26.66,0-41.91-4.31-41.91-27.14v-26.27c.91-21,15.95-25.05,41.78-25.05h123.69c27.05-.17,39.77,4.88,41.73,23.51.64,6.07,5.75,10.69,11.85,10.69h41.78c6.55,0,11.88-5.3,11.94-11.86.22-25.85-1.16-42.9-27.27-71.93,0,0,0-.04-.04-.04-.52-1.54-57.8-58.44-75.73-76.35-3.35-3.35-7.88-5.21-12.62-5.21h-70.51c-5.34,0-8.01,6.45-4.24,10.23l55.61,55.61h-92.58l-60.59-60.59c-3.36-3.36-7.91-5.24-12.65-5.24h-70.58c-5.34,0-8.01,6.45-4.24,10.23l68.41,68.42c-19.38,13.35-31.83,36.3-31.11,61.43l-65.32-65.29c-3.77-3.77-10.23-1.1-10.23,4.24v70.55c0,4.74,1.88,9.29,5.24,12.65l66.7,66.74c19.08,18.67,40.88,37.69,66.36,42.83,10.86,2.54,27.32,3.15,37.21,3.22,0,0,136.2,0,136.2,0,25.36,0,40.34,3.92,41.74,23.96.11,12.09,1.64,16.79-10.24,28.49l-35.86,35.98c-2.33,2.34-6.12,2.34-8.46,0l-17.85-17.85c-3.35-3.35-7.9-5.24-12.65-5.24h-70.56c-5.33,0-8,6.44-4.23,10.21l101.06,101.06c4.67,4.67,12.25,4.67,16.92,0l84.38-84.42c14.81-14.81,22.92-34.46,22.92-55.38v-30.11c0-39.8-32.26-72.06-72.06-72.06Z"
+      />
+    </svg>
+  )
+}
+
+function LinkCard({ item, copy, showMark = false }: { item: LinkItem; copy: AboutCopy; showMark?: boolean }) {
   return (
     <a
       href={item.href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col rounded-[1.1rem] border border-white/8 bg-black/15 p-4 transition duration-300 ease-out hover:border-white/18 hover:bg-white/6 active:scale-[0.99]"
+      className="group relative flex flex-col overflow-hidden rounded-[1.1rem] border border-white/8 bg-black/15 p-4 transition duration-300 ease-out hover:border-white/18 hover:bg-white/6 active:scale-[0.99]"
     >
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-white">{item.label}</p>
-        <span className="mono text-[var(--color-accent)] transition group-hover:translate-x-0.5">↗</span>
-      </div>
-      {item.by ? (
-        <p className="mono mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-sand)]">
-          {copy.by} {item.by}
-        </p>
+      {showMark && !item.preview ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <SoccerverseMark className="h-28 w-28 scale-90 text-[#e8f1f9] opacity-0 blur-[2px] transition-all duration-[2000ms] ease-out group-hover:scale-100 group-hover:opacity-[0.16] group-hover:blur-0" />
+        </span>
       ) : null}
-      <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">{copy.blurbs[item.id]}</p>
-      <p className="mono mt-3 truncate text-[10px] text-[var(--color-muted)]/70">{item.href.replace(/^https?:\/\//, '')}</p>
+
+      {item.preview ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0">
+          <img
+            src={item.preview.src}
+            alt=""
+            loading="lazy"
+            className={[
+              'absolute inset-0 h-full w-full scale-110 opacity-0 grayscale-[0.25] saturate-[1.05] transition duration-500 ease-out group-hover:scale-100 group-hover:opacity-100',
+              item.preview.fit === 'contain' ? 'object-contain p-6' : 'object-cover',
+              item.preview.position ?? '',
+            ].join(' ')}
+          />
+          <span className="absolute inset-0 bg-[var(--color-ink)]/80 transition duration-500 group-hover:bg-[var(--color-ink)]/45" />
+        </span>
+      ) : null}
+
+      <span className="relative z-[1] flex flex-col">
+        <span className="flex items-center justify-between gap-3">
+          <span className="text-sm font-semibold text-white">{item.label}</span>
+          <span className="mono text-[var(--color-accent)] transition group-hover:translate-x-0.5">↗</span>
+        </span>
+        {item.by ? (
+          <span className="mono mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-sand)]">
+            {copy.by} {item.by}
+          </span>
+        ) : null}
+        <span className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">{copy.blurbs[item.id]}</span>
+        <span className="mono mt-3 truncate text-[10px] text-[var(--color-muted)]/70">{item.href.replace(/^https?:\/\//, '')}</span>
+      </span>
     </a>
   )
 }
@@ -486,7 +541,7 @@ export function AboutPage({ locale }: AboutPageProps) {
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">{copy.officialTitle}</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {officialLinks.map((item) => (
-            <LinkCard key={item.href} item={item} copy={copy} />
+            <LinkCard key={item.href} item={item} copy={copy} showMark />
           ))}
         </div>
       </section>
