@@ -9,7 +9,7 @@ function makeServer(closeError?: Error) {
   }
 }
 
-const silentLogger = { log: vi.fn(), error: vi.fn() }
+const silentLogger = { info: vi.fn(), error: vi.fn() }
 
 describe('createShutdownHandler', () => {
   it('closes the server then the pool, then exits 0', async () => {
@@ -52,7 +52,7 @@ describe('createShutdownHandler', () => {
       throw new Error('pool boom')
     })
     const exit = vi.fn()
-    const logger = { log: vi.fn(), error: vi.fn() }
+    const logger = { info: vi.fn(), error: vi.fn() }
 
     const shutdown = createShutdownHandler({ server, closePool, logger, exit })
     await shutdown('SIGTERM')

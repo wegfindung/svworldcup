@@ -75,6 +75,10 @@ export interface ScoringRepository {
   listMatchEntries(fixtureId?: string): Promise<MatchEntryRecord[]>
   getLeagueLeaderboard(leagueType: LeagueType): Promise<ParticipantScoreRow[]>
   getNationLeaderboard(): Promise<NationScoreRow[]>
+  // Runs fn while holding a fixture-scoped advisory lock so two concurrent promotions of the same
+  // fixture can't both proceed. Returns null WITHOUT running fn when the lock is already held. The
+  // Memory impl has no real lock and always runs fn.
+  withFixtureLock<T>(fixtureId: string, fn: () => Promise<T>): Promise<T | null>
 }
 
 function derivePerformancePoints(rating: number | undefined, curve: PerformanceCurveAnchor[]) {
@@ -497,6 +501,11 @@ export class MemoryScoringRepository implements ScoringRepository {
     return fixtureId ? entries.filter((entry) => entry.fixtureId === fixtureId) : entries
   }
 
+  // No cross-process locking in memory — single test process, so just run the work.
+  async withFixtureLock<T>(_fixtureId: string, fn: () => Promise<T>): Promise<T | null> {
+    return fn()
+  }
+
   // Compute-once-per-payload: both boards read the same cached full row set, then filter/rank in
   // memory (each row is independent of the others, so filtering after compute is equivalent to the
   // old compute-per-league path).
@@ -689,6 +698,29 @@ export class PostgresScoringRepository implements ScoringRepository {
       [fixtureId ?? null],
     )
     return result.rows.map(mapEntryRow)
+  }
+
+  // Session-level advisory lock keyed by a stable hash of the fixture id (hashtext). Held on a
+  // dedicated connection for the duration of fn, then released. pg_try_advisory_lock returns
+  // false immediately when another connection already holds it → we skip rather than block.
+  async withFixtureLock<T>(fixtureId: string, fn: () => Promise<T>): Promise<T | null> {
+    const client = await this.pool.connect()
+    try {
+      const lockResult = await client.query<{ locked: boolean }>(
+        'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
+        [fixtureId],
+      )
+      if (!lockResult.rows[0]?.locked) {
+        return null
+      }
+      try {
+        return await fn()
+      } finally {
+        await client.query('SELECT pg_advisory_unlock(hashtext($1))', [fixtureId])
+      }
+    } finally {
+      client.release()
+    }
   }
 
   async getLeagueLeaderboard(leagueType: LeagueType) {

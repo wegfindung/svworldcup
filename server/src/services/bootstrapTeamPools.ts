@@ -6,6 +6,7 @@ import {
   formatSuspiciousTeamPoolCountryMismatch,
 } from '../lib/teamPoolCountryGuard.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import { logger } from '../lib/logger.js'
 import { fetchPlayersByIds } from './soccerverse.js'
 
 function orderPlayersBySelection(playerIds: number[], players: SoccerversePlayerRecord[]) {
@@ -31,7 +32,7 @@ export async function bootstrapInitialTeamPools(teamPoolRepository: TeamPoolRepo
 
     const countryMismatch = findSuspiciousTeamPoolCountryMismatch(teamCode, players)
     if (countryMismatch) {
-      console.warn(formatSuspiciousTeamPoolCountryMismatch(teamCode, countryMismatch))
+      logger.warn(formatSuspiciousTeamPoolCountryMismatch(teamCode, countryMismatch))
       continue
     }
 

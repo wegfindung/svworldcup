@@ -31,6 +31,9 @@ const optionalBooleanFromString = z
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  // Structured-logging level (see SOP_system_overview.md "Operations Observability"). Silent under
+  // test regardless of this value.
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   PUBLIC_WEB_URL: z.string().url().default('https://worldcup.svtool.info'),
   DATABASE_URL: optionalString,
   DB_HOST: optionalString,

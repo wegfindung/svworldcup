@@ -9,6 +9,7 @@ import { normalizeName } from '../lib/normalizeName.js'
 import { promoteBatchIfReady } from '../services/matchPromotion.js'
 import { JsonMatchStatsImporter } from '../services/matchStatsImporter.js'
 import { captureParticipantInfluenceSnapshotForFixture } from '../services/participantInfluenceSnapshot.js'
+import { logger } from '../lib/logger.js'
 import type { MatchImportJson } from '../domain/types.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
@@ -244,7 +245,7 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
       void captureParticipantInfluenceSnapshotForFixture(batch.fixtureId, {
         snapshotRepository: deps.participantInfluenceSnapshotRepository,
       }).catch((error: Error) => {
-        console.warn(`veteran influence snapshot capture failed for fixture=${batch.fixtureId}: ${error.message}`)
+        logger.warn({ fixtureId: batch.fixtureId, err: error }, 'veteran influence snapshot capture failed')
       })
     }
 

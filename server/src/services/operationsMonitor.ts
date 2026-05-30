@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
-export type OperationEventType = 'email_scheduler' | 'soccerverse_api'
+export type OperationEventType =
+  | 'email_scheduler'
+  | 'soccerverse_api'
+  | 'influence_snapshot'
+  | 'participant_risk'
 export type OperationEventStatus = 'ok' | 'warning' | 'error'
 
 export interface OperationEventInput {

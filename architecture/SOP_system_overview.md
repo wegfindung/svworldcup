@@ -54,7 +54,10 @@ Provide a secure The Grand Tournament event platform with:
 shows a localized, retryable fallback instead of white-screening the whole app. Public pages must
 defensively handle partial or malformed API payloads (optional chaining on nested data). When the
 event bootstrap fetch fails, the client renders on safe defaults but must surface a localized
-degraded-state notice rather than silently hiding the failure.
+degraded-state notice rather than silently hiding the failure. Public read GETs go through a small
+client-side cache + in-flight dedup so revisiting a page doesn't refetch just-loaded data; requests
+that pass an AbortSignal bypass it to keep their cancellation semantics. No client-side retry — the
+server is hardened and blind retries would only amplify load.
 
 ## Security Rules
 
@@ -101,6 +104,20 @@ degraded-state notice rather than silently hiding the failure.
 - The operations screen may compose existing admin data sources such as account counts, team-pool counts, pending match-import batches, email campaign queue counts, and audit log rows.
 - Short-lived runtime events may be kept in process memory for low-friction visibility into scheduler runs and external Soccerverse API warnings/errors.
 - Runtime events are operational signals, not a durable audit log. Durable admin writes still belong in `audit_logs`.
+- The server emits structured (JSON) logs via a single shared logger (`pino`), level controlled by
+  `LOG_LEVEL` (silent under test). Request-timing middleware logs every request's method, path,
+  status, and duration; slow (>1s) or 5xx responses are logged at `warn`. The global error handler
+  logs unhandled 500s with request context.
+- Background-job failures (snapshot capture, email scheduler, promotion) are both logged structurally
+  AND recorded to `operationsMonitor` so the admin operations screen surfaces them live. The
+  structured log is the durable trail; `operationsMonitor` is the at-a-glance view (lost on restart).
+- Per-statement slow-query logging is intentionally not implemented: `statement_timeout` caps runaway
+  queries and request-timing surfaces slow paths end-to-end, so wrapping the shared pool/clients
+  across every call site is not worth the risk. Revisit if a query-level breakdown is ever needed.
+- The veteran influence-snapshot capture is fire-and-forget and paced by the Soccerverse gate (so it
+  is I/O-bound and yields the event loop while waiting). To keep it from piling up it (a) refuses a
+  duplicate run for a fixture already in progress and (b) yields periodically through its work list.
+  A true off-process job queue is the long-term fix but out of scope for the single-process service.
 
 ## Runtime Resilience
 

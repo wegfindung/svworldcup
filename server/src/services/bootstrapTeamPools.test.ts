@@ -13,6 +13,7 @@ vi.mock('./soccerverse.js', () => ({
 const { bootstrapInitialTeamPools } = await import('./bootstrapTeamPools.js')
 const { initialTeamSelections } = await import('../data/initialTeamSelections.js')
 const { getSoccerverseCountryId } = await import('../data/teamCountryMap.js')
+const { logger } = await import('../lib/logger.js')
 
 function player(playerId: number, nationalityCode: string): SoccerversePlayerRecord {
   return {
@@ -93,7 +94,7 @@ describe('bootstrapInitialTeamPools', () => {
       }
       return playerIds.map((playerId) => player(playerId, countryId ?? 'TST'))
     })
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
     const syncedTeams: string[] = []
     const repository: TeamPoolRepository = {
       storageKind: 'memory',

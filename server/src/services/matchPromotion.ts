@@ -25,33 +25,40 @@ export async function promoteBatchIfReady(
   batch: PendingMatchBatch,
   deps: PromotionDeps,
 ): Promise<PromotionResult> {
-  if (!isPromotable(batch)) {
-    return { promoted: false, promotedRowCount: 0 }
-  }
+  // C2: hold a fixture-scoped advisory lock for the whole promotion so two admins confirming the
+  // same batch concurrently can't both pass isPromotable and double-promote. A null result means
+  // another promotion already holds the lock — treat as a no-op for this caller.
+  const result = await deps.scoringRepository.withFixtureLock(batch.fixtureId, async () => {
+    if (!isPromotable(batch)) {
+      return { promoted: false, promotedRowCount: 0 }
+    }
 
-  const resolvedRows = batch.rows.filter((row) => row.playerId !== null)
-  for (const row of resolvedRows) {
-    await deps.scoringRepository.upsertMatchEntry({
-      fixtureId: batch.fixtureId,
-      playerId: row.playerId as number,
-      inOfficialSquad: true,
-      minutes: row.minutes,
-      goals: row.goals,
-      assists: row.assists,
-      cleanSheetEligible: row.cleanSheetEligible,
-      rating: row.rating,
-      sourceNote: 'imported match data',
+    const resolvedRows = batch.rows.filter((row) => row.playerId !== null)
+    for (const row of resolvedRows) {
+      await deps.scoringRepository.upsertMatchEntry({
+        fixtureId: batch.fixtureId,
+        playerId: row.playerId as number,
+        inOfficialSquad: true,
+        minutes: row.minutes,
+        goals: row.goals,
+        assists: row.assists,
+        cleanSheetEligible: row.cleanSheetEligible,
+        rating: row.rating,
+        sourceNote: 'imported match data',
+      })
+    }
+
+    await deps.matchImportRepository.deleteBatch(batch.batchId)
+    await deps.auditRepository.record({
+      actorEmail: deps.actorEmail,
+      actionKey: 'match_import.promote',
+      entityType: 'fixture',
+      entityId: batch.fixtureId,
+      detail: { batchId: batch.batchId, promotedRowCount: resolvedRows.length },
     })
-  }
 
-  await deps.matchImportRepository.deleteBatch(batch.batchId)
-  await deps.auditRepository.record({
-    actorEmail: deps.actorEmail,
-    actionKey: 'match_import.promote',
-    entityType: 'fixture',
-    entityId: batch.fixtureId,
-    detail: { batchId: batch.batchId, promotedRowCount: resolvedRows.length },
+    return { promoted: true, promotedRowCount: resolvedRows.length }
   })
 
-  return { promoted: true, promotedRowCount: resolvedRows.length }
+  return result ?? { promoted: false, promotedRowCount: 0 }
 }

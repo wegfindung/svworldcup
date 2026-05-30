@@ -174,11 +174,48 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   return payload
 }
 
+// Step 14 (B2): a tiny GET cache + in-flight dedup so revisiting a page doesn't refetch data that
+// was just loaded, and two components asking for the same path at once share one request. Public
+// reads only; callers that pass an AbortSignal use getJson directly so their cancellation semantics
+// stay intact. Client-side retry is intentionally omitted — the server is hardened (timeouts, caps)
+// and blind client retries would only amplify load.
+interface ApiCacheEntry {
+  value: unknown
+  expiresAt: number
+}
+const apiCache = new Map<string, ApiCacheEntry>()
+const apiInflight = new Map<string, Promise<unknown>>()
+const DEFAULT_CACHE_TTL_MS = 30_000
+
+function getCachedJson<T>(path: string, ttlMs = DEFAULT_CACHE_TTL_MS): Promise<T> {
+  const cached = apiCache.get(path)
+  if (cached && cached.expiresAt > Date.now()) {
+    return Promise.resolve(cached.value as T)
+  }
+  const existing = apiInflight.get(path)
+  if (existing) {
+    return existing as Promise<T>
+  }
+  const request = getJson<T>(path, { method: 'GET', headers: {} })
+    .then((value) => {
+      apiCache.set(path, { value, expiresAt: Date.now() + ttlMs })
+      return value
+    })
+    .finally(() => {
+      apiInflight.delete(path)
+    })
+  apiInflight.set(path, request)
+  return request as Promise<T>
+}
+
+// Drop cached reads — for tests and for after a mutation that should force a fresh read.
+export function clearApiCache() {
+  apiCache.clear()
+  apiInflight.clear()
+}
+
 export function fetchBootstrap() {
-  return getJson<BootstrapPayload>('/api/public/bootstrap', {
-    method: 'GET',
-    headers: {},
-  })
+  return getCachedJson<BootstrapPayload>('/api/public/bootstrap')
 }
 
 export function registerParticipant(payload: {
@@ -276,10 +313,7 @@ export function logoutParticipant() {
 }
 
 export function fetchTeamPlayers(teamCode: string) {
-  return getJson<{ items: TeamPoolPlayer[] }>(`/api/public/team-players/${teamCode}`, {
-    method: 'GET',
-    headers: {},
-  })
+  return getCachedJson<{ items: TeamPoolPlayer[] }>(`/api/public/team-players/${teamCode}`)
 }
 
 export function fetchRookieLeaderboard(signal?: AbortSignal) {
@@ -315,17 +349,14 @@ export function fetchFixtures(signal?: AbortSignal) {
 }
 
 export function fetchMatchResults() {
-  return getJson<{
+  return getCachedJson<{
     items: PublicFixtureResult[]
     summary: {
       totalFixtures: number
       finalFixtures: number
       pendingFixtures: number
     }
-  }>('/api/public/match-results', {
-    method: 'GET',
-    headers: {},
-  })
+  }>('/api/public/match-results')
 }
 
 export function fetchParticipantSquad() {
@@ -468,10 +499,7 @@ export function createSignedShareSnapshot(payload: ShareSnapshotPayload) {
 }
 
 export function fetchPublicProfile(slug: string) {
-  return getJson<{ item: PublicParticipantProfile }>(`/api/public/profiles/${encodeURIComponent(slug)}`, {
-    method: 'GET',
-    headers: {},
-  })
+  return getCachedJson<{ item: PublicParticipantProfile }>(`/api/public/profiles/${encodeURIComponent(slug)}`)
 }
 
 export function fetchAdminOverview() {

@@ -7,6 +7,8 @@ import helmet from 'helmet'
 import { env } from './config/env.js'
 import { createClosedBetaAuth } from './middleware/closedBetaAuth.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
+import { logger } from './lib/logger.js'
 import { createAuthRouter } from './routes/auth.js'
 import { createAdminRouter } from './routes/admin.js'
 import { createParticipantRouter } from './routes/participant.js'
@@ -92,10 +94,10 @@ export function createApp() {
   })
 
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
-    console.error('Failed to bootstrap initial team pools', error)
+    logger.error({ err: error }, 'Failed to bootstrap initial team pools')
   })
   void bootstrapDefaultEmailCampaigns(emailMarketingRepository).catch((error) => {
-    console.error('Failed to bootstrap default email campaigns', error)
+    logger.error({ err: error }, 'Failed to bootstrap default email campaigns')
   })
   startEmailMarketingScheduler(emailMarketingRepository)
 
@@ -153,6 +155,9 @@ export function createApp() {
       res.sendFile(resolve(publicDir, 'index.html'))
     })
   }
+
+  // Time and log every API request (static assets / SPA shell are already served above).
+  app.use('/api', requestLogger)
 
   // Per-endpoint caps run before the general public limiter so the expensive routes get the tighter
   // budget on top of the shared one.

@@ -5,6 +5,8 @@ import { checkEmailDomainHealth } from '../lib/emailDomainHealth.js'
 import { isDisposableEmailDomain } from '../lib/disposableEmailDomains.js'
 import { buildRequestRiskSignal, hashRiskValue } from '../lib/riskSignals.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
+import { logger } from '../lib/logger.js'
+import { recordOperationEvent } from './operationsMonitor.js'
 
 export async function recordParticipantRiskEvent(input: {
   repository: ParticipantRiskRepository
@@ -33,6 +35,12 @@ export async function recordParticipantRiskEvent(input: {
 
 export function recordParticipantRiskEventAsync(input: Parameters<typeof recordParticipantRiskEvent>[0]) {
   void recordParticipantRiskEvent(input).catch((error) => {
-    console.error('Failed to record participant risk event', error)
+    logger.error({ err: error, eventType: input.eventType }, 'Failed to record participant risk event')
+    recordOperationEvent({
+      type: 'participant_risk',
+      status: 'error',
+      message: 'Failed to record participant risk event.',
+      detail: { eventType: input.eventType, error: error instanceof Error ? error.message : String(error) },
+    })
   })
 }

@@ -9,7 +9,7 @@ interface ClosableServer {
 interface ShutdownDeps {
   server: ClosableServer
   closePool: () => Promise<void>
-  logger?: Pick<Console, 'log' | 'error'>
+  logger?: Pick<Console, 'info' | 'error'>
   exit?: (code: number) => void
   timeoutMs?: number
 }
@@ -25,7 +25,7 @@ export function createShutdownHandler(deps: ShutdownDeps) {
       return
     }
     started = true
-    logger.log(`Received ${signal}, shutting down gracefully`)
+    logger.info(`Received ${signal}, shutting down gracefully`)
 
     const forceTimer = setTimeout(() => {
       logger.error('Graceful shutdown timed out, forcing exit')

@@ -55,6 +55,14 @@ Out of scope:
 - Promotion is a plain upsert keyed by `(fixture_id, player_id)`.
 - Exactly one path writes `admin_match_entries`: promotion after two confirmations. No
   bypass exists.
+- Promotion runs under a fixture-scoped Postgres advisory lock (`pg_try_advisory_lock`), so two
+  admins confirming the same batch at the same moment can't both pass the promotable check and
+  double-promote (which would write duplicate audit rows). The second caller skips cleanly.
+- The promotion loop is intentionally NOT wrapped in a single transaction. The upserts are
+  idempotent `(fixture_id, player_id)` upserts and the batch is only deleted after they all succeed,
+  so a mid-loop failure leaves the batch intact and re-running promotion completes it safely.
+  Atomic all-or-nothing across the three repositories would be a larger refactor for a failure mode
+  that already self-heals; deferred unless a need appears.
 
 ## Input Contract
 
