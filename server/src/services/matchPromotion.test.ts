@@ -16,15 +16,16 @@ function makeBatch() {
 
 function makeDeps(withFixtureLock: ScoringLock) {
   const upsertMatchEntry = vi.fn(async () => ({}))
+  const invalidateLeaderboard = vi.fn(() => {})
   const deleteBatch = vi.fn(async () => {})
   const record = vi.fn(async () => {})
   const deps = {
-    scoringRepository: { withFixtureLock, upsertMatchEntry },
+    scoringRepository: { withFixtureLock, upsertMatchEntry, invalidateLeaderboard },
     matchImportRepository: { deleteBatch },
     auditRepository: { record },
     actorEmail: 'admin@example.com',
   } as unknown as PromotionDeps
-  return { deps, upsertMatchEntry, deleteBatch, record }
+  return { deps, upsertMatchEntry, invalidateLeaderboard, deleteBatch, record }
 }
 
 type ScoringLock = <T>(fixtureId: string, fn: () => Promise<T>) => Promise<T | null>
@@ -32,19 +33,23 @@ type ScoringLock = <T>(fixtureId: string, fn: () => Promise<T>) => Promise<T | n
 describe('promoteBatchIfReady', () => {
   it('promotes resolved rows when the fixture lock is acquired (skips unresolved rows)', async () => {
     const runLock: ScoringLock = (_id, fn) => fn()
-    const { deps, upsertMatchEntry, deleteBatch, record } = makeDeps(runLock)
+    const { deps, upsertMatchEntry, invalidateLeaderboard, deleteBatch, record } = makeDeps(runLock)
 
     const result = await promoteBatchIfReady(makeBatch(), deps)
 
     expect(result).toEqual({ promoted: true, promotedRowCount: 1 })
     expect(upsertMatchEntry).toHaveBeenCalledTimes(1)
+    // C1: rows are upserted with per-row invalidation suppressed...
+    expect(upsertMatchEntry).toHaveBeenCalledWith(expect.anything(), { suppressLeaderboardInvalidation: true })
     expect(deleteBatch).toHaveBeenCalledOnce()
     expect(record).toHaveBeenCalledOnce()
+    // ...and the board is invalidated exactly once, after the writes land.
+    expect(invalidateLeaderboard).toHaveBeenCalledOnce()
   })
 
   it('is a no-op when the fixture lock is already held by another promotion', async () => {
     const heldLock: ScoringLock = async () => null
-    const { deps, upsertMatchEntry, deleteBatch, record } = makeDeps(heldLock)
+    const { deps, upsertMatchEntry, invalidateLeaderboard, deleteBatch, record } = makeDeps(heldLock)
 
     const result = await promoteBatchIfReady(makeBatch(), deps)
 
@@ -52,5 +57,6 @@ describe('promoteBatchIfReady', () => {
     expect(upsertMatchEntry).not.toHaveBeenCalled()
     expect(deleteBatch).not.toHaveBeenCalled()
     expect(record).not.toHaveBeenCalled()
+    expect(invalidateLeaderboard).not.toHaveBeenCalled()
   })
 })

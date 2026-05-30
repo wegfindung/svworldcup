@@ -63,6 +63,11 @@ Out of scope:
   so a mid-loop failure leaves the batch intact and re-running promotion completes it safely.
   Atomic all-or-nothing across the three repositories would be a larger refactor for a failure mode
   that already self-heals; deferred unless a need appears.
+- To keep the public board from showing a half-promoted fixture, promotion suppresses the per-row
+  leaderboard-cache invalidation and invalidates the board ONCE, after every row, the batch delete,
+  and the audit row have all landed. So the board flips only on a fully successful promotion; a
+  mid-loop failure never invalidates, leaving the pre-promotion board live until a re-promote. (This
+  also removes the redundant N recomputes a multi-row promotion would otherwise trigger.)
 
 ## Input Contract
 

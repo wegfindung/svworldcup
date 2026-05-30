@@ -69,12 +69,21 @@ type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
   registeredAt: string
 }
 
+// C1: a multi-row promotion suppresses the per-row cache invalidation and invalidates ONCE after all
+// rows + the batch delete + the audit row land, so the board flips only on full success — a mid-loop
+// failure leaves the pre-promotion board intact (re-promote heals it via idempotent upserts).
+export interface UpsertMatchEntryOptions {
+  suppressLeaderboardInvalidation?: boolean
+}
+
 export interface ScoringRepository {
   storageKind: 'memory' | 'postgres'
-  upsertMatchEntry(input: MatchEntryInput): Promise<MatchEntryRecord>
+  upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions): Promise<MatchEntryRecord>
   listMatchEntries(fixtureId?: string): Promise<MatchEntryRecord[]>
   getLeagueLeaderboard(leagueType: LeagueType): Promise<ParticipantScoreRow[]>
   getNationLeaderboard(): Promise<NationScoreRow[]>
+  // Force a leaderboard cache invalidation (used after a suppressed multi-row promotion completes).
+  invalidateLeaderboard(): void
   // Runs fn while holding a fixture-scoped advisory lock so two concurrent promotions of the same
   // fixture can't both proceed. Returns null WITHOUT running fn when the lock is already held. The
   // Memory impl has no real lock and always runs fn.
@@ -475,7 +484,7 @@ export class MemoryScoringRepository implements ScoringRepository {
     return this.calculateRows(await this.listMemoryParticipants())
   }
 
-  async upsertMatchEntry(input: MatchEntryInput) {
+  async upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions) {
     const entryKey = `${input.fixtureId}:${input.playerId}`
     const current = this.entries.get(entryKey)
     const entry: MatchEntryRecord = {
@@ -492,8 +501,14 @@ export class MemoryScoringRepository implements ScoringRepository {
       sourceNote: input.sourceNote ?? 'manual admin entry',
     }
     this.entries.set(entryKey, entry)
-    this.leaderboardCache?.invalidate()
+    if (!options?.suppressLeaderboardInvalidation) {
+      this.leaderboardCache?.invalidate()
+    }
     return entry
+  }
+
+  invalidateLeaderboard() {
+    this.leaderboardCache?.invalidate()
   }
 
   async listMatchEntries(fixtureId?: string) {
@@ -626,7 +641,7 @@ export class PostgresScoringRepository implements ScoringRepository {
     return map
   }
 
-  async upsertMatchEntry(input: MatchEntryInput) {
+  async upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions) {
     const result = await this.pool.query<{
       entry_id: string
       fixture_id: string
@@ -671,8 +686,14 @@ export class PostgresScoringRepository implements ScoringRepository {
       ],
     )
 
-    this.leaderboardCache?.invalidate()
+    if (!options?.suppressLeaderboardInvalidation) {
+      this.leaderboardCache?.invalidate()
+    }
     return mapEntryRow(result.rows[0])
+  }
+
+  invalidateLeaderboard() {
+    this.leaderboardCache?.invalidate()
   }
 
   async listMatchEntries(fixtureId?: string) {

@@ -35,17 +35,23 @@ export async function promoteBatchIfReady(
 
     const resolvedRows = batch.rows.filter((row) => row.playerId !== null)
     for (const row of resolvedRows) {
-      await deps.scoringRepository.upsertMatchEntry({
-        fixtureId: batch.fixtureId,
-        playerId: row.playerId as number,
-        inOfficialSquad: true,
-        minutes: row.minutes,
-        goals: row.goals,
-        assists: row.assists,
-        cleanSheetEligible: row.cleanSheetEligible,
-        rating: row.rating,
-        sourceNote: 'imported match data',
-      })
+      // C1: suppress per-row invalidation; the board is invalidated once below, after the whole
+      // promotion lands. A mid-loop failure then leaves the pre-promotion board intact until a
+      // re-promote (idempotent upserts) completes, instead of exposing a half-promoted board.
+      await deps.scoringRepository.upsertMatchEntry(
+        {
+          fixtureId: batch.fixtureId,
+          playerId: row.playerId as number,
+          inOfficialSquad: true,
+          minutes: row.minutes,
+          goals: row.goals,
+          assists: row.assists,
+          cleanSheetEligible: row.cleanSheetEligible,
+          rating: row.rating,
+          sourceNote: 'imported match data',
+        },
+        { suppressLeaderboardInvalidation: true },
+      )
     }
 
     await deps.matchImportRepository.deleteBatch(batch.batchId)
@@ -56,6 +62,9 @@ export async function promoteBatchIfReady(
       entityId: batch.fixtureId,
       detail: { batchId: batch.batchId, promotedRowCount: resolvedRows.length },
     })
+
+    // All writes landed — now flip the board once.
+    deps.scoringRepository.invalidateLeaderboard()
 
     return { promoted: true, promotedRowCount: resolvedRows.length }
   })
