@@ -849,9 +849,9 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
 
       {accessState === 'guest' ? (
         <section className="grid gap-6">
-          <div className="hero-card allow-dropdown-overflow rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
+          <div className="hero-card allow-dropdown-overflow rounded-[1.25rem] px-5 py-5 sm:px-6 sm:py-6 lg:px-7">
             <p className="eyebrow">{copy.register.eyebrow}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
                 {copy.register.noMulti}
               </span>
@@ -859,15 +859,26 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                 {copy.register.oneEmail}
               </span>
             </div>
-            <h2 className="mt-7 max-w-[10ch] text-[clamp(2.8rem,3vw+1.1rem,5rem)] font-semibold leading-[0.92] tracking-[-0.05em] text-white">
+            <h2 className="mt-5 max-w-[10ch] text-[clamp(2.25rem,3vw+1rem,5rem)] font-semibold leading-[0.92] tracking-[-0.05em] text-white sm:mt-7">
               {copy.register.title}
             </h2>
-            <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[var(--color-muted)]">
+            <p className="mt-4 max-w-[60ch] text-base leading-relaxed text-[var(--color-muted)] sm:mt-6 sm:text-lg">
               {copy.register.body}
             </p>
 
-            <form onSubmit={handleRegister} className="mt-8 grid gap-5">
-              <div className="grid gap-3 sm:grid-cols-2">
+            <div className="mt-5 grid grid-cols-4 gap-1.5 rounded-[1rem] border border-white/8 bg-black/16 p-1.5 sm:mt-7">
+              {copy.register.steps.map((step, index) => (
+                <span
+                  key={step}
+                  className="mono rounded-[0.65rem] bg-white/[0.03] px-2 py-2 text-center text-[9px] uppercase tracking-[0.12em] text-[var(--color-muted)]"
+                >
+                  <span className="text-[var(--color-accent)]">{index + 1}</span> {step}
+                </span>
+              ))}
+            </div>
+
+            <form onSubmit={handleRegister} className="mt-5 grid gap-4 sm:mt-8 sm:gap-5">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {(['rookie', 'veteran'] as LeagueType[]).map((mode) => (
                   <button
                     key={mode}
@@ -880,17 +891,17 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                       }))
                     }
                     className={[
-                      'rounded-[1.7rem] border px-5 py-5 text-left transition duration-300 ease-out active:scale-[0.99]',
+                      'rounded-[1.05rem] border px-3 py-3 text-left transition duration-300 ease-out active:scale-[0.99] sm:rounded-[1.7rem] sm:px-5 sm:py-5',
                       registrationForm.mode === mode
                         ? 'border-[var(--color-accent)]/35 bg-[rgba(24,180,133,0.12)]'
                         : 'border-white/10 bg-[rgba(8,13,12,0.62)] hover:border-white/16 hover:bg-[rgba(12,18,16,0.8)]',
                     ].join(' ')}
                   >
-                    <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{mode}</p>
-                    <p className="mt-3 text-lg font-semibold text-white">
+                    <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)] sm:text-[11px] sm:tracking-[0.24em]">{mode}</p>
+                    <p className="mt-2 text-sm font-semibold leading-tight text-white sm:mt-3 sm:text-lg">
                       {mode === 'rookie' ? copy.register.rookieTitle : copy.register.veteranTitle}
                     </p>
-                    <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                    <p className="mt-2 hidden text-sm leading-relaxed text-[var(--color-muted)] sm:block">
                       {mode === 'rookie'
                         ? copy.register.rookieBody
                         : copy.register.veteranBody}

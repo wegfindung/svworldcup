@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
@@ -13,20 +13,31 @@ import {
   withReferral,
 } from './lib/referral'
 import type { LocaleCode } from './lib/types'
-import { AdminPage } from './pages/AdminPage'
-import { BuilderPage } from './pages/BuilderPage'
-import { HomePage } from './pages/HomePage'
-import { PlayerLoginPage } from './pages/PlayerLoginPage'
-import { ProfilePage } from './pages/ProfilePage'
-import { PrizesPage } from './pages/PrizesPage'
-import { ResetPasswordPage } from './pages/ResetPasswordPage'
-import { AboutPage } from './pages/AboutPage'
-import { RulesPage } from './pages/RulesPage'
-import { ResultsPage } from './pages/ResultsPage'
-import { ShareComposerPage } from './pages/ShareComposerPage'
-import { TablesPage } from './pages/TablesPage'
-import { TournamentClosedPage } from './pages/TournamentClosedPage'
-import { VerifyPage } from './pages/VerifyPage'
+
+const AboutPage = lazy(() => import('./pages/AboutPage').then((module) => ({ default: module.AboutPage })))
+const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })))
+const BuilderPage = lazy(() => import('./pages/BuilderPage').then((module) => ({ default: module.BuilderPage })))
+const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
+const PlayerLoginPage = lazy(() => import('./pages/PlayerLoginPage').then((module) => ({ default: module.PlayerLoginPage })))
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })))
+const PrizesPage = lazy(() => import('./pages/PrizesPage').then((module) => ({ default: module.PrizesPage })))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })))
+const ResultsPage = lazy(() => import('./pages/ResultsPage').then((module) => ({ default: module.ResultsPage })))
+const RulesPage = lazy(() => import('./pages/RulesPage').then((module) => ({ default: module.RulesPage })))
+const ShareComposerPage = lazy(() => import('./pages/ShareComposerPage').then((module) => ({ default: module.ShareComposerPage })))
+const TablesPage = lazy(() => import('./pages/TablesPage').then((module) => ({ default: module.TablesPage })))
+const TournamentClosedPage = lazy(() =>
+  import('./pages/TournamentClosedPage').then((module) => ({ default: module.TournamentClosedPage })),
+)
+const VerifyPage = lazy(() => import('./pages/VerifyPage').then((module) => ({ default: module.VerifyPage })))
+
+function RouteFallback() {
+  return (
+    <section className="glass-panel rounded-[1.15rem] p-5">
+      <div className="skeleton h-40 rounded-[1rem]" />
+    </section>
+  )
+}
 
 function App() {
   const location = useLocation()
@@ -230,46 +241,48 @@ function App() {
         </header>
 
         <main className="flex-1 reveal-in">
-          <Routes>
-            <Route path="/" element={<HomePage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
-            <Route
-              path="/register"
-              element={
-                registrationClosed ? (
-                  <TournamentClosedPage locale={locale} />
-                ) : (
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<HomePage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
+              <Route
+                path="/register"
+                element={
+                  registrationClosed ? (
+                    <TournamentClosedPage locale={locale} />
+                  ) : (
+                    <BuilderPage
+                      key="register"
+                      locale={locale}
+                      referrerSoccerverseUsername={referrerSoccerverseUsername}
+                      mode="register"
+                    />
+                  )
+                }
+              />
+              <Route
+                path="/builder"
+                element={
                   <BuilderPage
-                    key="register"
+                    key="builder"
                     locale={locale}
                     referrerSoccerverseUsername={referrerSoccerverseUsername}
-                    mode="register"
+                    mode="builder"
                   />
-                )
-              }
-            />
-            <Route
-              path="/builder"
-              element={
-                <BuilderPage
-                  key="builder"
-                  locale={locale}
-                  referrerSoccerverseUsername={referrerSoccerverseUsername}
-                  mode="builder"
-                />
-              }
-            />
-            <Route path="/login" element={<PlayerLoginPage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
-            <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
-            <Route path="/results" element={<ResultsPage locale={locale} />} />
-            <Route path="/prizes" element={<PrizesPage locale={locale} />} />
-            <Route path="/rules" element={<RulesPage locale={locale} />} />
-            <Route path="/about" element={<AboutPage locale={locale} />} />
-            <Route path="/tables" element={<TablesPage locale={locale} />} />
-            <Route path="/verify" element={<VerifyPage locale={locale} registrationClosed={registrationClosed} />} />
-            <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
-            <Route path="/admin/*" element={<AdminPage locale={locale} />} />
-            <Route path="/profiles/:slug" element={<ProfilePage />} />
-          </Routes>
+                }
+              />
+              <Route path="/login" element={<PlayerLoginPage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
+              <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
+              <Route path="/results" element={<ResultsPage locale={locale} />} />
+              <Route path="/prizes" element={<PrizesPage locale={locale} />} />
+              <Route path="/rules" element={<RulesPage locale={locale} />} />
+              <Route path="/about" element={<AboutPage locale={locale} />} />
+              <Route path="/tables" element={<TablesPage locale={locale} />} />
+              <Route path="/verify" element={<VerifyPage locale={locale} registrationClosed={registrationClosed} />} />
+              <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
+              <Route path="/admin/*" element={<AdminPage locale={locale} />} />
+              <Route path="/profiles/:slug" element={<ProfilePage />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </div>
