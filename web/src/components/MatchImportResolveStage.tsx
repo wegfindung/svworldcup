@@ -63,9 +63,11 @@ export function MatchImportResolveStage({
   onSubmit,
   onBack,
 }: MatchImportResolveStageProps) {
+  // B3: load each team's pool independently — one team's pool failing must not block resolving the
+  // other team's rows. `poolsSettled` flips once both fetches finish (success or failure).
   const [pools, setPools] = useState<Record<string, TeamPoolPlayer[]>>({})
-  const [poolsLoaded, setPoolsLoaded] = useState(false)
-  const [poolsError, setPoolsError] = useState<string | null>(null)
+  const [poolErrors, setPoolErrors] = useState<Record<string, string>>({})
+  const [poolsSettled, setPoolsSettled] = useState(false)
   const [choices, setChoices] = useState<Map<string, RowChoice>>(new Map())
   const [statEdits, setStatEdits] = useState<Map<string, RowStatEdit>>(new Map())
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -74,20 +76,31 @@ export function MatchImportResolveStage({
   const [skipError, setSkipError] = useState<string | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
     let cancelled = false
-    Promise.all([fetchTeamSelections(homeTeam.code), fetchTeamSelections(awayTeam.code)])
-      .then(([home, away]) => {
-        if (cancelled) return
-        setPools({ [homeTeam.code]: home.items, [awayTeam.code]: away.items })
-        setPoolsLoaded(true)
-      })
-      .catch((caught) => {
-        if (!cancelled) {
-          setPoolsError(caught instanceof Error ? caught.message : 'Could not load team pools.')
+    setPoolsSettled(false)
+    const teamCodes = [homeTeam.code, awayTeam.code]
+    void (async () => {
+      const results = await Promise.allSettled(teamCodes.map((code) => fetchTeamSelections(code, controller.signal)))
+      if (cancelled) return
+      const nextPools: Record<string, TeamPoolPlayer[]> = {}
+      const nextErrors: Record<string, string> = {}
+      results.forEach((result, index) => {
+        const code = teamCodes[index]
+        if (result.status === 'fulfilled') {
+          nextPools[code] = result.value.items
+        } else {
+          nextErrors[code] = result.reason instanceof Error ? result.reason.message : 'Could not load team pool.'
         }
       })
+      setPools(nextPools)
+      setPoolErrors(nextErrors)
+      setPoolsSettled(true)
+    })()
+    // B5: abort the in-flight pool fetches when the teams change or the stage unmounts.
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [homeTeam.code, awayTeam.code])
 
@@ -500,16 +513,18 @@ export function MatchImportResolveStage({
           </div>
           <button
             type="button"
-            disabled={busy || unresolvedRemaining > 0 || !poolsLoaded || starterCapViolations.length > 0}
+            disabled={busy || unresolvedRemaining > 0 || !poolsSettled || starterCapViolations.length > 0}
             onClick={() => setConfirmOpen(true)}
             className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
           >
             {busy ? 'Submitting…' : 'Submit match report'}
           </button>
         </div>
-        {poolsError ? (
+        {Object.keys(poolErrors).length ? (
           <div className="mt-3 rounded-[1.1rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
-            {poolsError}
+            Could not load the player pool for {Object.keys(poolErrors).map(teamName).join(' and ')}. Rows for{' '}
+            {Object.keys(poolErrors).length === 1 ? 'that team' : 'those teams'} can't be matched to a player —
+            resolve the other team or skip them.
           </div>
         ) : null}
         {skipError ? (
@@ -528,7 +543,7 @@ export function MatchImportResolveStage({
         ) : null}
       </div>
 
-      {!poolsLoaded && !poolsError ? (
+      {!poolsSettled ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="skeleton h-72 rounded-[1.15rem]" />
           <div className="skeleton h-72 rounded-[1.15rem]" />

@@ -57,7 +57,13 @@ event bootstrap fetch fails, the client renders on safe defaults but must surfac
 degraded-state notice rather than silently hiding the failure. Public read GETs go through a small
 client-side cache + in-flight dedup so revisiting a page doesn't refetch just-loaded data; requests
 that pass an AbortSignal bypass it to keep their cancellation semantics. No client-side retry — the
-server is hardened and blind retries would only amplify load.
+server is hardened and blind retries would only amplify load. Views that load several independent
+data sources at once (public standings, admin dashboard/operations, match-import team pools) must
+fetch each source independently and render partially: one failed or slow fetch degrades only its own
+block (its own load-error/"unavailable" state) and never drops the whole view. Use `Promise.allSettled`
+with per-source state, not an all-or-nothing `Promise.all` + single `catch`. Sources that are only
+meaningful together (e.g. the share composer needs both the participant session and their squad) stay
+coupled by design — partial render does not apply there.
 
 ## Security Rules
 

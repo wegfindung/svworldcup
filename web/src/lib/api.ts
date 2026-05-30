@@ -502,24 +502,27 @@ export function fetchPublicProfile(slug: string) {
   return getCachedJson<{ item: PublicParticipantProfile }>(`/api/public/profiles/${encodeURIComponent(slug)}`)
 }
 
-export function fetchAdminOverview() {
+export function fetchAdminOverview(signal?: AbortSignal) {
   return getJson<AdminOverview>('/api/admin/overview', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
-export function fetchAdminAuditLogs(limit = 50) {
+export function fetchAdminAuditLogs(limit = 50, signal?: AbortSignal) {
   return getJson<{ items: AuditLogEntry[] }>(`/api/admin/audit?limit=${encodeURIComponent(String(limit))}`, {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
-export function fetchAdminOperationEvents(limit = 50) {
+export function fetchAdminOperationEvents(limit = 50, signal?: AbortSignal) {
   return getJson<{ items: OperationEvent[] }>(`/api/admin/operations/events?limit=${encodeURIComponent(String(limit))}`, {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
@@ -572,10 +575,11 @@ export function triggerGlobalReveal(payload: { revealProfiles: boolean; revealSq
   })
 }
 
-export function fetchEmailCampaigns() {
+export function fetchEmailCampaigns(signal?: AbortSignal) {
   return getJson<{ campaigns: EmailCampaignRecord[] }>('/api/admin/email-marketing/campaigns', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
@@ -643,10 +647,11 @@ export function fetchAdminTeams() {
   })
 }
 
-export function fetchTeamSelections(teamCode: string) {
+export function fetchTeamSelections(teamCode: string, signal?: AbortSignal) {
   return getJson<{ items: TeamPoolPlayer[] }>(`/api/admin/teams/${teamCode}/selections`, {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 
@@ -679,10 +684,11 @@ export function saveTeamSelections(teamCode: string, players: TeamPoolPlayer[] |
 
 // --- Match data import engine (mounted under /api/admin/match-import) ---
 
-export function fetchMatchImportBatches() {
+export function fetchMatchImportBatches(signal?: AbortSignal) {
   return getJson<{ items: PendingMatchBatch[] }>('/api/admin/match-import/batches', {
     method: 'GET',
     headers: {},
+    signal,
   })
 }
 

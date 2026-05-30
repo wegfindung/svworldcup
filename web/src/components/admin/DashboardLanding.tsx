@@ -18,28 +18,38 @@ const views: Array<{ to: string; label: string; blurb: string }> = [
 export function DashboardLanding() {
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [pendingImports, setPendingImports] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // B3: load each source independently so one failed fetch degrades only its own card, never the
+  // whole landing. The overview feeds three cards; pending imports is its own.
+  const [failedSources, setFailedSources] = useState<string[]>([])
 
   useEffect(() => {
+    const controller = new AbortController()
     let active = true
     void (async () => {
-      try {
-        const [overviewResponse, batchesResponse] = await Promise.all([
-          fetchAdminOverview(),
-          fetchMatchImportBatches(),
-        ])
-        if (active) {
-          setOverview(overviewResponse)
-          setPendingImports(batchesResponse.items.length)
-        }
-      } catch (err) {
-        if (active) {
-          setError(err instanceof Error ? err.message : 'Could not load the dashboard overview.')
-        }
+      const [overviewResult, batchesResult] = await Promise.allSettled([
+        fetchAdminOverview(controller.signal),
+        fetchMatchImportBatches(controller.signal),
+      ])
+      if (!active) {
+        return
       }
+      const failed: string[] = []
+      if (overviewResult.status === 'fulfilled') {
+        setOverview(overviewResult.value)
+      } else {
+        failed.push('overview')
+      }
+      if (batchesResult.status === 'fulfilled') {
+        setPendingImports(batchesResult.value.items.length)
+      } else {
+        failed.push('pending imports')
+      }
+      setFailedSources(failed)
     })()
+    // B5: abort in-flight fetches when the component unmounts.
     return () => {
       active = false
+      controller.abort()
     }
   }, [])
 
@@ -62,9 +72,9 @@ export function DashboardLanding() {
         <p className="eyebrow">overview</p>
         <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">At a glance.</h3>
 
-        {error ? (
+        {failedSources.length ? (
           <div className="mt-5 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
-            {error}
+            Could not load: {failedSources.join(', ')}. Other cards still reflect what loaded.
           </div>
         ) : null}
 
