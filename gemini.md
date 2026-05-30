@@ -13,7 +13,12 @@
 > new since this map: a **max-4-players-per-national-team squad-building cap** (`MAX_PLAYERS_PER_NATION`,
 > see `architecture/SOP_registration_and_auth.md`), and the **budget multiplier table is now 12 tiers**
 > (1.5M→1.50 … 3.0M→1.00 default … 9.0M→0.20; see `architecture/SOP_scoring_and_leagues.md` "Salary
-> Budget Multiplier").
+> Budget Multiplier"). Also new (2026-05-30): a **whole-site stability/load-resilience pass** —
+> leaderboard read-cache, React error boundary, hardened DB pool + graceful shutdown, per-endpoint
+> rate limits + trust-proxy-on-in-prod, static `Cache-Control`, pino structured logging +
+> request-timing, observable background jobs, promotion fixture advisory lock, and a client GET
+> cache. See `architecture/SOP_system_overview.md` ("Runtime Resilience" + "Operations Observability")
+> and `claude-docs/stabilization-plan.md` for the full picture.
 > Verify against the code and the `architecture/SOP_*.md` layer before relying on anything below.
 
 > Protocol: B.L.A.S.T. | Architecture: A.N.T. 3-Layer
