@@ -92,6 +92,16 @@ Provide a secure The Grand Tournament event platform with:
 - Short-lived runtime events may be kept in process memory for low-friction visibility into scheduler runs and external Soccerverse API warnings/errors.
 - Runtime events are operational signals, not a durable audit log. Durable admin writes still belong in `audit_logs`.
 
+## Testing
+
+- **Server**: `vitest` unit/integration tests live next to source as `*.test.ts`. Run via `npm test` in `server`.
+- **Web**: `vitest` + React Testing Library + jsdom. Tests live next to source as `*.test.ts`/`*.test.tsx`;
+  the jsdom environment and `@testing-library/jest-dom` matchers are wired in `web/vitest.config.ts` +
+  `web/src/test/setup.ts`. Test files are excluded from the `tsc -b` production build (mirrors the server).
+  Run via `npm test` in `web`.
+- **Both workspaces**: `npm test` at the repo root runs the server then the web suite.
+- **End-to-end**: Playwright config at repo root (`playwright.config.ts`), run via `npm run test:e2e`.
+
 ## i18n Rules
 
 - English is the source language for code and default UI copy.
