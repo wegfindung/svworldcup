@@ -430,7 +430,24 @@ const copyByLocale: Record<LocaleCode, AboutCopy> = {
   ja: japaneseCopy,
 }
 
-function LinkCard({ item, copy }: { item: LinkItem; copy: AboutCopy }) {
+// The official Soccerverse mark, rendered behind official link cards as a hover watermark.
+// Uses currentColor so the tint/dimness is controlled by the wrapping element's text color + opacity.
+function SoccerverseMark({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 698.12 826.77" className={className} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M144.86,486.75l196.93,196.88c4.69,4.69,12.29,4.69,16.98,0l29.24-29.21c4.69-4.69,4.7-12.3,0-16.99l-238.16-238.16c-3.77-3.77-10.23-1.1-10.23,4.24v70.58c0,4.75,1.89,9.3,5.24,12.65Z"
+      />
+      <path
+        fill="currentColor"
+        d="M486.43,349.28h-163.99c-26.66,0-41.91-4.31-41.91-27.14v-26.27c.91-21,15.95-25.05,41.78-25.05h123.69c27.05-.17,39.77,4.88,41.73,23.51.64,6.07,5.75,10.69,11.85,10.69h41.78c6.55,0,11.88-5.3,11.94-11.86.22-25.85-1.16-42.9-27.27-71.93,0,0,0-.04-.04-.04-.52-1.54-57.8-58.44-75.73-76.35-3.35-3.35-7.88-5.21-12.62-5.21h-70.51c-5.34,0-8.01,6.45-4.24,10.23l55.61,55.61h-92.58l-60.59-60.59c-3.36-3.36-7.91-5.24-12.65-5.24h-70.58c-5.34,0-8.01,6.45-4.24,10.23l68.41,68.42c-19.38,13.35-31.83,36.3-31.11,61.43l-65.32-65.29c-3.77-3.77-10.23-1.1-10.23,4.24v70.55c0,4.74,1.88,9.29,5.24,12.65l66.7,66.74c19.08,18.67,40.88,37.69,66.36,42.83,10.86,2.54,27.32,3.15,37.21,3.22,0,0,136.2,0,136.2,0,25.36,0,40.34,3.92,41.74,23.96.11,12.09,1.64,16.79-10.24,28.49l-35.86,35.98c-2.33,2.34-6.12,2.34-8.46,0l-17.85-17.85c-3.35-3.35-7.9-5.24-12.65-5.24h-70.56c-5.33,0-8,6.44-4.23,10.21l101.06,101.06c4.67,4.67,12.25,4.67,16.92,0l84.38-84.42c14.81-14.81,22.92-34.46,22.92-55.38v-30.11c0-39.8-32.26-72.06-72.06-72.06Z"
+      />
+    </svg>
+  )
+}
+
+function LinkCard({ item, copy, showMark = false }: { item: LinkItem; copy: AboutCopy; showMark?: boolean }) {
   return (
     <a
       href={item.href}
@@ -438,6 +455,12 @@ function LinkCard({ item, copy }: { item: LinkItem; copy: AboutCopy }) {
       rel="noopener noreferrer"
       className="group relative flex flex-col overflow-hidden rounded-[1.1rem] border border-white/8 bg-black/15 p-4 transition duration-300 ease-out hover:border-white/18 hover:bg-white/6 active:scale-[0.99]"
     >
+      {showMark && !item.preview ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <SoccerverseMark className="h-28 w-28 scale-90 text-[#e8f1f9] opacity-0 blur-[2px] transition-all duration-[2000ms] ease-out group-hover:scale-100 group-hover:opacity-[0.16] group-hover:blur-0" />
+        </span>
+      ) : null}
+
       {item.preview ? (
         <span aria-hidden className="pointer-events-none absolute inset-0">
           <img
@@ -506,7 +529,7 @@ export function AboutPage({ locale }: AboutPageProps) {
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">{copy.officialTitle}</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {officialLinks.map((item) => (
-            <LinkCard key={item.href} item={item} copy={copy} />
+            <LinkCard key={item.href} item={item} copy={copy} showMark />
           ))}
         </div>
       </section>
