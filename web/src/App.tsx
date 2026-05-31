@@ -17,6 +17,7 @@ import type { LocaleCode } from './lib/types'
 const AboutPage = lazy(() => import('./pages/AboutPage').then((module) => ({ default: module.AboutPage })))
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })))
 const BuilderPage = lazy(() => import('./pages/BuilderPage').then((module) => ({ default: module.BuilderPage })))
+const HelpPage = lazy(() => import('./pages/HelpPage').then((module) => ({ default: module.HelpPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const PlayerLoginPage = lazy(() => import('./pages/PlayerLoginPage').then((module) => ({ default: module.PlayerLoginPage })))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })))
@@ -64,6 +65,9 @@ function App() {
   const { data: bootstrap } = useBootstrap()
   const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
   const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
+  const importantActive = copy.nav.important.items.some(
+    (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  )
 
   useEffect(() => {
     const referrer = readReferralFromSearch(location.search)
@@ -118,6 +122,45 @@ function App() {
                       {item.label}
                     </NavLink>
                   ))}
+
+                  <details className="nav-disclosure group relative">
+                    <summary
+                      className={[
+                        'flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.12em]',
+                        importantActive
+                          ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
+                          : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                      ].join(' ')}
+                    >
+                      {copy.nav.important.label}
+                      <svg
+                        viewBox="0 0 20 20"
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 text-[var(--color-accent)] transition group-open:rotate-180"
+                      >
+                        <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </summary>
+                    <div className="absolute right-0 top-[calc(100%+0.55rem)] z-30 grid min-w-44 gap-1 rounded-[1rem] border border-white/10 bg-[rgba(7,16,14,0.98)] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_28px_70px_-38px_rgba(0,0,0,0.96)]">
+                      {copy.nav.important.items.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={withReferral(item.to, referrerSoccerverseUsername)}
+                          onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}
+                          className={({ isActive }) =>
+                            [
+                              'rounded-[0.75rem] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em]',
+                              isActive
+                                ? 'bg-white/10 text-white'
+                                : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                            ].join(' ')
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </details>
                 </nav>
 
                 {registrationClosed ? null : (
@@ -217,6 +260,29 @@ function App() {
                 ))}
               </div>
 
+              <div className="grid gap-2 rounded-[1rem] border border-white/8 bg-black/14 p-2">
+                <p className="mono px-1 text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">{copy.nav.important.label}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {copy.nav.important.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={withReferral(item.to, referrerSoccerverseUsername)}
+                      onClick={() => setMobileNavOpen(false)}
+                      className={({ isActive }) =>
+                        [
+                          'rounded-full px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em]',
+                          isActive
+                            ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
+                            : 'border border-white/8 bg-black/20 text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                        ].join(' ')
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 {copy.nav.account.map((item) => (
                   <NavLink
@@ -275,6 +341,7 @@ function App() {
               <Route path="/results" element={<ResultsPage locale={locale} />} />
               <Route path="/prizes" element={<PrizesPage locale={locale} />} />
               <Route path="/rules" element={<RulesPage locale={locale} />} />
+              <Route path="/help" element={<HelpPage locale={locale} />} />
               <Route path="/about" element={<AboutPage locale={locale} />} />
               <Route path="/tables" element={<TablesPage locale={locale} />} />
               <Route path="/verify" element={<VerifyPage locale={locale} registrationClosed={registrationClosed} />} />

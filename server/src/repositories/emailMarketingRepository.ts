@@ -312,6 +312,7 @@ function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubsc
     '{{referrer_soccerverse_username}}': recipient.referrerSoccerverseUsername ?? '',
     '{{unsubscribe_url}}': unsubscribeUrl ?? '',
     '{{builder_url}}': `${publicWebUrl}/builder`,
+    '{{help_url}}': `${publicWebUrl}/help`,
     '{{prizes_url}}': `${publicWebUrl}/prizes`,
     '{{play_url}}': 'https://play.soccerverse.com/',
     '{{logo_url}}': `${publicWebUrl}/brand/logo-200.webp`,

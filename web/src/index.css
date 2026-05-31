@@ -218,6 +218,10 @@ textarea:focus-visible {
     0 24px 70px -48px rgba(0, 0, 0, 0.92);
 }
 
+.nav-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
 .data-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
