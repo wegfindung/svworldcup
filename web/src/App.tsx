@@ -79,10 +79,10 @@ function App() {
             >
               <span className="block h-[4.25rem] w-fit sm:h-[6.75rem] lg:h-[8.25rem] xl:h-[8.75rem]">
                 <img
-                  src="/brand/logo-nav-tournament-large.webp"
+                  src="/brand/logo-nav-tournament-large-tight.webp"
                   alt={copy.nav.logoAlt}
-                  width={1536}
-                  height={1024}
+                  width={1337}
+                  height={679}
                   className="h-full w-auto object-contain transition duration-500 group-hover:scale-[1.03]"
                 />
               </span>
