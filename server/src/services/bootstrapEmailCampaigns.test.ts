@@ -22,7 +22,8 @@ describe('bootstrapDefaultEmailCampaigns', () => {
     const campaigns = await repository.listCampaigns()
     const autoresponders = campaigns.filter((candidate) => candidate.kind === 'autoresponder')
     const veteran = autoresponders.find((candidate) => candidate.audienceLeague === 'veteran')
-    const rookie = autoresponders.find((candidate) => candidate.audienceLeague === 'rookie')
+    const rookie = autoresponders.find((candidate) => candidate.subject === 'Rookie briefing: your Grand Tournament crash course')
+    const rookieMainGame = autoresponders.find((candidate) => candidate.subject === 'Rookies, this is where Soccerverse really begins')
 
     expect(veteran).toMatchObject({
       status: 'active',
@@ -50,6 +51,22 @@ describe('bootstrapDefaultEmailCampaigns', () => {
       ja: 'Rookie ブリーフィング: The Grand Tournament 速習ガイド',
     })
     expect(rookie?.bodyHtmlByLocale?.de).toContain('Help-Seite öffnen')
+    expect(rookieMainGame).toMatchObject({
+      status: 'active',
+      triggerKey: 'registration_created',
+      audienceStatus: 'all',
+      audienceLeague: 'rookie',
+      delayMinutes: 60 * 24,
+      requiresMarketingOptIn: true,
+    })
+    expect(rookieMainGame?.bodyHtml).toContain('{{logo_url}}')
+    expect(rookieMainGame?.bodyHtml).toContain('{{play_affiliate_url}}')
+    expect(rookieMainGame?.bodyHtml).toContain('KNOW YOUR PLAYERS, OWN YOUR SUCCESS')
+    expect(rookieMainGame?.subjectByLocale).toMatchObject({
+      de: 'Rookies, hier beginnt Soccerverse wirklich',
+      es: 'Rookies, aquí es donde Soccerverse empieza de verdad',
+      ja: 'Rookies、Soccerverse はここから本当に始まります',
+    })
   })
 
   it('seeds the localized swap-window newsletter series', async () => {

@@ -1,4 +1,5 @@
 import type { EmailCampaignInput, SupportedLocale } from '../domain/types.js'
+import { rookieMainGameEmailCampaign } from './rookieMainGameEmailCampaign.js'
 import { swapWindowEmailCampaigns } from './swapWindowEmailCampaigns.js'
 
 interface VeteranOnboardingCopy {
@@ -620,5 +621,6 @@ export const defaultEmailCampaigns: EmailCampaignInput[] = [
     batchSize: 50,
     requiresMarketingOptIn: false,
   },
+  rookieMainGameEmailCampaign,
   ...swapWindowEmailCampaigns,
 ]
