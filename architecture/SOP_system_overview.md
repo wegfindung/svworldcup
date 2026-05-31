@@ -37,7 +37,7 @@ Provide a secure The Grand Tournament event platform with:
 3. Participant session creation after verification.
 4. Squad builder with fixed `4-3-3` plus four locked substitutes.
 5. Admin-curated Grand Tournament team pools that drive builder eligibility.
-6. Public standings for rookie, veteran, primary nation, and secondary nation tables.
+6. Public standings for three tables: rookie, veteran, and a single combined nation table (each participant's full score is pooled into both their primary and optional secondary nation).
 7. Public profile pages and share links.
 8. Admin backend for:
 - email/password login
@@ -173,4 +173,4 @@ coupled by design — partial render does not apply there.
 
 - English is the source language for code and default UI copy.
 - All user-facing copy must be stored in translation dictionaries, not hardcoded inline in business logic.
-- Planned locales: `en`, `es`, `de`, `fr`, `pt`, `ru`, `zh`.
+- Supported locales (9): `en`, `es`, `de`, `fr`, `pt`, `ru`, `zh`, `it`, `ja`.

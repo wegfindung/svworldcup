@@ -6,15 +6,15 @@ Maintain deterministic backend seed data for Grand Tournament teams, fixtures, a
 
 ## Team Seed Requirements
 
-- Seed all teams from the provided first matchday list.
+- Seed all 48 Grand Tournament teams.
 - Store English display names in backend seed data.
 - Include stable codes/slugs for routing and translation lookup.
 
 ## Fixture Seed Requirements
 
-- Seed the provided opening matchday fixtures.
+- Seed all 72 group-stage fixtures (12 groups, `A`–`L`).
 - Preserve group, kickoff date, kickoff time, and home/away ordering.
-- Treat imported fixture data as editable admin-controlled seed data until a final official schedule source is chosen.
+- Teams and fixtures are deterministic compile-time seed data; they are not admin-editable at runtime today. If a final official schedule source is later wired in, fixture edits would become an admin-controlled, audited capability.
 
 ## Team Records
 
@@ -24,7 +24,6 @@ Each team record should include:
 - `slug`
 - `nameEn`
 - `groupKey`
-- `isSeededFromUserInput`
 
 ## Admin Controls
 
@@ -34,7 +33,7 @@ Each team record should include:
 - Player identity in the team pool should be enriched with community datapack names and portraits when Soccerverse API records omit names.
 - The backend must also support curated external Grand Tournament squad JSON imports when the user provides a reviewed source file.
 - Imported players must preserve any provided portrait URL instead of forcing the community portrait host.
-- Admin changes to seeded teams/fixtures must be auditable.
+- Teams and fixtures are fixed seed constants today, so no admin route mutates them. The editable, audited admin surfaces are the Grand Tournament team player pools (`admin.team_pool_edit`) and the scoring config (`admin.score_config_change`). If team/fixture editing is added later, those changes must be auditable too.
 
 ## Data Quality Rules
 

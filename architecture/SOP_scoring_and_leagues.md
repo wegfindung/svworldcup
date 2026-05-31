@@ -86,7 +86,7 @@ Each participant selects a salary budget when building their squad. The chosen b
   a fixture belongs to scores at full weight; a substitute slot scores at half weight (`0.5`).
 - Substitute slots always score, at half weight: every point a reserve earns from its own match entry is multiplied by `0.5`. There is no auto-activation and no dependency on starter absence or official-squad presence (see "Substitution Rules").
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
-- Nations qualify for the public table once they have at least two scored entries.
+- Nations qualify for the public table once they have at least two member entries — counted by participation (`participantCount >= 2`), not by points scored, so two zero-point members still qualify.
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
 
 ## Leaderboard Read Cache

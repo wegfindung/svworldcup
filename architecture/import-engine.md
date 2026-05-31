@@ -10,29 +10,45 @@ reverse-engineering the code.
 
 It moves real-world match performance data into `admin_match_entries` (the table the scoring
 engine reads) through a controlled lifecycle: **upload → review → two-admin confirm → promote**.
-No unreviewed data can reach scoring. The only data source wired today is a pasted JSON
-transcribed from match screenshots by an admin's own AI assistant; the platform never sees an
-image.
+No unreviewed data can reach scoring. Two input formats are wired today: a pasted JSON
+transcribed from match screenshots by an admin's own AI assistant, and a CSV/TSV player-rows
+table whose match-level fields (final score, source URL) come from form values. The platform
+never sees an image, and it never fetches the source URL — it only stores and links it.
 
 ## Lifecycle
 
 ### 1. Upload
 
-`POST /api/admin/match-import/upload` with `{ fixtureId, json, replace? }`.
+`POST /api/admin/match-import/upload` with `{ fixtureId, input, overrides, replace? }`, where
+`input` is a discriminated union on `format`: `{ format: 'json', json, sourceUrl? }` or
+`{ format: 'csv', text, homeGoals, awayGoals, sourceUrl }`. `overrides` carries the admin's
+per-row resolve / skip / stat choices made in the pre-persist resolve stage.
 
 1. `uploadSchema` (zod) validates the request envelope.
-2. `parseMatchImportJson` (zod, `lib/matchImportJson.ts`) validates the pasted JSON against the
-   contract shape — see `SOP_match_data_import.md`, "JSON Contract".
+2. `buildMatchImportJson` normalizes `input` into the shared `MatchImportJson` shape: a JSON
+   input is validated by `parseMatchImportJson` (zod, `lib/matchImportJson.ts`) — see
+   `SOP_match_data_import.md`, "JSON Contract"; a CSV/TSV input is parsed by `parseMatchImportCsv`,
+   taking its two teams from the selected fixture and its final score from the form fields.
 3. `assertMatchImportSemantics` checks the cross-field rules: the match names two distinct
    teams, every player's team is one of those two, and no player name appears twice for the
    same team.
-4. `JsonMatchStatsImporter.importMatch` (`services/matchStatsImporter.ts`) does the source-
+4. `JsonMatchStatsImporter.resolveMatch` (`services/matchStatsImporter.ts`) does the source-
    specific work: the wrong-fixture guard, per-team player resolution, and skip-list filtering
-   (see "Player resolution" below). It returns an `ImportedMatch` — a ready-to-create batch
-   plus the list of deliberately skipped names.
-5. The route calls `createBatch` (or `replaceBatch` when `replace` is true and a batch already
-   exists for the fixture) on the `MatchImportRepository`.
-6. An `audit_logs` entry is written: `match_import.upload`.
+   (see "Player resolution" below). It returns a `MatchResolution` — the resolved/unresolved
+   rows plus the list of deliberately skipped names.
+5. `finalizeSubmission` (`lib/matchImportSubmission.ts`) applies the admin's `overrides`
+   (resolve / skip / stat choices) onto the resolution, rejecting loudly if any row is still
+   unresolved, and returns the ready-to-create batch plus the mapping- and skip-list writes to
+   persist. `assertStarterCap` then re-asserts the 11-starter cap on the finalized rows, because
+   resolve-stage `lineupStatus` edits are applied after the parse-time semantic check.
+6. The mapping / skip-list writes are persisted first (idempotent upserts), then the route calls
+   `createBatch` (or `replaceBatch` when `replace` is true and a batch already exists for the
+   fixture) on the `MatchImportRepository`.
+7. An `audit_logs` entry is written: `match_import.upload`.
+
+`POST /api/admin/match-import/parse` is the pre-persist sibling of upload: same
+`{ fixtureId, input }`, it runs steps 2–4 and returns the `resolution` without writing anything,
+so the admin can resolve or skip every outstanding row before calling `/upload`.
 
 The uploader's act of importing counts as the first confirmation. `createBatch` records it as
 a confirmation at data version 1.
@@ -60,9 +76,11 @@ Every edit increments the batch's `data_version` (see "Confirmation state machin
 
 ### 3. Confirm
 
-`POST .../batches/:batchId/confirm`. `canConfirm` (`lib/confirmationRules.ts`) enforces that the
-confirming admin is not the most recent editor of the current state and has not already
-confirmed the current data version. `addConfirmation` records `(admin_email, data_version)`.
+`POST .../batches/:batchId/confirm`. `canConfirm` (`lib/confirmationRules.ts`) blocks only an
+admin who has already confirmed the batch's current data version. The most recent editor is not
+separately barred: their edit already recorded their confirmation on the new version, so the same
+already-confirmed check stops them double-counting — an edited batch still needs one other distinct
+admin to reach two. `addConfirmation` records `(admin_email, data_version)`.
 Audited as `match_import.confirm`. The route then calls `promoteBatchIfReady`.
 
 ### 4. Promote
@@ -89,10 +107,10 @@ Promotion is the **only** path from this engine into `admin_match_entries`.
 
 ### Adapter pattern
 
-`MatchStatsImporter` is an interface with one method, `importMatch()`. `JsonMatchStatsImporter`
+`MatchStatsImporter` is an interface with one method, `resolveMatch()`. `JsonMatchStatsImporter`
 is the concrete implementation. `ApiMatchStatsImporter` is a documented stub — the API source is
 not team-locked and its response shape is unverified, so it throws until implemented. Any future
-source is one more `importMatch()` implementation feeding the same pending → confirm → promote
+source is one more `resolveMatch()` implementation feeding the same pending → confirm → promote
 pipeline; nothing downstream changes.
 
 ### Dual-flavour repositories
@@ -139,7 +157,8 @@ differ from the canonical Grand Tournament names.
 
 | Route | Repository call(s) | Tables touched |
 | --- | --- | --- |
-| `POST /upload` | `JsonMatchStatsImporter.importMatch`, `MatchImportRepository.createBatch` / `replaceBatch`, `AuditRepository.record` | reads `match_import_player_map`, `match_import_skip_names`, team pool; writes `pending_match_batches`, `pending_match_stat_rows`, `pending_match_confirmations`, `audit_logs` |
+| `POST /parse` | `JsonMatchStatsImporter.resolveMatch` | reads `match_import_player_map`, `match_import_skip_names`, team pool; writes nothing |
+| `POST /upload` | `JsonMatchStatsImporter.resolveMatch`, `finalizeSubmission`, `MatchMappingRepository.upsertPlayerMap` / `addSkipName`, `MatchImportRepository.createBatch` / `replaceBatch`, `AuditRepository.record` | reads `match_import_player_map`, `match_import_skip_names`, team pool; writes `match_import_player_map`, `match_import_skip_names`, `pending_match_batches`, `pending_match_stat_rows`, `pending_match_confirmations`, `audit_logs` |
 | `GET /batches`, `GET /batches/:id` | `MatchImportRepository.listBatches` / `getBatch` | reads pending tables |
 | `PUT /batches/:id/rows/:rowId` | `MatchImportRepository.updateRow`, `AuditRepository.record` | writes `pending_match_stat_rows`, `pending_match_batches` (version bump), `audit_logs` |
 | `POST /batches/:id/rows/:rowId/resolve` | `MatchImportRepository.updateRow`, `MatchMappingRepository.upsertPlayerMap`, `AuditRepository.record` | writes `pending_match_stat_rows`, `pending_match_batches`, `match_import_player_map`, `audit_logs` |

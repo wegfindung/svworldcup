@@ -132,8 +132,9 @@ Common to both:
 
 - Each source name is normalized (diacritic-insensitive) and resolved to a
   `world_cup_players` record.
-- Resolution order: the persisted name-to-player mapping table first, then auto-match
-  against the target team's curated player pool, then leave explicitly unresolved.
+- Resolution order: the persisted name-to-player mapping table first, then the reviewer
+  skip list (a hit drops the row from the import), then auto-match against the target team's
+  curated player pool, then leave explicitly unresolved.
 - The review UI shows the resolved player per row, with display name and portrait, so an
   admin can visually verify the mapping and change it inline.
 - A correction in the review UI writes back to the mapping table, so a name never needs
@@ -167,9 +168,10 @@ Common to both:
   60+ minutes (post-edit minutes) **and** their team conceded none — the opposing side's goals
   from the final score, mapped via the fixture's home/away team codes. The final score is used
   rather than summing per-player goals because own goals are the known weak point in feed data.
-- The reviewing admin can **override** `clean_sheet_eligible` per player after promotion
-  (`UpdateMatchRowInput.clean_sheet_eligible`) to correct own-goal / feed mistakes; that manual
-  value wins over the derivation.
+- The reviewing admin can **override** `clean_sheet_eligible` per player in review, before
+  promotion (`UpdateMatchRowInput.clean_sheet_eligible`), to correct own-goal / feed mistakes;
+  that manual value wins over the derivation. The pending batch is deleted on promote, so there
+  is no post-promotion per-row override path.
 - Position is not gated here: forwards earn zero clean-sheet points regardless, and MID slots
   earn the configured `+1` only when their snapshot positions include `DML`/`DMR`/`DMC`/`DM`
   — both decisions live in the scoring engine via the slot-class weight and the MID DM-eligibility

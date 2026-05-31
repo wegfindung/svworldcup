@@ -22,7 +22,7 @@
 > Verify against the code and the `architecture/SOP_*.md` layer before relying on anything below.
 
 > Protocol: B.L.A.S.T. | Architecture: A.N.T. 3-Layer
-> Created: 2026-05-08 | Status: Phase 3 Architect In Progress
+> Created: 2026-05-08 | Status: SUPERSEDED — system fully built; this map is a historical pre-build artifact. See the STALE banner above and the `architecture/SOP_*.md` layer for current state.
 
 ---
 
@@ -91,12 +91,12 @@ North Star confirmed by user:
 
 Real Grand Tournament performance only:
 
-- Goals: `2`
-- Assists: `2`
-- Clean sheets: `3`
-- Appearances: `0`
-- Minutes: `0`
-- Optional admin-entered performance score from `Sofascore`: `0.0` to `1.0`
+- Goals: `5`
+- Assists: `3`
+- Appearances: `1`
+- Minutes: `1`
+- Clean sheets (by slot class): GK `4`, DEF `3`, MID `1` (gated on a defensive-midfielder snapshot position), FWD `0`
+- Performance points from the admin-entered rating curve: `0.5` at rating 6.0 rising to `2.0` at rating 10.0
 
 Explicitly excluded in v1:
 
@@ -110,10 +110,10 @@ Fixed formation rule:
 
 ### Substitution model
 
-- A substitute scores only if the corresponding starter is absent from the official Grand Tournament match squad list.
-- Rotation or benching does not trigger substitution.
+- Starter/substitute status is read per round from the round lineup snapshot (frozen at the round's first kickoff), not from official-squad absence.
+- A substitute slot always scores, at half weight (`0.5` of its own match-entry points). There is no absence-triggered activation and no dependency on the starter being present.
 - A sub is locked to its own positional slot class.
-- A sub becomes inactive again once the starter returns to the official squad list.
+- See `architecture/SOP_scoring_and_leagues.md` "Per-Round Lineup Freeze" for the canonical rule.
 
 ### Ownership boost
 
@@ -157,13 +157,7 @@ Fixed formation rule:
 ### Language rules
 
 - Code, identifiers, architecture docs, and product copy default to English.
-- The product must be structured for later localization into:
-- Spanish
-- German
-- French
-- Portuguese
-- Russian
-- Chinese
+- The product is localized into 9 locales: English (source), Spanish, German, French, Portuguese, Russian, Chinese, Italian, and Japanese.
 
 ### Public sharing rules
 
@@ -373,7 +367,7 @@ Validation draft:
 - boost percent range `0..10`
 - substitution only allowed against designated slot partner
 - `leagueType` enum `rookie | veteran`
-- `ownershipBoostPercent` must be `0` for rookie league entries
+- `ownershipBoostPercent` is `0` only for participants with no linked Soccerverse account; a linked Rookie earns the boost on the same terms as a Veteran (league does not gate the boost)
 
 ### Registration
 
@@ -622,3 +616,5 @@ Verified on 2026-05-08 via `npm view`:
 | 2026-05-08 | Phase 5 | Docker, Compose, SQL seeds, and Hetzner deploy script added |
 | 2026-05-08 | Phase 5 | Integrated production-style smoke test passed locally |
 | 2026-05-08 | Phase 5 | Compose DB override hardened and deploy-readiness check added |
+| 2026-05-29 | Audit | Docs↔code audit; this map flagged STALE (see top banner). Scoring, substitution, locale, and ownership-boost facts in §3 corrected to match the built system. |
+| 2026-05-30 | Stability | Site-wide load-resilience pass landed (leaderboard cache, React error boundary, DB-pool/graceful-shutdown hardening, per-endpoint rate limits, structured logging + request timing, observable background jobs, promotion fixture lock). |
