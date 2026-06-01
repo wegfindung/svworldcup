@@ -877,3 +877,273 @@ textarea:focus-visible {
 .floaty {
   animation: floaty 6s ease-in-out infinite;
 }
+
+/* Premium Aesthetic Overrides & Cards */
+
+.premium-glow-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(34, 189, 147, 0.15);
+  background: linear-gradient(135deg, rgba(20, 31, 27, 0.95), rgba(7, 13, 12, 0.98));
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 40px -20px rgba(0, 0, 0, 0.9),
+    0 0 20px -5px rgba(34, 189, 147, 0.15);
+  transition: all 400ms var(--ease-premium);
+}
+
+.premium-glow-card:hover {
+  border-color: rgba(34, 189, 147, 0.4);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 20px 50px -24px rgba(0, 0, 0, 0.95),
+    0 0 30px -5px rgba(34, 189, 147, 0.3);
+  transform: translateY(-4px);
+}
+
+.premium-gold-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(217, 173, 93, 0.15);
+  background: linear-gradient(135deg, rgba(28, 24, 11, 0.95), rgba(7, 13, 12, 0.98));
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 40px -20px rgba(0, 0, 0, 0.9),
+    0 0 20px -5px rgba(217, 173, 93, 0.15);
+  transition: all 400ms var(--ease-premium);
+}
+
+.premium-gold-card:hover {
+  border-color: rgba(217, 173, 93, 0.4);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 20px 50px -24px rgba(0, 0, 0, 0.95),
+    0 0 30px -5px rgba(217, 173, 93, 0.3);
+  transform: translateY(-4px);
+}
+
+/* Soccerverse Premium Player Trading Card */
+.trading-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(234, 225, 205, 0.12);
+  background: linear-gradient(180deg, rgba(16, 24, 21, 0.88) 0%, rgba(6, 12, 10, 0.98) 100%);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 30px -15px rgba(0, 0, 0, 0.8);
+  transition: all 420ms var(--ease-premium);
+}
+
+.trading-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(34, 189, 147, 0.15), transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 420ms var(--ease-premium);
+}
+
+.trading-card:hover {
+  border-color: rgba(34, 189, 147, 0.45);
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 24px 50px -20px rgba(0, 0, 0, 0.9),
+    0 0 25px -5px rgba(34, 189, 147, 0.25);
+}
+
+.trading-card:hover::before {
+  opacity: 1;
+}
+
+.trading-card-portrait {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(34, 189, 147, 0.08), rgba(0, 0, 0, 0.4));
+  border-bottom: 1px solid rgba(234, 225, 205, 0.06);
+}
+
+.trading-card-portrait img {
+  transition: transform 500ms var(--ease-premium);
+}
+
+.trading-card:hover .trading-card-portrait img {
+  transform: scale(1.08) translateY(-2px);
+}
+
+.trading-card-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(3, 9, 8, 0.76);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(234, 225, 205, 0.15);
+  border-radius: 0.5rem;
+  padding: 4px 6px;
+  min-width: 2.2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.trading-card-rating {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--color-sand);
+  line-height: 1;
+}
+
+.trading-card-position {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.trading-card-flag {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.trading-card-info {
+  padding: 0.75rem 0.6rem;
+  text-align: center;
+}
+
+.trading-card-name {
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+  color: var(--color-paper);
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trading-card-sub {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--color-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Countdown Visual Enhancements */
+.countdown-glow-tile {
+  border: 1px solid rgba(234, 225, 205, 0.08);
+  background: linear-gradient(180deg, rgba(6, 12, 10, 0.72) 0%, rgba(3, 9, 8, 0.9) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: all 300ms var(--ease-premium);
+}
+
+.countdown-card:hover .countdown-glow-tile {
+  border-color: rgba(34, 189, 147, 0.25);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 12px -3px rgba(34, 189, 147, 0.15);
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(34, 189, 147, 0.12);
+  border: 1px solid rgba(34, 189, 147, 0.35);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.live-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
+  animation: pulse-dot 1.8s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Sleek Badge styling */
+.badge-gold {
+  border: 1px solid rgba(217, 173, 93, 0.3);
+  background: rgba(217, 173, 93, 0.1);
+  color: var(--color-sand);
+  box-shadow: 0 0 12px rgba(217, 173, 93, 0.08);
+}
+
+.badge-green {
+  border: 1px solid rgba(34, 189, 147, 0.3);
+  background: rgba(34, 189, 147, 0.1);
+  color: var(--color-accent);
+  box-shadow: 0 0 12px rgba(34, 189, 147, 0.08);
+}
+
+/* Visual list rows */
+.rules-list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(234, 225, 205, 0.05);
+  transition: background 300ms var(--ease-premium);
+}
+
+.rules-list-row:last-child {
+  border-bottom: none;
+}
+
+.rules-list-row:hover {
+  background: rgba(234, 225, 205, 0.02);
+}
+
+.points-visual-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 1.45rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.72rem;
+  background: rgba(3, 9, 8, 0.5);
+  border: 1px solid rgba(234, 225, 205, 0.12);
+  color: var(--color-paper);
+}
+
+.rules-list-row:hover .points-visual-badge {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(34, 189, 147, 0.15);
+}

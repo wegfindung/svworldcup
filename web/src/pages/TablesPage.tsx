@@ -100,19 +100,26 @@ function formatMultiplier(value: number) {
 }
 
 function BreakdownPill({ label, count, points }: { label: string; count?: number; points: number }) {
+  const isPositive = points > 0
   return (
-    <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[11px] text-[var(--color-muted)]">
-      <span className="font-medium text-white">{label}</span>{' '}
-      {count !== undefined ? <span>{count} · </span> : null}
-      <span className="mono text-[var(--color-accent)]">{formatScore(points)}</span>
+    <span className={`rounded-full border px-2.5 py-1 text-[11px] transition duration-300 ${
+      isPositive 
+        ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 text-[var(--color-paper)]' 
+        : 'border-white/4 bg-white/[0.01] text-[var(--color-muted)] opacity-50'
+    }`}>
+      <span className={isPositive ? 'font-medium text-white' : 'text-white/40'}>{label}</span>{' '}
+      {count !== undefined ? <span className={isPositive ? 'text-white/60' : 'text-white/30'}>{count} · </span> : null}
+      <span className={`mono ${isPositive ? 'text-[var(--color-accent)] font-bold' : 'text-white/30'}`}>
+        {formatScore(points)}
+      </span>
     </span>
   )
 }
 
 function MoneyBadge({ label }: { label: string }) {
   return (
-    <span className="mono inline-flex shrink-0 rounded-full border border-[var(--color-sand)]/35 bg-[var(--color-sand)]/12 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-sand)]">
-      {label}
+    <span className="mono inline-flex shrink-0 rounded-full border border-[var(--color-sand)]/40 bg-[var(--color-sand)]/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-sand)] shadow-[0_0_8px_rgba(217,173,93,0.08)] hover:shadow-[0_0_12px_rgba(217,173,93,0.25)] hover:border-[var(--color-sand)]/60 transition duration-300">
+      💰 {label}
     </span>
   )
 }
@@ -125,6 +132,7 @@ function nationName(code: string) {
   return getNationName(code)
 }
 
+// Render in local timezone
 function matchLabel(fixtureId: string, fixtureLookup: Map<string, FixtureSeed>) {
   const fixture = fixtureLookup.get(fixtureId)
   if (!fixture) {
@@ -135,19 +143,35 @@ function matchLabel(fixtureId: string, fixtureLookup: Map<string, FixtureSeed>) 
 }
 
 function DetailStat({ label, value }: { label: string; value: number }) {
+  const isPositive = value > 0
   return (
-    <span className="rounded-full border border-white/8 bg-black/14 px-2 py-1 text-[10px] text-[var(--color-muted)]">
-      <span className="font-semibold text-white">{label}</span> <span className="mono text-[var(--color-accent)]">{formatScore(value)}</span>
+    <span className={`rounded-full border px-2 py-1 text-[10px] transition duration-300 ${
+      isPositive 
+        ? 'border-[var(--color-accent)]/25 bg-[var(--color-accent)]/6 text-white shadow-[0_0_8px_rgba(34,189,147,0.06)]' 
+        : 'border-white/5 bg-black/10 text-[var(--color-muted)] opacity-60'
+    }`}>
+      <span className={`font-semibold ${isPositive ? 'text-white' : 'text-white/40'}`}>{label}</span>{' '}
+      <span className={`mono ${isPositive ? 'text-[var(--color-accent)] font-bold' : 'text-white/30'}`}>
+        {formatScore(value)}
+      </span>
     </span>
   )
 }
 
 function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: ParticipantScorePlayerDetail }) {
+  const ratingColor = player.rating !== undefined
+    ? player.rating >= 7.0 
+      ? 'text-[var(--color-sand)] border-[var(--color-sand)]/20 bg-[var(--color-sand)]/5' 
+      : player.rating >= 6.0 
+        ? 'text-[var(--color-accent)] border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5'
+        : 'text-[var(--color-paper)] border-white/10'
+    : ''
+
   return (
-    <div className="grid gap-3 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <div className="flex flex-col gap-3 rounded-[0.85rem] border border-white/6 hover:border-white/12 transition duration-300 bg-black/20 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
       <PlayerTooltip
         as="div"
-        className="min-w-0"
+        className="flex items-center gap-3 min-w-0"
         info={{
           name: player.displayName,
           nationCode: player.teamCode,
@@ -160,24 +184,53 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
           ],
         }}
       >
-        <div className="flex min-w-0 items-center gap-2">
-          <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
-          <p className="truncate text-xs font-semibold text-white">{player.displayName}</p>
-          <span className="mono rounded-full border border-white/8 px-2 py-0.5 text-[9px] text-[var(--color-muted)]">{player.slotClass}</span>
+        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5 relative">
+          {player.imageUrl ? (
+            <img
+              src={player.imageUrl}
+              alt={player.displayName}
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center text-[10px] font-bold text-[var(--color-muted)]">
+              {player.displayName.slice(0, 2).toUpperCase()}
+            </div>
+          )}
         </div>
-        <p className="mono mt-1 text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
-          {player.slotGroup} - {player.minutes}' - ID {player.playerId}
-          {player.rating !== undefined ? ` - ${copy.rating} ${player.rating}` : ''}
-        </p>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+            <p className="truncate text-xs font-semibold text-white hover:text-[var(--color-accent)] transition duration-300">{player.displayName}</p>
+            <span className="mono rounded border border-white/8 px-1.5 py-0.5 text-[8px] uppercase font-bold text-white/60">{player.slotClass}</span>
+          </div>
+          <p className="mono mt-1 text-[10px] uppercase tracking-wider text-[var(--color-muted)] flex flex-wrap items-center gap-x-2">
+            <span>{player.slotGroup}</span>
+            <span className="text-white/20">•</span>
+            <span>{player.minutes}'</span>
+            <span className="text-white/20">•</span>
+            <span>ID {player.playerId}</span>
+            {player.rating !== undefined && (
+              <>
+                <span className="text-white/20">•</span>
+                <span className={`px-1.5 py-0.5 rounded border ${ratingColor} font-bold text-[9px] tracking-normal`}>
+                  {copy.rating} {player.rating}
+                </span>
+              </>
+            )}
+          </p>
+        </div>
       </PlayerTooltip>
-      <div className="flex flex-wrap gap-1.5 sm:justify-end">
+      
+      <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
         <DetailStat label={copy.breakdown.goals} value={player.goalPoints} />
         <DetailStat label={copy.breakdown.assists} value={player.assistPoints} />
         <DetailStat label={copy.breakdown.appearances} value={player.appearancePoints} />
         <DetailStat label={copy.breakdown.minutes} value={player.minutesPoints} />
         <DetailStat label={copy.breakdown.cleanSheets} value={player.cleanSheetPoints} />
         <DetailStat label={copy.breakdown.performance} value={player.performancePoints} />
-        <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[10px] text-[var(--color-accent)]">
+        <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[10px] font-bold text-[var(--color-accent)]">
           {copy.total} {formatScore(player.totalPoints)}
         </span>
       </div>
@@ -188,16 +241,20 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
 function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy; fixture: ParticipantScoreFixtureDetail; fixtureLookup: Map<string, FixtureSeed> }) {
   const result = fixtureLookup.get(fixture.fixtureId)
   return (
-    <div className="rounded-[0.85rem] border border-white/8 bg-white/[0.025] p-3">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <div className="rounded-[0.85rem] border border-white/6 bg-black/20 p-3.5 hover:border-white/12 transition duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           {result ? <TeamFlag teamCode={result.homeTeamCode} label={teamName(result.homeTeamCode)} size="sm" /> : null}
           <p className="truncate text-sm font-semibold text-white">{matchLabel(fixture.fixtureId, fixtureLookup)}</p>
           {result ? <TeamFlag teamCode={result.awayTeamCode} label={teamName(result.awayTeamCode)} size="sm" /> : null}
         </div>
-        <span className="mono text-xs text-[var(--color-accent)]">{formatScore(fixture.totalPoints)} {copy.pts}</span>
+        <span className="mono text-xs font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 px-2 py-0.5 rounded-full">{formatScore(fixture.totalPoints)} {copy.pts}</span>
       </div>
-      <div className="grid gap-1.5">{(fixture.players ?? []).map((player) => <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} copy={copy} player={player} />)}</div>
+      <div className="grid gap-2">
+        {(fixture.players ?? []).map((player) => (
+          <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} copy={copy} player={player} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -218,48 +275,64 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
   }
 
   return (
-    <section className="glass-panel rounded-[1.15rem] p-4">
-      <div className="flex items-end justify-between gap-4">
+    <section className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12">
+      <div className="flex items-end justify-between gap-4 border-b border-white/5 pb-3">
         <div>
           <p className="eyebrow text-[10px]">{copy.tableEyebrow}</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{title}</h3>
+          <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{title}</h3>
         </div>
-        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} {copy.entriesSuffix}</span>
+        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{rows.length} {copy.entriesSuffix}</span>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
+      <div className="mt-4">
         {rows.length ? (
-          <div className="divide-y divide-white/8">
+          <div className="space-y-3.5">
             {rows.map((row) => {
               const isOpen = openParticipantIds.has(row.participantId)
               const isPaidRank = row.rank <= PAID_PARTICIPANT_RANK_LIMIT
+              const rankColor = row.rank === 1
+                ? 'text-[var(--color-sand)] font-black text-base shadow-[0_0_8px_rgba(217,173,93,0.2)] border-[var(--color-sand)]/30'
+                : row.rank === 2
+                  ? 'text-slate-300 font-black text-sm border-slate-300/30'
+                  : row.rank === 3
+                    ? 'text-amber-600 font-black text-sm border-amber-600/30'
+                    : 'text-[var(--color-muted)] font-semibold text-xs border-white/6'
+
               return (
-                <div key={row.participantId} className="bg-black/12 px-3.5 py-3 transition hover:bg-white/5">
-                  <div className="grid grid-cols-[3.25rem_1fr] gap-3 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
-                    <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
+                <div key={row.participantId} className="border border-white/6 hover:border-[var(--color-accent)]/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] group hover:shadow-[0_12px_40px_-20px_rgba(34,189,147,0.15)]">
+                  <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
+                    <span className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${rankColor}`}>
+                      {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `#${row.rank}`}
+                    </span>
                     <div className="min-w-0">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                         <button
                           type="button"
                           onClick={() => onOpenSquad({ displayName: row.displayName, slug: publicProfileSlug(row.displayName, row.participantId) })}
-                          className="min-w-0 max-w-full truncate text-left text-sm font-semibold text-white underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
+                          className="min-w-0 max-w-full truncate text-left text-sm font-bold text-white underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
                         >
                           {row.displayName}
                         </button>
                         {isPaidRank ? <MoneyBadge label={copy.inTheMoney} /> : null}
                       </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-[var(--color-muted)]">
-                        <TeamFlag teamCode={row.primaryTeamCode} label={nationName(row.primaryTeamCode)} size="sm" />
-                        <span>{nationName(row.primaryTeamCode)}</span>
+                      
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--color-muted)] bg-black/10 px-2.5 py-1.5 rounded-lg border border-white/4 w-fit">
+                        <span className="flex items-center gap-1.5">
+                          <TeamFlag teamCode={row.primaryTeamCode} label={nationName(row.primaryTeamCode)} size="sm" />
+                          <span className="font-semibold text-white/80">{nationName(row.primaryTeamCode)}</span>
+                        </span>
                         {row.secondaryTeamCode ? (
                           <>
-                            <span className="text-white/25">+</span>
-                            <TeamFlag teamCode={row.secondaryTeamCode} label={nationName(row.secondaryTeamCode)} size="sm" />
-                            <span>{nationName(row.secondaryTeamCode)}</span>
+                            <span className="text-white/25">•</span>
+                            <span className="flex items-center gap-1.5">
+                              <TeamFlag teamCode={row.secondaryTeamCode} label={nationName(row.secondaryTeamCode)} size="sm" />
+                              <span className="font-semibold text-white/80">{nationName(row.secondaryTeamCode)}</span>
+                            </span>
                           </>
                         ) : null}
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
+
+                      <div className="mt-3.5 flex flex-wrap gap-1.5">
                         <BreakdownPill label={copy.breakdown.goals} count={row.breakdown.goals.count} points={row.breakdown.goals.points} />
                         <BreakdownPill label={copy.breakdown.assists} count={row.breakdown.assists.count} points={row.breakdown.assists.points} />
                         <BreakdownPill label={copy.breakdown.appearances} count={row.breakdown.appearances.count} points={row.breakdown.appearances.points} />
@@ -268,23 +341,28 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
                         <BreakdownPill label={copy.breakdown.performance} points={row.breakdown.performance.points} />
                       </div>
                     </div>
-                    <div className="col-span-2 text-right sm:col-span-1">
-                      <p className="mono text-lg text-white">{formatScore(row.totalScore)}</p>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{copy.base} {formatScore(row.baseScore)}</p>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{copy.budget} {formatMultiplier(row.scoreMultiplier)}</p>
-                      {row.bonusPercent > 0 ? <p className="text-xs text-[var(--color-accent)]">+{row.bonusPercent}%</p> : null}
+
+                    <div className="col-span-2 text-right sm:col-span-1 mt-3 sm:mt-0">
+                      <p className="mono text-2xl font-black text-white leading-none tracking-tight">{formatScore(row.totalScore)}</p>
+                      <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">{copy.base} <span className="text-white/85 font-medium">{formatScore(row.baseScore)}</span></p>
+                      <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">{copy.budget} <span className="text-[var(--color-accent)] font-semibold">{formatMultiplier(row.scoreMultiplier)}</span></p>
+                      {row.bonusPercent > 0 ? (
+                        <p className="text-xs text-[var(--color-accent)] font-semibold mt-0.5">+{row.bonusPercent}% boost</p>
+                      ) : null}
+                      
                       <button
                         type="button"
                         onClick={() => toggleParticipant(row.participantId)}
                         disabled={!row.fixtures.length}
-                        className="mt-2 rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="mt-3 rounded-full border border-white/10 bg-black/20 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-40 hover:-translate-y-[1px] active:scale-[0.98]"
                       >
                         {isOpen ? copy.hideDetails : copy.scoreDetails}
                       </button>
                     </div>
                   </div>
+
                   {isOpen ? (
-                    <div className="mt-3 grid gap-2 border-t border-white/8 pt-3">
+                    <div className="mt-4 grid gap-3 border-t border-white/8 pt-4">
                       {row.fixtures.map((fixture) => (
                         <FixtureScoreDetail key={fixture.fixtureId} copy={copy} fixture={fixture} fixtureLookup={fixtureLookup} />
                       ))}
@@ -295,7 +373,7 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
             })}
           </div>
         ) : (
-          <div className="bg-black/12 p-5">
+          <div className="bg-black/12 p-5 rounded-[0.9rem] border border-white/6">
             <EmptyState title={copy.noEntriesTitle} body={copy.noEntriesBody} />
           </div>
         )}
@@ -320,31 +398,41 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
   }
 
   return (
-    <section className="glass-panel rounded-[1.15rem] p-4">
-      <div className="flex items-end justify-between gap-4">
+    <section className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12">
+      <div className="flex items-end justify-between gap-4 border-b border-white/5 pb-3">
         <div>
           <p className="eyebrow text-[10px]">{copy.nationEyebrow}</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{copy.nationTitle}</h3>
+          <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{copy.nationTitle}</h3>
         </div>
-        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} {copy.nationsSuffix}</span>
+        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{rows.length} {copy.nationsSuffix}</span>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
+      <div className="mt-4">
         {rows.length ? (
-          <div className="divide-y divide-white/8">
+          <div className="space-y-3.5">
             {rows.map((row) => {
               const isOpen = openTeamCodes.has(row.teamCode)
               const isPaidNation = row.rank <= PAID_NATION_RANK_LIMIT
+              const rankColor = row.rank === 1
+                ? 'text-[var(--color-sand)] font-black text-base shadow-[0_0_8px_rgba(217,173,93,0.2)] border-[var(--color-sand)]/30'
+                : row.rank === 2
+                  ? 'text-slate-300 font-black text-sm border-slate-300/30'
+                  : row.rank === 3
+                    ? 'text-amber-600 font-black text-sm border-amber-600/30'
+                    : 'text-[var(--color-muted)] font-semibold text-xs border-white/6'
+
               return (
-                <div key={row.teamCode} className="bg-black/12 px-3.5 py-3 transition hover:bg-white/5">
-                  <div className="grid grid-cols-[3.25rem_1fr] gap-3 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
-                    <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
+                <div key={row.teamCode} className="border border-white/6 hover:border-blue-500/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_12px_40px_-20px_rgba(59,130,246,0.15)]">
+                  <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
+                    <span className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${rankColor}`}>
+                      {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `#${row.rank}`}
+                    </span>
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
                         <div className="min-w-0">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            <p className="truncate text-sm font-semibold text-white">{nationName(row.teamCode)}</p>
+                            <p className="truncate text-sm font-bold text-white">{nationName(row.teamCode)}</p>
                             {isPaidNation ? <MoneyBadge label={copy.inTheMoney} /> : null}
                           </div>
                           <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
@@ -357,13 +445,13 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
                         <BreakdownPill label={copy.top} points={row.topScore} />
                       </div>
                     </div>
-                    <div className="col-span-2 text-right sm:col-span-1">
-                      <p className="mono text-lg text-white">{formatScore(row.averageScore)}</p>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{copy.averageScore}</p>
+                    <div className="col-span-2 text-right sm:col-span-1 mt-3 sm:mt-0">
+                      <p className="mono text-2xl font-black text-white leading-none tracking-tight">{formatScore(row.averageScore)}</p>
+                      <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">{copy.averageScore}</p>
                       <button
                         type="button"
                         onClick={() => toggleTeam(row.teamCode)}
-                        className="mt-2 rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
+                        className="mt-3 rounded-full border border-white/10 bg-black/20 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition hover:border-blue-500/50 hover:text-blue-400 hover:bg-black/40 hover:-translate-y-[1px] active:scale-[0.98]"
                       >
                         {isOpen ? copy.hideManagers : copy.managers}
                       </button>
@@ -371,15 +459,15 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
                   </div>
 
                   {isOpen ? (
-                    <div className="mt-3 grid gap-1.5 border-t border-white/8 pt-3">
+                    <div className="mt-4 grid gap-2 border-t border-white/8 pt-4">
                       {row.contributors.map((contributor, contributorIndex) => (
                         <div
                           key={`${row.teamCode}-${contributor.participantId}`}
-                          className="grid gap-2 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                          className="flex items-center justify-between gap-3 rounded-[0.85rem] border border-white/6 hover:border-white/12 transition duration-300 bg-black/20 px-3.5 py-2.5"
                         >
                           <div className="min-w-0">
                             <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-semibold text-white">
-                              <span className="text-[var(--color-accent)]">#{contributorIndex + 1}</span>{' '}
+                              <span className="text-[var(--color-accent)] font-bold">#{contributorIndex + 1}</span>{' '}
                               <button
                                 type="button"
                                 onClick={() => onOpenSquad({ displayName: contributor.displayName, slug: publicProfileSlug(contributor.displayName, contributor.participantId) })}
@@ -389,20 +477,26 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
                               </button>
                               {isPaidNation && contributorIndex < PAID_NATION_MANAGER_LIMIT ? <MoneyBadge label={copy.inTheMoney} /> : null}
                             </p>
-                            <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--color-muted)]">
-                              <TeamFlag teamCode={contributor.primaryTeamCode} label={nationName(contributor.primaryTeamCode)} size="sm" />
-                              <span>{nationName(contributor.primaryTeamCode)}</span>
+                            
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[var(--color-muted)] bg-black/10 px-2 py-1 rounded border border-white/4 w-fit">
+                              <span className="flex items-center gap-1">
+                                <TeamFlag teamCode={contributor.primaryTeamCode} label={nationName(contributor.primaryTeamCode)} size="sm" />
+                                <span>{nationName(contributor.primaryTeamCode)}</span>
+                              </span>
                               {contributor.secondaryTeamCode ? (
                                 <>
-                                  <span className="text-white/25">+</span>
-                                  <TeamFlag teamCode={contributor.secondaryTeamCode} label={nationName(contributor.secondaryTeamCode)} size="sm" />
-                                  <span>{nationName(contributor.secondaryTeamCode)}</span>
+                                  <span className="text-white/25">•</span>
+                                  <span className="flex items-center gap-1">
+                                    <TeamFlag teamCode={contributor.secondaryTeamCode} label={nationName(contributor.secondaryTeamCode)} size="sm" />
+                                    <span>{nationName(contributor.secondaryTeamCode)}</span>
+                                  </span>
                                 </>
                               ) : null}
-                              <span className="rounded-full border border-white/8 px-2 py-0.5 uppercase">{contributor.leagueType}</span>
+                              <span className="text-white/25">•</span>
+                              <span className="rounded-full border border-white/8 px-1.5 py-0.5 text-[8px] uppercase font-bold text-white/70">{contributor.leagueType}</span>
                             </div>
                           </div>
-                          <span className="mono text-sm text-white">{formatScore(contributor.totalScore)}</span>
+                          <span className="mono text-sm font-bold text-white shrink-0">{formatScore(contributor.totalScore)}</span>
                         </div>
                       ))}
                     </div>
@@ -412,7 +506,7 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
             })}
           </div>
         ) : (
-          <div className="bg-black/12 p-5">
+          <div className="bg-black/12 p-5 rounded-[0.9rem] border border-white/6">
             <EmptyState title={copy.noNationTitle} body={copy.noNationBody} />
           </div>
         )}
@@ -423,16 +517,16 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
 
 function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: NationParticipationRow[] }) {
   return (
-    <section className="glass-panel rounded-[1.15rem] p-4">
-      <div className="flex items-end justify-between gap-4">
+    <section className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12">
+      <div className="flex items-end justify-between gap-4 border-b border-white/5 pb-3">
         <div>
           <p className="eyebrow text-[10px]">{copy.nationParticipationEyebrow}</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{copy.nationParticipationTitle}</h3>
-          <p className="mt-2 max-w-[68ch] text-sm leading-relaxed text-[var(--color-muted)]">
+          <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{copy.nationParticipationTitle}</h3>
+          <p className="mt-2 max-w-[68ch] text-xs leading-relaxed text-[var(--color-muted)]">
             {copy.nationParticipationBody}
           </p>
         </div>
-        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} {copy.nationsSuffix}</span>
+        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{rows.length} {copy.nationsSuffix}</span>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
@@ -450,7 +544,7 @@ function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: Nati
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.teamCode} className="border-b border-white/8 bg-black/10 last:border-b-0">
+                  <tr key={row.teamCode} className="border-b border-white/8 bg-black/10 last:border-b-0 hover:bg-white/[0.02] transition">
                     <td className="px-4 py-3">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
@@ -461,7 +555,7 @@ function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: Nati
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="mono text-base text-[var(--color-accent)]">{row.participantCount}</span>
+                      <span className="mono text-base text-[var(--color-accent)] font-bold">{row.participantCount}</span>
                     </td>
                     <td className="px-4 py-3 text-xs text-[var(--color-paper)]">{row.rookieCount}</td>
                     <td className="px-4 py-3 text-xs text-[var(--color-paper)]">{row.veteranCount}</td>
@@ -471,7 +565,7 @@ function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: Nati
             </table>
           </div>
         ) : (
-          <div className="bg-black/12 p-5">
+          <div className="bg-black/12 p-5 rounded-[0.9rem] border border-white/6">
             <EmptyState title={copy.noNationParticipationTitle} body={copy.noNationParticipationBody} />
           </div>
         )}
@@ -509,16 +603,30 @@ function ParticipantBoardSection({
   return null
 }
 
-function SummaryMetric({ label, value }: { label: string; value: number }) {
+function SummaryMetric({ label, value, colorClass }: { label: string; value: number; colorClass?: string }) {
   return (
-    <div className="min-w-0 px-3 py-3 sm:px-4">
-      <p className="mono truncate text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</p>
-      <p className="mono mt-1 text-xl leading-none text-white">{value}</p>
+    <div className="min-w-0 px-4 py-3.5 transition duration-300 hover:bg-white/[0.02] group">
+      <p className="mono truncate text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)] group-hover:text-white transition duration-300">{label}</p>
+      <p className={`mono mt-1.5 text-2xl font-black leading-none tracking-tight transition duration-300 ${colorClass || 'text-white'}`}>{value}</p>
     </div>
   )
 }
 
 function TablesTabButton({ tab, active, onSelect }: { tab: TablesTabItem; active: boolean; onSelect: (tab: TablesTab) => void }) {
+  const activeStyles = {
+    nations: 'border-blue-500/40 bg-blue-500/10 text-white shadow-[0_0_12px_rgba(59,130,246,0.12)]',
+    rookie: 'border-emerald-500/40 bg-emerald-500/10 text-white shadow-[0_0_12px_rgba(16,185,129,0.12)]',
+    veteran: 'border-[var(--color-sand)]/40 bg-[var(--color-sand)]/10 text-white shadow-[0_0_12px_rgba(217,173,93,0.12)]',
+    finder: 'border-purple-500/40 bg-purple-500/10 text-white shadow-[0_0_12px_rgba(168,85,247,0.12)]',
+  }
+
+  const activeBadgeColor = {
+    nations: 'text-blue-400',
+    rookie: 'text-emerald-400',
+    veteran: 'text-[var(--color-sand)]',
+    finder: 'text-purple-400',
+  }
+
   return (
     <button
       type="button"
@@ -528,14 +636,14 @@ function TablesTabButton({ tab, active, onSelect }: { tab: TablesTabItem; active
       id={`tables-tab-${tab.key}`}
       onClick={() => onSelect(tab.key)}
       className={[
-        'min-h-12 rounded-[0.7rem] border px-3 py-2 text-left transition active:scale-[0.99]',
+        'min-h-[3.8rem] rounded-[0.8rem] border px-4 py-2.5 text-left transition duration-300 active:scale-[0.99] flex flex-col justify-center',
         active
-          ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 text-white'
-          : 'border-transparent bg-transparent text-[var(--color-muted)] hover:border-white/10 hover:bg-white/[0.035] hover:text-white',
+          ? activeStyles[tab.key] || 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 text-white'
+          : 'border-transparent bg-transparent text-[var(--color-muted)] hover:border-white/10 hover:bg-white/[0.03] hover:text-white',
       ].join(' ')}
     >
-      <span className="block truncate text-sm font-semibold leading-tight">{tab.label}</span>
-      <span className="mono mt-1 block text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+      <span className="block truncate text-sm font-bold leading-tight tracking-tight">{tab.label}</span>
+      <span className={`mono mt-1 block text-[9px] uppercase tracking-[0.16em] font-semibold ${active ? activeBadgeColor[tab.key] || 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]'}`}>
         {tab.count} {tab.countLabel}
       </span>
     </button>
@@ -564,13 +672,11 @@ export function TablesPage({ locale }: TablesPageProps) {
         }
       })
       .catch(() => {
-        // loadTablesPayload settles per board and never rejects; this is a defensive fallback only.
         if (active) {
           setLoading(false)
         }
       })
 
-    // B5: abort in-flight fetches when the effect is superseded (refresh) or the page unmounts.
     return () => {
       active = false
       controller.abort()
@@ -588,28 +694,28 @@ export function TablesPage({ locale }: TablesPageProps) {
 
   return (
     <div className="space-y-4 pb-10">
-      <section className="glass-panel rounded-[1.15rem] p-3 sm:p-4">
+      <section className="glass-panel rounded-[1.15rem] p-3 sm:p-4 border border-white/8 hover:border-white/12 transition duration-300">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.72fr)] lg:items-end">
           <div className="px-1 py-1 sm:px-2">
             <p className="eyebrow">{copy.heroEyebrow}</p>
-            <h2 className="mt-4 text-3xl font-semibold leading-tight text-white sm:text-4xl">{copy.compactTitle}</h2>
+            <h2 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl bg-gradient-to-r from-white via-[var(--color-paper)] to-[var(--color-muted)] bg-clip-text text-transparent tracking-tight">{copy.compactTitle}</h2>
             <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.compactBody}</p>
           </div>
 
           {tables ? (
-            <div className="overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/14">
+            <div className="overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition duration-300 hover:border-white/12">
               <div className="grid grid-cols-2 divide-x divide-y divide-white/8 sm:grid-cols-4 sm:divide-y-0">
-                <SummaryMetric label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} />
-                <SummaryMetric label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} />
-                <SummaryMetric label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} />
-                <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} />
+                <SummaryMetric label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} colorClass="text-blue-400 group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
+                <SummaryMetric label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} colorClass="text-emerald-400 group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+                <SummaryMetric label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} colorClass="text-[var(--color-sand)] group-hover:drop-shadow-[0_0_6px_rgba(217,173,93,0.4)]" />
+                <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} colorClass="text-purple-400 group-hover:drop-shadow-[0_0_6px_rgba(168,85,247,0.4)]" />
               </div>
             </div>
           ) : null}
         </div>
 
         {tables ? (
-          <div className="mt-4 rounded-[0.9rem] border border-white/8 bg-black/18 p-1" role="tablist" aria-label={copy.tabsLabel}>
+          <div className="mt-4 rounded-[0.9rem] border border-white/8 bg-black/20 p-1" role="tablist" aria-label={copy.tabsLabel}>
             <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-4">
               {tabItems.map((tab) => (
                 <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
@@ -623,7 +729,13 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {tables ? (
         <>
-          <div id={`tables-panel-${activeTab}`} role="tabpanel" aria-labelledby={`tables-tab-${activeTab}`}>
+          <div
+            key={activeTab}
+            id={`tables-panel-${activeTab}`}
+            role="tabpanel"
+            aria-labelledby={`tables-tab-${activeTab}`}
+            className="reveal-in"
+          >
             {activeTab === 'nations' ? (
               tables.nations.rows ? (
                 <NationTable copy={copy} rows={tables.nations.rows} onOpenSquad={setSquadTarget} />

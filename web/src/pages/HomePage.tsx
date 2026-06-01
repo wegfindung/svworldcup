@@ -13,14 +13,14 @@ import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/ty
 type HomeCopy = AppMessages['home']
 
 const superstarPlayers = [
-  { playerId: 133609, name: 'Pedri', nationCode: 'ESP', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png' },
-  { playerId: 278, name: 'Kylian Mbappe', nationCode: 'FRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/278.png' },
-  { playerId: 181812, name: 'Jamal Musiala', nationCode: 'GER', imageUrl: 'https://elrincondeldt.com/sv/photos/players/181812.png' },
-  { playerId: 9, name: 'Achraf Hakimi', nationCode: 'MAR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/9.png' },
-  { playerId: 927, name: 'Kang-In Lee', nationCode: 'KOR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/927.png' },
-  { playerId: 129718, name: 'Jude Bellingham', nationCode: 'ENG', imageUrl: 'https://elrincondeldt.com/sv/photos/players/129718.png' },
-  { playerId: 762, name: 'Vinicius Paixao', nationCode: 'BRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/762.png' },
-  { playerId: 162511, name: 'Senne Lammens', nationCode: 'BEL', imageUrl: 'https://elrincondeldt.com/sv/photos/players/162511.png' },
+  { playerId: 133609, name: 'Pedri', nationCode: 'ESP', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png', rating: 86, position: 'MID' },
+  { playerId: 278, name: 'Kylian Mbappe', nationCode: 'FRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/278.png', rating: 94, position: 'FWD' },
+  { playerId: 181812, name: 'Jamal Musiala', nationCode: 'GER', imageUrl: 'https://elrincondeldt.com/sv/photos/players/181812.png', rating: 89, position: 'MID' },
+  { playerId: 9, name: 'Achraf Hakimi', nationCode: 'MAR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/9.png', rating: 85, position: 'DEF' },
+  { playerId: 927, name: 'Kang-In Lee', nationCode: 'KOR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/927.png', rating: 81, position: 'MID' },
+  { playerId: 129718, name: 'Jude Bellingham', nationCode: 'ENG', imageUrl: 'https://elrincondeldt.com/sv/photos/players/129718.png', rating: 91, position: 'MID' },
+  { playerId: 762, name: 'Vinicius Paixao', nationCode: 'BRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/762.png', rating: 93, position: 'FWD' },
+  { playerId: 162511, name: 'Senne Lammens', nationCode: 'BEL', imageUrl: 'https://elrincondeldt.com/sv/photos/players/162511.png', rating: 78, position: 'GK' },
 ] as const
 
 const footballNations = [
@@ -124,12 +124,22 @@ function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['c
     return () => window.clearInterval(interval)
   }, [])
 
+  const isLive = nowMs >= startMs
+
   return (
-    <div className="countdown-card">
-      <div className="flex items-end justify-between gap-3">
+    <div className="countdown-card border border-[var(--color-accent)]/25 hover:border-[var(--color-accent)]/45 transition duration-300">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-accent)]">{copy.eyebrow}</p>
-          <p className="mt-2 text-base font-semibold text-white">{copy.title}</p>
+          <p className="mt-2 text-base font-semibold text-white flex items-center gap-2">
+            {copy.title}
+            {isLive && (
+              <span className="live-badge">
+                <span className="live-pulse-dot" />
+                LIVE
+              </span>
+            )}
+          </p>
         </div>
         <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{startDate}</span>
       </div>
@@ -140,9 +150,13 @@ function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['c
           [copy.minutes, parts.minutes],
           [copy.seconds, parts.seconds],
         ].map(([label, value]) => (
-          <div key={label} className="countdown-tile">
-            <strong>{String(value).padStart(2, '0')}</strong>
-            <span>{label}</span>
+          <div key={label} className="countdown-glow-tile rounded-xl flex flex-col items-center justify-center p-3">
+            <strong className="mono text-2xl lg:text-3xl font-extrabold text-white leading-none tracking-tight">
+              {String(value).padStart(2, '0')}
+            </strong>
+            <span className="mono mt-2 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+              {label}
+            </span>
           </div>
         ))}
       </div>
@@ -152,23 +166,47 @@ function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['c
 
 function HeroPlayerWall({ label }: { label: string }) {
   return (
-    <div className="hero-player-wall" aria-label={label}>
+    <div className="hero-player-wall grid grid-cols-3 gap-2" aria-label={label}>
       {superstarPlayers.slice(0, 6).map((player, index) => (
         <PlayerTooltip
           key={player.playerId}
           as="div"
-          className="hero-player-tile"
-          style={{ ['--tile-delay' as string]: `${index * 60}ms` }}
+          className="trading-card floaty"
+          style={{ 
+            ['--tile-delay' as string]: `${index * 60}ms`,
+            animationDelay: `${index * 120}ms`
+          }}
           info={{ name: player.name, nationCode: player.nationCode, imageUrl: player.imageUrl }}
         >
-          <PlayerPortrait
-            src={player.imageUrl}
-            alt={player.name}
-            width={150}
-            height={150}
-            className="h-full w-full object-cover"
-          />
-          <span>{player.name}</span>
+          <div className="trading-card-portrait aspect-square relative">
+            <div className="trading-card-badge">
+              <span className="trading-card-rating">{player.rating}</span>
+              <span className="trading-card-position">{player.position}</span>
+            </div>
+            
+            <span className="trading-card-flag">
+              <img
+                src={`/team-flags/${player.nationCode}.svg`}
+                alt={player.nationCode}
+                width={18}
+                height={18}
+                className="h-4.5 w-4.5 rounded-full object-cover"
+              />
+            </span>
+            
+            <PlayerPortrait
+              src={player.imageUrl}
+              alt={player.name}
+              width={120}
+              height={120}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          
+          <div className="trading-card-info">
+            <h4 className="trading-card-name">{player.name}</h4>
+            <p className="trading-card-sub">ID: {player.playerId}</p>
+          </div>
         </PlayerTooltip>
       ))}
     </div>
@@ -177,16 +215,16 @@ function HeroPlayerWall({ label }: { label: string }) {
 
 function SquadBlueprint({ copy }: { copy: HomeCopy['squadBlueprint'] }) {
   return (
-    <div className="squad-blueprint">
+    <div className="squad-blueprint border border-white/8 backdrop-blur-md transition duration-300 hover:border-[var(--color-accent)]/30">
       <div className="flex items-center justify-between gap-3">
         <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.eyebrow}</p>
-        <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+        <span className="rounded-full border border-[var(--color-accent)]/28 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)] shadow-[0_0_12px_rgba(34,189,147,0.12)]">
           {copy.badge}
         </span>
       </div>
       <div className="mt-4 grid grid-cols-5 gap-1.5">
         {squadShape.map((slot) => (
-          <div key={slot.label} className="squad-slot">
+          <div key={slot.label} className="squad-slot border border-white/6 hover:border-[var(--color-accent)]/40 hover:bg-black/40 hover:-translate-y-[2px] transition duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <span>{slot.label}</span>
             <strong>{slot.value}</strong>
           </div>
@@ -291,17 +329,32 @@ function NationFlagsCard({ copy }: { copy: HomeCopy['nations'] }) {
 }
 
 function RankingTracksCard({ copy }: { copy: HomeCopy['rankingTracks'] }) {
+  const cardClasses = [
+    'border border-emerald-500/15 hover:border-emerald-500/35 shadow-[0_0_15px_rgba(16,185,129,0.02)] hover:shadow-[0_0_20px_rgba(16,185,129,0.08)] bg-gradient-to-r from-emerald-950/20 to-transparent',
+    'border border-[var(--color-sand)]/15 hover:border-[var(--color-sand)]/35 shadow-[0_0_15px_rgba(217,173,93,0.02)] hover:shadow-[0_0_20px_rgba(217,173,93,0.08)] bg-gradient-to-r from-amber-950/20 to-transparent',
+    'border border-blue-500/15 hover:border-blue-500/35 shadow-[0_0_15px_rgba(59,130,246,0.02)] hover:shadow-[0_0_20px_rgba(59,130,246,0.08)] bg-gradient-to-r from-blue-950/20 to-transparent',
+  ]
+  
+  const labelBadges = [
+    'rounded px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase bg-emerald-500/12 text-emerald-400 border border-emerald-500/25',
+    'rounded px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase bg-[var(--color-sand)]/12 text-[var(--color-sand)] border border-[var(--color-sand)]/25',
+    'rounded px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase bg-blue-500/12 text-blue-400 border border-blue-500/25',
+  ]
+
   return (
-    <div className="glass-panel rounded-[1.15rem] p-4">
+    <div className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/14">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.eyebrow}</p>
       <div className="mt-4 space-y-2.5">
         {copy.items.map(({ title, body }, index) => (
-          <div key={title} className="surface-row rounded-[0.9rem] p-3">
+          <div key={title} className={`rounded-[0.95rem] p-3.5 transition duration-300 hover:-translate-y-[1px] ${cardClasses[index] || 'surface-row'}`}>
             <div className="flex items-start gap-3">
-              <span className="mono text-[0.72rem] text-[var(--color-accent)]">0{index + 1}</span>
-              <div>
-                <p className="font-semibold text-white">{title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
+              <span className="mono text-xs font-bold text-[var(--color-muted)] mt-0.5">0{index + 1}</span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-white text-sm sm:text-base">{title}</p>
+                  <span className={labelBadges[index] || 'text-[10px]'}>{title}</span>
+                </div>
+                <p className="text-xs leading-relaxed text-[var(--color-muted)]">{body}</p>
               </div>
             </div>
           </div>
@@ -401,12 +454,15 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                   {homeCopy.hero.kicker}
                 </p>
                 <h2 className="section-title hero-title mt-3">
-                  {homeCopy.hero.titleLines.map((line) => (
-                    <span key={line}>
-                      {line}
-                      <br />
-                    </span>
-                  ))}
+                  {homeCopy.hero.titleLines.map((line, index) => {
+                    const colors = ['text-white', 'text-[var(--color-accent)]', 'text-[var(--color-sand)]']
+                    return (
+                      <span key={line} className={colors[index] || 'text-white'}>
+                        {line}
+                        <br />
+                      </span>
+                    )
+                  })}
                 </h2>
                 <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">{homeCopy.hero.body}</p>
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -479,62 +535,82 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
           </div>
 
           <div className="mt-5 max-h-[27rem] space-y-3 overflow-y-auto pr-2">
-            <div className="surface-row rounded-[0.95rem] p-4">
+            <div className="surface-row rounded-[0.95rem] p-4 border border-white/6 hover:border-[var(--color-accent)]/20 transition duration-300">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.eligibilityTitle}</p>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--color-paper)]">
                 {homeCopy.rules.eligibility.map((item) => (
-                  <li key={item}>{item}</li>
+                  <li key={item} className="flex items-start gap-2.5">
+                    <span className="text-[var(--color-accent)] font-bold shrink-0 mt-0.5">✓</span>
+                    <span>{item}</span>
+                  </li>
                 ))}
               </ul>
             </div>
 
-            <div className="surface-row rounded-[0.95rem] p-4">
+            <div className="surface-row rounded-[0.95rem] p-4 border border-white/6 hover:border-[var(--color-accent)]/20 transition duration-300">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.budgetTitle}</p>
-              <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">
+              <p className="mt-4 text-2xl font-bold tracking-tight text-[var(--color-sand)]">
                 {minBudget.toLocaleString('en-US')} - {maxBudget.toLocaleString('en-US')} SVC
               </p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.rules.budgetBody}</p>
             </div>
 
-            <div className="surface-row rounded-[0.95rem] p-4">
+            <div className="surface-row rounded-[0.95rem] p-4 border border-white/6 hover:border-[var(--color-accent)]/20 transition duration-300">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.pointsTitle}</p>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[var(--color-muted)]">{homeCopy.rules.goal}</dt>
-                  <dd className="mono text-white">{scoring.goal}</dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[var(--color-muted)]">{homeCopy.rules.assist}</dt>
-                  <dd className="mono text-white">{scoring.assist}</dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[var(--color-muted)]">{homeCopy.rules.appearance}</dt>
-                  <dd className="mono text-white">{scoring.appearance}</dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[var(--color-muted)]">{homeCopy.rules.minutes}</dt>
-                  <dd className="mono text-white">{scoring.minutes}</dd>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between gap-4">
-                    <dt className="text-[var(--color-muted)]">{homeCopy.rules.cleanSheet}</dt>
-                    <dd className="mono text-white">
-                      GK {scoring.cleanSheet.GK} · DEF {scoring.cleanSheet.DEF} · MID {scoring.cleanSheet.MID}* · FWD {scoring.cleanSheet.FWD}
-                    </dd>
+              <div className="mt-4 border border-white/6 rounded-lg overflow-hidden bg-black/20">
+                <div className="rules-list-row">
+                  <span className="points-visual-badge">+{scoring.goal}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white">{homeCopy.rules.goal}</p>
                   </div>
-                  <p className="text-[10px] leading-tight text-[var(--color-muted)]">{homeCopy.rules.cleanSheetMidNote}</p>
                 </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[var(--color-muted)]">{homeCopy.rules.performance}</dt>
-                  <dd className="mono text-white">
-                    {homeCopy.rules.performanceMaxPrefix} {scoring.performanceCurve[scoring.performanceCurve.length - 1]?.points ?? 0} {homeCopy.rules.performanceMaxSuffix}
-                  </dd>
+                
+                <div className="rules-list-row">
+                  <span className="points-visual-badge">+{scoring.assist}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white">{homeCopy.rules.assist}</p>
+                  </div>
                 </div>
-              </dl>
-              <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.rules.pointsBody}</p>
+
+                <div className="rules-list-row">
+                  <span className="points-visual-badge">+{scoring.appearance}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white">{homeCopy.rules.appearance}</p>
+                  </div>
+                </div>
+
+                <div className="rules-list-row">
+                  <span className="points-visual-badge">+{scoring.minutes}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white">{homeCopy.rules.minutes}</p>
+                  </div>
+                </div>
+
+                <div className="rules-list-row flex-col sm:flex-row sm:items-center">
+                  <span className="points-visual-badge">CS</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white">{homeCopy.rules.cleanSheet}</p>
+                    <p className="mono text-[10px] text-[var(--color-muted)] mt-1">
+                      GK {scoring.cleanSheet.GK} · DEF {scoring.cleanSheet.DEF} · MID {scoring.cleanSheet.MID}* · FWD {scoring.cleanSheet.FWD}
+                    </p>
+                    <p className="text-[9px] text-[var(--color-muted)]/80 mt-0.5">{homeCopy.rules.cleanSheetMidNote}</p>
+                  </div>
+                </div>
+
+                <div className="rules-list-row">
+                  <span className="points-visual-badge">Perf</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white">{homeCopy.rules.performance}</p>
+                    <p className="text-xs text-[var(--color-muted)] mt-1">
+                      {homeCopy.rules.performanceMaxPrefix} {scoring.performanceCurve[scoring.performanceCurve.length - 1]?.points ?? 0} {homeCopy.rules.performanceMaxSuffix}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-[var(--color-muted)]">{homeCopy.rules.pointsBody}</p>
             </div>
 
-            <div className="surface-row rounded-[0.95rem] p-4">
+            <div className="surface-row rounded-[0.95rem] p-4 border border-white/6 hover:border-[var(--color-accent)]/20 transition duration-300">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.requestPolicyTitle}</p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-paper)]">{homeCopy.rules.requestPolicyBody}</p>
             </div>
