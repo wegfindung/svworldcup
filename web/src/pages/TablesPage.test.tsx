@@ -40,7 +40,7 @@ describe('TablesPage partial loading', () => {
     expect(screen.getByText('Could not load standings')).toBeInTheDocument()
   })
 
-  it('maps a 404 to the "being prepared" message for that board only', async () => {
+  it('maps a 404 to the "no standings yet" message for that board only', async () => {
     rookie.mockResolvedValue({ items: [] })
     veteran.mockResolvedValue({ items: [] })
     participation.mockResolvedValue({ items: [] })
@@ -50,6 +50,6 @@ describe('TablesPage partial loading', () => {
     render(<TablesPage locale="en" />)
 
     expect(await screen.findByRole('tab', { name: /Rookie/i })).toBeInTheDocument()
-    expect(screen.getByText('Standings are being prepared')).toBeInTheDocument()
+    expect(screen.getByText('No standings yet')).toBeInTheDocument()
   })
 })
