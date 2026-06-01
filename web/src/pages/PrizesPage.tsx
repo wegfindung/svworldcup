@@ -65,7 +65,7 @@ export function PrizesPage({ locale }: PrizesPageProps) {
       <section className="mx-auto max-w-[72rem]">
         <div className="hero-card overflow-hidden rounded-[1.25rem] p-2 sm:p-3">
           <img
-            src="/prizes/final_prize_distribution.png"
+            src="/prizes/final_prize_distribution.webp"
             alt={copy.imageAlt}
             width={1055}
             height={1491}
