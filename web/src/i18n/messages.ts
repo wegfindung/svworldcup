@@ -1042,6 +1042,15 @@ const spanishMessages: DeepPartial<AppMessages> = {
     errorTitle: 'El reset de contraseña no se completó.',
     errorCta: 'Volver al builder',
   },
+  errorBoundary: {
+    title: 'Algo salió mal.',
+    body: 'Un error inesperado interrumpió esta página. Puedes intentarlo de nuevo.',
+    retry: 'Intentar de nuevo',
+  },
+  bootstrapError: {
+    message:
+      'No se pudieron cargar los datos en vivo del evento; se muestra información predeterminada, así que algunos detalles pueden estar desactualizados.',
+  },
 }
 
 const italianMessages: DeepPartial<AppMessages> = {
@@ -1504,6 +1513,15 @@ const italianMessages: DeepPartial<AppMessages> = {
     errorTitle: 'Il reset password non è stato completato.',
     errorCta: 'Torna al builder',
   },
+  errorBoundary: {
+    title: 'Qualcosa è andato storto.',
+    body: 'Un errore imprevisto ha interrotto questa pagina. Puoi riprovare.',
+    retry: 'Riprova',
+  },
+  bootstrapError: {
+    message:
+      'Impossibile caricare i dati live dell’evento; vengono mostrate informazioni predefinite, quindi alcuni dettagli potrebbero non essere aggiornati.',
+  },
 }
 
 const germanMessages: DeepPartial<AppMessages> = {
@@ -1965,6 +1983,15 @@ const germanMessages: DeepPartial<AppMessages> = {
     errorTitle: 'Passwort-Reset wurde nicht abgeschlossen.',
     errorCta: 'Zurück zum Builder',
   },
+  errorBoundary: {
+    title: 'Etwas ist schiefgelaufen.',
+    body: 'Ein unerwarteter Fehler hat diese Seite unterbrochen. Du kannst es erneut versuchen.',
+    retry: 'Erneut versuchen',
+  },
+  bootstrapError: {
+    message:
+      'Die Live-Daten des Events konnten nicht geladen werden – es werden Standardinformationen angezeigt, daher sind einige Details möglicherweise nicht aktuell.',
+  },
 }
 
 const frenchMessages: DeepPartial<AppMessages> = {
@@ -2423,6 +2450,15 @@ const frenchMessages: DeepPartial<AppMessages> = {
     successBody: 'Ton compte peut à nouveau utiliser email et mot de passe.',
     errorTitle: 'Le reset du mot de passe n’a pas abouti.',
     errorCta: 'Retour au builder',
+  },
+  errorBoundary: {
+    title: 'Une erreur s’est produite.',
+    body: 'Une erreur inattendue a interrompu cette page. Tu peux réessayer.',
+    retry: 'Réessayer',
+  },
+  bootstrapError: {
+    message:
+      'Impossible de charger les données en direct de l’événement ; des informations par défaut sont affichées, donc certains détails peuvent être obsolètes.',
   },
 }
 
@@ -2883,6 +2919,15 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     errorTitle: 'O reset da password não foi concluído.',
     errorCta: 'Voltar ao builder',
   },
+  errorBoundary: {
+    title: 'Algo correu mal.',
+    body: 'Um erro inesperado interrompeu esta página. Podes tentar de novo.',
+    retry: 'Tentar de novo',
+  },
+  bootstrapError: {
+    message:
+      'Não foi possível carregar os dados ao vivo do evento; são mostradas informações predefinidas, por isso alguns detalhes podem estar desatualizados.',
+  },
 }
 
 const russianMessages: DeepPartial<AppMessages> = {
@@ -3342,6 +3387,15 @@ const russianMessages: DeepPartial<AppMessages> = {
     successBody: 'Теперь аккаунт снова может использовать email и пароль.',
     errorTitle: 'Сброс пароля не завершился.',
     errorCta: 'Вернуться к конструктору',
+  },
+  errorBoundary: {
+    title: 'Что-то пошло не так.',
+    body: 'Непредвиденная ошибка прервала эту страницу. Можно попробовать снова.',
+    retry: 'Попробовать снова',
+  },
+  bootstrapError: {
+    message:
+      'Не удалось загрузить актуальные данные события — показана информация по умолчанию, поэтому некоторые детали могут быть устаревшими.',
   },
 }
 
@@ -3805,6 +3859,15 @@ const chineseMessages: DeepPartial<AppMessages> = {
     errorTitle: '密码重置未完成。',
     errorCta: '返回 builder',
   },
+  errorBoundary: {
+    title: '出了点问题。',
+    body: '意外错误中断了此页面。你可以重试。',
+    retry: '重试',
+  },
+  bootstrapError: {
+    message:
+      '无法加载赛事实时数据，现显示默认信息，因此部分细节可能已过时。',
+  },
 }
 
 const japaneseMessages: DeepPartial<AppMessages> = {
@@ -4173,6 +4236,15 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     successBody: 'アカウントは再びメールとパスワードでログインできます。',
     errorTitle: 'パスワードリセットが完了しませんでした。',
     errorCta: 'ビルダーに戻る',
+  },
+  errorBoundary: {
+    title: '問題が発生しました。',
+    body: '予期しないエラーでこのページが中断されました。もう一度お試しください。',
+    retry: 'もう一度試す',
+  },
+  bootstrapError: {
+    message:
+      'イベントのライブデータを読み込めませんでした。デフォルト情報を表示しているため、一部の詳細は最新ではない可能性があります。',
   },
 }
 
