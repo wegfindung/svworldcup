@@ -11,6 +11,7 @@ import { env } from '../config/env.js'
 import { hasRegistrationClosed } from '../data/competitionWindow.js'
 import { isKnownNationCode } from '../data/soccerverseNations.js'
 import { clearCookie, createCookie, parseCookies } from '../lib/cookies.js'
+import { logger } from '../lib/logger.js'
 import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
 import { resolveBrowserLocale } from '../lib/locale.js'
 import { sendPasswordResetMail, sendVerificationMail } from '../lib/mailer.js'
@@ -172,7 +173,12 @@ export function createAuthRouter(
         checkMx: true,
       })
       const verificationUrl = `${env.PUBLIC_WEB_URL}/verify?token=${plainToken}`
-      const delivery = await sendVerificationMail(registrationInput.email, verificationUrl, registrationInput.browserLocale)
+      // Send the verification mail OFF the response path: during the registration rush a slow or throttled
+      // SMTP must not delay (or fail) the 201. /resend-verification is the recovery path if a background
+      // send misses. See SOP_registration_and_auth.md step 8.
+      void sendVerificationMail(registrationInput.email, verificationUrl, registrationInput.browserLocale).catch((error) => {
+        logger.error({ participantId: result.record.participantId, err: error }, 'failed to send verification mail')
+      })
       void emailMarketingRepository.queueAutoresponders('registration_created', result.record).catch((error) => {
         console.error('Failed to queue registration autoresponder', error)
       })
@@ -183,10 +189,6 @@ export function createAuthRouter(
         leagueType: result.record.leagueType,
         status: result.record.status,
         nextStep: 'verify_email',
-        mailer: {
-          accepted: delivery.accepted,
-          rejected: delivery.rejected,
-        },
         verificationPreviewUrl: verificationUrl,
       })
     } catch (error) {
