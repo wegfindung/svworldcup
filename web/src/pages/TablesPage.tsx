@@ -509,11 +509,11 @@ function ParticipantBoardSection({
   return null
 }
 
-function SummaryTile({ label, value }: { label: string; value: number }) {
+function SummaryMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="surface-row min-h-20 rounded-[0.85rem] p-3">
-      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</p>
-      <p className="mono mt-2 text-2xl text-white">{value}</p>
+    <div className="min-w-0 px-3 py-3 sm:px-4">
+      <p className="mono truncate text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</p>
+      <p className="mono mt-1 text-xl leading-none text-white">{value}</p>
     </div>
   )
 }
@@ -528,14 +528,14 @@ function TablesTabButton({ tab, active, onSelect }: { tab: TablesTabItem; active
       id={`tables-tab-${tab.key}`}
       onClick={() => onSelect(tab.key)}
       className={[
-        'min-h-14 rounded-[0.85rem] border px-3 py-2 text-left transition active:scale-[0.98]',
+        'min-h-12 rounded-[0.7rem] border px-3 py-2 text-left transition active:scale-[0.99]',
         active
-          ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white shadow-[0_0_22px_rgba(36,214,166,0.09)]'
-          : 'border-white/8 bg-black/12 text-[var(--color-muted)] hover:border-white/18 hover:bg-white/[0.04] hover:text-white',
+          ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 text-white'
+          : 'border-transparent bg-transparent text-[var(--color-muted)] hover:border-white/10 hover:bg-white/[0.035] hover:text-white',
       ].join(' ')}
     >
-      <span className="block truncate text-sm font-semibold">{tab.label}</span>
-      <span className="mono mt-1 block text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+      <span className="block truncate text-sm font-semibold leading-tight">{tab.label}</span>
+      <span className="mono mt-1 block text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
         {tab.count} {tab.countLabel}
       </span>
     </button>
@@ -588,20 +588,33 @@ export function TablesPage({ locale }: TablesPageProps) {
 
   return (
     <div className="space-y-4 pb-10">
-      <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-        <p className="eyebrow">{copy.heroEyebrow}</p>
-        <div className="mt-4">
-          <div>
-            <h2 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">{copy.compactTitle}</h2>
-            <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.compactBody}</p>
+      <section className="glass-panel rounded-[1.15rem] p-3 sm:p-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.72fr)] lg:items-end">
+          <div className="px-1 py-1 sm:px-2">
+            <p className="eyebrow">{copy.heroEyebrow}</p>
+            <h2 className="mt-4 text-3xl font-semibold leading-tight text-white sm:text-4xl">{copy.compactTitle}</h2>
+            <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.compactBody}</p>
           </div>
+
+          {tables ? (
+            <div className="overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/14">
+              <div className="grid grid-cols-2 divide-x divide-y divide-white/8 sm:grid-cols-4 sm:divide-y-0">
+                <SummaryMetric label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} />
+                <SummaryMetric label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} />
+                <SummaryMetric label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} />
+                <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} />
+              </div>
+            </div>
+          ) : null}
         </div>
+
         {tables ? (
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <SummaryTile label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} />
-            <SummaryTile label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} />
-            <SummaryTile label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} />
-            <SummaryTile label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} />
+          <div className="mt-4 rounded-[0.9rem] border border-white/8 bg-black/18 p-1" role="tablist" aria-label={copy.tabsLabel}>
+            <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-4">
+              {tabItems.map((tab) => (
+                <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
+              ))}
+            </div>
           </div>
         ) : null}
       </section>
@@ -610,14 +623,6 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {tables ? (
         <>
-          <section className="glass-panel rounded-[1.15rem] p-2" role="tablist" aria-label={copy.tabsLabel}>
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              {tabItems.map((tab) => (
-                <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
-              ))}
-            </div>
-          </section>
-
           <div id={`tables-panel-${activeTab}`} role="tabpanel" aria-labelledby={`tables-tab-${activeTab}`}>
             {activeTab === 'nations' ? (
               tables.nations.rows ? (
