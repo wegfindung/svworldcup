@@ -3,7 +3,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { SquadPitchModal } from '../components/SquadPitchModal'
 import { TeamFlag } from '../components/TeamFlag'
-import { defaultScoring, eventTeams } from '../data/eventConfig'
+import { eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
@@ -69,6 +69,14 @@ async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
 }
 
 type TablesCopy = AppMessages['tables']
+type TablesTab = 'nations' | 'rookie' | 'veteran' | 'finder'
+
+interface TablesTabItem {
+  key: TablesTab
+  label: string
+  count: number
+  countLabel: string
+}
 
 const PAID_PARTICIPANT_RANK_LIMIT = 10
 const PAID_NATION_RANK_LIMIT = 3
@@ -501,6 +509,39 @@ function ParticipantBoardSection({
   return null
 }
 
+function SummaryTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="surface-row min-h-20 rounded-[0.85rem] p-3">
+      <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</p>
+      <p className="mono mt-2 text-2xl text-white">{value}</p>
+    </div>
+  )
+}
+
+function TablesTabButton({ tab, active, onSelect }: { tab: TablesTabItem; active: boolean; onSelect: (tab: TablesTab) => void }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      aria-controls={`tables-panel-${tab.key}`}
+      id={`tables-tab-${tab.key}`}
+      onClick={() => onSelect(tab.key)}
+      className={[
+        'min-h-14 rounded-[0.85rem] border px-3 py-2 text-left transition active:scale-[0.98]',
+        active
+          ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white shadow-[0_0_22px_rgba(36,214,166,0.09)]'
+          : 'border-white/8 bg-black/12 text-[var(--color-muted)] hover:border-white/18 hover:bg-white/[0.04] hover:text-white',
+      ].join(' ')}
+    >
+      <span className="block truncate text-sm font-semibold">{tab.label}</span>
+      <span className="mono mt-1 block text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+        {tab.count} {tab.countLabel}
+      </span>
+    </button>
+  )
+}
+
 interface TablesPageProps {
   locale: LocaleCode
 }
@@ -509,8 +550,8 @@ export function TablesPage({ locale }: TablesPageProps) {
   const copy = getMessages(locale).tables
   const [tables, setTables] = useState<TablesPayload | null>(null)
   const [loading, setLoading] = useState(true)
-  const [reloadKey, setReloadKey] = useState(0)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
+  const [activeTab, setActiveTab] = useState<TablesTab>('nations')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -534,94 +575,78 @@ export function TablesPage({ locale }: TablesPageProps) {
       active = false
       controller.abort()
     }
-  }, [reloadKey])
+  }, [])
 
-  function refreshTables() {
-    // loading starts true on mount; set it here (a user event, not the effect body) so a refresh
-    // re-shows the skeleton without a synchronous setState inside the effect.
-    setLoading(true)
-    setTables(null)
-    setReloadKey((key) => key + 1)
-  }
+  const tabItems: TablesTabItem[] = tables
+    ? [
+        { key: 'nations', label: copy.tabNations, count: tables.nations.rows?.length ?? 0, countLabel: copy.nationsSuffix },
+        { key: 'rookie', label: copy.tabRookie, count: tables.rookies.rows?.length ?? 0, countLabel: copy.entriesSuffix },
+        { key: 'veteran', label: copy.tabVeteran, count: tables.veterans.rows?.length ?? 0, countLabel: copy.entriesSuffix },
+        { key: 'finder', label: copy.tabFinder, count: tables.nationParticipation.rows?.length ?? 0, countLabel: copy.nationsSuffix },
+      ]
+    : []
 
   return (
     <div className="space-y-4 pb-10">
-      <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
+      <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
         <p className="eyebrow">{copy.heroEyebrow}</p>
-        <div className="mt-5 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
+        <div className="mt-4">
           <div>
-            <h2 className="section-title max-w-[12ch]">{copy.heroTitle}</h2>
-            <p className="mt-4 max-w-[66ch] text-base leading-relaxed text-[var(--color-muted)]">{copy.heroBody}</p>
-          </div>
-          <button
-            type="button"
-            onClick={refreshTables}
-            className="premium-button h-11 px-6 text-sm font-semibold"
-          >
-            {copy.refresh}
-          </button>
-        </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="glass-panel rounded-[1.15rem] p-4">
-          <p className="eyebrow text-[10px]">{copy.scoringProfile}</p>
-          <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-            <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="text-[var(--color-muted)]">{copy.goal}</p>
-              <p className="mono mt-2 text-xl text-white">{defaultScoring.goal}</p>
-            </div>
-            <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="text-[var(--color-muted)]">{copy.assist}</p>
-              <p className="mono mt-2 text-xl text-white">{defaultScoring.assist}</p>
-            </div>
-            <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="text-[var(--color-muted)]">{copy.cleanSheet}</p>
-              <p className="mono mt-2 text-sm text-white">
-                GK {defaultScoring.cleanSheet.GK} · DEF {defaultScoring.cleanSheet.DEF} · MID {defaultScoring.cleanSheet.MID}* · FWD {defaultScoring.cleanSheet.FWD}
-              </p>
-              <p className="mt-1 text-[10px] leading-tight text-[var(--color-muted)]">{copy.cleanSheetMidNote}</p>
-            </div>
+            <h2 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">{copy.compactTitle}</h2>
+            <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.compactBody}</p>
           </div>
         </div>
-
-        <div className="glass-panel rounded-[1.15rem] p-4">
-          <p className="eyebrow text-[10px]">{copy.rankingFormat}</p>
-          <div className="mt-5 grid gap-3 text-sm text-[var(--color-paper)]">
-            <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.visibleEntriesTitle}</p>
-              <p className="mt-2 leading-relaxed">{copy.visibleEntriesBody}</p>
-            </div>
-            <div className="surface-row rounded-[0.85rem] p-3">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.tieBreakTitle}</p>
-              <p className="mt-2 leading-relaxed">{copy.tieBreakBody}</p>
-            </div>
+        {tables ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <SummaryTile label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} />
+            <SummaryTile label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} />
+            <SummaryTile label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} />
+            <SummaryTile label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} />
           </div>
-        </div>
+        ) : null}
       </section>
 
       {loading && !tables ? <div className="skeleton h-40 rounded-[1.15rem]" /> : null}
 
       {tables ? (
         <>
-          {tables.nations.rows ? (
-            <NationTable copy={copy} rows={tables.nations.rows} onOpenSquad={setSquadTarget} />
-          ) : tables.nations.error ? (
-            <section className="glass-panel rounded-[1.15rem] p-5">
-              <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
-            </section>
-          ) : null}
-          {tables.nationParticipation.rows ? (
-            <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} />
-          ) : tables.nationParticipation.error ? (
-            <section className="glass-panel rounded-[1.15rem] p-5">
-              <EmptyState {...boardErrorCopy(copy, tables.nationParticipation.error)} />
-            </section>
-          ) : null}
-          <section className="grid gap-4 xl:grid-cols-2">
-            <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
-            <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+          <section className="glass-panel rounded-[1.15rem] p-2" role="tablist" aria-label={copy.tabsLabel}>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {tabItems.map((tab) => (
+                <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
+              ))}
+            </div>
           </section>
+
+          <div id={`tables-panel-${activeTab}`} role="tabpanel" aria-labelledby={`tables-tab-${activeTab}`}>
+            {activeTab === 'nations' ? (
+              tables.nations.rows ? (
+                <NationTable copy={copy} rows={tables.nations.rows} onOpenSquad={setSquadTarget} />
+              ) : tables.nations.error ? (
+                <section className="glass-panel rounded-[1.15rem] p-5">
+                  <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
+                </section>
+              ) : null
+            ) : null}
+
+            {activeTab === 'rookie' ? (
+              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+            ) : null}
+
+            {activeTab === 'veteran' ? (
+              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+            ) : null}
+
+            {activeTab === 'finder' ? (
+              tables.nationParticipation.rows ? (
+                <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} />
+              ) : tables.nationParticipation.error ? (
+                <section className="glass-panel rounded-[1.15rem] p-5">
+                  <EmptyState {...boardErrorCopy(copy, tables.nationParticipation.error)} />
+                </section>
+              ) : null
+            ) : null}
+          </div>
         </>
       ) : null}
 
