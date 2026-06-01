@@ -51,9 +51,7 @@ Expected production env highlights:
 - `ADMIN_BOOTSTRAP_EMAILS`
 - `ADMIN_BOOTSTRAP_PASSWORD`
 - `ADMIN_API_TOKEN`
-- `CLOSED_BETA_AUTH_ENABLED`
-- `CLOSED_BETA_AUTH_USERNAME`
-- `CLOSED_BETA_AUTH_PASSWORD`
+- optional `CLOSED_BETA_AUTH_*` variables if temporary Basic Auth should be re-enabled
 - `SESSION_SECRET`
 - `SHARE_SNAPSHOT_SECRET`
 - `CSRF_TOKEN_SECRET`

@@ -108,6 +108,6 @@ export const env = {
   REGISTRATION_CLOSE_AT: parseInstant(parsed.REGISTRATION_CLOSE_AT),
   SWAP_W3_OPENS_AT: parseInstant(parsed.SWAP_W3_OPENS_AT),
   SWAP_W3_CLOSES_AT: parseInstant(parsed.SWAP_W3_CLOSES_AT),
-  CLOSED_BETA_AUTH_ENABLED: parsed.CLOSED_BETA_AUTH_ENABLED ?? parsed.NODE_ENV === 'production',
+  CLOSED_BETA_AUTH_ENABLED: parsed.CLOSED_BETA_AUTH_ENABLED ?? false,
   RATE_LIMIT_TRUST_PROXY: parsed.RATE_LIMIT_TRUST_PROXY ?? parsed.NODE_ENV === 'production',
 }
