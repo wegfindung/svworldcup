@@ -120,17 +120,17 @@ function PlayerDetailRow({ copy, player }: { copy: ResultsCopy; player: PublicFi
       <div className="flex shrink-0 flex-wrap justify-end gap-1.5 text-[10px]">
         {player.goals > 0 && (
           <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">
-            ⚽ {player.goals}
+            G {player.goals}
           </span>
         )}
         {player.assists > 0 && (
           <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-sand)]/25 bg-[var(--color-sand)]/10 px-2 py-1 text-[9px] font-bold text-[var(--color-sand)]">
-            🅰️ {player.assists}
+            A {player.assists}
           </span>
         )}
         {player.cleanSheetEligible && (
           <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[9px] font-bold text-[var(--color-accent)]">
-            🛡️ CS
+            CS
           </span>
         )}
       </div>
@@ -241,7 +241,7 @@ function ResultCard({
       {isFinal ? (
         <div className="mt-3.5 grid gap-2 rounded-[0.8rem] border border-white/6 bg-black/30 p-3 text-[11px] text-[var(--color-muted)] leading-relaxed">
           <div className="flex items-start gap-2">
-            <span className="font-bold text-white shrink-0 mt-0.5">⚽ {copy.scorers}</span>
+            <span className="font-bold text-white shrink-0 mt-0.5">G {copy.scorers}</span>
             <div className="flex-1">
               <span className="text-[var(--color-accent)] font-semibold">{result.homeTeamCode}</span> {formatPlayerList(result.homePlayers, 'goals', copy)}
               <span className="mx-2 text-white/10">|</span>
@@ -249,7 +249,7 @@ function ResultCard({
             </div>
           </div>
           <div className="flex items-start gap-2 border-t border-white/5 pt-2 mt-1">
-            <span className="font-bold text-white shrink-0 mt-0.5">🅰️ {copy.assists}</span>
+            <span className="font-bold text-white shrink-0 mt-0.5">A {copy.assists}</span>
             <div className="flex-1">
               <span className="text-[var(--color-sand)] font-semibold">{result.homeTeamCode}</span> {formatPlayerList(result.homePlayers, 'assists', copy)}
               <span className="mx-2 text-white/10">|</span>

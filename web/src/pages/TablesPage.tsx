@@ -119,7 +119,7 @@ function BreakdownPill({ label, count, points }: { label: string; count?: number
 function MoneyBadge({ label }: { label: string }) {
   return (
     <span className="mono inline-flex shrink-0 rounded-full border border-[var(--color-sand)]/40 bg-[var(--color-sand)]/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-sand)] shadow-[0_0_8px_rgba(217,173,93,0.08)] hover:shadow-[0_0_12px_rgba(217,173,93,0.25)] hover:border-[var(--color-sand)]/60 transition duration-300">
-      💰 {label}
+      {label}
     </span>
   )
 }
@@ -302,7 +302,7 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
                 <div key={row.participantId} className="border border-white/6 hover:border-[var(--color-accent)]/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] group hover:shadow-[0_12px_40px_-20px_rgba(34,189,147,0.15)]">
                   <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
                     <span className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${rankColor}`}>
-                      {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `#${row.rank}`}
+                      #{row.rank}
                     </span>
                     <div className="min-w-0">
                       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
@@ -425,7 +425,7 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
                 <div key={row.teamCode} className="border border-white/6 hover:border-blue-500/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_12px_40px_-20px_rgba(59,130,246,0.15)]">
                   <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
                     <span className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${rankColor}`}>
-                      {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `#${row.rank}`}
+                      #{row.rank}
                     </span>
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2.5">
@@ -617,14 +617,14 @@ function TablesTabButton({ tab, active, onSelect }: { tab: TablesTabItem; active
     nations: 'border-blue-500/40 bg-blue-500/10 text-white shadow-[0_0_12px_rgba(59,130,246,0.12)]',
     rookie: 'border-emerald-500/40 bg-emerald-500/10 text-white shadow-[0_0_12px_rgba(16,185,129,0.12)]',
     veteran: 'border-[var(--color-sand)]/40 bg-[var(--color-sand)]/10 text-white shadow-[0_0_12px_rgba(217,173,93,0.12)]',
-    finder: 'border-purple-500/40 bg-purple-500/10 text-white shadow-[0_0_12px_rgba(168,85,247,0.12)]',
+    finder: 'border-white/18 bg-white/[0.04] text-white shadow-[0_0_12px_rgba(234,225,205,0.08)]',
   }
 
   const activeBadgeColor = {
     nations: 'text-blue-400',
     rookie: 'text-emerald-400',
     veteran: 'text-[var(--color-sand)]',
-    finder: 'text-purple-400',
+    finder: 'text-[var(--color-paper)]',
   }
 
   return (
@@ -708,7 +708,7 @@ export function TablesPage({ locale }: TablesPageProps) {
                 <SummaryMetric label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} colorClass="text-blue-400 group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
                 <SummaryMetric label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} colorClass="text-emerald-400 group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
                 <SummaryMetric label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} colorClass="text-[var(--color-sand)] group-hover:drop-shadow-[0_0_6px_rgba(217,173,93,0.4)]" />
-                <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} colorClass="text-purple-400 group-hover:drop-shadow-[0_0_6px_rgba(168,85,247,0.4)]" />
+                <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} colorClass="text-[var(--color-paper)] group-hover:drop-shadow-[0_0_6px_rgba(234,225,205,0.24)]" />
               </div>
             </div>
           ) : null}
