@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
 import { useBootstrap } from './hooks/useBootstrap'
@@ -187,7 +188,7 @@ function App() {
   const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
   const copy = getMessages(locale)
   const footerCopy = footerCopyByLocale[locale]
-  const { data: bootstrap } = useBootstrap()
+  const { data: bootstrap, error: bootstrapError } = useBootstrap()
   const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
   const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
   const headerAccountItems = copy.nav.account.filter((item) => item.to !== '/admin')
@@ -435,8 +436,17 @@ function App() {
         </header>
 
         <main className="flex-1 reveal-in">
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
+          {bootstrapError ? (
+            <div
+              role="status"
+              className="mb-4 rounded-[1rem] border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"
+            >
+              {copy.bootstrapError.message}
+            </div>
+          ) : null}
+          <ErrorBoundary key={location.pathname} copy={copy.errorBoundary}>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
               <Route path="/" element={<HomePage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
               <Route
                 path="/register"
@@ -477,8 +487,9 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
               <Route path="/admin/*" element={<AdminPage locale={locale} />} />
               <Route path="/profiles/:slug" element={<ProfilePage />} />
-            </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </main>
 
         <footer className="mt-8 grid gap-5 border-t border-white/10 py-6 text-sm text-[var(--color-muted)] md:grid-cols-[minmax(0,1fr)_auto] md:items-end">

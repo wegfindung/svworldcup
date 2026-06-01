@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
+import type { Queryable } from '../lib/db.js'
 import { canConfirm } from '../lib/confirmationRules.js'
 import { MatchImportValidationError } from '../lib/matchImportError.js'
 import { assertStarterCap } from '../lib/matchImportJson.js'
@@ -40,7 +41,9 @@ export interface MatchImportRepository {
   replaceBatch(fixtureId: string, input: CreateMatchBatchInput): Promise<PendingMatchBatch>
   updateRow(rowId: string, edits: UpdateMatchRowInput, editorEmail: string): Promise<PendingMatchBatch>
   addConfirmation(batchId: string, adminEmail: string): Promise<PendingMatchBatch>
-  deleteBatch(batchId: string): Promise<void>
+  // executor lets promotion delete the batch on its transactional client (same tx as the upserts +
+  // audit row), so the batch is cleared atomically with the rows it promotes — see matchPromotion.ts.
+  deleteBatch(batchId: string, executor?: Queryable): Promise<void>
 }
 
 export class MemoryMatchImportRepository implements MatchImportRepository {
@@ -263,8 +266,6 @@ function mapConfirmationRow(row: ConfirmationRow): PendingMatchConfirmation {
     createdAt: row.created_at,
   }
 }
-
-type Queryable = Pool | PoolClient
 
 async function loadBatch(executor: Queryable, batchId: string): Promise<PendingMatchBatch | null> {
   const batchResult = await executor.query<BatchRow>(
@@ -552,7 +553,7 @@ export class PostgresMatchImportRepository implements MatchImportRepository {
     return (await loadBatch(this.pool, batchId)) as PendingMatchBatch
   }
 
-  async deleteBatch(batchId: string) {
-    await this.pool.query('DELETE FROM pending_match_batches WHERE batch_id = $1', [batchId])
+  async deleteBatch(batchId: string, executor?: Queryable) {
+    await (executor ?? this.pool).query('DELETE FROM pending_match_batches WHERE batch_id = $1', [batchId])
   }
 }

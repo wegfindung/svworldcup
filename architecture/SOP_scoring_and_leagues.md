@@ -86,8 +86,36 @@ Each participant selects a salary budget when building their squad. The chosen b
   a fixture belongs to scores at full weight; a substitute slot scores at half weight (`0.5`).
 - Substitute slots always score, at half weight: every point a reserve earns from its own match entry is multiplied by `0.5`. There is no auto-activation and no dependency on starter absence or official-squad presence (see "Substitution Rules").
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
-- Nations qualify for the public table once they have at least two scored entries.
+- Nations qualify for the public table once they have at least two member entries — counted by participation (`participantCount >= 2`), not by points scored, so two zero-point members still qualify.
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
+
+## Leaderboard Read Cache
+
+Public leaderboard reads (`/leaderboards/rookie|veteran|nations`) and `/profiles/:slug` are served
+from an in-memory read-through cache of the computed participant rows.
+
+- **Compute once per payload.** All three boards derive from a single `calculateRows()` result (the
+  6-query + scoring loop). Rookie/veteran/nations no longer recompute independently.
+- **The board is a pure function of stored rows** (no wall-clock term), so write-triggered
+  invalidation is sufficient for correctness; a short TTL (default 10s) is only a backstop.
+- **Invalidation is hooked at the repository layer** — every write method that mutates a board-input
+  table clears the cache: squad lock/swap/assign/remove/budget/reset, registration
+  create/verify/link-soccerverse/league-change, scoring config change, team-pool re-import, match-entry
+  promotion (`upsertMatchEntry`), and the per-fixture influence snapshot upsert. Reveal flags,
+  marketing, password, referral, and event-control writes are deliberately not hooked — they do not
+  change a board.
+- **Profile score reads the cached rows too.** `/profiles/:slug` resolves a participant's rank/score
+  by reading the same cached league board (`getLeagueLeaderboard`) and picking their row, rather than
+  recomputing a whole league per profile view. Profile score and the public leaderboard therefore
+  always derive from one computation and can never diverge.
+- **Ordering trap.** The Veteran influence snapshot is written fire-and-forget *after* promotion. The
+  snapshot repo's `upsert` invalidates the cache, and a generation guard prevents an in-flight
+  recompute (started before the snapshot landed) from caching a board missing the not-yet-written
+  bonus. Net: the veteran board self-corrects as soon as each snapshot row lands, never serving stale.
+- **Single process only.** The cache is in-process (matches the single-process deployment). If the
+  server is ever scaled horizontally, each instance caches independently and the TTL bounds staleness.
+- **Tradeoff:** during a snapshot capture the cache is repeatedly invalidated, so reads recompute until
+  capture settles — correctness (never stale) over peak performance during that brief window.
 
 ## Per-Round Lineup Freeze
 

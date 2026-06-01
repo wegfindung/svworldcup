@@ -160,7 +160,7 @@ export function ProfilePage() {
                       meta: slot.player
                         ? [
                             { label: 'Rating', value: String(slot.player.rating) },
-                            { label: 'Pos', value: slot.player.positionMain ?? slot.player.positions.join('/') },
+                            { label: 'Pos', value: slot.player.positionMain ?? (slot.player.positions ?? []).join('/') },
                           ]
                         : undefined,
                     }}

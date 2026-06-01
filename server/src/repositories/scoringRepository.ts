@@ -25,6 +25,8 @@ import type { ConfigRepository } from './configRepository.js'
 import type { RegistrationRepository } from './registrationRepository.js'
 import type { SquadRepository } from './squadRepository.js'
 import type { ParticipantInfluenceSnapshotRepository } from './participantInfluenceSnapshotRepository.js'
+import type { CacheableRow, LeaderboardCache } from './leaderboardCache.js'
+import type { Queryable } from '../lib/db.js'
 
 interface ScoreParticipant {
   participantId: string
@@ -68,12 +70,30 @@ type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
   registeredAt: string
 }
 
+// C1: a multi-row promotion suppresses the per-row cache invalidation and invalidates ONCE after all
+// rows + the batch delete + the audit row land, so the board flips only on full success — a mid-loop
+// failure leaves the pre-promotion board intact (re-promote heals it via idempotent upserts).
+export interface UpsertMatchEntryOptions {
+  suppressLeaderboardInvalidation?: boolean
+  // When set, the upsert runs on this transactional client instead of the pool, so a promotion can
+  // commit every row + the batch delete + the audit row together (see services/matchPromotion.ts).
+  executor?: Queryable
+}
+
 export interface ScoringRepository {
   storageKind: 'memory' | 'postgres'
-  upsertMatchEntry(input: MatchEntryInput): Promise<MatchEntryRecord>
+  upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions): Promise<MatchEntryRecord>
   listMatchEntries(fixtureId?: string): Promise<MatchEntryRecord[]>
   getLeagueLeaderboard(leagueType: LeagueType): Promise<ParticipantScoreRow[]>
   getNationLeaderboard(): Promise<NationScoreRow[]>
+  // Force a leaderboard cache invalidation (used after a suppressed multi-row promotion completes).
+  invalidateLeaderboard(): void
+  // Runs fn while holding a fixture-scoped advisory lock so two concurrent promotions of the same
+  // fixture can't both proceed, AND inside a single BEGIN/COMMIT transaction on that same connection.
+  // fn receives the transactional client as `executor` to thread onto every write so they commit
+  // together or roll back together. Returns null WITHOUT running fn when the lock is already held.
+  // The Memory impl has no real lock or transaction and always runs fn with no executor.
+  withFixtureLock<T>(fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null>
 }
 
 function derivePerformancePoints(rating: number | undefined, curve: PerformanceCurveAnchor[]) {
@@ -457,9 +477,20 @@ export class MemoryScoringRepository implements ScoringRepository {
     private readonly registrationRepository: RegistrationRepository,
     private readonly squadRepository: SquadRepository,
     private readonly snapshotRepository: ParticipantInfluenceSnapshotRepository,
+    private readonly leaderboardCache?: LeaderboardCache,
   ) {}
 
-  async upsertMatchEntry(input: MatchEntryInput) {
+  // Read-through the cache when one is injected; otherwise compute directly (keeps every existing
+  // test that constructs this repo without a cache byte-identical). See leaderboardCache.ts.
+  private getCachedRows(compute: () => Promise<CacheableRow[]>): Promise<CacheableRow[]> {
+    return this.leaderboardCache ? this.leaderboardCache.getRows(compute) : compute()
+  }
+
+  private async calculateAllRows() {
+    return this.calculateRows(await this.listMemoryParticipants())
+  }
+
+  async upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions) {
     const entryKey = `${input.fixtureId}:${input.playerId}`
     const current = this.entries.get(entryKey)
     const entry: MatchEntryRecord = {
@@ -476,7 +507,14 @@ export class MemoryScoringRepository implements ScoringRepository {
       sourceNote: input.sourceNote ?? 'manual admin entry',
     }
     this.entries.set(entryKey, entry)
+    if (!options?.suppressLeaderboardInvalidation) {
+      this.leaderboardCache?.invalidate()
+    }
     return entry
+  }
+
+  invalidateLeaderboard() {
+    this.leaderboardCache?.invalidate()
   }
 
   async listMatchEntries(fixtureId?: string) {
@@ -484,14 +522,23 @@ export class MemoryScoringRepository implements ScoringRepository {
     return fixtureId ? entries.filter((entry) => entry.fixtureId === fixtureId) : entries
   }
 
+  // No cross-process locking or transaction in memory — single test process, so just run the work
+  // with no executor (the Memory write methods ignore it and mutate their in-process maps directly).
+  async withFixtureLock<T>(_fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null> {
+    return fn()
+  }
+
+  // Compute-once-per-payload: both boards read the same cached full row set, then filter/rank in
+  // memory (each row is independent of the others, so filtering after compute is equivalent to the
+  // old compute-per-league path).
   async getLeagueLeaderboard(leagueType: LeagueType) {
-    const participants = await this.listMemoryParticipants()
-    const rows = await this.calculateRows(participants.filter((participant) => participant.leagueType === leagueType))
-    return rankParticipants(rows)
+    const rows = await this.getCachedRows(() => this.calculateAllRows())
+    return rankParticipants(rows.filter((row) => row.leagueType === leagueType))
   }
 
   async getNationLeaderboard() {
-    return buildNationLeaderboard(rankParticipants(await this.calculateRows(await this.listMemoryParticipants())))
+    const rows = await this.getCachedRows(() => this.calculateAllRows())
+    return buildNationLeaderboard(rankParticipants(rows))
   }
 
   private async listMemoryParticipants(): Promise<ScoreParticipant[]> {
@@ -579,7 +626,13 @@ export class PostgresScoringRepository implements ScoringRepository {
   constructor(
     private readonly pool: Pool,
     private readonly configRepository: ConfigRepository,
+    private readonly leaderboardCache?: LeaderboardCache,
   ) {}
+
+  // Read-through the cache when one is injected; otherwise compute directly. See leaderboardCache.ts.
+  private getCachedRows(compute: () => Promise<CacheableRow[]>): Promise<CacheableRow[]> {
+    return this.leaderboardCache ? this.leaderboardCache.getRows(compute) : compute()
+  }
 
   private async listBonusByEntry(): Promise<Map<string, number>> {
     const result = await this.pool.query<{
@@ -595,8 +648,10 @@ export class PostgresScoringRepository implements ScoringRepository {
     return map
   }
 
-  async upsertMatchEntry(input: MatchEntryInput) {
-    const result = await this.pool.query<{
+  async upsertMatchEntry(input: MatchEntryInput, options?: UpsertMatchEntryOptions) {
+    // Run on the caller's transactional client when given (promotion threads one), else the pool.
+    const db = options?.executor ?? this.pool
+    const result = await db.query<{
       entry_id: string
       fixture_id: string
       player_id: string
@@ -640,7 +695,14 @@ export class PostgresScoringRepository implements ScoringRepository {
       ],
     )
 
+    if (!options?.suppressLeaderboardInvalidation) {
+      this.leaderboardCache?.invalidate()
+    }
     return mapEntryRow(result.rows[0])
+  }
+
+  invalidateLeaderboard() {
+    this.leaderboardCache?.invalidate()
   }
 
   async listMatchEntries(fixtureId?: string) {
@@ -668,13 +730,47 @@ export class PostgresScoringRepository implements ScoringRepository {
     return result.rows.map(mapEntryRow)
   }
 
+  // Session-level advisory lock keyed by a stable hash of the fixture id (hashtext). Held on a
+  // dedicated connection for the duration of fn, then released. pg_try_advisory_lock returns
+  // false immediately when another connection already holds it → we skip rather than block.
+  // fn runs inside a BEGIN/COMMIT on that same client and receives it as `executor`, so the caller
+  // can thread all its writes onto one transaction (all-or-nothing). A throw rolls the work back;
+  // the advisory lock is released after COMMIT/ROLLBACK regardless.
+  async withFixtureLock<T>(fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null> {
+    const client = await this.pool.connect()
+    try {
+      const lockResult = await client.query<{ locked: boolean }>(
+        'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
+        [fixtureId],
+      )
+      if (!lockResult.rows[0]?.locked) {
+        return null
+      }
+      try {
+        await client.query('BEGIN')
+        try {
+          const result = await fn(client)
+          await client.query('COMMIT')
+          return result
+        } catch (error) {
+          await client.query('ROLLBACK')
+          throw error
+        }
+      } finally {
+        await client.query('SELECT pg_advisory_unlock(hashtext($1))', [fixtureId])
+      }
+    } finally {
+      client.release()
+    }
+  }
+
   async getLeagueLeaderboard(leagueType: LeagueType) {
-    const rows = await this.calculateRows()
+    const rows = await this.getCachedRows(() => this.calculateRows())
     return rankParticipants(rows.filter((row) => row.leagueType === leagueType))
   }
 
   async getNationLeaderboard() {
-    return buildNationLeaderboard(rankParticipants(await this.calculateRows()))
+    return buildNationLeaderboard(rankParticipants(await this.getCachedRows(() => this.calculateRows())))
   }
 
   private async calculateRows() {

@@ -47,8 +47,16 @@ import {
   PostgresParticipantRiskRepository,
   type ParticipantRiskRepository,
 } from '../repositories/participantRiskRepository.js'
+import {
+  MemorySnapshotJobRepository,
+  PostgresSnapshotJobRepository,
+  type SnapshotJobRepository,
+} from '../repositories/snapshotJobRepository.js'
+import { LeaderboardCache } from '../repositories/leaderboardCache.js'
+import { instrumentSlowQueries } from '../lib/dbInstrumentation.js'
 
 let pool: Pool | null = null
+let leaderboardCache: LeaderboardCache | null = null
 let registrationRepository: RegistrationRepository | null = null
 let configRepository: ConfigRepository | null = null
 let adminRepository: AdminRepository | null = null
@@ -64,6 +72,7 @@ let auditRepository: AuditRepository | null = null
 let emailMarketingRepository: EmailMarketingRepository | null = null
 let participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository | null = null
 let participantRiskRepository: ParticipantRiskRepository | null = null
+let snapshotJobRepository: SnapshotJobRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -86,7 +95,14 @@ function getPool(): Pool | null {
   if (!pool) {
     pool = new Pool({
       connectionString,
+      max: env.DB_POOL_MAX,
+      connectionTimeoutMillis: env.DB_CONNECTION_TIMEOUT_MS,
+      idleTimeoutMillis: env.DB_IDLE_TIMEOUT_MS,
+      // Server-side cap so a single runaway query can't pin a connection forever.
+      statement_timeout: env.DB_STATEMENT_TIMEOUT_MS,
     })
+    // Per-statement slow-query logging — patches each connection's query once via the connect event.
+    instrumentSlowQueries(pool)
   }
 
   return pool
@@ -99,10 +115,21 @@ export async function closeRepositoryPool() {
   }
 }
 
+// One shared in-memory leaderboard cache injected into the scoring repo (read-through) and every
+// board-input write repo (invalidate-on-write). See repositories/leaderboardCache.ts.
+function getLeaderboardCache(): LeaderboardCache {
+  if (!leaderboardCache) {
+    leaderboardCache = new LeaderboardCache()
+  }
+  return leaderboardCache
+}
+
 export function createRegistrationRepository(): RegistrationRepository {
   if (!registrationRepository) {
     const existingPool = getPool()
-    registrationRepository = existingPool ? new PostgresRegistrationRepository(existingPool) : new MemoryRegistrationRepository()
+    registrationRepository = existingPool
+      ? new PostgresRegistrationRepository(existingPool, getLeaderboardCache())
+      : new MemoryRegistrationRepository(getLeaderboardCache())
   }
   return registrationRepository
 }
@@ -110,7 +137,9 @@ export function createRegistrationRepository(): RegistrationRepository {
 export function createConfigRepository(): ConfigRepository {
   if (!configRepository) {
     const existingPool = getPool()
-    configRepository = existingPool ? new PostgresConfigRepository(existingPool) : new MemoryConfigRepository()
+    configRepository = existingPool
+      ? new PostgresConfigRepository(existingPool, getLeaderboardCache())
+      : new MemoryConfigRepository(getLeaderboardCache())
   }
   return configRepository
 }
@@ -136,7 +165,9 @@ export function createParticipantSessionRepository(): ParticipantSessionReposito
 export function createTeamPoolRepository(): TeamPoolRepository {
   if (!teamPoolRepository) {
     const existingPool = getPool()
-    teamPoolRepository = existingPool ? new PostgresTeamPoolRepository(existingPool) : new MemoryTeamPoolRepository()
+    teamPoolRepository = existingPool
+      ? new PostgresTeamPoolRepository(existingPool, getLeaderboardCache())
+      : new MemoryTeamPoolRepository(getLeaderboardCache())
   }
   return teamPoolRepository
 }
@@ -145,8 +176,8 @@ export function createSquadRepository(): SquadRepository {
   if (!squadRepository) {
     const existingPool = getPool()
     squadRepository = existingPool
-      ? new PostgresSquadRepository(existingPool, createTeamPoolRepository())
-      : new MemorySquadRepository(createTeamPoolRepository())
+      ? new PostgresSquadRepository(existingPool, createTeamPoolRepository(), getLeaderboardCache())
+      : new MemorySquadRepository(createTeamPoolRepository(), undefined, getLeaderboardCache())
   }
   return squadRepository
 }
@@ -173,12 +204,13 @@ export function createScoringRepository(): ScoringRepository {
   if (!scoringRepository) {
     const existingPool = getPool()
     scoringRepository = existingPool
-      ? new PostgresScoringRepository(existingPool, createConfigRepository())
+      ? new PostgresScoringRepository(existingPool, createConfigRepository(), getLeaderboardCache())
       : new MemoryScoringRepository(
           createConfigRepository(),
           createRegistrationRepository(),
           createSquadRepository(),
           createParticipantInfluenceSnapshotRepository(),
+          getLeaderboardCache(),
         )
   }
   return scoringRepository
@@ -226,8 +258,8 @@ export function createParticipantInfluenceSnapshotRepository(): ParticipantInflu
   if (!participantInfluenceSnapshotRepository) {
     const existingPool = getPool()
     participantInfluenceSnapshotRepository = existingPool
-      ? new PostgresParticipantInfluenceSnapshotRepository(existingPool)
-      : new MemoryParticipantInfluenceSnapshotRepository()
+      ? new PostgresParticipantInfluenceSnapshotRepository(existingPool, getLeaderboardCache())
+      : new MemoryParticipantInfluenceSnapshotRepository(getLeaderboardCache())
   }
   return participantInfluenceSnapshotRepository
 }
@@ -238,4 +270,14 @@ export function createParticipantRiskRepository(): ParticipantRiskRepository {
     participantRiskRepository = existingPool ? new PostgresParticipantRiskRepository(existingPool) : new MemoryParticipantRiskRepository()
   }
   return participantRiskRepository
+}
+
+export function createSnapshotJobRepository(): SnapshotJobRepository {
+  if (!snapshotJobRepository) {
+    const existingPool = getPool()
+    snapshotJobRepository = existingPool
+      ? new PostgresSnapshotJobRepository(existingPool)
+      : new MemorySnapshotJobRepository()
+  }
+  return snapshotJobRepository
 }

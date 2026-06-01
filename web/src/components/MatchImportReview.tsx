@@ -128,10 +128,12 @@ export function MatchImportReview({
   onClose,
 }: MatchImportReviewProps) {
   const poolsRequestKey = `${homeTeam.code}:${awayTeam.code}`
+  // B3: load each team's pool independently — one team's pool failing must not strip the other team's
+  // pool too. `errors` is keyed by team code so a partial failure names only the team that failed.
   const [pools, setPools] = useState<Record<string, TeamPoolPlayer[]>>({})
-  const [poolsLoadResult, setPoolsLoadResult] = useState<{ key: string; error: string | null }>({
+  const [poolLoad, setPoolLoad] = useState<{ key: string; errors: Record<string, string> }>({
     key: '',
-    error: null,
+    errors: {},
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,25 +141,31 @@ export function MatchImportReview({
   const [modal, setModal] = useState<ModalState>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
     let cancelled = false
-    Promise.all([fetchTeamSelections(homeTeam.code), fetchTeamSelections(awayTeam.code)])
-      .then(([home, away]) => {
-        if (cancelled) {
-          return
+    const teamCodes = [homeTeam.code, awayTeam.code]
+    void (async () => {
+      const results = await Promise.allSettled(teamCodes.map((code) => fetchTeamSelections(code, controller.signal)))
+      if (cancelled) {
+        return
+      }
+      const nextPools: Record<string, TeamPoolPlayer[]> = {}
+      const errors: Record<string, string> = {}
+      results.forEach((result, index) => {
+        const code = teamCodes[index]
+        if (result.status === 'fulfilled') {
+          nextPools[code] = result.value.items
+        } else {
+          errors[code] = result.reason instanceof Error ? result.reason.message : 'Could not load team pool.'
         }
-        setPools({ [homeTeam.code]: home.items, [awayTeam.code]: away.items })
-        setPoolsLoadResult({ key: poolsRequestKey, error: null })
       })
-      .catch((caught) => {
-        if (!cancelled) {
-          setPoolsLoadResult({
-            key: poolsRequestKey,
-            error: caught instanceof Error ? caught.message : 'Could not load team pools.',
-          })
-        }
-      })
+      setPools(nextPools)
+      setPoolLoad({ key: poolsRequestKey, errors })
+    })()
+    // B5: abort the in-flight pool fetches when the teams change or the review unmounts.
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [homeTeam.code, awayTeam.code, poolsRequestKey])
 
@@ -165,8 +173,14 @@ export function MatchImportReview({
   const homeRows = batch.rows.filter((row) => row.teamCode === homeTeam.code)
   const awayRows = batch.rows.filter((row) => row.teamCode === awayTeam.code)
   const unresolvedCount = batch.rows.filter((row) => row.playerId === null).length
-  const poolsLoading = poolsLoadResult.key !== poolsRequestKey
-  const visibleError = error ?? (poolsLoadResult.key === poolsRequestKey ? poolsLoadResult.error : null)
+  const poolsLoading = poolLoad.key !== poolsRequestKey
+  const failedPoolTeams = poolLoad.key === poolsRequestKey ? Object.keys(poolLoad.errors) : []
+  const poolErrorMessage = failedPoolTeams.length
+    ? `Could not load the player pool for ${failedPoolTeams
+        .map((code) => (code === homeTeam.code ? homeTeam.nameEn : code === awayTeam.code ? awayTeam.nameEn : code))
+        .join(' and ')} — those rows can't be matched to a player.`
+    : null
+  const visibleError = error ?? poolErrorMessage
 
   const alreadyConfirmed = validConfirmers.includes(adminEmail)
   const isLastEditor = batch.lastEditedBy === adminEmail

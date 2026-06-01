@@ -12,6 +12,7 @@ import { MemoryScoringRepository } from '../repositories/scoringRepository.js'
 import { MemorySquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import { MemorySnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 import { createMatchImportRouter } from './matchImport.js'
 
 const BRA_MAR_FIXTURE = '2026-06-13-c-bra-mar'
@@ -55,7 +56,7 @@ async function setup() {
       participantInfluenceSnapshotRepository,
     ),
     auditRepository: new MemoryAuditRepository(),
-    participantInfluenceSnapshotRepository,
+    snapshotJobRepository: new MemorySnapshotJobRepository(),
   }
 
   const app = express()

@@ -25,7 +25,7 @@ Allow participants to register securely with verified email, enter the squad bui
 - optional `soccerverseUsername` based on league path
 - optional `referrerSoccerverseUsername` from the landing page `ref` campaign parameter
 7. Backend stores a pending registration with a one-time verification token and expiry.
-8. Verification email is sent through SMTP.
+8. Verification email is sent through SMTP, **off the registration response path** — the `201` returns as soon as the pending registration is stored, so a slow or throttled SMTP during a registration rush does not delay or fail registration. A missed background send is recovered via the (rate-limited) resend-verification endpoint.
 9. User confirms via emailed link.
 10. Verification activates the participant account and creates a participant session.
 11. The verified participant lands in a local dashboard shell with the starting wage budget.

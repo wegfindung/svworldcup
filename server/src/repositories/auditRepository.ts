@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
+import type { Queryable } from '../lib/db.js'
 import type { AuditLogEntry, AuditLogInput } from '../domain/types.js'
 
 // Append-only audit log for durable admin/participant writes. The actions that must be recorded
@@ -9,7 +10,9 @@ import type { AuditLogEntry, AuditLogInput } from '../domain/types.js'
 // email-marketing campaign writes (save/delete/send-now/run-due/test).
 export interface AuditRepository {
   storageKind: 'memory' | 'postgres'
-  record(input: AuditLogInput): Promise<AuditLogEntry>
+  // executor lets promotion write the `match_import.promote` row on its transactional client, so the
+  // audit row commits atomically with the promoted rows + batch delete — see matchPromotion.ts.
+  record(input: AuditLogInput, executor?: Queryable): Promise<AuditLogEntry>
   list(): Promise<AuditLogEntry[]>
 }
 
@@ -63,8 +66,8 @@ export class PostgresAuditRepository implements AuditRepository {
 
   constructor(private readonly pool: Pool) {}
 
-  async record(input: AuditLogInput) {
-    const result = await this.pool.query<AuditRow>(
+  async record(input: AuditLogInput, executor?: Queryable) {
+    const result = await (executor ?? this.pool).query<AuditRow>(
       `
         INSERT INTO audit_logs (actor_email, action_key, entity_type, entity_id, detail_json)
         VALUES ($1, $2, $3, $4, $5)

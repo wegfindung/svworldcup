@@ -8,6 +8,8 @@ import helmet from 'helmet'
 import { env } from './config/env.js'
 import { createClosedBetaAuth } from './middleware/closedBetaAuth.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
+import { logger } from './lib/logger.js'
 import { createAuthRouter } from './routes/auth.js'
 import { createAdminRouter } from './routes/admin.js'
 import { createParticipantRouter } from './routes/participant.js'
@@ -17,6 +19,7 @@ import { noIndexRobotsValue, renderIndexSocialMeta, resolveSocialLocaleFromQuery
 import { bootstrapDefaultEmailCampaigns } from './services/bootstrapEmailCampaigns.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
+import { startSnapshotWorker } from './services/snapshotWorker.js'
 import {
   createAdminRepository,
   createAuditRepository,
@@ -32,6 +35,7 @@ import {
   createTeamPoolRepository,
   createParticipantInfluenceSnapshotRepository,
   createParticipantRiskRepository,
+  createSnapshotJobRepository,
 } from './services/repos.js'
 
 export function createApp() {
@@ -50,6 +54,7 @@ export function createApp() {
   const emailMarketingRepository = createEmailMarketingRepository()
   const participantInfluenceSnapshotRepository = createParticipantInfluenceSnapshotRepository()
   const participantRiskRepository = createParticipantRiskRepository()
+  const snapshotJobRepository = createSnapshotJobRepository()
   const cwd = process.cwd()
   const publicDirCandidates = [
     resolve(cwd, 'public'),
@@ -84,14 +89,24 @@ export function createApp() {
     standardHeaders: true,
     legacyHeaders: false,
   })
+  // Tighter cap for the uncached, costliest public endpoints (player search hits the paced
+  // Soccerverse gate; match-results runs 2 + N queries). See SOP_system_overview.md "Security Rules".
+  const expensivePublicLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
 
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
-    console.error('Failed to bootstrap initial team pools', error)
+    logger.error({ err: error }, 'Failed to bootstrap initial team pools')
   })
   void bootstrapDefaultEmailCampaigns(emailMarketingRepository).catch((error) => {
-    console.error('Failed to bootstrap default email campaigns', error)
+    logger.error({ err: error }, 'Failed to bootstrap default email campaigns')
   })
   startEmailMarketingScheduler(emailMarketingRepository)
+  // Drain the durable veteran-influence-snapshot queue off the request path (no-op under test).
+  startSnapshotWorker({ jobRepository: snapshotJobRepository, snapshotRepository: participantInfluenceSnapshotRepository })
 
   app.set('trust proxy', env.RATE_LIMIT_TRUST_PROXY ? 1 : false)
   app.use(
@@ -129,6 +144,14 @@ export function createApp() {
     app.use(
       express.static(publicDir, {
         index: false,
+        setHeaders: (res, filePath) => {
+          if (/[/\\]assets[/\\]/.test(filePath)) {
+            // Vite fingerprints these — the content can never change under the same name.
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+          } else {
+            res.setHeader('Cache-Control', 'public, max-age=3600')
+          }
+        },
       }),
     )
     app.use(async (req, res, next) => {
@@ -138,6 +161,8 @@ export function createApp() {
       if (extname(req.path)) {
         return res.status(404).end()
       }
+      // The SPA shell must never be cached, or a deploy won't be picked up until the asset expires.
+      res.setHeader('Cache-Control', 'no-cache')
       try {
         const indexHtml = await readFile(resolve(publicDir, 'index.html'), 'utf8')
         const pageUrl = `${req.protocol}://${req.get('host') ?? 'localhost'}${req.originalUrl}`
@@ -149,6 +174,13 @@ export function createApp() {
     })
   }
 
+  // Time and log every API request (static assets / SPA shell are already served above).
+  app.use('/api', requestLogger)
+
+  // Per-endpoint caps run before the general public limiter so the expensive routes get the tighter
+  // budget on top of the shared one.
+  app.use('/api/public/player-search', expensivePublicLimiter)
+  app.use('/api/public/match-results', expensivePublicLimiter)
   app.use(
     '/api/public',
     publicApiLimiter,
@@ -177,7 +209,7 @@ export function createApp() {
       matchMappingRepository,
       auditRepository,
       emailMarketingRepository,
-      participantInfluenceSnapshotRepository,
+      snapshotJobRepository,
       participantRiskRepository,
     ),
   )

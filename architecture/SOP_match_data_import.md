@@ -55,6 +55,30 @@ Out of scope:
 - Promotion is a plain upsert keyed by `(fixture_id, player_id)`.
 - Exactly one path writes `admin_match_entries`: promotion after two confirmations. No
   bypass exists.
+- Promotion runs under a fixture-scoped Postgres advisory lock (`pg_try_advisory_lock`), so two
+  admins confirming the same batch at the same moment can't both pass the promotable check and
+  double-promote (which would write duplicate audit rows). The second caller skips cleanly.
+- The promotion loop runs as a single all-or-nothing transaction. The fixture-scoped advisory lock
+  and the transaction share one connection: `ScoringRepository.withFixtureLock` checks out a client,
+  takes the advisory lock, then wraps the work in `BEGIN`/`COMMIT` and passes that client to every
+  write as an `executor`. The three promotion writes — each resolved row's upsert into
+  `admin_match_entries`, the pending-batch delete, and the `match_import.promote` audit row —
+  therefore commit together or not at all. A failure anywhere rolls the whole set back, leaving the
+  pending batch intact; re-running promotion completes it cleanly (the upserts stay idempotent
+  `(fixture_id, player_id)` upserts). The Memory repository has no real transaction (single test
+  process) and just runs the work.
+- To keep the public board from showing a half-promoted fixture, promotion suppresses the per-row
+  leaderboard-cache invalidation and invalidates the board ONCE, after the transaction COMMITs.
+  Invalidating only after commit avoids the cache-ordering trap where a concurrent read could
+  otherwise re-cache pre-commit rows. So the board flips atomically on a fully successful promotion;
+  a rolled-back promotion never invalidates. (This also removes the redundant N recomputes a
+  multi-row promotion would otherwise trigger.)
+- After a successful promotion the confirm route enqueues a **durable** veteran influence-snapshot job
+  for the fixture (`participant_influence_snapshot_jobs`) instead of running the ~100 s Soccerverse
+  capture inline. An in-process background worker drains the queue off the request path, one fixture at
+  a time — see `SOP_system_overview.md` "Operations Observability". Enqueue happens after the
+  promotion transaction commits; the rare commit-then-crash-before-enqueue gap self-heals on the next
+  (idempotent) re-promote.
 
 ## Input Contract
 
@@ -108,8 +132,9 @@ Common to both:
 
 - Each source name is normalized (diacritic-insensitive) and resolved to a
   `world_cup_players` record.
-- Resolution order: the persisted name-to-player mapping table first, then auto-match
-  against the target team's curated player pool, then leave explicitly unresolved.
+- Resolution order: the persisted name-to-player mapping table first, then the reviewer
+  skip list (a hit drops the row from the import), then auto-match against the target team's
+  curated player pool, then leave explicitly unresolved.
 - The review UI shows the resolved player per row, with display name and portrait, so an
   admin can visually verify the mapping and change it inline.
 - A correction in the review UI writes back to the mapping table, so a name never needs
@@ -143,9 +168,10 @@ Common to both:
   60+ minutes (post-edit minutes) **and** their team conceded none — the opposing side's goals
   from the final score, mapped via the fixture's home/away team codes. The final score is used
   rather than summing per-player goals because own goals are the known weak point in feed data.
-- The reviewing admin can **override** `clean_sheet_eligible` per player after promotion
-  (`UpdateMatchRowInput.clean_sheet_eligible`) to correct own-goal / feed mistakes; that manual
-  value wins over the derivation.
+- The reviewing admin can **override** `clean_sheet_eligible` per player in review, before
+  promotion (`UpdateMatchRowInput.clean_sheet_eligible`), to correct own-goal / feed mistakes;
+  that manual value wins over the derivation. The pending batch is deleted on promote, so there
+  is no post-promotion per-row override path.
 - Position is not gated here: forwards earn zero clean-sheet points regardless, and MID slots
   earn the configured `+1` only when their snapshot positions include `DML`/`DMR`/`DMC`/`DM`
   — both decisions live in the scoring engine via the slot-class weight and the MID DM-eligibility

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import { listOperationEvents } from './operationsMonitor.js'
 import {
   bonusPercentFromNet,
   captureParticipantInfluenceSnapshotForFixture,
@@ -139,5 +140,70 @@ describe('captureParticipantInfluenceSnapshotForFixture', () => {
     expect(result).toEqual({ captured: 1 })
     expect(await repo.getBonusPercent('p-1', 'fixture-1', 101)).toBe(0)
     expect(await repo.getBonusPercent('p-2', 'fixture-1', 101)).toBe(2)
+  })
+
+  it('retries a transient fetch failure and captures on the second attempt', async () => {
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
+    repo.setWorkForFixture('fixture-R', [
+      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
+    ])
+
+    let calls = 0
+    const fetchTrades = vi.fn(async () => {
+      calls += 1
+      if (calls === 1) {
+        throw new Error('transient')
+      }
+      return [{ unixTime: 2000, buyer: 'alice', seller: 'x', num: 20 }]
+    })
+
+    const result = await captureParticipantInfluenceSnapshotForFixture('fixture-R', {
+      snapshotRepository: repo,
+      fetchTrades,
+    })
+
+    expect(fetchTrades).toHaveBeenCalledTimes(2)
+    expect(result).toEqual({ captured: 1 })
+    expect(await repo.getBonusPercent('p-1', 'fixture-R', 101)).toBe(2)
+  })
+
+  it('records a warning operations event when an item fails after retries', async () => {
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
+    repo.setWorkForFixture('fixture-F', [
+      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
+    ])
+
+    const fetchTrades = vi.fn(async () => {
+      throw new Error('down')
+    })
+
+    await captureParticipantInfluenceSnapshotForFixture('fixture-F', {
+      snapshotRepository: repo,
+      fetchTrades,
+    })
+
+    expect(fetchTrades).toHaveBeenCalledTimes(2)
+    const event = listOperationEvents().find(
+      (candidate) => candidate.type === 'influence_snapshot' && candidate.detail.fixtureId === 'fixture-F',
+    )
+    expect(event?.status).toBe('warning')
+    expect(event?.detail).toMatchObject({ captured: 0, failed: 1 })
+  })
+
+  it('skips a duplicate capture while one is already in progress for the same fixture', async () => {
+    const repo = new MemoryParticipantInfluenceSnapshotRepository()
+    repo.setWorkForFixture('fixture-D', [
+      { participantId: 'p-1', soccerverseUsername: 'alice', cutoffUnix: 1000, kickoffUnix: 5000, playerId: 101 },
+    ])
+
+    const fetchTrades = vi.fn(async () => [{ unixTime: 2000, buyer: 'alice', seller: 'x', num: 20 }])
+
+    // Start the first run but don't await it — it registers the fixture as in-progress synchronously
+    // before its first await, so the second (awaited) call sees it and skips.
+    const first = captureParticipantInfluenceSnapshotForFixture('fixture-D', { snapshotRepository: repo, fetchTrades })
+    const second = await captureParticipantInfluenceSnapshotForFixture('fixture-D', { snapshotRepository: repo, fetchTrades })
+
+    expect(second).toEqual({ captured: 0 })
+    await expect(first).resolves.toEqual({ captured: 1 })
   })
 })

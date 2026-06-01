@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import { verifyPassword } from '../lib/passwords.js'
 import { hashToken } from '../lib/tokens.js'
+import type { LeaderboardCache } from './leaderboardCache.js'
 import type {
   AdminParticipantRecord,
   LeagueType,
@@ -187,6 +188,8 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
   private readonly passwordResetByTokenHash = new Map<string, MemoryPasswordResetRecord>()
   private readonly referralClicks: MemoryReferralClickRecord[] = []
 
+  constructor(private readonly leaderboardCache?: LeaderboardCache) {}
+
   private attachPasswordState(record: RegistrationRecord): RegistrationRecord {
     return {
       ...record,
@@ -228,6 +231,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
 
     this.byEmail.set(email, record)
     this.byTokenHash.set(tokenHash, email)
+    this.leaderboardCache?.invalidate()
     return { record, plainToken }
   }
 
@@ -253,6 +257,8 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       verifiedAt: record.verifiedAt ?? new Date().toISOString(),
     })
     this.byEmail.set(email, nextRecord)
+    // status flip to 'active' adds the participant to the board (board filters status='active').
+    this.leaderboardCache?.invalidate()
     return toParticipantProfile(nextRecord)
   }
 
@@ -328,6 +334,8 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       soccerverseLinkedAt: new Date().toISOString(),
     })
     this.byEmail.set(nextRecord.email, nextRecord)
+    // affects veteran-bonus eligibility on the board.
+    this.leaderboardCache?.invalidate()
     return toParticipantProfile(nextRecord)
   }
 
@@ -353,6 +361,8 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
 
     const nextRecord: RegistrationRecord = this.attachPasswordState({ ...record, leagueType })
     this.byEmail.set(nextRecord.email, nextRecord)
+    // moves the participant between the rookie and veteran boards.
+    this.leaderboardCache?.invalidate()
     return toParticipantProfile(nextRecord)
   }
 
@@ -549,7 +559,10 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
 export class PostgresRegistrationRepository implements RegistrationRepository {
   storageKind: 'postgres' = 'postgres'
 
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly leaderboardCache?: LeaderboardCache,
+  ) {}
 
   async createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult> {
     const email = normalizeEmail(input.email)
@@ -773,6 +786,8 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       }
 
       await client.query('COMMIT')
+      // status flip to 'active' adds the participant to the board (board filters status='active').
+      this.leaderboardCache?.invalidate()
       return profile
     } catch (error) {
       await client.query('ROLLBACK')
@@ -1002,6 +1017,8 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         [participantId, trimmed],
       )
       await client.query('COMMIT')
+      // affects veteran-bonus eligibility on the board.
+      this.leaderboardCache?.invalidate()
       return mapParticipantRow(updated.rows[0])
     } catch (error) {
       if (!(error instanceof SoccerverseLinkError)) {
@@ -1068,6 +1085,8 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         [participantId, leagueType],
       )
       await client.query('COMMIT')
+      // moves the participant between the rookie and veteran boards.
+      this.leaderboardCache?.invalidate()
       return mapParticipantRow(updated.rows[0])
     } catch (error) {
       if (!(error instanceof LeagueChangeError)) {

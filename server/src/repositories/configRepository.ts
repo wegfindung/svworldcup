@@ -1,6 +1,7 @@
 import { Pool } from 'pg'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import type { EventControls, ScoringConfig } from '../domain/types.js'
+import type { LeaderboardCache } from './leaderboardCache.js'
 
 const defaultEventControls: EventControls = {
   globalRevealProfiles: false,
@@ -20,12 +21,15 @@ export class MemoryConfigRepository implements ConfigRepository {
   private scoringConfig = scoringDefaults
   private eventControls = defaultEventControls
 
+  constructor(private readonly leaderboardCache?: LeaderboardCache) {}
+
   async getScoringConfig(): Promise<ScoringConfig> {
     return this.scoringConfig
   }
 
   async updateScoringConfig(nextConfig: ScoringConfig): Promise<ScoringConfig> {
     this.scoringConfig = nextConfig
+    this.leaderboardCache?.invalidate()
     return nextConfig
   }
 
@@ -42,7 +46,10 @@ export class MemoryConfigRepository implements ConfigRepository {
 export class PostgresConfigRepository implements ConfigRepository {
   storageKind: 'postgres' = 'postgres'
 
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly leaderboardCache?: LeaderboardCache,
+  ) {}
 
   async getScoringConfig(): Promise<ScoringConfig> {
     const result = await this.pool.query<{ value_json: ScoringConfig }>(
@@ -62,6 +69,7 @@ export class PostgresConfigRepository implements ConfigRepository {
       `,
       [JSON.stringify(nextConfig)],
     )
+    this.leaderboardCache?.invalidate()
     return nextConfig
   }
 

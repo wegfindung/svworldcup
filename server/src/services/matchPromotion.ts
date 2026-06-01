@@ -25,33 +25,57 @@ export async function promoteBatchIfReady(
   batch: PendingMatchBatch,
   deps: PromotionDeps,
 ): Promise<PromotionResult> {
-  if (!isPromotable(batch)) {
-    return { promoted: false, promotedRowCount: 0 }
-  }
+  // C2: hold a fixture-scoped advisory lock for the whole promotion so two admins confirming the
+  // same batch concurrently can't both pass isPromotable and double-promote. A null result means
+  // another promotion already holds the lock — treat as a no-op for this caller.
+  // C1: withFixtureLock also wraps fn in a BEGIN/COMMIT transaction and hands it the transactional
+  // client as `executor`. Threading that executor through all three writes makes the promotion
+  // all-or-nothing: a failure anywhere rolls back the upserts, the batch delete, AND the audit row,
+  // leaving the pending batch intact for an idempotent re-promote.
+  const result = await deps.scoringRepository.withFixtureLock(batch.fixtureId, async (executor) => {
+    if (!isPromotable(batch)) {
+      return { promoted: false, promotedRowCount: 0 }
+    }
 
-  const resolvedRows = batch.rows.filter((row) => row.playerId !== null)
-  for (const row of resolvedRows) {
-    await deps.scoringRepository.upsertMatchEntry({
-      fixtureId: batch.fixtureId,
-      playerId: row.playerId as number,
-      inOfficialSquad: true,
-      minutes: row.minutes,
-      goals: row.goals,
-      assists: row.assists,
-      cleanSheetEligible: row.cleanSheetEligible,
-      rating: row.rating,
-      sourceNote: 'imported match data',
-    })
-  }
+    const resolvedRows = batch.rows.filter((row) => row.playerId !== null)
+    for (const row of resolvedRows) {
+      // Suppress per-row invalidation; the board is invalidated once below, after the transaction
+      // COMMITs (invalidating mid-transaction would let a concurrent read re-cache pre-commit rows).
+      await deps.scoringRepository.upsertMatchEntry(
+        {
+          fixtureId: batch.fixtureId,
+          playerId: row.playerId as number,
+          inOfficialSquad: true,
+          minutes: row.minutes,
+          goals: row.goals,
+          assists: row.assists,
+          cleanSheetEligible: row.cleanSheetEligible,
+          rating: row.rating,
+          sourceNote: 'imported match data',
+        },
+        { suppressLeaderboardInvalidation: true, executor },
+      )
+    }
 
-  await deps.matchImportRepository.deleteBatch(batch.batchId)
-  await deps.auditRepository.record({
-    actorEmail: deps.actorEmail,
-    actionKey: 'match_import.promote',
-    entityType: 'fixture',
-    entityId: batch.fixtureId,
-    detail: { batchId: batch.batchId, promotedRowCount: resolvedRows.length },
+    await deps.matchImportRepository.deleteBatch(batch.batchId, executor)
+    await deps.auditRepository.record(
+      {
+        actorEmail: deps.actorEmail,
+        actionKey: 'match_import.promote',
+        entityType: 'fixture',
+        entityId: batch.fixtureId,
+        detail: { batchId: batch.batchId, promotedRowCount: resolvedRows.length },
+      },
+      executor,
+    )
+
+    return { promoted: true, promotedRowCount: resolvedRows.length }
   })
 
-  return { promoted: true, promotedRowCount: resolvedRows.length }
+  // Flip the board once, AFTER the transaction has committed (never inside it).
+  if (result?.promoted) {
+    deps.scoringRepository.invalidateLeaderboard()
+  }
+
+  return result ?? { promoted: false, promotedRowCount: 0 }
 }

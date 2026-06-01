@@ -26,6 +26,7 @@ import type {
 } from '../domain/types.js'
 import { applySwap, type LineupSlot } from '../lib/swapEngine.js'
 import { assertSwapAllowed } from '../lib/swapGate.js'
+import type { LeaderboardCache } from './leaderboardCache.js'
 import type { TeamPoolRepository } from './teamPoolRepository.js'
 
 // The round a squad's lock-time baseline lineup is keyed to (group matchday 1). Later rounds are
@@ -115,6 +116,7 @@ export class MemorySquadRepository implements SquadRepository {
   constructor(
     private readonly teamPoolRepository: TeamPoolRepository,
     private readonly now: () => number = () => Date.now(),
+    private readonly leaderboardCache?: LeaderboardCache,
   ) {}
 
   async getOrCreate(participantId: string) {
@@ -177,6 +179,7 @@ export class MemorySquadRepository implements SquadRepository {
     if (squad.isLocked) {
       this.roundLineups.delete(participantId)
     }
+    this.leaderboardCache?.invalidate()
     return nextSquad
   }
 
@@ -199,6 +202,7 @@ export class MemorySquadRepository implements SquadRepository {
       budgetRemaining: option.budgetLimit - squad.budgetUsed,
     }
     this.squads.set(participantId, nextSquad)
+    this.leaderboardCache?.invalidate()
     return nextSquad
   }
 
@@ -222,6 +226,7 @@ export class MemorySquadRepository implements SquadRepository {
     if (squad.isLocked) {
       this.roundLineups.delete(participantId)
     }
+    this.leaderboardCache?.invalidate()
     return nextSquad
   }
 
@@ -236,6 +241,7 @@ export class MemorySquadRepository implements SquadRepository {
     }
     this.squads.set(participantId, resetSquad)
     this.roundLineups.delete(participantId)
+    this.leaderboardCache?.invalidate()
     return resetSquad
   }
 
@@ -262,6 +268,7 @@ export class MemorySquadRepository implements SquadRepository {
     }
     this.squads.set(participantId, lockedSquad)
     this.writeRoundSnapshot(participantId, BASELINE_ROUND_KEY, lineupFromSquad(lockedSquad))
+    this.leaderboardCache?.invalidate()
     return lockedSquad
   }
 
@@ -335,6 +342,7 @@ export class MemorySquadRepository implements SquadRepository {
       appliedAt: new Date(now).toISOString(),
     }
     this.swaps.set(participantId, [...history, record])
+    this.leaderboardCache?.invalidate()
 
     return {
       swap: record,
@@ -393,6 +401,7 @@ export class PostgresSquadRepository implements SquadRepository {
   constructor(
     private readonly pool: Pool,
     private readonly teamPoolRepository: TeamPoolRepository,
+    private readonly leaderboardCache?: LeaderboardCache,
   ) {}
 
   async getOrCreate(participantId: string) {
@@ -564,6 +573,7 @@ export class PostgresSquadRepository implements SquadRepository {
       }
       await client.query('UPDATE squads SET budget_used = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, nextBudgetUsed])
       await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
       return this.getOrCreate(participantId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -604,6 +614,7 @@ export class PostgresSquadRepository implements SquadRepository {
 
       await client.query('UPDATE squads SET budget_limit = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, option.budgetLimit])
       await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
       return this.getOrCreate(participantId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -651,6 +662,7 @@ export class PostgresSquadRepository implements SquadRepository {
       const nextBudgetUsed = Math.max(0, squad.budget_used - getCapCostForRating(existing.rating ?? 50))
       await client.query('UPDATE squads SET budget_used = $2, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id, nextBudgetUsed])
       await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
       return this.getOrCreate(participantId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -679,6 +691,7 @@ export class PostgresSquadRepository implements SquadRepository {
       await client.query('DELETE FROM squad_round_lineup WHERE squad_id = $1', [squad.squad_id])
       await client.query('UPDATE squads SET budget_used = 0, updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
       await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
       return this.getOrCreate(participantId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -752,6 +765,7 @@ export class PostgresSquadRepository implements SquadRepository {
         [squad.squad_id, BASELINE_ROUND_KEY],
       )
       await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
       return this.getOrCreate(participantId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -875,6 +889,7 @@ export class PostgresSquadRepository implements SquadRepository {
         [squad.squad_id, participantId, window.key, window.targetRound, applied.slotClass, applied.slotIn, applied.slotOut, input.playerInId, input.playerOutId],
       )
       await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
 
       const swapRow = swapResult.rows[0]
       return {

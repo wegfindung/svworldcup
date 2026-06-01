@@ -9,15 +9,23 @@ import {
 } from '../../lib/api'
 import type { AdminOverview, AuditLogEntry, EmailCampaignRecord, OperationEvent, PendingMatchBatch } from '../../lib/types'
 
-interface OperationsPayload {
-  overview: AdminOverview
-  auditLogs: AuditLogEntry[]
-  batches: PendingMatchBatch[]
-  campaigns: EmailCampaignRecord[]
-  events: OperationEvent[]
+// B3: each source is nullable so one failed fetch degrades only its own section. A null field
+// means "not loaded" — the matching source name is listed in `failedSources`.
+interface OperationsData {
+  overview: AdminOverview | null
+  auditLogs: AuditLogEntry[] | null
+  batches: PendingMatchBatch[] | null
+  campaigns: EmailCampaignRecord[] | null
+  events: OperationEvent[] | null
 }
 
-type LoadState = 'loading' | 'ready' | 'error'
+const emptyOperationsData: OperationsData = {
+  overview: null,
+  auditLogs: null,
+  batches: null,
+  campaigns: null,
+  events: null,
+}
 
 function formatDateTime(value?: string) {
   if (!value) {
@@ -86,116 +94,101 @@ function StatusLine({ label, value, tone = 'default' }: { label: string; value: 
 }
 
 export function OperationsView() {
-  const [loadState, setLoadState] = useState<LoadState>('loading')
-  const [payload, setPayload] = useState<OperationsPayload | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<OperationsData>(emptyOperationsData)
+  const [failedSources, setFailedSources] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
 
-  async function loadOperations() {
-    setLoadState('loading')
-    setError(null)
-
-    try {
-      const [overview, auditResponse, batchesResponse, campaignsResponse, eventsResponse] = await Promise.all([
-        fetchAdminOverview(),
-        fetchAdminAuditLogs(60),
-        fetchMatchImportBatches(),
-        fetchEmailCampaigns(),
-        fetchAdminOperationEvents(60),
-      ])
-      setPayload({
-        overview,
-        auditLogs: auditResponse.items,
-        batches: batchesResponse.items,
-        campaigns: campaignsResponse.campaigns,
-        events: eventsResponse.items,
-      })
-      setLoadState('ready')
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load operations data.')
-      setLoadState('error')
-    }
-  }
-
+  // One loader, re-run via reloadKey — the refresh button and the initial mount share it instead of
+  // duplicating the fetch block. allSettled means a single failed source degrades only its section.
   useEffect(() => {
+    const controller = new AbortController()
     let active = true
     void (async () => {
-      try {
-        const [overview, auditResponse, batchesResponse, campaignsResponse, eventsResponse] = await Promise.all([
-          fetchAdminOverview(),
-          fetchAdminAuditLogs(60),
-          fetchMatchImportBatches(),
-          fetchEmailCampaigns(),
-          fetchAdminOperationEvents(60),
-        ])
-        if (!active) {
-          return
-        }
-        setPayload({
-          overview,
-          auditLogs: auditResponse.items,
-          batches: batchesResponse.items,
-          campaigns: campaignsResponse.campaigns,
-          events: eventsResponse.items,
-        })
-        setLoadState('ready')
-      } catch (loadError) {
-        if (!active) {
-          return
-        }
-        setError(loadError instanceof Error ? loadError.message : 'Could not load operations data.')
-        setLoadState('error')
+      const [overviewResult, auditResult, batchesResult, campaignsResult, eventsResult] = await Promise.allSettled([
+        fetchAdminOverview(controller.signal),
+        fetchAdminAuditLogs(60, controller.signal),
+        fetchMatchImportBatches(controller.signal),
+        fetchEmailCampaigns(controller.signal),
+        fetchAdminOperationEvents(60, controller.signal),
+      ])
+      if (!active) {
+        return
       }
+      const next: OperationsData = { ...emptyOperationsData }
+      const failed: string[] = []
+      if (overviewResult.status === 'fulfilled') next.overview = overviewResult.value
+      else failed.push('overview')
+      if (auditResult.status === 'fulfilled') next.auditLogs = auditResult.value.items
+      else failed.push('audit logs')
+      if (batchesResult.status === 'fulfilled') next.batches = batchesResult.value.items
+      else failed.push('pending imports')
+      if (campaignsResult.status === 'fulfilled') next.campaigns = campaignsResult.value.campaigns
+      else failed.push('email campaigns')
+      if (eventsResult.status === 'fulfilled') next.events = eventsResult.value.items
+      else failed.push('runtime events')
+      setData(next)
+      setFailedSources(failed)
+      setLoading(false)
     })()
 
+    // B5: abort the in-flight fetches when a refresh supersedes them or the view unmounts.
     return () => {
       active = false
+      controller.abort()
     }
-  }, [])
+  }, [reloadKey])
+
+  const hasAnyData = Object.values(data).some((value) => value !== null)
 
   const metrics = useMemo(() => {
-    if (!payload) {
-      return []
+    const tiles: Array<{ label: string; value: string; detail: string }> = []
+
+    if (data.overview) {
+      const filledPools = Object.values(data.overview.teamSelectionCounts).filter((count) => count > 0).length
+      const totalPools = Object.keys(data.overview.teamSelectionCounts).length
+      tiles.push(
+        {
+          label: 'Accounts',
+          value: String(data.overview.counts.active),
+          detail: `${data.overview.counts.pending} pending verification`,
+        },
+        {
+          label: 'Team pools',
+          value: `${filledPools}/${totalPools}`,
+          detail: 'Curated pools with at least one player',
+        },
+      )
     }
-
-    const filledPools = Object.values(payload.overview.teamSelectionCounts).filter((count) => count > 0).length
-    const totalPools = Object.keys(payload.overview.teamSelectionCounts).length
-    const pendingRecipients = payload.campaigns.reduce((sum, campaign) => sum + campaign.pendingCount, 0)
-    const failedRecipients = payload.campaigns.reduce((sum, campaign) => sum + campaign.failedCount, 0)
-    const pendingRows = payload.batches.reduce((sum, batch) => sum + batch.rows.length, 0)
-
-    return [
-      {
-        label: 'Accounts',
-        value: String(payload.overview.counts.active),
-        detail: `${payload.overview.counts.pending} pending verification`,
-      },
-      {
-        label: 'Team pools',
-        value: `${filledPools}/${totalPools}`,
-        detail: 'Curated pools with at least one player',
-      },
-      {
+    if (data.batches) {
+      const pendingRows = data.batches.reduce((sum, batch) => sum + batch.rows.length, 0)
+      tiles.push({
         label: 'Pending imports',
-        value: String(payload.batches.length),
+        value: String(data.batches.length),
         detail: `${pendingRows} match-stat rows awaiting promotion`,
-      },
-      {
+      })
+    }
+    if (data.campaigns) {
+      const pendingRecipients = data.campaigns.reduce((sum, campaign) => sum + campaign.pendingCount, 0)
+      const failedRecipients = data.campaigns.reduce((sum, campaign) => sum + campaign.failedCount, 0)
+      tiles.push({
         label: 'Mail queue',
         value: String(pendingRecipients),
         detail: `${failedRecipients} failed recipients across campaigns`,
-      },
-    ]
-  }, [payload])
+      })
+    }
+    return tiles
+  }, [data])
 
   const eventCounts = useMemo(() => {
-    const events = payload?.events ?? []
+    const events = data.events ?? []
     return {
       emailScheduler: events.filter((event) => event.type === 'email_scheduler').length,
       soccerverseApi: events.filter((event) => event.type === 'soccerverse_api').length,
       warnings: events.filter((event) => event.status === 'warning').length,
       errors: events.filter((event) => event.status === 'error').length,
     }
-  }, [payload])
+  }, [data])
 
   return (
     <div className="space-y-4">
@@ -210,16 +203,21 @@ export function OperationsView() {
           </div>
           <button
             type="button"
-            onClick={() => void loadOperations()}
-            disabled={loadState === 'loading'}
+            onClick={() => {
+              // Re-show the skeleton on refresh from the click handler — loading starts true on mount,
+              // so the effect itself never needs a synchronous setState.
+              setLoading(true)
+              setReloadKey((key) => key + 1)
+            }}
+            disabled={loading}
             className="premium-button h-11 px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loadState === 'loading' ? 'Refreshing...' : 'Refresh operations'}
+            {loading ? 'Refreshing...' : 'Refresh operations'}
           </button>
         </div>
       </section>
 
-      {loadState === 'loading' ? (
+      {loading && !hasAnyData ? (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="skeleton h-32 rounded-[0.95rem]" />
@@ -227,77 +225,87 @@ export function OperationsView() {
         </section>
       ) : null}
 
-      {loadState === 'error' ? (
+      {failedSources.length ? (
+        <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+          Could not load: {failedSources.join(', ')}. The other sections still reflect what loaded.
+        </div>
+      ) : null}
+
+      {!loading && !hasAnyData ? (
         <section className="glass-panel rounded-[1.15rem] p-5">
-          <EmptyState title="Operations data unavailable" body={error ?? 'The backend returned an unexpected response.'} />
+          <EmptyState title="Operations data unavailable" body="The backend returned an unexpected response for every operations source." />
         </section>
       ) : null}
 
-      {loadState === 'ready' && payload ? (
+      {hasAnyData ? (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <MetricTile key={metric.label} label={metric.label} value={metric.value} detail={metric.detail} />
-            ))}
-          </section>
+          {metrics.length ? (
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {metrics.map((metric) => (
+                <MetricTile key={metric.label} label={metric.label} value={metric.value} detail={metric.detail} />
+              ))}
+            </section>
+          ) : null}
 
           <section className="grid gap-4 xl:grid-cols-[0.82fr_1.18fr]">
             <div className="space-y-4">
-              <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-                <p className="eyebrow">runtime gates</p>
-                <div className="mt-4">
-                  <StatusLine
-                    label="Scoring configuration"
-                    value={payload.overview.scoringLocked ? 'locked' : 'editable'}
-                    tone={payload.overview.scoringLocked ? 'warning' : 'accent'}
-                  />
-                  <StatusLine
-                    label="Global profile reveal"
-                    value={payload.overview.eventControls.globalRevealProfiles ? 'on' : 'off'}
-                    tone={payload.overview.eventControls.globalRevealProfiles ? 'accent' : 'default'}
-                  />
-                  <StatusLine
-                    label="Global squad reveal"
-                    value={payload.overview.eventControls.globalRevealSquads ? 'on' : 'off'}
-                    tone={payload.overview.eventControls.globalRevealSquads ? 'accent' : 'default'}
-                  />
-                  <StatusLine
-                    label="Soccerverse API error log"
-                    value={`${eventCounts.soccerverseApi} events`}
-                    tone={eventCounts.soccerverseApi > 0 ? 'warning' : 'accent'}
-                  />
-                </div>
-              </div>
-
-              <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-                <p className="eyebrow">email scheduler</p>
-                <div className="mt-4">
-                  <StatusLine label="Active autoresponders" value={String(countCampaigns(payload.campaigns, 'active'))} />
-                  <StatusLine label="Scheduled newsletters" value={String(countCampaigns(payload.campaigns, 'scheduled'))} />
-                  <StatusLine label="Sending campaigns" value={String(countCampaigns(payload.campaigns, 'sending'))} tone="accent" />
-                  <StatusLine label="Scheduler runtime events" value={String(eventCounts.emailScheduler)} />
-                  <StatusLine
-                    label="Latest campaign update"
-                    value={formatDateTime(payload.campaigns[0]?.updatedAt)}
-                  />
-                </div>
-              </div>
-
-              <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <p className="eyebrow">runtime events</p>
-                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Scheduler and API signals.</h3>
+              {data.overview ? (
+                <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+                  <p className="eyebrow">runtime gates</p>
+                  <div className="mt-4">
+                    <StatusLine
+                      label="Scoring configuration"
+                      value={data.overview.scoringLocked ? 'locked' : 'editable'}
+                      tone={data.overview.scoringLocked ? 'warning' : 'accent'}
+                    />
+                    <StatusLine
+                      label="Global profile reveal"
+                      value={data.overview.eventControls.globalRevealProfiles ? 'on' : 'off'}
+                      tone={data.overview.eventControls.globalRevealProfiles ? 'accent' : 'default'}
+                    />
+                    <StatusLine
+                      label="Global squad reveal"
+                      value={data.overview.eventControls.globalRevealSquads ? 'on' : 'off'}
+                      tone={data.overview.eventControls.globalRevealSquads ? 'accent' : 'default'}
+                    />
+                    <StatusLine
+                      label="Soccerverse API error log"
+                      value={`${eventCounts.soccerverseApi} events`}
+                      tone={eventCounts.soccerverseApi > 0 ? 'warning' : 'accent'}
+                    />
                   </div>
-                  <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                    {eventCounts.errors} errors - {eventCounts.warnings} warnings
-                  </span>
                 </div>
+              ) : null}
 
-                <div className="mt-4 overflow-hidden rounded-[0.95rem] border border-white/8">
-                  {payload.events.length ? (
-                    <div className="divide-y divide-white/8">
-                      {payload.events.slice(0, 8).map((event) => (
+              {data.campaigns ? (
+                <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+                  <p className="eyebrow">email scheduler</p>
+                  <div className="mt-4">
+                    <StatusLine label="Active autoresponders" value={String(countCampaigns(data.campaigns, 'active'))} />
+                    <StatusLine label="Scheduled newsletters" value={String(countCampaigns(data.campaigns, 'scheduled'))} />
+                    <StatusLine label="Sending campaigns" value={String(countCampaigns(data.campaigns, 'sending'))} tone="accent" />
+                    <StatusLine label="Scheduler runtime events" value={String(eventCounts.emailScheduler)} />
+                    <StatusLine label="Latest campaign update" value={formatDateTime(data.campaigns[0]?.updatedAt)} />
+                  </div>
+                </div>
+              ) : null}
+
+              {data.events ? (
+                <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <p className="eyebrow">runtime events</p>
+                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Scheduler and API signals.</h3>
+                    </div>
+                    <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                      {eventCounts.errors} errors - {eventCounts.warnings} warnings
+                    </span>
+                  </div>
+
+                  <div className="mt-4 overflow-hidden rounded-[0.95rem] border border-white/8">
+                    {data.events.length ? (
+                      <div className="divide-y divide-white/8">
+                        {data.events.slice(0, 8).map((event) => (
                         <article key={event.eventId} className="bg-black/12 px-3.5 py-3">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -326,27 +334,29 @@ export function OperationsView() {
                     <div className="bg-black/12 p-5">
                       <EmptyState title="No runtime events yet" body="Scheduler runs and Soccerverse API warnings will appear here after they occur." />
                     </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
 
             <div className="space-y-4">
-              <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <p className="eyebrow">match imports</p>
-                    <h3 className="mt-2 text-2xl font-semibold tracking-tight text-white">Pending review queue.</h3>
+              {data.batches ? (
+                <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <p className="eyebrow">match imports</p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-tight text-white">Pending review queue.</h3>
+                    </div>
+                    <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                      {data.batches.length} batches
+                    </span>
                   </div>
-                  <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                    {payload.batches.length} batches
-                  </span>
-                </div>
 
-                <div className="mt-4 overflow-hidden rounded-[0.95rem] border border-white/8">
-                  {payload.batches.length ? (
-                    <div className="divide-y divide-white/8">
-                      {payload.batches.slice(0, 6).map((batch) => (
+                  <div className="mt-4 overflow-hidden rounded-[0.95rem] border border-white/8">
+                    {data.batches.length ? (
+                      <div className="divide-y divide-white/8">
+                        {data.batches.slice(0, 6).map((batch) => (
                         <div key={batch.batchId} className="grid gap-3 bg-black/12 px-3.5 py-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-white">{batch.fixtureId}</p>
@@ -362,25 +372,27 @@ export function OperationsView() {
                     <div className="bg-black/12 p-5">
                       <EmptyState title="No pending imports" body="All submitted match-stat batches are either promoted or no review has started yet." />
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <p className="eyebrow">audit feed</p>
-                    <h3 className="mt-2 text-2xl font-semibold tracking-tight text-white">Latest writes.</h3>
+                    )}
                   </div>
-                  <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                    {payload.auditLogs.length} rows
-                  </span>
                 </div>
+              ) : null}
 
-                <div className="mt-4 max-h-[38rem] overflow-y-auto rounded-[0.95rem] border border-white/8">
-                  {payload.auditLogs.length ? (
-                    <div className="divide-y divide-white/8">
-                      {payload.auditLogs.map((entry) => (
+              {data.auditLogs ? (
+                <div className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <p className="eyebrow">audit feed</p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-tight text-white">Latest writes.</h3>
+                    </div>
+                    <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                      {data.auditLogs.length} rows
+                    </span>
+                  </div>
+
+                  <div className="mt-4 max-h-[38rem] overflow-y-auto rounded-[0.95rem] border border-white/8">
+                    {data.auditLogs.length ? (
+                      <div className="divide-y divide-white/8">
+                        {data.auditLogs.map((entry) => (
                         <article key={entry.auditId} className="bg-black/12 px-3.5 py-3">
                           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                             <div className="min-w-0">
@@ -398,9 +410,10 @@ export function OperationsView() {
                     <div className="bg-black/12 p-5">
                       <EmptyState title="No audit rows yet" body="Audited admin and participant writes will appear here once they occur." />
                     </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           </section>
         </>

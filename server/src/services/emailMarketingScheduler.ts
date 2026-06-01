@@ -1,4 +1,5 @@
 import { env } from '../config/env.js'
+import { logger } from '../lib/logger.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import { recordOperationEvent } from './operationsMonitor.js'
 
@@ -40,7 +41,7 @@ export function startEmailMarketingScheduler(emailMarketingRepository: EmailMark
             error: error instanceof Error ? error.message : String(error),
           },
         })
-        console.error('Failed to run due email campaigns', error)
+        logger.error({ err: error }, 'Failed to run due email campaigns')
       })
   }
 
