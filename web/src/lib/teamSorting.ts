@@ -1,10 +1,10 @@
 import type { TeamSeed } from './types'
 
-export function compareTeamsByNameDesc(left: TeamSeed, right: TeamSeed) {
-  const nameDifference = right.nameEn.localeCompare(left.nameEn, 'en', { sensitivity: 'base' })
+export function compareTeamsByNameAsc(left: TeamSeed, right: TeamSeed) {
+  const nameDifference = left.nameEn.localeCompare(right.nameEn, 'en', { sensitivity: 'base' })
   if (nameDifference !== 0) {
     return nameDifference
   }
 
-  return right.code.localeCompare(left.code, 'en', { sensitivity: 'base' })
+  return left.code.localeCompare(right.code, 'en', { sensitivity: 'base' })
 }

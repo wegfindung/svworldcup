@@ -6,6 +6,33 @@ import type { ParticipantRiskCase, ParticipantRiskCaseStatus } from '../../lib/t
 
 const statusOptions: ParticipantRiskCaseStatus[] = ['open', 'reviewing', 'confirmed', 'dismissed']
 
+interface ConnectedAccountInsight {
+  participantId: string
+  displayName: string
+  email: string
+  leagueType: string
+  status: string
+  probability: number
+  caseCount: number
+  maxScore: number
+  sharedReasonKeys: string[]
+  sharedCaseTitles: string[]
+  lastSignalAt?: string
+}
+
+interface ParticipantInsight {
+  participantId: string
+  displayName: string
+  email: string
+  leagueType: string
+  status: string
+  openCaseCount: number
+  maxScore: number
+  highestProbability: number
+  reasonKeys: string[]
+  connectedAccounts: ConnectedAccountInsight[]
+}
+
 function formatAdminDate(value?: string) {
   if (!value) {
     return 'Not set'
@@ -33,6 +60,101 @@ function scoreClass(score: number) {
   return 'border-white/10 text-white'
 }
 
+function probabilityClass(probability: number) {
+  if (probability >= 80) {
+    return 'border-amber-300/30 bg-amber-300/10 text-amber-100'
+  }
+  if (probability >= 55) {
+    return 'border-[var(--color-sand)]/30 bg-[var(--color-sand)]/10 text-[var(--color-sand)]'
+  }
+  return 'border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+}
+
+function calculateProbability(maxScore: number, caseCount: number, reasonCount: number) {
+  const reinforcement = Math.min(18, Math.max(0, caseCount - 1) * 8 + Math.max(0, reasonCount - 1) * 4)
+  return Math.min(98, Math.max(0, Math.round(maxScore + reinforcement)))
+}
+
+function latestDate(left?: string, right?: string) {
+  if (!left) {
+    return right
+  }
+  if (!right) {
+    return left
+  }
+  return new Date(left).getTime() >= new Date(right).getTime() ? left : right
+}
+
+function buildParticipantInsight(cases: ParticipantRiskCase[], participantId: string): ParticipantInsight | null {
+  const relatedCases = cases.filter((riskCase) => riskCase.members.some((member) => member.participantId === participantId))
+  const selectedMember = relatedCases.flatMap((riskCase) => riskCase.members).find((member) => member.participantId === participantId)
+
+  if (!selectedMember) {
+    return null
+  }
+
+  const reasonKeys = new Set<string>()
+  const connectedByParticipant = new Map<string, ConnectedAccountInsight>()
+  let maxScore = 0
+
+  for (const riskCase of relatedCases) {
+    maxScore = Math.max(maxScore, riskCase.score)
+    for (const reason of riskCase.reasonKeys) {
+      reasonKeys.add(reason)
+    }
+
+    for (const member of riskCase.members) {
+      if (member.participantId === participantId) {
+        for (const reason of member.reasonKeys) {
+          reasonKeys.add(reason)
+        }
+        continue
+      }
+
+      const existing = connectedByParticipant.get(member.participantId)
+      const sharedReasonKeys = new Set([...(existing?.sharedReasonKeys ?? []), ...riskCase.reasonKeys, ...member.reasonKeys])
+      const sharedCaseTitles = existing?.sharedCaseTitles ?? []
+      const nextMaxScore = Math.max(existing?.maxScore ?? 0, riskCase.score, member.memberScore)
+      const nextCaseCount = (existing?.caseCount ?? 0) + 1
+
+      connectedByParticipant.set(member.participantId, {
+        participantId: member.participantId,
+        displayName: member.displayName,
+        email: member.email,
+        leagueType: member.leagueType,
+        status: member.status,
+        probability: calculateProbability(nextMaxScore, nextCaseCount, sharedReasonKeys.size),
+        caseCount: nextCaseCount,
+        maxScore: nextMaxScore,
+        sharedReasonKeys: [...sharedReasonKeys],
+        sharedCaseTitles: sharedCaseTitles.includes(riskCase.title) ? sharedCaseTitles : [...sharedCaseTitles, riskCase.title],
+        lastSignalAt: latestDate(existing?.lastSignalAt, member.lastSignalAt),
+      })
+    }
+  }
+
+  const connectedAccounts = [...connectedByParticipant.values()].sort(
+    (left, right) =>
+      right.probability - left.probability ||
+      right.caseCount - left.caseCount ||
+      right.maxScore - left.maxScore ||
+      left.displayName.localeCompare(right.displayName),
+  )
+
+  return {
+    participantId: selectedMember.participantId,
+    displayName: selectedMember.displayName,
+    email: selectedMember.email,
+    leagueType: selectedMember.leagueType,
+    status: selectedMember.status,
+    openCaseCount: relatedCases.filter((riskCase) => riskCase.status === 'open' || riskCase.status === 'reviewing').length,
+    maxScore,
+    highestProbability: connectedAccounts[0]?.probability ?? maxScore,
+    reasonKeys: [...reasonKeys].sort(),
+    connectedAccounts,
+  }
+}
+
 export function MultiAccountingView() {
   const [searchParams] = useSearchParams()
   const focusedParticipantId = searchParams.get('participant') ?? ''
@@ -40,6 +162,8 @@ export function MultiAccountingView() {
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
+  const [manualSelection, setManualSelection] = useState<{ focusId: string; participantId: string } | null>(null)
+  const selectedParticipantId = manualSelection?.focusId === focusedParticipantId ? manualSelection.participantId : focusedParticipantId
 
   async function loadCases() {
     setLoadState('loading')
@@ -96,6 +220,15 @@ export function MultiAccountingView() {
     return cases.filter((riskCase) => riskCase.members.some((member) => member.participantId === focusedParticipantId))
   }, [cases, focusedParticipantId])
 
+  const selectedInsight = useMemo(
+    () => (selectedParticipantId ? buildParticipantInsight(cases, selectedParticipantId) : null),
+    [cases, selectedParticipantId],
+  )
+
+  function selectParticipant(participantId: string) {
+    setManualSelection({ focusId: focusedParticipantId, participantId })
+  }
+
   const counts = useMemo(
     () => ({
       open: cases.filter((riskCase) => riskCase.status === 'open').length,
@@ -138,6 +271,123 @@ export function MultiAccountingView() {
       {focusedParticipantId ? (
         <div className="mt-5 rounded-[1rem] border border-white/10 bg-black/15 px-4 py-3 text-sm text-[var(--color-muted)]">
           Showing cases for participant ID <span className="mono text-white">{focusedParticipantId.slice(0, 8)}</span>.
+        </div>
+      ) : null}
+
+      {selectedInsight ? (
+        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(21rem,0.65fr)]">
+          <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">selected account</p>
+                <h4 className="mt-2 text-xl font-semibold tracking-tight text-white">{selectedInsight.displayName}</h4>
+                <p className="mt-1 text-sm text-[var(--color-muted)]">{selectedInsight.email}</p>
+                <p className="mono mt-2 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                  ID {selectedInsight.participantId.slice(0, 8)}
+                </p>
+              </div>
+              <span
+                className={[
+                  'mono rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.16em]',
+                  probabilityClass(selectedInsight.highestProbability),
+                ].join(' ')}
+              >
+                {selectedInsight.highestProbability}% likelihood
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {[
+                ['cases', selectedInsight.openCaseCount],
+                ['max score', selectedInsight.maxScore],
+                ['criteria', selectedInsight.reasonKeys.length],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-2">
+                  <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</p>
+                  <p className="mt-1 text-lg font-semibold text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">
+              <div
+                className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-500"
+                style={{ width: `${selectedInsight.highestProbability}%` }}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedInsight.reasonKeys.map((reason) => (
+                <span key={reason} className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-[var(--color-muted)]">
+                  {reasonLabel(reason)}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1rem] border border-white/8 bg-black/15 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">connected accounts</p>
+                <p className="mt-1 text-sm font-semibold text-white">{selectedInsight.connectedAccounts.length} linked</p>
+              </div>
+              <span className="mono rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                {selectedInsight.leagueType}
+              </span>
+            </div>
+
+            <div className="mt-4 grid max-h-[25rem] gap-2 overflow-y-auto pr-1">
+              {selectedInsight.connectedAccounts.length === 0 ? (
+                <div className="rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-3 text-sm text-[var(--color-muted)]">
+                  No linked accounts in shared cases.
+                </div>
+              ) : (
+                selectedInsight.connectedAccounts.map((account) => (
+                  <button
+                    key={account.participantId}
+                    type="button"
+                    onClick={() => selectParticipant(account.participantId)}
+                    className="rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-3 text-left transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/30 hover:bg-white/6 active:scale-[0.98]"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">{account.displayName}</p>
+                        <p className="mt-1 truncate text-xs text-[var(--color-muted)]">{account.email}</p>
+                      </div>
+                      <span
+                        className={[
+                          'mono shrink-0 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em]',
+                          probabilityClass(account.probability),
+                        ].join(' ')}
+                      >
+                        {account.probability}%
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-[var(--color-muted)]">
+                        {account.caseCount} {account.caseCount === 1 ? 'case' : 'cases'}
+                      </span>
+                      <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-[var(--color-muted)]">
+                        {account.status.replace('_', ' ')}
+                      </span>
+                      {account.sharedReasonKeys.slice(0, 3).map((reason) => (
+                        <span key={reason} className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-[var(--color-muted)]">
+                          {reasonLabel(reason)}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mono mt-3 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                      ID {account.participantId.slice(0, 8)}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : loadState === 'ready' && cases.length > 0 ? (
+        <div className="mt-5 rounded-[1rem] border border-white/8 bg-black/15 px-4 py-3 text-sm text-[var(--color-muted)]">
+          Select an account row to inspect linked accounts and multi-account likelihood.
         </div>
       ) : null}
 
@@ -217,16 +467,27 @@ export function MultiAccountingView() {
                       <tr
                         key={member.participantId}
                         className={[
-                          'border-b border-white/8 last:border-b-0',
-                          member.participantId === focusedParticipantId ? 'bg-[var(--color-accent)]/10' : 'bg-black/10',
+                          'border-b border-white/8 transition last:border-b-0 hover:bg-white/5',
+                          member.participantId === selectedParticipantId
+                            ? 'bg-[var(--color-accent)]/14'
+                            : member.participantId === focusedParticipantId
+                              ? 'bg-[var(--color-accent)]/8'
+                              : 'bg-black/10',
                         ].join(' ')}
                       >
                         <td className="px-3 py-3 align-top">
-                          <p className="font-semibold text-white">{member.displayName}</p>
-                          <p className="mt-1 text-xs text-[var(--color-muted)]">{member.email}</p>
-                          <p className="mono mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
-                            ID {member.participantId.slice(0, 8)}
-                          </p>
+                          <button
+                            type="button"
+                            aria-pressed={member.participantId === selectedParticipantId}
+                            onClick={() => selectParticipant(member.participantId)}
+                            className="block w-full rounded-[0.75rem] p-2 text-left transition hover:bg-white/6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] active:scale-[0.98]"
+                          >
+                            <span className="block font-semibold text-white">{member.displayName}</span>
+                            <span className="mt-1 block text-xs text-[var(--color-muted)]">{member.email}</span>
+                            <span className="mono mt-1 block text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                              ID {member.participantId.slice(0, 8)}
+                            </span>
+                          </button>
                         </td>
                         <td className="px-3 py-3 align-top text-xs text-white">{member.leagueType}</td>
                         <td className="px-3 py-3 align-top text-xs text-[var(--color-muted)]">{member.status.replace('_', ' ')}</td>
