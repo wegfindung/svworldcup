@@ -31,6 +31,7 @@ import type {
   ParticipantRiskCaseStatus,
   PublicFixtureResult,
   PublicParticipantProfile,
+  NationParticipationRow,
   NationScoreRow,
   ReferralAnalyticsRow,
   SoccerversePlayer,
@@ -380,6 +381,14 @@ export function fetchVeteranLeaderboard(signal?: AbortSignal) {
 
 export function fetchNationLeaderboard(signal?: AbortSignal) {
   return getJson<{ items: NationScoreRow[] }>('/api/public/leaderboards/nations', {
+    method: 'GET',
+    headers: {},
+    signal,
+  })
+}
+
+export function fetchNationParticipation(signal?: AbortSignal) {
+  return getJson<{ items: NationParticipationRow[] }>('/api/public/nation-participation', {
     method: 'GET',
     headers: {},
     signal,

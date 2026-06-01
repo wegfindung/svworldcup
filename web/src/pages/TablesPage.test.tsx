@@ -8,22 +8,25 @@ vi.mock('../lib/api', async () => {
     fetchRookieLeaderboard: vi.fn(),
     fetchVeteranLeaderboard: vi.fn(),
     fetchNationLeaderboard: vi.fn(),
+    fetchNationParticipation: vi.fn(),
     fetchFixtures: vi.fn(),
   }
 })
 
-import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import { TablesPage } from './TablesPage'
 
 const rookie = vi.mocked(fetchRookieLeaderboard)
 const veteran = vi.mocked(fetchVeteranLeaderboard)
 const nation = vi.mocked(fetchNationLeaderboard)
+const participation = vi.mocked(fetchNationParticipation)
 const fixtures = vi.mocked(fetchFixtures)
 
 describe('TablesPage partial loading', () => {
   it('renders the boards that succeeded and an error only for the one that failed', async () => {
     rookie.mockResolvedValue({ items: [] })
     nation.mockResolvedValue({ items: [] })
+    participation.mockResolvedValue({ items: [] })
     fixtures.mockResolvedValue({ items: [] })
     veteran.mockRejectedValue(new Error('network'))
 
@@ -39,6 +42,7 @@ describe('TablesPage partial loading', () => {
   it('maps a 404 to the "being prepared" message for that board only', async () => {
     rookie.mockResolvedValue({ items: [] })
     veteran.mockResolvedValue({ items: [] })
+    participation.mockResolvedValue({ items: [] })
     fixtures.mockResolvedValue({ items: [] })
     nation.mockRejectedValue(new ApiError('not found', null, 404))
 

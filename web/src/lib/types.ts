@@ -365,6 +365,13 @@ export interface NationScoreContributor {
   rank: number
 }
 
+export interface NationParticipationRow {
+  teamCode: string
+  participantCount: number
+  rookieCount: number
+  veteranCount: number
+}
+
 export interface PublicParticipantProfile {
   slug: string
   participantId: string

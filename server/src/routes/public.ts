@@ -219,6 +219,11 @@ export function createPublicRouter({ configRepository, registrationRepository, f
     res.json({ items })
   })
 
+  router.get('/nation-participation', async (_req, res) => {
+    const items = await registrationRepository.listNationParticipation()
+    res.json({ items })
+  })
+
   router.get('/profiles/:slug', async (req, res) => {
     const slug = String(req.params.slug ?? '').trim()
     const participant = await registrationRepository.getPublicProfileBySlug(slug)

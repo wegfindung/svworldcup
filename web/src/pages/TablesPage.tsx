@@ -6,11 +6,12 @@ import { TeamFlag } from '../components/TeamFlag'
 import { defaultScoring, eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
-import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import { publicProfileSlug } from '../lib/profileSlug'
 import type {
   FixtureSeed,
   LocaleCode,
+  NationParticipationRow,
   NationScoreRow,
   ParticipantScoreFixtureDetail,
   ParticipantScorePlayerDetail,
@@ -33,6 +34,7 @@ interface TablesPayload {
   rookies: BoardState<ParticipantScoreRow[]>
   veterans: BoardState<ParticipantScoreRow[]>
   nations: BoardState<NationScoreRow[]>
+  nationParticipation: BoardState<NationParticipationRow[]>
   fixtureLookup: Map<string, FixtureSeed>
 }
 
@@ -49,10 +51,11 @@ function settleBoard<T>(result: PromiseSettledResult<{ items: T }>): BoardState<
 // Never rejects: allSettled means a failed board degrades to its own error state while the others
 // still render. Fixtures failing only drops match labels (matchLabel already falls back to the id).
 async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
-  const [rookieResult, veteranResult, nationResult, fixtureResult] = await Promise.allSettled([
+  const [rookieResult, veteranResult, nationResult, nationParticipationResult, fixtureResult] = await Promise.allSettled([
     fetchRookieLeaderboard(signal),
     fetchVeteranLeaderboard(signal),
     fetchNationLeaderboard(signal),
+    fetchNationParticipation(signal),
     fetchFixtures(signal),
   ])
   const fixtures = fixtureResult.status === 'fulfilled' ? fixtureResult.value.items : []
@@ -60,11 +63,16 @@ async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
     rookies: settleBoard(rookieResult),
     veterans: settleBoard(veteranResult),
     nations: settleBoard(nationResult),
+    nationParticipation: settleBoard(nationParticipationResult),
     fixtureLookup: new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture])),
   }
 }
 
 type TablesCopy = AppMessages['tables']
+
+const PAID_PARTICIPANT_RANK_LIMIT = 10
+const PAID_NATION_RANK_LIMIT = 3
+const PAID_NATION_MANAGER_LIMIT = 10
 
 function boardErrorCopy(copy: TablesCopy, kind: BoardErrorKind): TablesError {
   return kind === 'unavailable'
@@ -89,6 +97,14 @@ function BreakdownPill({ label, count, points }: { label: string; count?: number
       <span className="font-medium text-white">{label}</span>{' '}
       {count !== undefined ? <span>{count} · </span> : null}
       <span className="mono text-[var(--color-accent)]">{formatScore(points)}</span>
+    </span>
+  )
+}
+
+function MoneyBadge({ label }: { label: string }) {
+  return (
+    <span className="mono inline-flex shrink-0 rounded-full border border-[var(--color-sand)]/35 bg-[var(--color-sand)]/12 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-sand)]">
+      {label}
     </span>
   )
 }
@@ -208,18 +224,22 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
           <div className="divide-y divide-white/8">
             {rows.map((row) => {
               const isOpen = openParticipantIds.has(row.participantId)
+              const isPaidRank = row.rank <= PAID_PARTICIPANT_RANK_LIMIT
               return (
                 <div key={row.participantId} className="bg-black/12 px-3.5 py-3 transition hover:bg-white/5">
                   <div className="grid grid-cols-[3.25rem_1fr] gap-3 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
                     <span className="mono text-sm text-[var(--color-accent)]">#{row.rank}</span>
                     <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => onOpenSquad({ displayName: row.displayName, slug: publicProfileSlug(row.displayName, row.participantId) })}
-                        className="block max-w-full truncate text-left text-sm font-semibold text-white underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
-                      >
-                        {row.displayName}
-                      </button>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onOpenSquad({ displayName: row.displayName, slug: publicProfileSlug(row.displayName, row.participantId) })}
+                          className="min-w-0 max-w-full truncate text-left text-sm font-semibold text-white underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
+                        >
+                          {row.displayName}
+                        </button>
+                        {isPaidRank ? <MoneyBadge label={copy.inTheMoney} /> : null}
+                      </div>
                       <div className="mt-1 flex items-center gap-2 text-xs text-[var(--color-muted)]">
                         <TeamFlag teamCode={row.primaryTeamCode} label={nationName(row.primaryTeamCode)} size="sm" />
                         <span>{nationName(row.primaryTeamCode)}</span>
@@ -306,6 +326,7 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
           <div className="divide-y divide-white/8">
             {rows.map((row) => {
               const isOpen = openTeamCodes.has(row.teamCode)
+              const isPaidNation = row.rank <= PAID_NATION_RANK_LIMIT
               return (
                 <div key={row.teamCode} className="bg-black/12 px-3.5 py-3 transition hover:bg-white/5">
                   <div className="grid grid-cols-[3.25rem_1fr] gap-3 sm:grid-cols-[3.25rem_1fr_auto] sm:items-start">
@@ -314,7 +335,10 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
                       <div className="flex min-w-0 items-center gap-2.5">
                         <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-white">{nationName(row.teamCode)}</p>
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <p className="truncate text-sm font-semibold text-white">{nationName(row.teamCode)}</p>
+                            {isPaidNation ? <MoneyBadge label={copy.inTheMoney} /> : null}
+                          </div>
                           <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
                             {row.teamCode} - {row.participantCount} {copy.managersSuffix}
                           </p>
@@ -340,21 +364,22 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
 
                   {isOpen ? (
                     <div className="mt-3 grid gap-1.5 border-t border-white/8 pt-3">
-                      {row.contributors.map((contributor) => (
+                      {row.contributors.map((contributor, contributorIndex) => (
                         <div
                           key={`${row.teamCode}-${contributor.participantId}`}
                           className="grid gap-2 rounded-[0.75rem] border border-white/8 bg-black/14 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold text-white">
-                              <span className="text-[var(--color-accent)]">#{contributor.rank}</span>{' '}
+                            <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-semibold text-white">
+                              <span className="text-[var(--color-accent)]">#{contributorIndex + 1}</span>{' '}
                               <button
                                 type="button"
                                 onClick={() => onOpenSquad({ displayName: contributor.displayName, slug: publicProfileSlug(contributor.displayName, contributor.participantId) })}
-                                className="underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
+                                className="min-w-0 max-w-full truncate underline-offset-2 transition hover:text-[var(--color-accent)] hover:underline"
                               >
                                 {contributor.displayName}
                               </button>
+                              {isPaidNation && contributorIndex < PAID_NATION_MANAGER_LIMIT ? <MoneyBadge label={copy.inTheMoney} /> : null}
                             </p>
                             <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--color-muted)]">
                               <TeamFlag teamCode={contributor.primaryTeamCode} label={nationName(contributor.primaryTeamCode)} size="sm" />
@@ -381,6 +406,65 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
         ) : (
           <div className="bg-black/12 p-5">
             <EmptyState title={copy.noNationTitle} body={copy.noNationBody} />
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: NationParticipationRow[] }) {
+  return (
+    <section className="glass-panel rounded-[1.15rem] p-4">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-[10px]">{copy.nationParticipationEyebrow}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{copy.nationParticipationTitle}</h3>
+          <p className="mt-2 max-w-[68ch] text-sm leading-relaxed text-[var(--color-muted)]">
+            {copy.nationParticipationBody}
+          </p>
+        </div>
+        <span className="mono text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">{rows.length} {copy.nationsSuffix}</span>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
+        {rows.length ? (
+          <div className="max-h-[34rem] overflow-y-auto">
+            <table className="min-w-[720px] w-full border-collapse text-left text-sm">
+              <thead className="sticky top-0 border-b border-white/8 bg-[rgba(8,13,12,0.96)]">
+                <tr>
+                  {[copy.nation, copy.managers, 'Rookie', 'Veteran'].map((heading) => (
+                    <th key={heading} className="mono px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.teamCode} className="border-b border-white/8 bg-black/10 last:border-b-0">
+                    <td className="px-4 py-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-white">{nationName(row.teamCode)}</p>
+                          <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{row.teamCode}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="mono text-base text-[var(--color-accent)]">{row.participantCount}</span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[var(--color-paper)]">{row.rookieCount}</td>
+                    <td className="px-4 py-3 text-xs text-[var(--color-paper)]">{row.veteranCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="bg-black/12 p-5">
+            <EmptyState title={copy.noNationParticipationTitle} body={copy.noNationParticipationBody} />
           </div>
         )}
       </div>
@@ -525,6 +609,13 @@ export function TablesPage({ locale }: TablesPageProps) {
           ) : tables.nations.error ? (
             <section className="glass-panel rounded-[1.15rem] p-5">
               <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
+            </section>
+          ) : null}
+          {tables.nationParticipation.rows ? (
+            <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} />
+          ) : tables.nationParticipation.error ? (
+            <section className="glass-panel rounded-[1.15rem] p-5">
+              <EmptyState {...boardErrorCopy(copy, tables.nationParticipation.error)} />
             </section>
           ) : null}
           <section className="grid gap-4 xl:grid-cols-2">
