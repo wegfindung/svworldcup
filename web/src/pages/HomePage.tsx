@@ -476,7 +476,6 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">{homeCopy.rules.title}</h3>
               <p className="mt-3 max-w-[58ch] text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.rules.body}</p>
             </div>
-            <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{homeCopy.rules.scroll}</span>
           </div>
 
           <div className="mt-5 max-h-[27rem] space-y-3 overflow-y-auto pr-2">
