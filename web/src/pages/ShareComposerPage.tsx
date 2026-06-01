@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { TeamFlag } from '../components/TeamFlag'
+import { supportedLocales } from '../data/eventConfig'
 import { createSignedShareSnapshot, fetchParticipantSession, fetchParticipantSquad } from '../lib/api'
 import { buildReferralInvitationText, resolveShareReferrerSoccerverseUsername } from '../lib/referral'
 import { getShareComposerCopy, renderSharePreset } from '../lib/shareCopy'
@@ -18,6 +19,18 @@ type LoadState = 'loading' | 'ready' | 'error'
 
 const maxCustomStatementLength = 110
 const maxShareLabelLength = 28
+
+const shareLocaleLabels: Record<LocaleCode, string> = {
+  en: 'English',
+  es: 'Español',
+  it: 'Italiano',
+  de: 'Deutsch',
+  fr: 'Français',
+  pt: 'Português',
+  ru: 'Русский',
+  zh: '中文',
+  ja: '日本語',
+}
 
 function buildAbsoluteUrl(path: string) {
   if (typeof window === 'undefined') {
@@ -42,12 +55,14 @@ function sanitizeShareLabel(value: string) {
 
 export function ShareComposerPage({ locale }: ShareComposerPageProps) {
   const copy = getShareComposerCopy(locale)
+  const [shareLocale, setShareLocale] = useState<LocaleCode>(locale)
+  const shareCopy = getShareComposerCopy(shareLocale)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
   const [squad, setSquad] = useState<ParticipantSquad | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [statementMode, setStatementMode] = useState<'preset' | 'custom'>('preset')
-  const [selectedPresetId, setSelectedPresetId] = useState(copy.presets[0]?.id ?? 'top-picks')
+  const [selectedPresetId, setSelectedPresetId] = useState(shareCopy.presets[0]?.id ?? 'top-picks')
   const [customStatement, setCustomStatement] = useState('')
   const [featuredPlayerIds, setFeaturedPlayerIds] = useState<number[]>([])
   const [playerNameOverrides, setPlayerNameOverrides] = useState<Record<number, string>>({})
@@ -103,8 +118,10 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
   const draftedPlayerIds = useMemo(() => draftedPlayers.map((entry) => entry.player.playerId), [draftedPlayers])
   const isCompleteSquad = draftedPlayers.length === 15
-  const effectivePresetId = copy.presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : (copy.presets[0]?.id ?? 'top-picks')
-  const selectedPreset = copy.presets.find((preset) => preset.id === effectivePresetId) ?? copy.presets[0]
+  const effectivePresetId = shareCopy.presets.some((preset) => preset.id === selectedPresetId)
+    ? selectedPresetId
+    : (shareCopy.presets[0]?.id ?? 'top-picks')
+  const selectedPreset = shareCopy.presets.find((preset) => preset.id === effectivePresetId) ?? shareCopy.presets[0]
   const normalizedFeaturedPlayerIds = useMemo(
     () => normalizeFeaturedPlayerIds(featuredPlayerIds, draftedPlayerIds),
     [featuredPlayerIds, draftedPlayerIds],
@@ -116,7 +133,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
     participant?.soccerverseUsername,
     participant?.participantId ?? participant?.displayName,
   )
-  const referralInvitationText = buildReferralInvitationText(referralUsername)
+  const referralInvitationText = buildReferralInvitationText(referralUsername, undefined, shareLocale)
 
   const featuredPlayers = useMemo(
     () =>
@@ -134,7 +151,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
     participant && isCompleteSquad && statement && featuredPlayers.length >= 2 && featuredPlayers.length <= 3
       ? {
           version: 1,
-          locale,
+          locale: shareLocale,
           managerName: participant.displayName,
           referrerUsername: referralUsername || undefined,
           statement,
@@ -234,7 +251,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
     try {
       await navigator.share({
-        title: `${sharePayload.managerName} · The Grand Tournament`,
+        title: `${sharePayload.managerName} · ${shareCopy.nativeShareTitle}`,
         text: referralInvitationText,
         url: shareUrl,
       })
@@ -298,6 +315,30 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
             <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-accent)]">{participant.displayName}</p>
             <p className="mt-3 text-lg font-semibold text-white">{copy.prizeCta}</p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{copy.selectionHint}</p>
+            <label className="mt-4 grid gap-2">
+              <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.shareLanguageLabel}</span>
+              <select
+                value={shareLocale}
+                onChange={(event) => {
+                  const nextLocale = event.target.value as LocaleCode
+                  if (!supportedLocales.includes(nextLocale)) {
+                    return
+                  }
+
+                  setCopyState('idle')
+                  setReferralTextCopyState('idle')
+                  setShareLocale(nextLocale)
+                }}
+                className="h-11 rounded-[0.9rem] border border-white/10 bg-[rgba(8,13,12,0.84)] px-3 text-sm font-semibold text-white outline-none transition focus:border-[var(--color-accent)]"
+              >
+                {supportedLocales.map((optionLocale) => (
+                  <option key={optionLocale} value={optionLocale} className="bg-[#07100e] text-white">
+                    {shareLocaleLabels[optionLocale]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">{copy.shareLanguageHelp}</p>
           </div>
         </div>
       </section>
@@ -339,7 +380,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
 
             {statementMode === 'preset' ? (
               <div className="mt-4 grid gap-3">
-                {copy.presets.map((preset) => {
+                {shareCopy.presets.map((preset) => {
                   const presetText = renderSharePreset(preset.template, selectedPlayerCount)
                   return (
                     <button
@@ -351,7 +392,7 @@ export function ShareComposerPage({ locale }: ShareComposerPageProps) {
                       }}
                       className={[
                         'surface-row rounded-[0.95rem] border px-4 py-4 text-left transition active:scale-[0.99]',
-                        selectedPresetId === preset.id
+                        effectivePresetId === preset.id
                           ? 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10'
                           : 'border-white/8 hover:bg-white/6',
                       ].join(' ')}

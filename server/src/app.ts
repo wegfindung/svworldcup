@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { extname, resolve } from 'node:path'
 import cors from 'cors'
 import express from 'express'
@@ -12,6 +13,7 @@ import { createAdminRouter } from './routes/admin.js'
 import { createParticipantRouter } from './routes/participant.js'
 import { createPublicRouter } from './routes/public.js'
 import { handleShareSnapshotPage } from './routes/share.js'
+import { noIndexRobotsValue, renderIndexSocialMeta, resolveSocialLocaleFromQuery } from './lib/socialMeta.js'
 import { bootstrapDefaultEmailCampaigns } from './services/bootstrapEmailCampaigns.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
@@ -99,6 +101,10 @@ export function createApp() {
       },
     }),
   )
+  app.use((_req, res, next) => {
+    res.setHeader('X-Robots-Tag', noIndexRobotsValue)
+    next()
+  })
   app.use(
     cors({
       origin: true,
@@ -125,14 +131,21 @@ export function createApp() {
         index: false,
       }),
     )
-    app.use((req, res, next) => {
+    app.use(async (req, res, next) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) {
         return next()
       }
       if (extname(req.path)) {
         return res.status(404).end()
       }
-      res.sendFile(resolve(publicDir, 'index.html'))
+      try {
+        const indexHtml = await readFile(resolve(publicDir, 'index.html'), 'utf8')
+        const pageUrl = `${req.protocol}://${req.get('host') ?? 'localhost'}${req.originalUrl}`
+        const locale = resolveSocialLocaleFromQuery(req.query)
+        res.type('html').send(renderIndexSocialMeta(indexHtml, locale, pageUrl))
+      } catch (error) {
+        next(error)
+      }
     })
   }
 

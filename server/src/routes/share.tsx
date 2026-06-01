@@ -8,10 +8,11 @@ import satori from 'satori'
 import type { ShareSnapshotPayload } from '../lib/sharePayload.js'
 import { decodeSignedShareSnapshotPayload } from '../lib/shareSignature.js'
 import { getShareCopy } from '../lib/shareCopy.js'
+import { getOgLocale, noIndexRobotsValue } from '../lib/socialMeta.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '9'
+const shareRenderVersion = '10'
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 const defaultShareReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
@@ -52,14 +53,20 @@ function sanitizeReferrerUsername(value?: string) {
   return trimmed.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 60)
 }
 
-function buildLandingReferralUrl(origin: string, referrerUsername: string) {
+function buildLandingReferralUrl(origin: string, referrerUsername: string, locale?: ShareSnapshotPayload['locale']) {
   const normalizedOrigin = origin.replace(/\/+$/, '')
   const sanitizedReferrer = sanitizeReferrerUsername(referrerUsername)
+  const params = new URLSearchParams()
   if (sanitizedReferrer) {
-    return `${normalizedOrigin}?ref=${encodeURIComponent(sanitizedReferrer)}`
+    params.set('ref', sanitizedReferrer)
   }
 
-  return normalizedOrigin
+  if (locale) {
+    params.set('share_locale', locale)
+  }
+
+  const query = params.toString()
+  return query ? `${normalizedOrigin}?${query}` : normalizedOrigin
 }
 
 function getDefaultReferrerUsername(seed: string) {
@@ -71,8 +78,27 @@ function resolveReferralUsername(payload: ShareSnapshotPayload) {
   return sanitizeReferrerUsername(payload.referrerUsername) || getDefaultReferrerUsername(payload.managerName)
 }
 
-function buildReferralInvitationText(referralUrl: string) {
-  return `Show that you have the best soccer knowledge and join the competition ${referralUrl}`
+function buildReferralInvitationText(referralUrl: string, locale: ShareSnapshotPayload['locale']) {
+  switch (locale) {
+    case 'es':
+      return `Demuestra que sabes mas de futbol y unete a la competicion ${referralUrl}`
+    case 'it':
+      return `Dimostra di conoscere il calcio meglio degli altri e partecipa alla competizione ${referralUrl}`
+    case 'de':
+      return `Zeig, dass du den besten Fussballverstand hast, und mach beim Wettbewerb mit ${referralUrl}`
+    case 'fr':
+      return `Montre que tu connais le foot mieux que les autres et rejoins la competition ${referralUrl}`
+    case 'pt':
+      return `Mostra que tens o melhor conhecimento de futebol e entra na competicao ${referralUrl}`
+    case 'ru':
+      return `Докажи, что ты лучше всех разбираешься в футболе, и присоединяйся к соревнованию ${referralUrl}`
+    case 'zh':
+      return `证明你的足球知识最强，加入比赛 ${referralUrl}`
+    case 'ja':
+      return `最高のサッカー知識を見せて、この大会に参加しよう ${referralUrl}`
+    default:
+      return `Show that you have the best soccer knowledge and join the competition ${referralUrl}`
+  }
 }
 
 function getRawSharePayload(req: Request) {
@@ -404,7 +430,7 @@ async function buildShareCardSvg(
   const panelHeight = 334
   const cardsTopY = 210
   const ctaY = 548
-  const ctaText = truncateText(copy.cta, 76)
+  const ctaText = truncateText(copy.imageCta ?? copy.cta, 76)
   const attributionText = 'Soccerverse.com - images: Official partnership with FIFPro'
   const [badgeTextUrl, bylineTextUrl, attributionTextUrl, statementTextUrl, ctaTextUrl] = await Promise.all([
     renderTextDataUrl(fonts, {
@@ -579,7 +605,7 @@ async function renderFallbackShareCardPng() {
   const copy = getShareCopy('en')
   const [titleTextUrl, ctaTextUrl] = await Promise.all([
     renderTextDataUrl(fonts, {
-      lines: ['The Grand Tournament'],
+      lines: ['The Grant Tournament'],
       width: 980,
       height: 76,
       fontSize: 58,
@@ -631,16 +657,18 @@ function buildShareSnapshotHtml(
   const playerNames = payload.featuredPlayers.map((player) => getSharePlayerLabel(player))
   const description = `${payload.statement} ${copy.pageDescriptionPrefix}: ${playerNames.join(', ')}. ${copy.cta}`
   const referralUsername = resolveReferralUsername(payload)
-  const referralUrl = buildLandingReferralUrl(origin, referralUsername)
-  const referralInvitationText = buildReferralInvitationText(referralUrl)
+  const referralUrl = buildLandingReferralUrl(origin, referralUsername, payload.locale)
+  const referralInvitationText = buildReferralInvitationText(referralUrl, payload.locale)
 
   return `<!doctype html>
 <html lang="${escapeHtml(payload.locale)}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="${noIndexRobotsValue}" />
     <title>${escapeHtml(`${payload.managerName} · ${copy.pageTitleSuffix}`)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
+    <meta property="og:locale" content="${escapeHtml(getOgLocale(payload.locale))}" />
     <meta property="og:title" content="${escapeHtml(`${payload.managerName} · ${copy.pageTitleSuffix}`)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:type" content="website" />

@@ -7,6 +7,7 @@ import { getMessages } from './i18n/messages'
 import { recordReferralClick } from './lib/api'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from './lib/competitionWindow'
 import {
+  getDefaultShareReferrerSoccerverseUsername,
   readReferralFromSearch,
   resolveReferrerSoccerverseUsername,
   storeReferrerSoccerverseUsername,
@@ -20,6 +21,7 @@ const BuilderPage = lazy(() => import('./pages/BuilderPage').then((module) => ({
 const HelpPage = lazy(() => import('./pages/HelpPage').then((module) => ({ default: module.HelpPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const PlayerLoginPage = lazy(() => import('./pages/PlayerLoginPage').then((module) => ({ default: module.PlayerLoginPage })))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })))
 const PrizesPage = lazy(() => import('./pages/PrizesPage').then((module) => ({ default: module.PrizesPage })))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })))
@@ -40,12 +42,130 @@ function RouteFallback() {
   )
 }
 
+function readLocaleFromSearch(search: string) {
+  const params = new URLSearchParams(search)
+  const rawLocale = params.get('share_locale') ?? params.get('lang') ?? params.get('locale') ?? ''
+  const normalizedLocale = rawLocale.trim().toLowerCase().split(/[-_]/, 1)[0] as LocaleCode
+  return supportedLocales.includes(normalizedLocale) ? normalizedLocale : null
+}
+
+const footerCopyByLocale: Record<
+  LocaleCode,
+  {
+    event: string
+    mainProject: string
+    playSoccerverse: string
+    help: string
+    about: string
+    privacy: string
+    admin: string
+    note: string
+  }
+> = {
+  en: {
+    event: 'Event',
+    mainProject: 'Main project',
+    playSoccerverse: 'Play Soccerverse',
+    help: 'Help',
+    about: 'About',
+    privacy: 'Privacy',
+    admin: 'Admin',
+    note: 'Fan-made community event. Not an official Soccerverse product.',
+  },
+  es: {
+    event: 'Evento',
+    mainProject: 'Proyecto principal',
+    playSoccerverse: 'Jugar Soccerverse',
+    help: 'Ayuda',
+    about: 'Acerca de',
+    privacy: 'Privacidad',
+    admin: 'Admin',
+    note: 'Evento comunitario hecho por fans. No es un producto oficial de Soccerverse.',
+  },
+  it: {
+    event: 'Evento',
+    mainProject: 'Progetto principale',
+    playSoccerverse: 'Gioca a Soccerverse',
+    help: 'Aiuto',
+    about: 'Info',
+    privacy: 'Privacy',
+    admin: 'Admin',
+    note: 'Evento della community fatto dai fan. Non è un prodotto ufficiale Soccerverse.',
+  },
+  de: {
+    event: 'Event',
+    mainProject: 'Hauptprojekt',
+    playSoccerverse: 'Soccerverse spielen',
+    help: 'Help',
+    about: 'About',
+    privacy: 'Datenschutz',
+    admin: 'Admin',
+    note: 'Fan-gemachtes Community-Event. Kein offizielles Soccerverse-Produkt.',
+  },
+  fr: {
+    event: 'Événement',
+    mainProject: 'Projet principal',
+    playSoccerverse: 'Jouer à Soccerverse',
+    help: 'Aide',
+    about: 'À propos',
+    privacy: 'Confidentialité',
+    admin: 'Admin',
+    note: 'Événement communautaire fait par des fans. Ce n’est pas un produit officiel Soccerverse.',
+  },
+  pt: {
+    event: 'Evento',
+    mainProject: 'Projeto principal',
+    playSoccerverse: 'Jogar Soccerverse',
+    help: 'Ajuda',
+    about: 'Sobre',
+    privacy: 'Privacidade',
+    admin: 'Admin',
+    note: 'Evento comunitário feito por fãs. Não é um produto oficial Soccerverse.',
+  },
+  ru: {
+    event: 'Событие',
+    mainProject: 'Основной проект',
+    playSoccerverse: 'Играть в Soccerverse',
+    help: 'Помощь',
+    about: 'О проекте',
+    privacy: 'Конфиденциальность',
+    admin: 'Admin',
+    note: 'Фанатское событие сообщества. Это не официальный продукт Soccerverse.',
+  },
+  zh: {
+    event: '活动',
+    mainProject: '主项目',
+    playSoccerverse: '进入 Soccerverse',
+    help: '帮助',
+    about: '关于',
+    privacy: '隐私',
+    admin: 'Admin',
+    note: '粉丝制作的社区活动。并非 Soccerverse 官方产品。',
+  },
+  ja: {
+    event: 'イベント',
+    mainProject: 'メインプロジェクト',
+    playSoccerverse: 'Soccerverse をプレイ',
+    help: 'Help',
+    about: 'About',
+    privacy: 'プライバシー',
+    admin: 'Admin',
+    note: 'ファンによるコミュニティイベントです。Soccerverse 公式製品ではありません。',
+  },
+}
+
 function App() {
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [footerAffiliateReferrer] = useState(() => getDefaultShareReferrerSoccerverseUsername())
   const [locale, setLocale] = useState<LocaleCode>(() => {
     if (typeof window === 'undefined') {
       return supportedLocales[0]
+    }
+
+    const searchLocale = readLocaleFromSearch(window.location.search)
+    if (searchLocale) {
+      return searchLocale
     }
 
     const storedLocale = window.localStorage.getItem('svworldcup-locale')
@@ -60,11 +180,19 @@ function App() {
     window.localStorage.setItem('svworldcup-locale', locale)
   }, [locale])
 
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
+
   const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
   const copy = getMessages(locale)
+  const footerCopy = footerCopyByLocale[locale]
   const { data: bootstrap } = useBootstrap()
   const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
   const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
+  const headerAccountItems = copy.nav.account.filter((item) => item.to !== '/admin')
+  const adminItem = copy.nav.account.find((item) => item.to === '/admin')
+  const footerAffiliateUrl = `https://play.soccerverse.com/?ref=${encodeURIComponent(footerAffiliateReferrer)}`
   const importantActive = copy.nav.important.items.some(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
   )
@@ -180,7 +308,7 @@ function App() {
                 )}
 
                 <nav className="flex items-center rounded-full border border-white/8 bg-black/14 p-1">
-                  {copy.nav.account.map((item) => (
+                  {headerAccountItems.map((item) => (
                     <NavLink
                       key={item.to}
                       to={withReferral(item.to, referrerSoccerverseUsername)}
@@ -284,7 +412,7 @@ function App() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                {copy.nav.account.map((item) => (
+                {headerAccountItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={withReferral(item.to, referrerSoccerverseUsername)}
@@ -343,6 +471,7 @@ function App() {
               <Route path="/rules" element={<RulesPage locale={locale} />} />
               <Route path="/help" element={<HelpPage locale={locale} />} />
               <Route path="/about" element={<AboutPage locale={locale} />} />
+              <Route path="/privacy" element={<PrivacyPage locale={locale} />} />
               <Route path="/tables" element={<TablesPage locale={locale} />} />
               <Route path="/verify" element={<VerifyPage locale={locale} registrationClosed={registrationClosed} />} />
               <Route path="/reset-password" element={<ResetPasswordPage locale={locale} />} />
@@ -351,6 +480,51 @@ function App() {
             </Routes>
           </Suspense>
         </main>
+
+        <footer className="mt-8 grid gap-5 border-t border-white/10 py-6 text-sm text-[var(--color-muted)] md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div className="max-w-[44rem]">
+            <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-accent)]">{footerCopy.event}</p>
+            <p className="mt-2 leading-relaxed">{footerCopy.note}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            <a
+              href={footerAffiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-[var(--color-accent)]/28 bg-[var(--color-accent)]/10 px-3.5 py-2 text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-ink)] active:scale-[0.98]"
+              aria-label={footerCopy.mainProject}
+            >
+              {footerCopy.playSoccerverse}
+            </a>
+            <NavLink
+              to={withReferral('/help', referrerSoccerverseUsername)}
+              className="rounded-full border border-white/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] hover:bg-white/7 hover:text-white active:scale-[0.98]"
+            >
+              {footerCopy.help}
+            </NavLink>
+            <NavLink
+              to={withReferral('/about', referrerSoccerverseUsername)}
+              className="rounded-full border border-white/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] hover:bg-white/7 hover:text-white active:scale-[0.98]"
+            >
+              {footerCopy.about}
+            </NavLink>
+            <NavLink
+              to={withReferral('/privacy', referrerSoccerverseUsername)}
+              className="rounded-full border border-white/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] hover:bg-white/7 hover:text-white active:scale-[0.98]"
+            >
+              {footerCopy.privacy}
+            </NavLink>
+            {adminItem ? (
+              <NavLink
+                to={withReferral(adminItem.to, referrerSoccerverseUsername)}
+                className="rounded-full border border-white/10 bg-black/14 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] hover:bg-white/7 hover:text-white active:scale-[0.98]"
+              >
+                {footerCopy.admin}
+              </NavLink>
+            ) : null}
+          </div>
+        </footer>
       </div>
     </div>
   )
