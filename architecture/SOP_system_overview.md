@@ -117,6 +117,11 @@ coupled by design — partial render does not apply there.
   `LOG_LEVEL` (silent under test). Request-timing middleware logs every request's method, path,
   status, and duration; slow (>1s) or 5xx responses are logged at `warn`. The global error handler
   logs unhandled 500s with request context.
+- Transient overload errors are surfaced as **503 with a `Retry-After` header**, not 500, so clients
+  and proxies can back off during a load spike (e.g. the registration / squad-lock deadline rush). The
+  two mapped cases are Postgres query cancellation (`statement_timeout` / `lock_timeout`, SQLSTATE
+  `57014`) and the connection-pool acquisition timeout. These are "server busy", not "request broke",
+  and are logged at `warn` rather than `error`.
 - Background-job failures (snapshot capture, email scheduler, promotion) are both logged structurally
   AND recorded to `operationsMonitor` so the admin operations screen surfaces them live. The
   structured log is the durable trail; `operationsMonitor` is the at-a-glance view (lost on restart).
