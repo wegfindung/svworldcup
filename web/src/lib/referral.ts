@@ -1,3 +1,5 @@
+import type { LocaleCode } from './types'
+
 const storageKey = 'svworldcup-referrer-soccerverse-username'
 
 const referralParamNames = ['ref', 'sv_ref', 'soccerverse_ref', 'referrer', 'referrerSoccerverseUsername'] as const
@@ -69,15 +71,25 @@ export function withReferral(path: string, referrerSoccerverseUsername: string) 
   return `${pathname}${nextSearch ? `?${nextSearch}` : ''}${hash ? `#${hash}` : ''}`
 }
 
-export function buildLandingReferralUrl(referrerSoccerverseUsername: string, origin?: string) {
+function isLocaleCode(value: string): value is LocaleCode {
+  return ['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja'].includes(value)
+}
+
+export function buildLandingReferralUrl(referrerSoccerverseUsername: string, origin?: string, shareLocale?: LocaleCode) {
   const baseOrigin = origin ?? (typeof window === 'undefined' ? 'https://worldcup.svtool.info' : window.location.origin)
   const normalizedOrigin = baseOrigin.replace(/\/+$/, '')
   const referrer = sanitizeReferrerSoccerverseUsername(referrerSoccerverseUsername)
+  const params = new URLSearchParams()
   if (referrer) {
-    return `${normalizedOrigin}?ref=${encodeURIComponent(referrer)}`
+    params.set('ref', referrer)
   }
 
-  return normalizedOrigin
+  if (shareLocale && isLocaleCode(shareLocale)) {
+    params.set('share_locale', shareLocale)
+  }
+
+  const query = params.toString()
+  return query ? `${normalizedOrigin}?${query}` : normalizedOrigin
 }
 
 export function getDefaultShareReferrerSoccerverseUsername(seed = '') {
@@ -94,9 +106,26 @@ export function resolveShareReferrerSoccerverseUsername(soccerverseUsername?: st
   return sanitizeReferrerSoccerverseUsername(soccerverseUsername ?? '') || getDefaultShareReferrerSoccerverseUsername(seed)
 }
 
-export function buildReferralInvitationText(referrerSoccerverseUsername: string, origin?: string) {
-  return `Show that you have the best soccer knowledge and join the competition ${buildLandingReferralUrl(
-    referrerSoccerverseUsername,
-    origin,
-  )}`
+export function buildReferralInvitationText(referrerSoccerverseUsername: string, origin?: string, shareLocale: LocaleCode = 'en') {
+  const referralUrl = buildLandingReferralUrl(referrerSoccerverseUsername, origin, shareLocale)
+  switch (shareLocale) {
+    case 'es':
+      return `Demuestra que sabes mas de futbol y unete a la competicion ${referralUrl}`
+    case 'it':
+      return `Dimostra di conoscere il calcio meglio degli altri e partecipa alla competizione ${referralUrl}`
+    case 'de':
+      return `Zeig, dass du den besten Fussballverstand hast, und mach beim Wettbewerb mit ${referralUrl}`
+    case 'fr':
+      return `Montre que tu connais le foot mieux que les autres et rejoins la competition ${referralUrl}`
+    case 'pt':
+      return `Mostra que tens o melhor conhecimento de futebol e entra na competicao ${referralUrl}`
+    case 'ru':
+      return `Докажи, что ты лучше всех разбираешься в футболе, и присоединяйся к соревнованию ${referralUrl}`
+    case 'zh':
+      return `证明你的足球知识最强，加入比赛 ${referralUrl}`
+    case 'ja':
+      return `最高のサッカー知識を見せて、この大会に参加しよう ${referralUrl}`
+    default:
+      return `Show that you have the best soccer knowledge and join the competition ${referralUrl}`
+  }
 }

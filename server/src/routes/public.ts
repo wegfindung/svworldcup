@@ -67,6 +67,7 @@ function renderEmailPreferencesPage(input: { token: string; status: 'unsubscribe
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive,nosnippet" />
     <title>The Grand Tournament Email Preferences</title>
   </head>
   <body style="margin:0;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;">

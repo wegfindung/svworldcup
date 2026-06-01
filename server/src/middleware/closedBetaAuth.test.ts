@@ -39,6 +39,18 @@ describe('closed beta auth middleware', () => {
     expect(response.status).toBe(200)
   })
 
+  it('lets social preview bots fetch public snippets without credentials', async () => {
+    const response = await request(setup(enabledOptions)).get('/protected').set('user-agent', 'facebookexternalhit/1.1')
+    expect(response.status).toBe(200)
+  })
+
+  it('does not let social preview bot user agents bypass non-GET requests', async () => {
+    const app = setup(enabledOptions)
+    app.post('/protected', (_req, res) => res.json({ ok: true }))
+    const response = await request(app).post('/protected').set('user-agent', 'facebookexternalhit/1.1')
+    expect(response.status).toBe(401)
+  })
+
   it('rejects incorrect credentials', async () => {
     const response = await request(setup(enabledOptions)).get('/protected').set('authorization', basicAuth('soccerverse', 'wrong'))
     expect(response.status).toBe(401)

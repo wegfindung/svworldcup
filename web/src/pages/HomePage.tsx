@@ -545,7 +545,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
         <NextKickoffCard copy={homeCopy.nextKickoff} fixtures={fixtures} referrerSoccerverseUsername={referrerSoccerverseUsername} teams={teams} />
       </section>
 
-      <section>
+      <section id="score-calculator">
         <ScoringCalculator budgetOptions={budgetOptions} copy={copy.scoringCalculator} scoring={scoring} />
       </section>
     </div>

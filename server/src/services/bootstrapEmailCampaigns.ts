@@ -21,6 +21,14 @@ export async function bootstrapDefaultEmailCampaigns(emailMarketingRepository: E
     )
 
     if (existing) {
+      if (seed.kind === 'newsletter') {
+        const wasManuallyEdited = existing.updatedBy !== 'system@svworldcup.local'
+        const hasStartedSending = existing.status === 'sending' || existing.status === 'sent'
+        if (wasManuallyEdited || hasStartedSending) {
+          continue
+        }
+      }
+
       await emailMarketingRepository.saveCampaign({ ...seed, campaignId: existing.campaignId }, 'system@svworldcup.local')
       continue
     }

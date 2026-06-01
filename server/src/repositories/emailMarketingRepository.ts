@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import type {
   EmailCampaignAudienceStatus,
@@ -22,6 +22,7 @@ const newsletterInputStatuses: EmailCampaignStatus[] = ['draft', 'scheduled']
 const autoresponderInputStatuses: EmailCampaignStatus[] = ['draft', 'active', 'paused']
 const smtpMaxPerMinute = 95
 const smtpMaxPerTenMinutes = 1_000
+const soccerverseAffiliateReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
 
 interface EmailRecipientSeed {
   participantId?: string
@@ -302,6 +303,7 @@ function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubsc
   const displayName = recipient.displayName.trim() || recipient.email
   const firstName = displayName.split(/\s+/)[0] || displayName
   const publicWebUrl = env.PUBLIC_WEB_URL.replace(/\/+$/, '')
+  const affiliateReferrer = soccerverseAffiliateReferrers[randomInt(soccerverseAffiliateReferrers.length)]
   const replacements: Record<string, string> = {
     '{{first_name}}': firstName,
     '{{display_name}}': displayName,
@@ -312,8 +314,10 @@ function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubsc
     '{{referrer_soccerverse_username}}': recipient.referrerSoccerverseUsername ?? '',
     '{{unsubscribe_url}}': unsubscribeUrl ?? '',
     '{{builder_url}}': `${publicWebUrl}/builder`,
+    '{{help_url}}': `${publicWebUrl}/help`,
     '{{prizes_url}}': `${publicWebUrl}/prizes`,
     '{{play_url}}': 'https://play.soccerverse.com/',
+    '{{play_affiliate_url}}': `https://play.soccerverse.com/?ref=${encodeURIComponent(affiliateReferrer)}`,
     '{{logo_url}}': `${publicWebUrl}/brand/logo-200.webp`,
     '{{public_web_url}}': publicWebUrl,
   }

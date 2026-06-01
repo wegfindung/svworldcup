@@ -15,10 +15,16 @@ const englishMessages = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Results' },
       { to: '/tables', label: 'Tables' },
-      { to: '/prizes', label: 'Prizes' },
-      { to: '/rules', label: 'Rules' },
-      { to: '/about', label: 'About' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Rules' },
+        { to: '/about', label: 'About' },
+        { to: '/prizes', label: 'Prizes' },
+        { to: '/help', label: 'Help' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Login' },
       { to: '/admin', label: 'Admin' },
@@ -589,10 +595,16 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Constructor' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tablas' },
-      { to: '/prizes', label: 'Premios' },
-      { to: '/rules', label: 'Reglas' },
-      { to: '/about', label: 'Acerca de' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Reglas' },
+        { to: '/about', label: 'Acerca de' },
+        { to: '/prizes', label: 'Premios' },
+        { to: '/help', label: 'Ayuda' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Acceso' },
       { to: '/admin', label: 'Admin' },
@@ -1060,10 +1072,16 @@ const italianMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Risultati' },
       { to: '/tables', label: 'Classifiche' },
-      { to: '/prizes', label: 'Premi' },
-      { to: '/rules', label: 'Regole' },
-      { to: '/about', label: 'Informazioni' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Regole' },
+        { to: '/about', label: 'Informazioni' },
+        { to: '/prizes', label: 'Premi' },
+        { to: '/help', label: 'Aiuto' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Login' },
       { to: '/admin', label: 'Admin' },
@@ -1531,10 +1549,16 @@ const germanMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Ergebnisse' },
       { to: '/tables', label: 'Tabellen' },
-      { to: '/prizes', label: 'Preise' },
-      { to: '/rules', label: 'Regeln' },
-      { to: '/about', label: 'Über uns' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Regeln' },
+        { to: '/about', label: 'Über uns' },
+        { to: '/prizes', label: 'Preise' },
+        { to: '/help', label: 'Hilfe' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Login' },
       { to: '/admin', label: 'Admin' },
@@ -2001,10 +2025,16 @@ const frenchMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Résultats' },
       { to: '/tables', label: 'Classements' },
-      { to: '/prizes', label: 'Prix' },
-      { to: '/rules', label: 'Règles' },
-      { to: '/about', label: 'À propos' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Règles' },
+        { to: '/about', label: 'À propos' },
+        { to: '/prizes', label: 'Prix' },
+        { to: '/help', label: 'Aide' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Login' },
       { to: '/admin', label: 'Admin' },
@@ -2469,10 +2499,16 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tabelas' },
-      { to: '/prizes', label: 'Prémios' },
-      { to: '/rules', label: 'Regras' },
-      { to: '/about', label: 'Sobre' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Regras' },
+        { to: '/about', label: 'Sobre' },
+        { to: '/prizes', label: 'Prémios' },
+        { to: '/help', label: 'Ajuda' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Login' },
       { to: '/admin', label: 'Admin' },
@@ -2937,10 +2973,16 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Конструктор' },
       { to: '/results', label: 'Результаты' },
       { to: '/tables', label: 'Таблицы' },
-      { to: '/prizes', label: 'Призы' },
-      { to: '/rules', label: 'Правила' },
-      { to: '/about', label: 'О проекте' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'Правила' },
+        { to: '/about', label: 'О проекте' },
+        { to: '/prizes', label: 'Призы' },
+        { to: '/help', label: 'Помощь' },
+      ],
+    },
     account: [
       { to: '/login', label: 'Вход' },
       { to: '/admin', label: 'Admin' },
@@ -3406,10 +3448,16 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: '阵容' },
       { to: '/results', label: '赛果' },
       { to: '/tables', label: '榜单' },
-      { to: '/prizes', label: '奖品' },
-      { to: '/rules', label: '规则' },
-      { to: '/about', label: '关于' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: '规则' },
+        { to: '/about', label: '关于' },
+        { to: '/prizes', label: '奖品' },
+        { to: '/help', label: '帮助' },
+      ],
+    },
     account: [
       { to: '/login', label: '登录' },
       { to: '/admin', label: 'Admin' },
@@ -3877,10 +3925,16 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'ビルダー' },
       { to: '/results', label: '結果' },
       { to: '/tables', label: '順位表' },
-      { to: '/prizes', label: '賞品' },
-      { to: '/rules', label: 'ルール' },
-      { to: '/about', label: 'について' },
     ],
+    important: {
+      label: 'Important',
+      items: [
+        { to: '/rules', label: 'ルール' },
+        { to: '/about', label: 'について' },
+        { to: '/prizes', label: '賞品' },
+        { to: '/help', label: 'ヘルプ' },
+      ],
+    },
     account: [
       { to: '/login', label: 'ログイン' },
       { to: '/admin', label: '管理' },

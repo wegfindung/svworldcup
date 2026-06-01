@@ -1,4 +1,6 @@
 import type { EmailCampaignInput, SupportedLocale } from '../domain/types.js'
+import { rookieMainGameEmailCampaign } from './rookieMainGameEmailCampaign.js'
+import { swapWindowEmailCampaigns } from './swapWindowEmailCampaigns.js'
 
 interface VeteranOnboardingCopy {
   subject: string
@@ -16,6 +18,24 @@ interface VeteranOnboardingCopy {
   signoff: string
   prizes: string
   prizesLink: string
+}
+
+interface RookieOnboardingCopy {
+  subject: string
+  preheader: string
+  title: string
+  greeting: string
+  intro: string
+  twist: string
+  notesIntro: string
+  points: string[]
+  resourcesIntro: string
+  helpCta: string
+  builderCta: string
+  discordCta: string
+  discordBody: string
+  goodLuck: string
+  signoff: string
 }
 
 const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
@@ -282,6 +302,225 @@ const veteranOnboardingCopy: Record<SupportedLocale, VeteranOnboardingCopy> = {
   },
 }
 
+const rookieOnboardingCopy: Record<SupportedLocale, RookieOnboardingCopy> = {
+  en: {
+    subject: 'Rookie briefing: your Grand Tournament crash course',
+    preheader: 'New here? Perfect. Here is how the event works without making it feel like homework.',
+    title: 'Rookie briefing',
+    greeting: 'Hi {{first_name}},',
+    intro:
+      'You joined as a Rookie, so this one is just for you. The Grand Tournament Community Event is simple at the surface: build one 15-player squad, lock it in, then watch real tournament matches turn into points. Goals, assists, minutes, clean sheets, match ratings, and your chosen budget all matter.',
+    twist:
+      'The fun twist: bigger budgets are easier to build with, so they score with a lower multiplier. Smaller budgets are harder, so they get a boost. You do not need to know every Soccerverse mechanic on day one. Pick players you like, keep an eye on the cap, and let the tournament do the rest.',
+    notesIntro: 'A few things to know before you build:',
+    points: [
+      'You can only have one account. Multi-accounting can disqualify you.',
+      'You can draft a maximum of 4 players from the same Grand Tournament team. So no full Brazil squad, no full Morocco squad, no "I only trust one nation" masterplan.',
+      'Your squad has 11 starters and 4 reserves. Reserves still score at 50%, so your bench matters.',
+      'Later in the tournament, there are limited swap windows where you can move reserves into the starting lineup.',
+    ],
+    resourcesIntro: 'If anything is unclear, start here:',
+    helpCta: 'Open Help page',
+    builderCta: 'Open Builder',
+    discordCta: 'Join Discord',
+    discordBody: 'The Discord is the best place to ask questions, get support, and see what other managers are thinking.',
+    goodLuck: 'Good luck, Rookie. Build something clever.',
+    signoff: 'The Grand Tournament Team',
+  },
+  es: {
+    subject: 'Briefing Rookie: tu curso rápido para The Grand Tournament',
+    preheader: '¿Nuevo por aquí? Perfecto. Así funciona el evento sin convertirlo en tarea.',
+    title: 'Briefing Rookie',
+    greeting: 'Hola {{first_name}},',
+    intro:
+      'Te uniste como Rookie, así que este correo es solo para ti. The Grand Tournament Community Event es sencillo por fuera: crea una plantilla de 15 jugadores, bloquéala y mira cómo los partidos reales se convierten en puntos. Cuentan goles, asistencias, minutos, porterías a cero, ratings de partido y el presupuesto que elijas.',
+    twist:
+      'El giro divertido: los presupuestos grandes son más fáciles de construir, por eso puntúan con un multiplicador menor. Los presupuestos pequeños son más difíciles, así que reciben un boost. No necesitas dominar cada mecánica de Soccerverse desde el primer día. Elige jugadores que te gusten, vigila el cap y deja que el torneo haga el resto.',
+    notesIntro: 'Algunas cosas que conviene saber antes de construir:',
+    points: [
+      'Solo puedes tener una cuenta. El multi-accounting puede descalificarte.',
+      'Puedes draftear como máximo 4 jugadores del mismo equipo del Grand Tournament. Así que nada de plantilla entera de Brasil, Marruecos o de una sola nación.',
+      'Tu plantilla tiene 11 titulares y 4 reservas. Los reservas también puntúan al 50%, así que el banquillo importa.',
+      'Más adelante habrá ventanas de cambios limitadas en las que podrás mover reservas al once titular.',
+    ],
+    resourcesIntro: 'Si algo no está claro, empieza aquí:',
+    helpCta: 'Abrir página de ayuda',
+    builderCta: 'Abrir Builder',
+    discordCta: 'Entrar al Discord',
+    discordBody: 'El Discord es el mejor sitio para hacer preguntas, recibir soporte y ver qué están pensando otros managers.',
+    goodLuck: 'Suerte, Rookie. Construye algo inteligente.',
+    signoff: 'The Grand Tournament Team',
+  },
+  it: {
+    subject: 'Briefing Rookie: il tuo corso rapido per The Grand Tournament',
+    preheader: 'Nuovo qui? Perfetto. Ecco come funziona l’evento senza farlo sembrare compiti.',
+    title: 'Briefing Rookie',
+    greeting: 'Ciao {{first_name}},',
+    intro:
+      'Ti sei iscritto come Rookie, quindi questa mail è solo per te. The Grand Tournament Community Event è semplice in superficie: costruisci una rosa da 15 giocatori, bloccala e guarda le partite reali trasformarsi in punti. Contano gol, assist, minuti, clean sheet, rating partita e il budget che scegli.',
+    twist:
+      'Il dettaglio divertente: i budget più grandi sono più facili da usare, quindi segnano con un moltiplicatore più basso. I budget più piccoli sono più difficili, quindi ricevono un boost. Non devi conoscere ogni meccanica di Soccerverse dal primo giorno. Scegli giocatori che ti piacciono, tieni d’occhio il cap e lascia fare al torneo.',
+    notesIntro: 'Qualche cosa da sapere prima di costruire:',
+    points: [
+      'Puoi avere un solo account. Il multi-accounting può portare alla squalifica.',
+      'Puoi draftare al massimo 4 giocatori dallo stesso team del Grand Tournament. Quindi niente rosa tutta Brasile, tutta Marocco o solo di una nazione.',
+      'La tua rosa ha 11 titolari e 4 riserve. Le riserve segnano comunque al 50%, quindi la panchina conta.',
+      'Più avanti nel torneo ci saranno finestre di cambio limitate in cui potrai spostare riserve nella formazione titolare.',
+    ],
+    resourcesIntro: 'Se qualcosa non è chiaro, parti da qui:',
+    helpCta: 'Apri la pagina Help',
+    builderCta: 'Apri il Builder',
+    discordCta: 'Entra su Discord',
+    discordBody: 'Discord è il posto migliore per fare domande, ricevere supporto e vedere cosa pensano gli altri manager.',
+    goodLuck: 'Buona fortuna, Rookie. Costruisci qualcosa di intelligente.',
+    signoff: 'The Grand Tournament Team',
+  },
+  de: {
+    subject: 'Rookie-Briefing: Dein Crashkurs für The Grand Tournament',
+    preheader: 'Neu dabei? Perfekt. So funktioniert das Event, ohne dass es sich nach Hausaufgaben anfühlt.',
+    title: 'Rookie-Briefing',
+    greeting: 'Hi {{first_name}},',
+    intro:
+      'Du bist als Rookie dabei, also ist diese Mail nur für Dich. Das Grand Tournament Community Event ist an der Oberfläche einfach: Baue einen 15-Spieler-Kader, locke ihn ein und sieh zu, wie echte Turnierspiele zu Punkten werden. Tore, Assists, Minuten, Clean Sheets, Match Ratings und Dein gewähltes Budget zählen.',
+    twist:
+      'Der spaßige Twist: Größere Budgets sind leichter zu bauen, deshalb scoren sie mit einem niedrigeren Multiplikator. Kleinere Budgets sind schwieriger und bekommen deshalb einen Boost. Du musst nicht am ersten Tag jede Soccerverse-Mechanik kennen. Pick Spieler, die Du magst, achte auf den Cap und lass das Turnier den Rest erledigen.',
+    notesIntro: 'Ein paar Dinge solltest Du vor dem Bauen wissen:',
+    points: [
+      'Du darfst nur einen Account haben. Multi-Accounting kann Dich disqualifizieren.',
+      'Du kannst maximal 4 Spieler aus demselben Grand Tournament Team draften. Also kein kompletter Brasilien-Kader, kein kompletter Marokko-Kader und kein "Ich vertraue nur einer Nation"-Masterplan.',
+      'Dein Kader hat 11 Starter und 4 Ersatzspieler. Ersatzspieler scoren trotzdem mit 50%, Deine Bank ist also wichtig.',
+      'Später im Turnier gibt es begrenzte Wechselfenster, in denen Du Ersatzspieler in die Starting Eleven schieben kannst.',
+    ],
+    resourcesIntro: 'Wenn etwas unklar ist, starte hier:',
+    helpCta: 'Help-Seite öffnen',
+    builderCta: 'Builder öffnen',
+    discordCta: 'Discord beitreten',
+    discordBody: 'Der Discord ist der beste Ort für Fragen, Support und um zu sehen, was andere Manager denken.',
+    goodLuck: 'Viel Glück, Rookie. Bau etwas Cleveres.',
+    signoff: 'The Grand Tournament Team',
+  },
+  fr: {
+    subject: 'Briefing Rookie : ton crash course pour The Grand Tournament',
+    preheader: 'Nouveau ici ? Parfait. Voici comment l’événement fonctionne sans transformer ça en devoir.',
+    title: 'Briefing Rookie',
+    greeting: 'Salut {{first_name}},',
+    intro:
+      'Tu as rejoint en tant que Rookie, donc cet email est pour toi. The Grand Tournament Community Event est simple en surface : construis un effectif de 15 joueurs, verrouille-le, puis regarde les vrais matchs se transformer en points. Buts, passes, minutes, clean sheets, notes de match et budget choisi comptent tous.',
+    twist:
+      'Le twist amusant : les gros budgets sont plus faciles à construire, donc ils marquent avec un multiplicateur plus bas. Les petits budgets sont plus difficiles, donc ils reçoivent un boost. Tu n’as pas besoin de connaître toutes les mécaniques Soccerverse dès le premier jour. Choisis des joueurs que tu aimes, surveille le cap et laisse le tournoi faire le reste.',
+    notesIntro: 'Quelques points à connaître avant de construire :',
+    points: [
+      'Tu ne peux avoir qu’un seul compte. Le multi-accounting peut entraîner une disqualification.',
+      'Tu peux drafter au maximum 4 joueurs de la même équipe du Grand Tournament. Donc pas d’effectif 100% Brésil, 100% Maroc ou uniquement d’une nation.',
+      'Ton effectif compte 11 titulaires et 4 remplaçants. Les remplaçants marquent quand même à 50%, donc ton banc compte.',
+      'Plus tard dans le tournoi, des fenêtres de swap limitées te permettront de faire passer des remplaçants dans le onze de départ.',
+    ],
+    resourcesIntro: 'Si quelque chose n’est pas clair, commence ici :',
+    helpCta: 'Ouvrir la page Help',
+    builderCta: 'Ouvrir le Builder',
+    discordCta: 'Rejoindre Discord',
+    discordBody: 'Discord est le meilleur endroit pour poser des questions, obtenir du support et voir ce que pensent les autres managers.',
+    goodLuck: 'Bonne chance, Rookie. Construis quelque chose de malin.',
+    signoff: 'The Grand Tournament Team',
+  },
+  pt: {
+    subject: 'Briefing Rookie: o teu curso rápido para The Grand Tournament',
+    preheader: 'Novo por aqui? Perfeito. Eis como o evento funciona sem parecer trabalho de casa.',
+    title: 'Briefing Rookie',
+    greeting: 'Olá {{first_name}},',
+    intro:
+      'Entraste como Rookie, por isso este email é só para ti. The Grand Tournament Community Event é simples à superfície: constróis um plantel de 15 jogadores, bloqueias esse plantel e vês os jogos reais transformarem-se em pontos. Golos, assistências, minutos, clean sheets, ratings de jogo e o orçamento escolhido contam.',
+    twist:
+      'O twist divertido: orçamentos maiores são mais fáceis de montar, por isso pontuam com um multiplicador menor. Orçamentos menores são mais difíceis e recebem um boost. Não precisas de conhecer todas as mecânicas do Soccerverse no primeiro dia. Escolhe jogadores de que gostas, fica atento ao cap e deixa o torneio tratar do resto.',
+    notesIntro: 'Algumas coisas a saber antes de começares:',
+    points: [
+      'Só podes ter uma conta. Multi-accounting pode levar à desqualificação.',
+      'Podes escolher no máximo 4 jogadores da mesma equipa do Grand Tournament. Nada de plantel só com Brasil, só com Marrocos ou só com uma nação.',
+      'O teu plantel tem 11 titulares e 4 reservas. Os reservas também pontuam a 50%, por isso o banco importa.',
+      'Mais tarde no torneio haverá janelas de troca limitadas em que podes mover reservas para o onze inicial.',
+    ],
+    resourcesIntro: 'Se algo não estiver claro, começa aqui:',
+    helpCta: 'Abrir página Help',
+    builderCta: 'Abrir Builder',
+    discordCta: 'Entrar no Discord',
+    discordBody: 'O Discord é o melhor lugar para fazer perguntas, receber suporte e ver o que outros managers estão a pensar.',
+    goodLuck: 'Boa sorte, Rookie. Constrói algo inteligente.',
+    signoff: 'The Grand Tournament Team',
+  },
+  ru: {
+    subject: 'Брифинг Rookie: быстрый курс по The Grand Tournament',
+    preheader: 'Новичок? Отлично. Вот как работает событие без ощущения домашнего задания.',
+    title: 'Брифинг Rookie',
+    greeting: 'Привет, {{first_name}},',
+    intro:
+      'Ты участвуешь как Rookie, поэтому это письмо именно для тебя. The Grand Tournament Community Event устроен просто: собери состав из 15 игроков, зафиксируй его и смотри, как реальные матчи превращаются в очки. Важны голы, ассисты, минуты, clean sheets, матчевые рейтинги и выбранный бюджет.',
+    twist:
+      'Веселый поворот: с большим бюджетом проще собрать состав, поэтому у него ниже множитель. Малый бюджет сложнее, зато получает boost. В первый день не нужно знать каждую механику Soccerverse. Выбирай игроков, которые тебе нравятся, следи за cap и дай турниру сделать остальное.',
+    notesIntro: 'Несколько вещей перед сборкой состава:',
+    points: [
+      'У тебя может быть только один аккаунт. Multi-accounting может привести к дисквалификации.',
+      'Можно выбрать максимум 4 игроков из одной команды Grand Tournament. То есть нельзя собрать состав только из Бразилии, только из Марокко или только из одной нации.',
+      'В составе 11 игроков основы и 4 запасных. Запасные тоже дают 50% очков, так что скамейка важна.',
+      'Позже в турнире будут ограниченные swap windows, где можно перевести запасных в стартовый состав.',
+    ],
+    resourcesIntro: 'Если что-то непонятно, начни здесь:',
+    helpCta: 'Открыть Help',
+    builderCta: 'Открыть Builder',
+    discordCta: 'Зайти в Discord',
+    discordBody: 'Discord - лучшее место для вопросов, поддержки и понимания того, что думают другие managers.',
+    goodLuck: 'Удачи, Rookie. Собери что-нибудь умное.',
+    signoff: 'The Grand Tournament Team',
+  },
+  zh: {
+    subject: 'Rookie 简报：The Grand Tournament 速成课',
+    preheader: '刚加入？很好。这里用轻松方式说明活动怎么玩。',
+    title: 'Rookie 简报',
+    greeting: 'Hi {{first_name}},',
+    intro:
+      '你是以 Rookie 身份加入的，所以这封邮件就是写给你的。The Grand Tournament Community Event 表面上很简单：组建一个 15 人阵容，锁定它，然后看真实比赛如何变成积分。进球、助攻、出场时间、零封、比赛评分以及你选择的预算都会产生影响。',
+    twist:
+      '有趣的地方在于：预算越大，组队越容易，所以得分倍率更低。预算越小，组队越难，因此会获得 boost。第一天不需要掌握 Soccerverse 的所有机制。选你喜欢的球员，注意 cap，然后让赛事自己展开。',
+    notesIntro: '组队前先记住几件事：',
+    points: [
+      '你只能拥有一个账号。Multi-accounting 可能导致取消资格。',
+      '同一个 Grand Tournament 球队最多只能选 4 名球员。所以不能全巴西、全摩洛哥，也不能只相信一个国家。',
+      '你的阵容有 11 名首发和 4 名替补。替补仍然按 50% 得分，所以替补席也很重要。',
+      '赛事后期会有限定 swap windows，你可以把替补移入首发阵容。',
+    ],
+    resourcesIntro: '如果有不清楚的地方，从这里开始：',
+    helpCta: '打开 Help 页面',
+    builderCta: '打开 Builder',
+    discordCta: '加入 Discord',
+    discordBody: 'Discord 是提问、获取支持以及看看其他 managers 想法的最佳地点。',
+    goodLuck: '祝你好运，Rookie。组一个聪明的阵容。',
+    signoff: 'The Grand Tournament Team',
+  },
+  ja: {
+    subject: 'Rookie ブリーフィング: The Grand Tournament 速習ガイド',
+    preheader: '初参加ですか？完璧です。宿題っぽくならない形でイベントの仕組みを説明します。',
+    title: 'Rookie ブリーフィング',
+    greeting: 'こんにちは {{first_name}},',
+    intro:
+      'あなたは Rookie として参加しているので、このメールはあなた向けです。The Grand Tournament Community Event は見た目はシンプルです。15人のスカッドを作り、ロックして、実際の試合がポイントに変わるのを見守ります。ゴール、アシスト、出場時間、クリーンシート、試合評価、選んだ予算がすべて関係します。',
+    twist:
+      '面白いポイントは、予算が大きいほど作りやすいので倍率が低くなり、予算が小さいほど難しいので boost が付くことです。初日から Soccerverse の仕組みを全部知る必要はありません。好きな選手を選び、cap を見ながら、あとは大会に任せましょう。',
+    notesIntro: '作り始める前に知っておきたいこと:',
+    points: [
+      '持てるアカウントは1つだけです。Multi-accounting は失格につながる可能性があります。',
+      '同じ Grand Tournament チームから選べるのは最大4人です。ブラジルだけ、モロッコだけ、1つの国だけのスカッドは作れません。',
+      'スカッドは先発11人と控え4人です。控えも50%で得点するので、ベンチも重要です。',
+      '大会後半には、控えを先発に移せる限定 swap window があります。',
+    ],
+    resourcesIntro: '不明点があれば、ここから始めてください:',
+    helpCta: 'Help ページを開く',
+    builderCta: 'Builder を開く',
+    discordCta: 'Discord に参加',
+    discordBody: 'Discord は質問、サポート、他の managers の考えを見るのに最適な場所です。',
+    goodLuck: '幸運を祈ります、Rookie。賢いスカッドを作りましょう。',
+    signoff: 'The Grand Tournament Team',
+  },
+}
+
 function paragraph(text: string) {
   return `<p style="margin:0 0 12px;color:#c6d3ce;">${text}</p>`
 }
@@ -313,12 +552,44 @@ function buildVeteranOnboardingBody(copy: VeteranOnboardingCopy) {
   `
 }
 
+function buildRookieOnboardingBody(copy: RookieOnboardingCopy) {
+  const points = copy.points.map((point) => `<li style="margin:0 0 10px;">${point}</li>`).join('')
+
+  return `
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${copy.preheader}</div>
+    <p style="margin:0 0 24px;text-align:center;"><img src="{{logo_url}}" alt="The Grand Tournament" width="128" style="display:inline-block;width:128px;max-width:45%;height:auto;"></p>
+    <h1 style="margin:0 0 18px;font-size:24px;line-height:1.2;color:#f2efe7;">${copy.title}</h1>
+    <p style="margin:0 0 16px;color:#c6d3ce;">${copy.greeting}</p>
+    <p style="margin:0 0 16px;color:#c6d3ce;">${copy.intro}</p>
+    <p style="margin:0 0 18px;color:#c6d3ce;">${copy.twist}</p>
+    <h2 style="margin:24px 0 12px;font-size:18px;color:#f2efe7;">${copy.notesIntro}</h2>
+    <ul style="margin:0 0 22px 20px;padding:0;color:#c6d3ce;">
+      ${points}
+    </ul>
+    <h2 style="margin:24px 0 12px;font-size:18px;color:#f2efe7;">${copy.resourcesIntro}</h2>
+    <p style="margin:0 0 12px;"><a href="{{help_url}}" style="color:#22bd93;font-weight:700;text-decoration:none;">${copy.helpCta}</a></p>
+    <p style="margin:0 0 12px;"><a href="{{builder_url}}" style="color:#22bd93;font-weight:700;text-decoration:none;">${copy.builderCta}</a></p>
+    <p style="margin:0 0 18px;"><a href="https://discord.com/invite/ze5xJgg7AM" style="color:#22bd93;font-weight:700;text-decoration:none;">${copy.discordCta}</a></p>
+    <p style="margin:0 0 22px;color:#c6d3ce;">${copy.discordBody}</p>
+    <p style="margin:0 0 16px;color:#c6d3ce;">${copy.goodLuck}</p>
+    <p style="margin:0;color:#c6d3ce;">${copy.signoff}</p>
+  `
+}
+
 const veteranOnboardingSubject: Record<SupportedLocale, string> = Object.fromEntries(
   Object.entries(veteranOnboardingCopy).map(([locale, copy]) => [locale, copy.subject]),
 ) as Record<SupportedLocale, string>
 
 const veteranOnboardingBody: Record<SupportedLocale, string> = Object.fromEntries(
   Object.entries(veteranOnboardingCopy).map(([locale, copy]) => [locale, buildVeteranOnboardingBody(copy)]),
+) as Record<SupportedLocale, string>
+
+const rookieOnboardingSubject: Record<SupportedLocale, string> = Object.fromEntries(
+  Object.entries(rookieOnboardingCopy).map(([locale, copy]) => [locale, copy.subject]),
+) as Record<SupportedLocale, string>
+
+const rookieOnboardingBody: Record<SupportedLocale, string> = Object.fromEntries(
+  Object.entries(rookieOnboardingCopy).map(([locale, copy]) => [locale, buildRookieOnboardingBody(copy)]),
 ) as Record<SupportedLocale, string>
 
 export const defaultEmailCampaigns: EmailCampaignInput[] = [
@@ -336,4 +607,20 @@ export const defaultEmailCampaigns: EmailCampaignInput[] = [
     batchSize: 50,
     requiresMarketingOptIn: false,
   },
+  {
+    kind: 'autoresponder',
+    status: 'active',
+    triggerKey: 'registration_verified',
+    subject: rookieOnboardingCopy.en.subject,
+    bodyHtml: rookieOnboardingBody.en,
+    subjectByLocale: rookieOnboardingSubject,
+    bodyHtmlByLocale: rookieOnboardingBody,
+    audienceStatus: 'active',
+    audienceLeague: 'rookie',
+    delayMinutes: 0,
+    batchSize: 50,
+    requiresMarketingOptIn: false,
+  },
+  rookieMainGameEmailCampaign,
+  ...swapWindowEmailCampaigns,
 ]

@@ -58,12 +58,43 @@ function hasValidAdminToken(req: Request, adminApiToken?: string, adminBootstrap
   return safeEqual(suppliedToken, adminApiToken) && adminBootstrapEmails.includes(adminEmail)
 }
 
+const socialPreviewBotUserAgentTokens = [
+  'facebookexternalhit',
+  'facebot',
+  'twitterbot',
+  'linkedinbot',
+  'whatsapp',
+  'telegrambot',
+  'discordbot',
+  'slackbot',
+  'skypeuripreview',
+  'pinterestbot',
+  'redditbot',
+  'vkshare',
+  'bitlybot',
+  'embedly',
+  'cardyb',
+]
+
+function isSocialPreviewBot(req: Request) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return false
+  }
+
+  const userAgent = (req.header('user-agent') ?? '').toLowerCase()
+  return socialPreviewBotUserAgentTokens.some((token) => userAgent.includes(token))
+}
+
 export function createClosedBetaAuth(options: ClosedBetaAuthOptions): RequestHandler {
   const exemptPaths = new Set(options.exemptPaths ?? [])
   const realm = options.realm ?? 'Soccerverse closed beta'
 
   return (req, res, next) => {
     if (!options.enabled || req.method === 'OPTIONS' || exemptPaths.has(req.path)) {
+      return next()
+    }
+
+    if (isSocialPreviewBot(req)) {
       return next()
     }
 
