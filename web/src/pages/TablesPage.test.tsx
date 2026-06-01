@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../lib/api', async () => {
@@ -35,6 +35,7 @@ describe('TablesPage partial loading', () => {
     // Rookie + Nation boards render despite the veteran fetch failing (no all-or-nothing drop).
     expect(await screen.findByText('Rookie')).toBeInTheDocument()
     expect(screen.getByText('Nation ranking')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: /Veteran/i }))
     // The failed veteran board shows its own load error.
     expect(screen.getByText('Could not load standings')).toBeInTheDocument()
   })
@@ -48,7 +49,7 @@ describe('TablesPage partial loading', () => {
 
     render(<TablesPage locale="en" />)
 
-    expect(await screen.findByText('Rookie')).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: /Rookie/i })).toBeInTheDocument()
     expect(screen.getByText('Standings are being prepared')).toBeInTheDocument()
   })
 })
