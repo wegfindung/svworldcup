@@ -88,6 +88,7 @@ Each participant selects a salary budget when building their squad. The chosen b
 - Nation leaderboards use each participant's full total score for primary and optional secondary nation entries.
 - Nations qualify for the public table once they have at least two member entries — counted by participation (`participantCount >= 2`), not by points scored, so two zero-point members still qualify.
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
+- **Individual ranking tiebreak:** within the Rookie and Veteran tables, participants level on `totalScore` are ordered by **earliest registration** (`registeredAt`, i.e. `created_at`), then by display name — implemented in `rankParticipants` (`scoringRepository.ts`). A manager who registered earlier outranks a later registrant on the same score, even with an identical squad.
 
 ## Leaderboard Read Cache
 
@@ -209,8 +210,8 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 
 - A nation **qualifies** for the public table once it has at least two member entries (`participantCount >= 2`), counted by participation, not by points — two zero-point members still qualify (see "Scoring Slice V1").
 - The **winning nation** is the qualified nation with the **highest average score** across its member entries (primary + secondary).
-- **Tiebreak:** if two or more qualified nations are level on average, the nation containing the **highest individual member score** wins.
-- **Prize-pool split:** the winning nation's pool is divided **equally across all of its primary and secondary participant entries** — every member of the winning nation receives an equal share regardless of individual score.
+- **Nation tiebreak:** if two or more qualified nations are level on average, the nation containing the **highest individual member score** wins.
+- **Prize-pool payout:** each paying nation's pool is split **equally among its top 10 managers**, paid **as if every nation had 10 managers**. If a nation has **fewer than 10** qualifying managers, the leftover share **spills to the next ranked nation(s)**, with a **minimum payout of 10 SVV**. The exact wording mirrors the prize-distribution graphic on the Prizes page: *"Prize distribution equally among top 10 managers of each winning nation. If <10 managers, the budget spills to next ranked nation(s) (min 10 SVV payout)."*
 - A participant contributes their **full** total score to both their primary and their optional secondary nation (the contribution is not halved or split between the two).
 
 ## Substitution Rules

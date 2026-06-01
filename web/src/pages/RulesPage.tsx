@@ -163,12 +163,12 @@ const englishCopy = {
     eyebrow: 'the three leagues',
     title: 'Where you compete',
     items: [
-      { name: 'Veteran League', body: 'Veterans ranked individually against each other.' },
-      { name: 'Rookie League', body: 'Rookies ranked individually against each other.' },
+      { name: 'Veteran League', body: 'Veterans ranked individually against each other. If two managers finish level on points, the one who registered first ranks higher.' },
+      { name: 'Rookie League', body: 'Rookies ranked individually against each other. If two managers finish level on points, the one who registered first ranks higher.' },
       {
         name: 'Nation League',
         body:
-          'Everyone represents both nations they picked and gives each their full score. A nation needs at least 2 members to qualify, and nations are ranked by the average score of their members. If two nations tie on average, the one with the highest individual member score wins, and a winning nation’s prize pool is shared equally among all its members.',
+          'Everyone represents both nations they picked and gives each their full score. A nation needs at least 2 members to qualify, and nations are ranked by the average score of their members. If two nations tie on average, the one with the highest individual member score wins. The prize pool is split equally among the top 10 managers of each winning nation, paid as if every nation had 10 managers — if a nation has fewer than 10 managers, the leftover share spills to the next ranked nation(s), with a minimum 10 SVV payout.',
       },
     ],
   },
@@ -360,12 +360,12 @@ copyByLocale.es = {
     eyebrow: 'las tres ligas',
     title: 'Dónde compites',
     items: [
-      { name: 'Veteran League', body: 'Veterans clasificados individualmente entre sí.' },
-      { name: 'Rookie League', body: 'Rookies clasificados individualmente entre sí.' },
+      { name: 'Veteran League', body: 'Veterans clasificados individualmente entre sí. Si dos mánagers terminan empatados a puntos, el que se registró primero queda por delante.' },
+      { name: 'Rookie League', body: 'Rookies clasificados individualmente entre sí. Si dos mánagers terminan empatados a puntos, el que se registró primero queda por delante.' },
       {
         name: 'Nation League',
         body:
-          'Todos representan a las dos naciones que eligieron y aportan a cada una su puntuación completa. Una nación necesita al menos 2 miembros para clasificarse, y las naciones se clasifican por la puntuación media de sus miembros. Si dos naciones empatan en la media, gana la que tenga la mayor puntuación individual de un miembro, y el premio de la nación ganadora se reparte por igual entre todos sus miembros.',
+          'Todos representan a las dos naciones que eligieron y aportan a cada una su puntuación completa. Una nación necesita al menos 2 miembros para clasificarse, y las naciones se clasifican por la puntuación media de sus miembros. Si dos naciones empatan en la media, gana la que tenga la mayor puntuación individual de un miembro. El premio se reparte por igual entre los 10 mejores mánagers de cada nación ganadora, pagado como si cada nación tuviera 10 mánagers — si una nación tiene menos de 10, la parte sobrante pasa a la(s) siguiente(s) nación(es) en el ranking, con un pago mínimo de 10 SVV.',
       },
     ],
   },
@@ -552,12 +552,12 @@ copyByLocale.it = {
     eyebrow: 'le tre leghe',
     title: 'Dove competi',
     items: [
-      { name: 'Veteran League', body: 'Veteran classificati individualmente l’uno contro l’altro.' },
-      { name: 'Rookie League', body: 'Rookie classificati individualmente l’uno contro l’altro.' },
+      { name: 'Veteran League', body: 'Veteran classificati individualmente l’uno contro l’altro. Se due manager finiscono a pari punti, chi si è registrato prima viene davanti.' },
+      { name: 'Rookie League', body: 'Rookie classificati individualmente l’uno contro l’altro. Se due manager finiscono a pari punti, chi si è registrato prima viene davanti.' },
       {
         name: 'Nation League',
         body:
-          'Tutti rappresentano entrambe le nazioni che hanno scelto e attribuiscono a ciascuna il proprio punteggio pieno. Una nazione ha bisogno di almeno 2 membri per qualificarsi, e le nazioni sono classificate in base al punteggio medio dei loro membri. Se due nazioni sono pari nella media, vince quella con il punteggio individuale più alto di un membro, e il montepremi della nazione vincitrice è diviso equamente tra tutti i suoi membri.',
+          'Tutti rappresentano entrambe le nazioni che hanno scelto e attribuiscono a ciascuna il proprio punteggio pieno. Una nazione ha bisogno di almeno 2 membri per qualificarsi, e le nazioni sono classificate in base al punteggio medio dei loro membri. Se due nazioni sono pari nella media, vince quella con il punteggio individuale più alto di un membro. Il montepremi è diviso equamente tra i 10 migliori manager di ogni nazione vincitrice, pagato come se ogni nazione avesse 10 manager — se una nazione ne ha meno di 10, la parte restante passa alla/e nazione/i successiva/e in classifica, con un pagamento minimo di 10 SVV.',
       },
     ],
   },
@@ -744,12 +744,12 @@ copyByLocale.de = {
     eyebrow: 'die drei ligen',
     title: 'Wo du antrittst',
     items: [
-      { name: 'Veteran League', body: 'Veteranen werden einzeln gegeneinander gewertet.' },
-      { name: 'Rookie League', body: 'Rookies werden einzeln gegeneinander gewertet.' },
+      { name: 'Veteran League', body: 'Veteranen werden einzeln gegeneinander gewertet. Bei Punktgleichstand zweier Manager rangiert der zuerst Registrierte vorne.' },
+      { name: 'Rookie League', body: 'Rookies werden einzeln gegeneinander gewertet. Bei Punktgleichstand zweier Manager rangiert der zuerst Registrierte vorne.' },
       {
         name: 'Nation League',
         body:
-          'Jeder vertritt beide Nationen, die er gewählt hat, und bringt jeder seine volle Punktzahl ein. Eine Nation braucht mindestens 2 Mitglieder, um sich zu qualifizieren, und Nationen werden nach der durchschnittlichen Punktzahl ihrer Mitglieder gewertet. Bei Gleichstand im Schnitt gewinnt die Nation mit der höchsten Einzelpunktzahl eines Mitglieds, und der Preispool der Siegernation wird zu gleichen Teilen unter allen ihren Mitgliedern aufgeteilt.',
+          'Jeder vertritt beide Nationen, die er gewählt hat, und bringt jeder seine volle Punktzahl ein. Eine Nation braucht mindestens 2 Mitglieder, um sich zu qualifizieren, und Nationen werden nach der durchschnittlichen Punktzahl ihrer Mitglieder gewertet. Bei Gleichstand im Schnitt gewinnt die Nation mit der höchsten Einzelpunktzahl eines Mitglieds. Der Preispool wird zu gleichen Teilen unter den 10 besten Managern jeder Siegernation aufgeteilt, ausgezahlt so, als hätte jede Nation 10 Manager — hat eine Nation weniger als 10, fließt der übrige Anteil an die nächstplatzierte(n) Nation(en), mit einer Mindestauszahlung von 10 SVV.',
       },
     ],
   },
@@ -936,12 +936,12 @@ copyByLocale.fr = {
     eyebrow: 'les trois ligues',
     title: 'Où vous concourez',
     items: [
-      { name: 'Veteran League', body: 'Les Veterans classés individuellement les uns contre les autres.' },
-      { name: 'Rookie League', body: 'Les Rookies classés individuellement les uns contre les autres.' },
+      { name: 'Veteran League', body: 'Les Veterans classés individuellement les uns contre les autres. En cas d’égalité de points entre deux managers, celui qui s’est inscrit en premier est classé devant.' },
+      { name: 'Rookie League', body: 'Les Rookies classés individuellement les uns contre les autres. En cas d’égalité de points entre deux managers, celui qui s’est inscrit en premier est classé devant.' },
       {
         name: 'Nation League',
         body:
-          'Chacun représente les deux nations qu’il a choisies et donne à chacune son score complet. Une nation a besoin d’au moins 2 membres pour se qualifier, et les nations sont classées selon le score moyen de leurs membres. En cas d’égalité de moyenne, la nation ayant le meilleur score individuel d’un membre l’emporte, et la cagnotte de la nation gagnante est partagée à parts égales entre tous ses membres.',
+          'Chacun représente les deux nations qu’il a choisies et donne à chacune son score complet. Une nation a besoin d’au moins 2 membres pour se qualifier, et les nations sont classées selon le score moyen de leurs membres. En cas d’égalité de moyenne, la nation ayant le meilleur score individuel d’un membre l’emporte. La cagnotte est partagée à parts égales entre les 10 meilleurs managers de chaque nation gagnante, versée comme si chaque nation comptait 10 managers — si une nation en compte moins de 10, la part restante passe à la (aux) nation(s) suivante(s) au classement, avec un versement minimum de 10 SVV.',
       },
     ],
   },
@@ -1128,12 +1128,12 @@ copyByLocale.pt = {
     eyebrow: 'as três ligas',
     title: 'Onde competes',
     items: [
-      { name: 'Veteran League', body: 'Veterans classificados individualmente uns contra os outros.' },
-      { name: 'Rookie League', body: 'Rookies classificados individualmente uns contra os outros.' },
+      { name: 'Veteran League', body: 'Veterans classificados individualmente uns contra os outros. Se dois treinadores ficarem empatados em pontos, quem se registou primeiro fica à frente.' },
+      { name: 'Rookie League', body: 'Rookies classificados individualmente uns contra os outros. Se dois treinadores ficarem empatados em pontos, quem se registou primeiro fica à frente.' },
       {
         name: 'Nation League',
         body:
-          'Todos representam ambas as nações que escolheram e atribuem a cada uma a sua pontuação completa. Uma nação precisa de pelo menos 2 membros para se qualificar, e as nações são classificadas pela pontuação média dos seus membros. Se duas nações empatarem na média, vence a que tiver a maior pontuação individual de um membro, e o prémio da nação vencedora é dividido igualmente por todos os seus membros.',
+          'Todos representam ambas as nações que escolheram e atribuem a cada uma a sua pontuação completa. Uma nação precisa de pelo menos 2 membros para se qualificar, e as nações são classificadas pela pontuação média dos seus membros. Se duas nações empatarem na média, vence a que tiver a maior pontuação individual de um membro. O prémio é dividido igualmente pelos 10 melhores treinadores de cada nação vencedora, pago como se cada nação tivesse 10 treinadores — se uma nação tiver menos de 10, a parte restante passa para a(s) nação(ões) seguinte(s) na classificação, com um pagamento mínimo de 10 SVV.',
       },
     ],
   },
@@ -1320,12 +1320,12 @@ copyByLocale.ru = {
     eyebrow: 'три лиги',
     title: 'Где вы соревнуетесь',
     items: [
-      { name: 'Veteran League', body: 'Veteran-игроки ранжируются индивидуально друг против друга.' },
-      { name: 'Rookie League', body: 'Rookie-игроки ранжируются индивидуально друг против друга.' },
+      { name: 'Veteran League', body: 'Veteran-игроки ранжируются индивидуально друг против друга. При равенстве очков у двух менеджеров выше располагается тот, кто зарегистрировался раньше.' },
+      { name: 'Rookie League', body: 'Rookie-игроки ранжируются индивидуально друг против друга. При равенстве очков у двух менеджеров выше располагается тот, кто зарегистрировался раньше.' },
       {
         name: 'Nation League',
         body:
-          'Каждый представляет обе выбранные им нации и отдаёт каждой свой полный счёт. Нации нужно минимум 2 участника, чтобы пройти квалификацию, и нации ранжируются по среднему счёту их участников. При равенстве по среднему побеждает нация с наивысшим индивидуальным счётом участника, а призовой фонд нации-победительницы делится поровну между всеми её участниками.',
+          'Каждый представляет обе выбранные им нации и отдаёт каждой свой полный счёт. Нации нужно минимум 2 участника, чтобы пройти квалификацию, и нации ранжируются по среднему счёту их участников. При равенстве по среднему побеждает нация с наивысшим индивидуальным счётом участника. Призовой фонд делится поровну между 10 лучшими менеджерами каждой нации-победительницы и выплачивается так, как будто в каждой нации 10 менеджеров — если в нации меньше 10, оставшаяся часть переходит к следующей(им) нации(ям) в рейтинге, с минимальной выплатой 10 SVV.',
       },
     ],
   },
@@ -1512,12 +1512,12 @@ copyByLocale.zh = {
     eyebrow: '三大联赛',
     title: '你竞争的舞台',
     items: [
-      { name: 'Veteran League', body: 'Veteran 之间逐一进行个人排名。' },
-      { name: 'Rookie League', body: 'Rookie 之间逐一进行个人排名。' },
+      { name: 'Veteran League', body: 'Veteran 之间逐一进行个人排名。若两名经理积分相同，先注册者排名靠前。' },
+      { name: 'Rookie League', body: 'Rookie 之间逐一进行个人排名。若两名经理积分相同，先注册者排名靠前。' },
       {
         name: 'Nation League',
         body:
-          '每个人都代表自己所选的两个国家，并将完整得分计入每个国家。一个国家需至少 2 名成员才有资格，国家按其成员的平均得分排名。若两个国家平均分相同，则由拥有最高个人成员得分的国家胜出，获胜国家的奖池在其所有成员之间平均分配。',
+          '每个人都代表自己所选的两个国家，并将完整得分计入每个国家。一个国家需至少 2 名成员才有资格，国家按其成员的平均得分排名。若两个国家平均分相同，则由拥有最高个人成员得分的国家胜出。奖池在每个获胜国家的前 10 名经理之间平均分配，并按每个国家有 10 名经理来计算发放——若某国家不足 10 名经理，剩余份额将流入排名靠后的下一个（或多个）国家，最低发放 10 SVV。',
       },
     ],
   },
@@ -1704,12 +1704,12 @@ copyByLocale.ja = {
     eyebrow: '3つのリーグ',
     title: 'あなたが競う場',
     items: [
-      { name: 'Veteran League', body: 'Veteran 同士が個人として順位づけされます。' },
-      { name: 'Rookie League', body: 'Rookie 同士が個人として順位づけされます。' },
+      { name: 'Veteran League', body: 'Veteran 同士が個人として順位づけされます。2人のマネージャーが同点の場合は、先に登録した方が上位になります。' },
+      { name: 'Rookie League', body: 'Rookie 同士が個人として順位づけされます。2人のマネージャーが同点の場合は、先に登録した方が上位になります。' },
       {
         name: 'Nation League',
         body:
-          '全員が選んだ2つの国の両方を代表し、それぞれに自分の全スコアを計上します。国が資格を得るには最低2人のメンバーが必要で、国はメンバーの平均スコアで順位づけされます。平均が同点の場合は、メンバーの個人スコアが最も高い国が勝ち、優勝国の賞金プールはそのすべてのメンバーで均等に分けられます。',
+          '全員が選んだ2つの国の両方を代表し、それぞれに自分の全スコアを計上します。国が資格を得るには最低2人のメンバーが必要で、国はメンバーの平均スコアで順位づけされます。平均が同点の場合は、メンバーの個人スコアが最も高い国が勝ちます。賞金プールは各優勝国の上位10名のマネージャーで均等に分けられ、どの国も10名のマネージャーがいるものとして支払われます——10名未満の国がある場合、残りの分は次順位の国へ繰り越され、最低10 SVVが支払われます。',
       },
     ],
   },
