@@ -203,6 +203,16 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 - primary country table
 - optional secondary country table
 
+### Nation winner determination
+
+(Canonical rule — previously only recorded in the stale `gemini.md` §3. Recorded here so the SOP layer owns it.)
+
+- A nation **qualifies** for the public table once it has at least two member entries (`participantCount >= 2`), counted by participation, not by points — two zero-point members still qualify (see "Scoring Slice V1").
+- The **winning nation** is the qualified nation with the **highest average score** across its member entries (primary + secondary).
+- **Tiebreak:** if two or more qualified nations are level on average, the nation containing the **highest individual member score** wins.
+- **Prize-pool split:** the winning nation's pool is divided **equally across all of its primary and secondary participant entries** — every member of the winning nation receives an equal share regardless of individual score.
+- A participant contributes their **full** total score to both their primary and their optional secondary nation (the contribution is not halved or split between the two).
+
 ## Substitution Rules
 
 - One substitute per class: `GK`, `DEF`, `MID`, `FWD`. Subs are locked to their slot class.

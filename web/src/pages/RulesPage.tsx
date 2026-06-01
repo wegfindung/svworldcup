@@ -43,8 +43,9 @@ const englishCopy = {
       'Pick two nations — your home country and one free choice. They must be different, and they drive the Nation League.',
       'Every player is available to everyone. There is no exclusivity, and two managers may end up with identical squads.',
       'You cannot pick the same player twice in your squad.',
-      'You can draft at most 4 players from the same national team across your 15 — starters and reserves combined.',
+      'You can draft at most 4 players from the same national team across your 15 — starters and reserves combined. This counts a player’s Grand Tournament national team and is separate from the two nations you pick for the Nation League.',
       'A verified email is required before you can enter the squad builder.',
+      'Your squad stays hidden by default — only you can reveal it, though an admin may reveal every squad at kickoff. Your manager name, score and rank still appear on the public leaderboards.',
     ],
   },
 
@@ -150,8 +151,8 @@ const englishCopy = {
     body:
       'If you link a Soccerverse account, influence you buy in your own squad’s players during the event adds a small multiplier to the points those players earn for you. It rewards conviction without letting big pre-existing portfolios dominate.',
     points: [
-      'Only influence bought during the event window counts — holdings you owned before the event started do not.',
-      'The boost is +1% per 10 net shares bought, capped at +10% per player.',
+      'Counting starts when you register — or, if you link a Soccerverse account later, when you link. Influence you held before that point never counts.',
+      'The boost is +1% per 10 net shares — your buys minus your sells in that player — capped at +10% per player.',
       'It is measured per player, per match, and applied before your squad multiplier.',
       'Purchases never apply retroactively to a match that has already kicked off.',
       'Available to any manager with a linked Soccerverse account — Veteran or Rookie.',
@@ -167,7 +168,7 @@ const englishCopy = {
       {
         name: 'Nation League',
         body:
-          'Everyone represents both nations they picked. A nation needs at least 2 members to qualify, and nations are ranked by the average score of their members.',
+          'Everyone represents both nations they picked and gives each their full score. A nation needs at least 2 members to qualify, and nations are ranked by the average score of their members. If two nations tie on average, the one with the highest individual member score wins, and a winning nation’s prize pool is shared equally among all its members.',
       },
     ],
   },
@@ -239,8 +240,9 @@ copyByLocale.es = {
       'Elige dos naciones — tu país de origen y una de libre elección. Deben ser diferentes, y determinan la Nation League.',
       'Cada jugador está disponible para todos. No hay exclusividad, y dos mánagers pueden acabar con equipos idénticos.',
       'No puedes elegir al mismo jugador dos veces en tu equipo.',
-      'Puedes incluir como máximo 4 jugadores de la misma selección entre tus 15 — titulares y suplentes juntos.',
+      'Puedes incluir como máximo 4 jugadores de la misma selección entre tus 15 — titulares y suplentes juntos. Esto cuenta la selección de Grand Tournament del jugador y es independiente de las dos naciones que eliges para la Nation League.',
       'Se requiere un correo verificado antes de poder acceder al creador de equipos.',
+      'Tu equipo permanece oculto por defecto — solo tú puedes revelarlo, aunque un administrador puede revelar todos los equipos en el kickoff. Tu nombre de mánager, tu puntuación y tu posición siguen apareciendo en las tablas públicas.',
     ],
   },
 
@@ -346,8 +348,8 @@ copyByLocale.es = {
     body:
       'Si vinculas una cuenta de Soccerverse, la influencia que compres en los jugadores de tu propio equipo durante el evento añade un pequeño multiplicador a los puntos que esos jugadores ganan para ti. Recompensa la convicción sin permitir que las grandes carteras preexistentes dominen.',
     points: [
-      'Solo cuenta la influencia comprada durante la ventana del evento — las posesiones que ya tenías antes de que empezara el evento no cuentan.',
-      'El impulso es de +1% por cada 10 acciones netas compradas, con un tope de +10% por jugador.',
+      'El conteo empieza cuando te registras — o, si vinculas una cuenta de Soccerverse más tarde, cuando la vinculas. La influencia que tenías antes de ese momento nunca cuenta.',
+      'El impulso es de +1% por cada 10 acciones netas — tus compras menos tus ventas de ese jugador — con un tope de +10% por jugador.',
       'Se mide por jugador, por partido, y se aplica antes del multiplicador de tu equipo.',
       'Las compras nunca se aplican de forma retroactiva a un partido que ya ha comenzado.',
       'Disponible para cualquier mánager con una cuenta de Soccerverse vinculada — Veteran o Rookie.',
@@ -363,7 +365,7 @@ copyByLocale.es = {
       {
         name: 'Nation League',
         body:
-          'Todos representan a las dos naciones que eligieron. Una nación necesita al menos 2 miembros para clasificarse, y las naciones se clasifican por la puntuación media de sus miembros.',
+          'Todos representan a las dos naciones que eligieron y aportan a cada una su puntuación completa. Una nación necesita al menos 2 miembros para clasificarse, y las naciones se clasifican por la puntuación media de sus miembros. Si dos naciones empatan en la media, gana la que tenga la mayor puntuación individual de un miembro, y el premio de la nación ganadora se reparte por igual entre todos sus miembros.',
       },
     ],
   },
@@ -430,8 +432,9 @@ copyByLocale.it = {
       'Scegli due nazioni — il tuo paese d’origine e una a scelta libera. Devono essere diverse, e determinano la Nation League.',
       'Ogni giocatore è disponibile per tutti. Non c’è esclusività, e due manager possono ritrovarsi con rose identiche.',
       'Non puoi scegliere lo stesso giocatore due volte nella tua rosa.',
-      'Puoi schierare al massimo 4 giocatori della stessa nazionale tra i tuoi 15 — titolari e riserve insieme.',
+      'Puoi schierare al massimo 4 giocatori della stessa nazionale tra i tuoi 15 — titolari e riserve insieme. Questo conta la nazionale del Grand Tournament del giocatore ed è indipendente dalle due nazioni che scegli per la Nation League.',
       'È richiesta un’email verificata prima di poter accedere al costruttore della rosa.',
+      'La tua rosa resta nascosta per impostazione predefinita — solo tu puoi rivelarla, anche se un amministratore può rivelare tutte le rose al kickoff. Il tuo nome da manager, il punteggio e la posizione restano comunque visibili nelle classifiche pubbliche.',
     ],
   },
 
@@ -537,8 +540,8 @@ copyByLocale.it = {
     body:
       'Se colleghi un account Soccerverse, l’influenza che acquisti nei giocatori della tua rosa durante l’evento aggiunge un piccolo moltiplicatore ai punti che quei giocatori guadagnano per te. Premia la convinzione senza lasciare che grandi portafogli preesistenti dominino.',
     points: [
-      'Conta solo l’influenza acquistata durante la finestra dell’evento — le partecipazioni che possedevi prima dell’inizio dell’evento non contano.',
-      'Il boost è +1% ogni 10 quote nette acquistate, con un tetto del +10% per giocatore.',
+      'Il conteggio parte da quando ti registri — o, se colleghi un account Soccerverse più tardi, da quando lo colleghi. L’influenza che possedevi prima di quel momento non conta mai.',
+      'Il boost è +1% ogni 10 quote nette — i tuoi acquisti meno le tue vendite su quel giocatore — con un tetto del +10% per giocatore.',
       'Viene misurato per giocatore, per partita, e applicato prima del moltiplicatore della tua rosa.',
       'Gli acquisti non si applicano mai retroattivamente a una partita già iniziata.',
       'Disponibile per qualsiasi manager con un account Soccerverse collegato — Veteran o Rookie.',
@@ -554,7 +557,7 @@ copyByLocale.it = {
       {
         name: 'Nation League',
         body:
-          'Tutti rappresentano entrambe le nazioni che hanno scelto. Una nazione ha bisogno di almeno 2 membri per qualificarsi, e le nazioni sono classificate in base al punteggio medio dei loro membri.',
+          'Tutti rappresentano entrambe le nazioni che hanno scelto e attribuiscono a ciascuna il proprio punteggio pieno. Una nazione ha bisogno di almeno 2 membri per qualificarsi, e le nazioni sono classificate in base al punteggio medio dei loro membri. Se due nazioni sono pari nella media, vince quella con il punteggio individuale più alto di un membro, e il montepremi della nazione vincitrice è diviso equamente tra tutti i suoi membri.',
       },
     ],
   },
@@ -621,8 +624,9 @@ copyByLocale.de = {
       'Wähle zwei Nationen — dein Heimatland und eine freie Wahl. Sie müssen unterschiedlich sein und bestimmen die Nation League.',
       'Jeder Spieler steht jedem zur Verfügung. Es gibt keine Exklusivität, und zwei Manager können am Ende identische Kader haben.',
       'Du kannst denselben Spieler nicht zweimal in deinem Kader auswählen.',
-      'Du darfst höchstens 4 Spieler aus derselben Nationalmannschaft unter deinen 15 aufstellen — Stammspieler und Reservisten zusammen.',
+      'Du darfst höchstens 4 Spieler aus derselben Nationalmannschaft unter deinen 15 aufstellen — Stammspieler und Reservisten zusammen. Gezählt wird die Grand-Tournament-Nationalmannschaft des Spielers; das ist unabhängig von den beiden Nationen, die du für die Nation League wählst.',
       'Eine verifizierte E-Mail-Adresse ist erforderlich, bevor du den Kader-Builder betreten kannst.',
+      'Dein Kader bleibt standardmäßig verborgen — nur du kannst ihn aufdecken, ein Admin kann jedoch beim Anpfiff alle Kader aufdecken. Dein Managername, deine Punktzahl und dein Rang erscheinen weiterhin in den öffentlichen Tabellen.',
     ],
   },
 
@@ -728,8 +732,8 @@ copyByLocale.de = {
     body:
       'Wenn du ein Soccerverse-Konto verknüpfst, fügt der Einfluss, den du während des Events in den Spielern deines eigenen Kaders kaufst, einen kleinen Multiplikator zu den Punkten hinzu, die diese Spieler für dich erzielen. Es belohnt Überzeugung, ohne große bereits bestehende Portfolios dominieren zu lassen.',
     points: [
-      'Nur Einfluss, der während des Eventzeitraums gekauft wurde, zählt — Bestände, die du vor dem Eventstart besaßest, zählen nicht.',
-      'Der Boost beträgt +1% pro 10 gekaufter Netto-Anteile, begrenzt auf +10% pro Spieler.',
+      'Die Zählung beginnt mit deiner Registrierung — oder, wenn du ein Soccerverse-Konto später verknüpfst, mit der Verknüpfung. Einfluss, den du davor besaßest, zählt nie.',
+      'Der Boost beträgt +1% pro 10 Netto-Anteile — deine Käufe minus deine Verkäufe bei diesem Spieler — begrenzt auf +10% pro Spieler.',
       'Er wird pro Spieler und pro Spiel gemessen und vor deinem Kader-Multiplikator angewendet.',
       'Käufe wirken sich niemals rückwirkend auf ein Spiel aus, das bereits angepfiffen wurde.',
       'Verfügbar für jeden Manager mit einem verknüpften Soccerverse-Konto — Veteran oder Rookie.',
@@ -745,7 +749,7 @@ copyByLocale.de = {
       {
         name: 'Nation League',
         body:
-          'Jeder vertritt beide Nationen, die er gewählt hat. Eine Nation braucht mindestens 2 Mitglieder, um sich zu qualifizieren, und Nationen werden nach der durchschnittlichen Punktzahl ihrer Mitglieder gewertet.',
+          'Jeder vertritt beide Nationen, die er gewählt hat, und bringt jeder seine volle Punktzahl ein. Eine Nation braucht mindestens 2 Mitglieder, um sich zu qualifizieren, und Nationen werden nach der durchschnittlichen Punktzahl ihrer Mitglieder gewertet. Bei Gleichstand im Schnitt gewinnt die Nation mit der höchsten Einzelpunktzahl eines Mitglieds, und der Preispool der Siegernation wird zu gleichen Teilen unter allen ihren Mitgliedern aufgeteilt.',
       },
     ],
   },
@@ -812,8 +816,9 @@ copyByLocale.fr = {
       'Choisissez deux nations — votre pays d’origine et un choix libre. Elles doivent être différentes, et elles alimentent la Nation League.',
       'Chaque joueur est disponible pour tout le monde. Il n’y a aucune exclusivité, et deux managers peuvent se retrouver avec des effectifs identiques.',
       'Vous ne pouvez pas choisir deux fois le même joueur dans votre effectif.',
-      'Vous pouvez aligner au maximum 4 joueurs de la même sélection parmi vos 15 — titulaires et remplaçants confondus.',
+      'Vous pouvez aligner au maximum 4 joueurs de la même sélection parmi vos 15 — titulaires et remplaçants confondus. Cela compte la sélection de Grand Tournament du joueur et est indépendant des deux nations que vous choisissez pour la Nation League.',
       'Une adresse e-mail vérifiée est requise avant de pouvoir accéder au constructeur d’effectif.',
+      'Votre effectif reste masqué par défaut — vous seul pouvez le révéler, même si un administrateur peut révéler tous les effectifs au coup d’envoi. Votre nom de manager, votre score et votre rang apparaissent toujours dans les classements publics.',
     ],
   },
 
@@ -919,8 +924,8 @@ copyByLocale.fr = {
     body:
       'Si vous liez un compte Soccerverse, l’influence que vous achetez dans les joueurs de votre propre effectif pendant l’événement ajoute un petit multiplicateur aux points que ces joueurs vous rapportent. Cela récompense la conviction sans laisser les gros portefeuilles préexistants dominer.',
     points: [
-      'Seule l’influence achetée pendant la fenêtre de l’événement compte — les avoirs que vous déteniez avant le début de l’événement ne comptent pas.',
-      'Le boost est de +1% par 10 parts nettes achetées, plafonné à +10% par joueur.',
+      'Le décompte commence à votre inscription — ou, si vous liez un compte Soccerverse plus tard, au moment où vous le liez. L’influence détenue avant ce moment ne compte jamais.',
+      'Le boost est de +1% par 10 parts nettes — vos achats moins vos ventes sur ce joueur — plafonné à +10% par joueur.',
       'Il est mesuré par joueur, par match, et appliqué avant votre multiplicateur d’effectif.',
       'Les achats ne s’appliquent jamais rétroactivement à un match déjà commencé.',
       'Disponible pour tout manager ayant un compte Soccerverse lié — Veteran ou Rookie.',
@@ -936,7 +941,7 @@ copyByLocale.fr = {
       {
         name: 'Nation League',
         body:
-          'Chacun représente les deux nations qu’il a choisies. Une nation a besoin d’au moins 2 membres pour se qualifier, et les nations sont classées selon le score moyen de leurs membres.',
+          'Chacun représente les deux nations qu’il a choisies et donne à chacune son score complet. Une nation a besoin d’au moins 2 membres pour se qualifier, et les nations sont classées selon le score moyen de leurs membres. En cas d’égalité de moyenne, la nation ayant le meilleur score individuel d’un membre l’emporte, et la cagnotte de la nation gagnante est partagée à parts égales entre tous ses membres.',
       },
     ],
   },
@@ -1003,8 +1008,9 @@ copyByLocale.pt = {
       'Escolhe duas nações — o teu país de origem e uma escolha livre. Têm de ser diferentes, e são elas que alimentam a Nation League.',
       'Todos os jogadores estão disponíveis para todos. Não há exclusividade, e dois treinadores podem acabar com equipas idênticas.',
       'Não podes escolher o mesmo jogador duas vezes na tua equipa.',
-      'Podes escalar no máximo 4 jogadores da mesma seleção entre os teus 15 — titulares e suplentes somados.',
+      'Podes escalar no máximo 4 jogadores da mesma seleção entre os teus 15 — titulares e suplentes somados. Isto conta a seleção de Grand Tournament do jogador e é independente das duas nações que escolhes para a Nation League.',
       'É necessário um email verificado antes de poderes entrar no construtor de equipa.',
+      'A tua equipa permanece oculta por predefinição — só tu a podes revelar, embora um administrador possa revelar todas as equipas no kickoff. O teu nome de treinador, pontuação e posição continuam a aparecer nas tabelas públicas.',
     ],
   },
 
@@ -1110,8 +1116,8 @@ copyByLocale.pt = {
     body:
       'Se ligares uma conta Soccerverse, a influência que compras nos jogadores da tua própria equipa durante o evento adiciona um pequeno multiplicador aos pontos que esses jogadores ganham para ti. Recompensa a convicção sem deixar que grandes carteiras pré-existentes dominem.',
     points: [
-      'Só conta a influência comprada durante a janela do evento — as participações que possuías antes de o evento começar não contam.',
-      'O impulso é de +1% por cada 10 ações líquidas compradas, limitado a +10% por jogador.',
+      'A contagem começa quando te registas — ou, se ligares uma conta Soccerverse mais tarde, quando a ligas. A influência que possuías antes desse momento nunca conta.',
+      'O impulso é de +1% por cada 10 ações líquidas — as tuas compras menos as tuas vendas nesse jogador — limitado a +10% por jogador.',
       'É medido por jogador, por jogo, e aplicado antes do multiplicador da tua equipa.',
       'As compras nunca se aplicam retroativamente a um jogo que já começou.',
       'Disponível para qualquer treinador com uma conta Soccerverse ligada — Veteran ou Rookie.',
@@ -1127,7 +1133,7 @@ copyByLocale.pt = {
       {
         name: 'Nation League',
         body:
-          'Todos representam ambas as nações que escolheram. Uma nação precisa de pelo menos 2 membros para se qualificar, e as nações são classificadas pela pontuação média dos seus membros.',
+          'Todos representam ambas as nações que escolheram e atribuem a cada uma a sua pontuação completa. Uma nação precisa de pelo menos 2 membros para se qualificar, e as nações são classificadas pela pontuação média dos seus membros. Se duas nações empatarem na média, vence a que tiver a maior pontuação individual de um membro, e o prémio da nação vencedora é dividido igualmente por todos os seus membros.',
       },
     ],
   },
@@ -1194,8 +1200,9 @@ copyByLocale.ru = {
       'Выберите две нации — вашу родную страну и одну свободную на выбор. Они должны различаться и определяют Nation League.',
       'Каждый игрок доступен всем. Эксклюзивности нет, и у двух менеджеров могут оказаться одинаковые составы.',
       'Нельзя выбрать одного и того же игрока в составе дважды.',
-      'В составе из 15 игроков можно взять не более 4 игроков из одной сборной — основные и запасные вместе.',
+      'В составе из 15 игроков можно взять не более 4 игроков из одной сборной — основные и запасные вместе. Учитывается сборная игрока на Grand Tournament; это не связано с двумя нациями, которые вы выбираете для Nation League.',
       'Перед входом в конструктор состава требуется подтверждённый адрес электронной почты.',
+      'Ваш состав по умолчанию скрыт — раскрыть его можете только вы, хотя администратор может раскрыть все составы на старте. Ваше имя менеджера, счёт и место по-прежнему отображаются в публичных таблицах.',
     ],
   },
 
@@ -1301,8 +1308,8 @@ copyByLocale.ru = {
     body:
       'Если вы привяжете аккаунт Soccerverse, влияние, которое вы покупаете в игроках своего состава во время события, добавляет небольшой множитель к очкам, которые эти игроки зарабатывают для вас. Это вознаграждает за убеждённость, не позволяя крупным заранее накопленным портфелям доминировать.',
     points: [
-      'Учитывается только влияние, купленное в течение окна события — активы, которыми вы владели до начала события, не считаются.',
-      'Надбавка составляет +1% за каждые 10 купленных чистых долей, с потолком +10% на игрока.',
+      'Отсчёт начинается с момента вашей регистрации — или, если вы привязываете аккаунт Soccerverse позже, с момента привязки. Влияние, которым вы владели до этого момента, не учитывается.',
+      'Надбавка составляет +1% за каждые 10 чистых долей — ваши покупки минус ваши продажи по этому игроку — с потолком +10% на игрока.',
       'Она измеряется для каждого игрока в каждом матче и применяется до множителя вашего состава.',
       'Покупки никогда не применяются задним числом к матчу, который уже стартовал.',
       'Доступна любому менеджеру с привязанным аккаунтом Soccerverse — Veteran или Rookie.',
@@ -1318,7 +1325,7 @@ copyByLocale.ru = {
       {
         name: 'Nation League',
         body:
-          'Каждый представляет обе выбранные им нации. Нации нужно минимум 2 участника, чтобы пройти квалификацию, и нации ранжируются по среднему счёту их участников.',
+          'Каждый представляет обе выбранные им нации и отдаёт каждой свой полный счёт. Нации нужно минимум 2 участника, чтобы пройти квалификацию, и нации ранжируются по среднему счёту их участников. При равенстве по среднему побеждает нация с наивысшим индивидуальным счётом участника, а призовой фонд нации-победительницы делится поровну между всеми её участниками.',
       },
     ],
   },
@@ -1385,8 +1392,9 @@ copyByLocale.zh = {
       '选择两个国家——你的祖国和一个自由选择。两者必须不同，它们决定 Nation League。',
       '每名球员对所有人开放。不存在独占，两位经理也可能最终拥有完全相同的阵容。',
       '你不能在阵容中重复选择同一名球员。',
-      '你的15名球员中，来自同一支国家队的最多只能选4名——首发和替补合计。',
+      '你的15名球员中，来自同一支国家队的最多只能选4名——首发和替补合计。这里统计的是球员的 Grand Tournament 国家队，与你为 Nation League 选择的两个国家无关。',
       '进入阵容构建器之前，必须先验证电子邮箱。',
+      '你的阵容默认隐藏——只有你能将其公开，但管理员可在开赛时公开所有阵容。你的经理名称、得分和排名仍会显示在公开排行榜上。',
     ],
   },
 
@@ -1492,8 +1500,8 @@ copyByLocale.zh = {
     body:
       '如果你关联一个 Soccerverse 账户，赛事期间你在自己阵容球员上买入的影响力，会为那些球员为你赚取的分数增加一个小幅乘数。它奖励信念，同时不让庞大的既有持仓占据主导。',
     points: [
-      '只有赛事窗口期内买入的影响力才计入——赛事开始前你已持有的部分不计。',
-      '提升为每 10 股净持仓 +1%，每名球员上限为 +10%。',
+      '计入从你注册时开始——若你之后才关联 Soccerverse 账户，则从关联时开始。在此之前你已持有的影响力不计入。',
+      '提升为每 10 股净持仓 +1%（即你对该球员的买入减去卖出），每名球员上限为 +10%。',
       '它按每名球员、每场比赛计量，并在你的阵容乘数之前应用。',
       '买入绝不会追溯应用于已经开球的比赛。',
       '任何关联了 Soccerverse 账户的经理均可享有——无论 Veteran 还是 Rookie。',
@@ -1509,7 +1517,7 @@ copyByLocale.zh = {
       {
         name: 'Nation League',
         body:
-          '每个人都代表自己所选的两个国家。一个国家需至少 2 名成员才有资格，国家按其成员的平均得分排名。',
+          '每个人都代表自己所选的两个国家，并将完整得分计入每个国家。一个国家需至少 2 名成员才有资格，国家按其成员的平均得分排名。若两个国家平均分相同，则由拥有最高个人成员得分的国家胜出，获胜国家的奖池在其所有成员之间平均分配。',
       },
     ],
   },
@@ -1576,8 +1584,9 @@ copyByLocale.ja = {
       '2つの国を選びます——母国と、自由に選べる1つです。両者は異なる必要があり、これらが Nation League を決定します。',
       'すべての選手は誰でも選べます。独占はなく、2人のマネージャーがまったく同じスカッドになることもあり得ます。',
       'スカッド内で同じ選手を2回選ぶことはできません。',
-      'スカッド15人のうち、同じ代表チームから選べるのは最大4人までです（先発と控えの合計）。',
+      'スカッド15人のうち、同じ代表チームから選べるのは最大4人までです（先発と控えの合計）。これは選手の Grand Tournament 代表チームを数えるもので、Nation League 用に選ぶ2つの国とは無関係です。',
       'スカッドビルダーに入る前に、メールアドレスの確認が必要です。',
+      'あなたのスカッドは既定で非公開です——公開できるのはあなただけですが、管理者がキックオフ時にすべてのスカッドを公開する場合があります。マネージャー名・スコア・順位は公開リーダーボードには引き続き表示されます。',
     ],
   },
 
@@ -1683,8 +1692,8 @@ copyByLocale.ja = {
     body:
       'Soccerverse アカウントを連携すると、イベント中に自分のスカッドの選手で購入したインフルエンスが、それらの選手があなたのために稼ぐポイントに小さな乗数を加えます。大きな既存ポートフォリオが支配することを許さずに、確信を報います。',
     points: [
-      'イベント枠の期間中に購入したインフルエンスのみが計上されます——イベント開始前から保有していた分は計上されません。',
-      'ブーストは購入した正味10株ごとに +1% で、選手1人あたり +10% が上限です。',
+      '計上は登録した時点から始まります——後で Soccerverse アカウントを連携する場合は連携した時点からです。それより前から保有していたインフルエンスは計上されません。',
+      'ブーストは正味10株ごとに +1%（その選手の購入から売却を差し引いた分）で、選手1人あたり +10% が上限です。',
       '選手ごと、試合ごとに計測され、あなたのスカッド乗数の前に適用されます。',
       '購入が、すでにキックオフした試合に遡って適用されることは決してありません。',
       'Soccerverse アカウントを連携したマネージャーなら誰でも利用できます——Veteran でも Rookie でも。',
@@ -1700,7 +1709,7 @@ copyByLocale.ja = {
       {
         name: 'Nation League',
         body:
-          '全員が選んだ2つの国の両方を代表します。国が資格を得るには最低2人のメンバーが必要で、国はメンバーの平均スコアで順位づけされます。',
+          '全員が選んだ2つの国の両方を代表し、それぞれに自分の全スコアを計上します。国が資格を得るには最低2人のメンバーが必要で、国はメンバーの平均スコアで順位づけされます。平均が同点の場合は、メンバーの個人スコアが最も高い国が勝ち、優勝国の賞金プールはそのすべてのメンバーで均等に分けられます。',
       },
     ],
   },
