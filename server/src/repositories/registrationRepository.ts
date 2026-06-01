@@ -6,6 +6,7 @@ import type { LeaderboardCache } from './leaderboardCache.js'
 import type {
   AdminParticipantRecord,
   LeagueType,
+  NationParticipationRow,
   ParticipantProfile,
   ReferralAnalyticsRow,
   RegistrationCreationResult,
@@ -55,6 +56,7 @@ export interface RegistrationRepository {
   revealParticipant(participantId: string, revealSquad: boolean): Promise<ParticipantProfile | null>
   getPublicProfileBySlug(slug: string): Promise<ParticipantProfile | null>
   getCounts(): Promise<{ pending: number; active: number }>
+  listNationParticipation(): Promise<NationParticipationRow[]>
   listForAdmin(): Promise<AdminParticipantRecord[]>
   unsubscribeMarketing(token: string): Promise<boolean>
   resubscribeMarketing(token: string): Promise<boolean>
@@ -178,6 +180,15 @@ function mapAdminParticipantRow(row: AdminParticipantRow): AdminParticipantRecor
     verificationSentAt: row.verification_sent_at ?? undefined,
     passwordSetAt: row.password_set_at ?? undefined,
   }
+}
+
+function rankNationParticipation(rows: NationParticipationRow[]) {
+  return rows.sort(
+    (left, right) =>
+      right.participantCount - left.participantCount ||
+      right.veteranCount - left.veteranCount ||
+      left.teamCode.localeCompare(right.teamCode),
+  )
 }
 
 export class MemoryRegistrationRepository implements RegistrationRepository {
@@ -452,6 +463,37 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
         createdAt: record.createdAt,
       }))
       .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? '') || left.email.localeCompare(right.email))
+  }
+
+  async listNationParticipation() {
+    const rowsByTeam = new Map<string, NationParticipationRow>()
+    const ensureRow = (teamCode: string) => {
+      const existing = rowsByTeam.get(teamCode)
+      if (existing) {
+        return existing
+      }
+      const next = { teamCode, participantCount: 0, rookieCount: 0, veteranCount: 0 }
+      rowsByTeam.set(teamCode, next)
+      return next
+    }
+
+    for (const record of this.byEmail.values()) {
+      if (record.status !== 'active') {
+        continue
+      }
+      const teamCodes = [record.primaryTeamCode, record.secondaryTeamCode].filter(Boolean) as string[]
+      for (const teamCode of new Set(teamCodes)) {
+        const row = ensureRow(teamCode)
+        row.participantCount += 1
+        if (record.leagueType === 'rookie') {
+          row.rookieCount += 1
+        } else {
+          row.veteranCount += 1
+        }
+      }
+    }
+
+    return rankNationParticipation([...rowsByTeam.values()])
   }
 
   async unsubscribeMarketing(token: string) {
@@ -1409,6 +1451,32 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       `,
     )
     return result.rows.map(mapAdminParticipantRow)
+  }
+
+  async listNationParticipation() {
+    const result = await this.pool.query<NationParticipationRow>(
+      `
+        WITH participant_nations AS (
+          SELECT participant_id, league_type, primary_team_code AS team_code
+          FROM participants
+          WHERE status = 'active'
+          UNION
+          SELECT participant_id, league_type, secondary_team_code AS team_code
+          FROM participants
+          WHERE status = 'active'
+            AND secondary_team_code IS NOT NULL
+        )
+        SELECT
+          team_code AS "teamCode",
+          COUNT(*)::int AS "participantCount",
+          COUNT(*) FILTER (WHERE league_type = 'rookie')::int AS "rookieCount",
+          COUNT(*) FILTER (WHERE league_type = 'veteran')::int AS "veteranCount"
+        FROM participant_nations
+        GROUP BY team_code
+        ORDER BY "participantCount" DESC, "veteranCount" DESC, team_code ASC
+      `,
+    )
+    return result.rows
   }
 
   async unsubscribeMarketing(token: string) {
