@@ -125,7 +125,7 @@ function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['c
   }, [])
 
   return (
-    <div className="countdown-card home-side-panel">
+    <div className="countdown-card">
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-accent)]">{copy.eyebrow}</p>
@@ -212,7 +212,7 @@ function NextKickoffCard({
   const hasMatches = nextKickoff.matches.length > 0
 
   return (
-    <div className="kickoff-board">
+    <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">{copy.eyebrow}</p>
@@ -221,7 +221,7 @@ function NextKickoffCard({
         <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.timezone}</span>
       </div>
 
-      <div className="kickoff-timeplate">
+      <div className="mt-5 rounded-[1rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 p-4">
         <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)]">{nextKickoff.day || copy.fallbackDay}</p>
         <p className="mono mt-2 text-3xl text-white">{nextKickoff.time || copy.fallbackTime}</p>
       </div>
@@ -230,7 +230,7 @@ function NextKickoffCard({
         {hasMatches ? nextKickoff.matches.map((match, index) => (
           <div
             key={`${match.fixtureId}-${index}`}
-            className="kickoff-match-row"
+            className="surface-row rounded-[0.95rem] p-3 transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/20"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
@@ -246,7 +246,7 @@ function NextKickoffCard({
             </div>
           </div>
         )) : (
-          <div className="kickoff-match-row text-sm leading-relaxed text-[var(--color-muted)]">
+          <div className="surface-row rounded-[0.95rem] p-3 text-sm leading-relaxed text-[var(--color-muted)]">
             {copy.empty}
           </div>
         )}
@@ -264,7 +264,7 @@ function NextKickoffCard({
 
 function NationFlagsCard({ copy }: { copy: HomeCopy['nations'] }) {
   return (
-    <div className="home-side-panel p-3.5">
+    <div className="glass-panel rounded-[1.15rem] p-3.5">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.eyebrow}</p>
       <div className="mt-4 grid grid-cols-5 justify-items-center gap-x-2 gap-y-3 sm:gap-x-3">
         {footballNations.map((nation) => (
@@ -292,11 +292,11 @@ function NationFlagsCard({ copy }: { copy: HomeCopy['nations'] }) {
 
 function RankingTracksCard({ copy }: { copy: HomeCopy['rankingTracks'] }) {
   return (
-    <div className="home-side-panel p-4">
+    <div className="glass-panel rounded-[1.15rem] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.eyebrow}</p>
       <div className="mt-4 space-y-2.5">
         {copy.items.map(({ title, body }, index) => (
-          <div key={title} className="ranking-track-row">
+          <div key={title} className="surface-row rounded-[0.9rem] p-3">
             <div className="flex items-start gap-3">
               <span className="mono text-[0.72rem] text-[var(--color-accent)]">0{index + 1}</span>
               <div>
@@ -321,7 +321,7 @@ function DiscordIcon() {
 
 function DiscordCard({ copy }: { copy: HomeCopy['discord'] }) {
   return (
-    <div className="discord-panel p-4">
+    <div className="glass-panel rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(24,180,133,0.2),rgba(255,255,255,0.04))] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.eyebrow}</p>
       <div className="mt-4 flex items-start gap-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/12 bg-black/20 text-[var(--color-paper)]">
@@ -347,7 +347,7 @@ function DiscordCard({ copy }: { copy: HomeCopy['discord'] }) {
 
 function LandingProofCard({ copy, scoring }: { copy: HomeCopy['proof']; scoring: ScoringConfig }) {
   return (
-    <div className="proof-strip p-4">
+    <div className="glass-panel rounded-[1.15rem] p-4">
       <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.eyebrow}</p>
       <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
         {[
@@ -355,7 +355,7 @@ function LandingProofCard({ copy, scoring }: { copy: HomeCopy['proof']; scoring:
           [copy.assist, `+${scoring.assist}`],
           [copy.cleanSheet, `GK +${scoring.cleanSheet.GK}`],
         ].map(([label, value]) => (
-          <div key={label} className="proof-stat">
+          <div key={label} className="surface-row rounded-[0.85rem] p-3">
             <p className="text-sm text-[var(--color-muted)]">{label}</p>
             <p className="mono mt-2 text-xl text-white">{value}</p>
           </div>
@@ -385,10 +385,10 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const competitionStartMs = useMemo(() => getCompetitionStartMs(fixtures), [fixtures])
 
   return (
-    <div className="home-page space-y-5 pb-10">
+    <div className="space-y-4 pb-10">
       <section className="landing-hero">
         <div className="landing-main-stack">
-          <div className="hero-card home-hero-card rounded-[1.35rem] p-4 sm:p-6 lg:p-7">
+          <div className="hero-card rounded-[1.35rem] p-4 sm:p-6 lg:p-7">
             <div className="hero-composition">
               <div className="hero-copy">
                 <div className="flex flex-wrap items-center gap-3">
@@ -468,8 +468,8 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
         </div>
       </section>
 
-      <section className="home-briefing">
-        <div className="rules-panel p-4 sm:p-5">
+      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="eyebrow">{homeCopy.rules.eyebrow}</p>
@@ -478,8 +478,8 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
             </div>
           </div>
 
-          <div className="rules-grid mt-5">
-            <div className="rule-block">
+          <div className="mt-5 max-h-[27rem] space-y-3 overflow-y-auto pr-2">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.eligibilityTitle}</p>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--color-paper)]">
                 {homeCopy.rules.eligibility.map((item) => (
@@ -488,7 +488,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               </ul>
             </div>
 
-            <div className="rule-block rule-block-budget">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.budgetTitle}</p>
               <p className="mt-4 text-2xl font-semibold tracking-tight text-[var(--color-accent)]">
                 {minBudget.toLocaleString('en-US')} - {maxBudget.toLocaleString('en-US')} SVC
@@ -496,9 +496,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.rules.budgetBody}</p>
             </div>
 
-            <div className="rule-block rule-block-score">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.pointsTitle}</p>
-              <dl className="score-list mt-4 text-sm">
+              <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[var(--color-muted)]">{homeCopy.rules.goal}</dt>
                   <dd className="mono text-white">{scoring.goal}</dd>
@@ -534,7 +534,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.rules.pointsBody}</p>
             </div>
 
-            <div className="rule-block">
+            <div className="surface-row rounded-[0.95rem] p-4">
               <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{homeCopy.rules.requestPolicyTitle}</p>
               <p className="mt-3 text-sm leading-relaxed text-[var(--color-paper)]">{homeCopy.rules.requestPolicyBody}</p>
             </div>
