@@ -215,6 +215,7 @@ export function createParticipantRouter(
 
   router.post('/link-soccerverse', async (req, res) => {
     const participantId = res.locals.participant.participantId as string
+    const participant = res.locals.participant
     const parsed = linkSoccerverseSchema.parse(req.body)
 
     try {
@@ -224,7 +225,7 @@ export function createParticipantRouter(
         actionKey: 'participant.link_soccerverse',
         entityType: 'participant',
         entityId: participantId,
-        detail: { soccerverseUsername: profile.soccerverseUsername },
+        detail: { soccerverseUsername: profile.soccerverseUsername, fromLeagueType: participant.leagueType, toLeagueType: profile.leagueType },
       })
       res.json({ participant: profile })
     } catch (error) {

@@ -630,6 +630,18 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     try {
       const response = await linkSoccerverseAccount(trimmed)
       setParticipant((current) => (current ? { ...current, ...response.participant } : response.participant))
+      if (squad) {
+        syncReadyStateWithSquad(response.participant, squad)
+      } else {
+        const currentReadyState = dashboardSeed ?? buildReadyState(response.participant, budgetLimit)
+        storeReadyState({
+          ...currentReadyState,
+          displayName: response.participant.displayName,
+          email: response.participant.email,
+          leagueType: response.participant.leagueType,
+          hasPassword: response.participant.hasPassword,
+        })
+      }
       setLinkUsername('')
       setLinkMessage(copy.errors.linkSaved)
     } catch (error) {

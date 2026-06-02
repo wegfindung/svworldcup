@@ -165,8 +165,10 @@ export function createApp() {
       if (extname(req.path)) {
         return res.status(404).end()
       }
-      // The SPA shell must never be cached, or a deploy won't be picked up until the asset expires.
-      res.setHeader('Cache-Control', 'no-cache')
+      // The SPA shell must never be stored, or mobile browsers can keep routing to an old bundle.
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Expires', '0')
       try {
         const indexHtml = await readFile(resolve(publicDir, 'index.html'), 'utf8')
         const pageUrl = `${req.protocol}://${req.get('host') ?? 'localhost'}${req.originalUrl}`

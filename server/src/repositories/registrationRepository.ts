@@ -343,9 +343,10 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
       ...record,
       soccerverseUsername: trimmed,
       soccerverseLinkedAt: new Date().toISOString(),
+      leagueType: 'veteran',
     })
     this.byEmail.set(nextRecord.email, nextRecord)
-    // affects veteran-bonus eligibility on the board.
+    // Linking proves Veteran eligibility and moves the participant between league boards.
     this.leaderboardCache?.invalidate()
     return toParticipantProfile(nextRecord)
   }
@@ -1037,6 +1038,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           UPDATE participants
           SET soccerverse_username = $2,
               soccerverse_linked_at = NOW(),
+              league_type = 'veteran',
               updated_at = NOW()
           WHERE participant_id = $1
           RETURNING
@@ -1059,7 +1061,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
         [participantId, trimmed],
       )
       await client.query('COMMIT')
-      // affects veteran-bonus eligibility on the board.
+      // Linking proves Veteran eligibility and moves the participant between league boards.
       this.leaderboardCache?.invalidate()
       return mapParticipantRow(updated.rows[0])
     } catch (error) {
