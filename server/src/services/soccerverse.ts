@@ -142,7 +142,7 @@ export async function fetchPlayersByIds(playerIds: number[], countryId?: string)
   return mapped
 }
 
-export async function searchPlayersByCountryAndName(countryId: string, query: string) {
+export async function searchPlayersByCountryAndName(countryId: string | undefined, query: string) {
   const { searchCommunityPlayerIds } = await import('./communityPack.js')
   const matchingIds = /^\d+$/.test(query.trim()) ? [Number(query.trim())] : await searchCommunityPlayerIds(query, 40)
   const players = await fetchPlayersByIds(matchingIds, countryId)

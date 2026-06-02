@@ -717,9 +717,13 @@ export function fetchTeamSelections(teamCode: string, signal?: AbortSignal) {
   })
 }
 
-export function searchTeamCandidates(teamCode: string, query: string) {
+export function searchTeamCandidates(teamCode: string, query: string, allCountries = false) {
+  const params = new URLSearchParams({ query })
+  if (allCountries) {
+    params.set('allCountries', 'true')
+  }
   return getJson<{ items: SoccerversePlayer[] }>(
-    `/api/admin/teams/${teamCode}/candidates?query=${encodeURIComponent(query)}`,
+    `/api/admin/teams/${teamCode}/candidates?${params.toString()}`,
     {
       method: 'GET',
       headers: {},

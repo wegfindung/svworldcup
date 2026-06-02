@@ -29,6 +29,13 @@ Each team record should include:
 
 - Admin can preselect Grand Tournament squads by Soccerverse `playerId`.
 - Admin can maintain the eligible player pool.
+- Candidate search defaults to the team's mapped Soccerverse country, but the admin can widen it to the
+  **full player database** via an opt-in flag (`allCountries`). Soccerverse stores exactly one nationality
+  per player, yet some players represent a nation in reality that is not their single stored country — a
+  country-scoped search can never surface them under that nation. A widened search finds them by name
+  regardless of stored country and returns each player's own stored nationality on the record; the
+  save-time country-mismatch guard still warns only when a pool is overwhelmingly cross-nation, so adding
+  such players is allowed.
 - Builder team dropdowns must read from this preselected team pool instead of a free-form nationality search.
 - Player identity in the team pool should be enriched with community datapack names and portraits when Soccerverse API records omit names.
 - The backend must also support curated external Grand Tournament squad JSON imports when the user provides a reviewed source file.

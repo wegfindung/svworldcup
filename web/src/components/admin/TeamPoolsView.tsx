@@ -20,6 +20,7 @@ export function TeamPoolsView() {
   const [selections, setSelections] = useState<TeamPoolPlayer[]>([])
   const [candidates, setCandidates] = useState<SoccerversePlayer[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchAllCountries, setSearchAllCountries] = useState(false)
   const [searchBusy, setSearchBusy] = useState(false)
   const [saveBusy, setSaveBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +84,7 @@ export function TeamPoolsView() {
     setSearchBusy(true)
     setError(null)
     try {
-      const response = await searchTeamCandidates(selectedTeamCode, searchQuery)
+      const response = await searchTeamCandidates(selectedTeamCode, searchQuery, searchAllCountries)
       setCandidates(response.items)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Candidate search failed.')
@@ -215,20 +216,31 @@ export function TeamPoolsView() {
             </div>
           ) : null}
 
-          <form onSubmit={handleSearch} className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by player name or player ID"
-              className="min-h-12 flex-1 rounded-[1.2rem] border border-white/10 bg-black/15 px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
-            />
-            <button
-              type="submit"
-              disabled={searchBusy || !selectedTeamCode}
-              className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-            >
-              {searchBusy ? 'Searching…' : 'Search candidates'}
-            </button>
+          <form onSubmit={handleSearch} className="mt-6 flex flex-col gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by player name or player ID"
+                className="min-h-12 flex-1 rounded-[1.2rem] border border-white/10 bg-black/15 px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
+              />
+              <button
+                type="submit"
+                disabled={searchBusy || !selectedTeamCode}
+                className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+              >
+                {searchBusy ? 'Searching…' : 'Search candidates'}
+              </button>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+              <input
+                type="checkbox"
+                checked={searchAllCountries}
+                onChange={(event) => setSearchAllCountries(event.target.checked)}
+                className="h-4 w-4 accent-[var(--color-accent)]"
+              />
+              Search full player database (ignore nation — Soccerverse stores only one country per player)
+            </label>
           </form>
 
           <div className="mt-6 grid gap-3 xl:grid-cols-2">
