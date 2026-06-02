@@ -586,6 +586,7 @@ Verified on 2026-05-08 via `npm view`:
 ## 11. Git and Secret Hygiene
 
 - Local repo initialized as a Git repository on branch `main`
+- Pull request environment gate: before preparing or opening any new pull request, first clarify whether the change targets test/staging, production, or both whenever the user did not explicitly specify the target environment.
 - Before first push:
 - initialize local Git
 - add `.gitignore`
@@ -618,3 +619,4 @@ Verified on 2026-05-08 via `npm view`:
 | 2026-05-08 | Phase 5 | Compose DB override hardened and deploy-readiness check added |
 | 2026-05-29 | Audit | Docs↔code audit; this map flagged STALE (see top banner). Scoring, substitution, locale, and ownership-boost facts in §3 corrected to match the built system. |
 | 2026-05-30 | Stability | Site-wide load-resilience pass landed (leaderboard cache, React error boundary, DB-pool/graceful-shutdown hardening, per-endpoint rate limits, structured logging + request timing, observable background jobs, promotion fixture lock). |
+| 2026-06-01 | Operations | Added PR environment gate: clarify test/staging vs production target before preparing or opening a pull request when the user did not specify it. |

@@ -5,6 +5,7 @@ import type { SlotClass, SoccerversePlayerRecord } from '../domain/types.js'
 import { MemoryConfigRepository } from '../repositories/configRepository.js'
 import { MemoryFixtureRepository } from '../repositories/fixtureRepository.js'
 import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import { MemoryLandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
 import { MemoryRegistrationRepository, publicProfileSlug } from '../repositories/registrationRepository.js'
 import { MemoryScoringRepository } from '../repositories/scoringRepository.js'
 import { MemorySquadRepository } from '../repositories/squadRepository.js'
@@ -105,6 +106,7 @@ describe('public profile reflects swaps', () => {
         teamPoolRepository: pools,
         scoringRepository: new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository()),
         squadRepository: squads,
+        landingAnalyticsRepository: new MemoryLandingAnalyticsRepository(),
       }),
     )
 

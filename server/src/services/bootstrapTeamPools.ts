@@ -36,6 +36,6 @@ export async function bootstrapInitialTeamPools(teamPoolRepository: TeamPoolRepo
       continue
     }
 
-    await teamPoolRepository.replaceTeamPlayers(teamCode, players)
+    await teamPoolRepository.seedTeamPlayersIfEmpty(teamCode, players)
   }
 }

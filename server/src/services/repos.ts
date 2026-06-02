@@ -52,6 +52,11 @@ import {
   PostgresSnapshotJobRepository,
   type SnapshotJobRepository,
 } from '../repositories/snapshotJobRepository.js'
+import {
+  MemoryLandingAnalyticsRepository,
+  PostgresLandingAnalyticsRepository,
+  type LandingAnalyticsRepository,
+} from '../repositories/landingAnalyticsRepository.js'
 import { LeaderboardCache } from '../repositories/leaderboardCache.js'
 import { instrumentSlowQueries } from '../lib/dbInstrumentation.js'
 
@@ -73,6 +78,7 @@ let emailMarketingRepository: EmailMarketingRepository | null = null
 let participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository | null = null
 let participantRiskRepository: ParticipantRiskRepository | null = null
 let snapshotJobRepository: SnapshotJobRepository | null = null
+let landingAnalyticsRepository: LandingAnalyticsRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -280,4 +286,14 @@ export function createSnapshotJobRepository(): SnapshotJobRepository {
       : new MemorySnapshotJobRepository()
   }
   return snapshotJobRepository
+}
+
+export function createLandingAnalyticsRepository(): LandingAnalyticsRepository {
+  if (!landingAnalyticsRepository) {
+    const existingPool = getPool()
+    landingAnalyticsRepository = existingPool
+      ? new PostgresLandingAnalyticsRepository(existingPool)
+      : new MemoryLandingAnalyticsRepository()
+  }
+  return landingAnalyticsRepository
 }

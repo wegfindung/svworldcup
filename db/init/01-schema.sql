@@ -415,6 +415,24 @@ CREATE TABLE IF NOT EXISTS referral_clicks (
 CREATE INDEX IF NOT EXISTS referral_clicks_referrer_created_idx
     ON referral_clicks (referrer_soccerverse_username, created_at);
 
+CREATE TABLE IF NOT EXISTS landing_page_visits (
+    visit_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    visitor_key TEXT NOT NULL UNIQUE,
+    ip_hash TEXT NOT NULL,
+    user_agent_hash TEXT,
+    first_landing_path TEXT,
+    last_landing_path TEXT,
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    hit_count INTEGER NOT NULL DEFAULT 1 CHECK (hit_count >= 1)
+);
+
+CREATE INDEX IF NOT EXISTS landing_page_visits_first_seen_idx
+    ON landing_page_visits (first_seen_at);
+
+CREATE INDEX IF NOT EXISTS landing_page_visits_last_seen_idx
+    ON landing_page_visits (last_seen_at DESC);
+
 -- Match data import engine: pending batch lifecycle + player-name resolution memory.
 -- See architecture/SOP_match_data_import.md and db/migrations/2026-05-14-match-data-import.sql.
 

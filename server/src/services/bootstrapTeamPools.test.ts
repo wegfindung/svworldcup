@@ -43,11 +43,10 @@ describe('bootstrapInitialTeamPools', () => {
       listByTeam: vi.fn(async () => []),
       getTeamPlayerById: vi.fn(async () => null),
       getTeamSelectionCounts: vi.fn(async () => ({})),
-      replaceTeamPlayers: vi.fn(async (teamCode) => {
+      replaceTeamPlayers: vi.fn(async () => []),
+      seedTeamPlayersIfEmpty: vi.fn(async (teamCode) => {
         syncedTeams.push(teamCode)
-        return []
       }),
-      seedTeamPlayersIfEmpty: vi.fn(async () => {}),
     }
 
     await bootstrapInitialTeamPools(repository)
@@ -55,7 +54,7 @@ describe('bootstrapInitialTeamPools', () => {
     const curatedTeamCodes = Object.keys(initialTeamSelections)
     expect(syncedTeams).toEqual(curatedTeamCodes)
     expect(fetchPlayersByIds).toHaveBeenCalledTimes(curatedTeamCodes.length)
-    expect(repository.seedTeamPlayersIfEmpty).not.toHaveBeenCalled()
+    expect(repository.replaceTeamPlayers).not.toHaveBeenCalled()
     for (const [index, teamCode] of curatedTeamCodes.entries()) {
       expect(fetchPlayersByIds.mock.calls[index][0]).toEqual(initialTeamSelections[teamCode])
       expect(fetchPlayersByIds.mock.calls[index][1]).toBe(getSoccerverseCountryId(teamCode))
@@ -74,11 +73,10 @@ describe('bootstrapInitialTeamPools', () => {
       listByTeam: vi.fn(async () => []),
       getTeamPlayerById: vi.fn(async () => null),
       getTeamSelectionCounts: vi.fn(async () => ({})),
-      replaceTeamPlayers: vi.fn(async (teamCode, players) => {
+      replaceTeamPlayers: vi.fn(async () => []),
+      seedTeamPlayersIfEmpty: vi.fn(async (teamCode, players) => {
         syncedCounts.set(teamCode, players.length)
-        return []
       }),
-      seedTeamPlayersIfEmpty: vi.fn(async () => {}),
     }
 
     await bootstrapInitialTeamPools(repository)
@@ -101,11 +99,10 @@ describe('bootstrapInitialTeamPools', () => {
       listByTeam: vi.fn(async () => []),
       getTeamPlayerById: vi.fn(async () => null),
       getTeamSelectionCounts: vi.fn(async () => ({})),
-      replaceTeamPlayers: vi.fn(async (teamCode) => {
+      replaceTeamPlayers: vi.fn(async () => []),
+      seedTeamPlayersIfEmpty: vi.fn(async (teamCode) => {
         syncedTeams.push(teamCode)
-        return []
       }),
-      seedTeamPlayersIfEmpty: vi.fn(async () => {}),
     }
 
     await bootstrapInitialTeamPools(repository)

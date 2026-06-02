@@ -1,17 +1,70 @@
+param(
+    [ValidateSet("test", "production")]
+    [string]$Environment = "test",
+    [string]$AppEnvFile
+)
+
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
 
 $projectRoot = "C:\Users\Wohlstandsgenerator\Documents\AI\svworldcup"
 $sv = "C:\Users\Wohlstandsgenerator\Documents\AI\_Serververwaltung"
 $key = "C:\Users\Wohlstandsgenerator\dominik_key"
-$envFile = Join-Path $sv ".env"
+$serverManagementEnvFile = Join-Path $sv ".env"
 $askpass = Join-Path $sv "askpass_helper.cmd"
 $serverUser = "dominik"
 $serverIP = "46.224.220.87"
-$remotePath = "/opt/svworldcup"
-$zipFile = Join-Path $env:TEMP "svworldcup_deploy.zip"
+
+$environmentConfigs = @{
+    test = @{
+        EnvFile = ".env"
+        RemotePath = "/opt/svworldcup"
+        PublicSite = "https://worldcup.svtool.info"
+        DbVolumePath = "/var/lib/svworldcup/db"
+    }
+    production = @{
+        EnvFile = ".env.production"
+        RemotePath = "/opt/svworldcup-event"
+        PublicSite = "https://event.svtool.info"
+        DbVolumePath = "/var/lib/svworldcup-event/db"
+    }
+}
+
+function Get-EnvValue {
+    param(
+        [string]$Path,
+        [string]$Key,
+        [string]$Default
+    )
+
+    $line = Get-Content $Path | Where-Object { $_ -match "^\s*$([regex]::Escape($Key))\s*=" } | Select-Object -First 1
+    if (-not $line) { return $Default }
+
+    $value = ($line -split "=", 2)[1].Trim().Trim('"').Trim("'")
+    if ([string]::IsNullOrWhiteSpace($value)) { return $Default }
+
+    return $value
+}
+
+$config = $environmentConfigs[$Environment]
+if (-not $AppEnvFile) {
+    $AppEnvFile = Join-Path $projectRoot $config.EnvFile
+} elseif (-not [System.IO.Path]::IsPathRooted($AppEnvFile)) {
+    $AppEnvFile = Join-Path $projectRoot $AppEnvFile
+}
+
+if (-not (Test-Path $AppEnvFile)) {
+    throw "App env file not found: $AppEnvFile"
+}
+
+$remotePath = $config.RemotePath
+$remoteZipFile = "/tmp/svworldcup_${Environment}_deploy.zip"
+$dbVolumePath = Get-EnvValue -Path $AppEnvFile -Key "DB_VOLUME_PATH" -Default $config.DbVolumePath
+$publicSite = Get-EnvValue -Path $AppEnvFile -Key "PUBLIC_WEB_URL" -Default $config.PublicSite
+$zipFile = Join-Path $env:TEMP "svworldcup_${Environment}_deploy.zip"
 
 Write-Host "[1/8] Loading SSH passphrase..." -ForegroundColor Cyan
-$line = Get-Content $envFile | Where-Object { $_ -match '^SSH_PASSPHRASE\s*=' } | Select-Object -First 1
+$line = Get-Content $serverManagementEnvFile | Where-Object { $_ -match '^SSH_PASSPHRASE\s*=' } | Select-Object -First 1
 $pass = ($line -split '=', 2)[1].Trim().Trim('"').Trim("'")
 
 $env:SSH_PASSPHRASE = $pass
@@ -20,22 +73,24 @@ $env:SSH_ASKPASS_REQUIRE = "force"
 $env:DISPLAY = "1"
 
 Write-Host "[2/8] Creating deploy archive..." -ForegroundColor Cyan
+Write-Host "   Environment: $Environment" -ForegroundColor Gray
+Write-Host "   App env file: $AppEnvFile" -ForegroundColor Gray
 if (Test-Path $zipFile) { Remove-Item $zipFile -Force }
 
-$staging = Join-Path $env:TEMP "svworldcup_staging"
+$staging = Join-Path $env:TEMP "svworldcup_${Environment}_staging"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 New-Item -ItemType Directory -Path $staging -Force | Out-Null
 
 $filesToDeploy = @(
     "docker-compose.yml",
     "Dockerfile",
-    ".env",
     ".dockerignore",
     "README.md"
 )
 foreach ($f in $filesToDeploy) {
     Copy-Item (Join-Path $projectRoot $f) (Join-Path $staging $f) -Force
 }
+Copy-Item $AppEnvFile (Join-Path $staging ".env") -Force
 
 $dirs = @("web", "server", "db", "architecture", "tools")
 foreach ($d in $dirs) {
@@ -70,10 +125,10 @@ Write-Host "[3/8] Creating remote directory..." -ForegroundColor Cyan
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "sudo mkdir -p ${remotePath} && sudo chown ${serverUser}:${serverUser} ${remotePath}"
 
 Write-Host "[4/8] Uploading archive..." -ForegroundColor Cyan
-scp -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL $zipFile "${serverUser}@${serverIP}:/tmp/svworldcup_deploy.zip"
+scp -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL $zipFile "${serverUser}@${serverIP}:${remoteZipFile}"
 
 Write-Host "[5/8] Extracting on server..." -ForegroundColor Cyan
-ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && unzip -o /tmp/svworldcup_deploy.zip && rm /tmp/svworldcup_deploy.zip && sudo mkdir -p /var/lib/svworldcup/db"
+ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && unzip -o ${remoteZipFile} && rm ${remoteZipFile} && sudo mkdir -p ${dbVolumePath}"
 
 Write-Host "[6/8] Building and starting Docker stack..." -ForegroundColor Cyan
 ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}@${serverIP}" "cd ${remotePath} && docker compose build --no-cache && docker compose up -d"
@@ -87,7 +142,8 @@ ssh -i $key -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "${serverUser}
 
 Write-Host ""
 Write-Host "=== DEPLOYMENT COMPLETE ===" -ForegroundColor Green
-Write-Host "Public site: https://worldcup.svtool.info" -ForegroundColor Yellow
-Write-Host "Health: https://worldcup.svtool.info/api/public/health" -ForegroundColor Yellow
+Write-Host "Environment: $Environment" -ForegroundColor Yellow
+Write-Host "Public site: $publicSite" -ForegroundColor Yellow
+Write-Host "Health: $publicSite/api/public/health" -ForegroundColor Yellow
 
 if (Test-Path $zipFile) { Remove-Item $zipFile -Force }

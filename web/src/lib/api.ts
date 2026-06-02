@@ -616,6 +616,13 @@ export function recordReferralClick(referrerSoccerverseUsername: string, landing
   })
 }
 
+export function recordLandingPageVisit(landingPath: string) {
+  return getJson<void>('/api/public/landing-page-visit', {
+    method: 'POST',
+    body: JSON.stringify({ landingPath }),
+  })
+}
+
 export function updateAdminScoring(scoring: ScoringConfig) {
   return getJson<{ item: ScoringConfig }>('/api/admin/scoring', {
     method: 'PUT',

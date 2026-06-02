@@ -15,6 +15,17 @@ const views: Array<{ to: string; label: string; blurb: string }> = [
   { to: '/admin/operations', label: 'Operations', blurb: 'Monitor audit logs, import work and mail queue health.' },
 ]
 
+function formatNumber(value?: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toLocaleString('en-US') : '-'
+}
+
+function formatPercent(value?: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '-'
+  }
+  return `${(value * 100).toFixed(value > 0 && value < 0.1 ? 2 : 1)}%`
+}
+
 export function DashboardLanding() {
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [pendingImports, setPendingImports] = useState<number | null>(null)
@@ -55,6 +66,7 @@ export function DashboardLanding() {
 
   const poolCounts = overview ? Object.values(overview.teamSelectionCounts) : []
   const filledPools = poolCounts.filter((count) => count > 0).length
+  const landingConversion = overview?.landingConversion
 
   const cards: Array<{ label: string; value: string }> = [
     {
@@ -64,6 +76,29 @@ export function DashboardLanding() {
     { label: 'Scoring', value: overview ? (overview.scoringLocked ? 'locked' : 'editable') : '—' },
     { label: 'Team pools', value: overview ? `${filledPools}/${poolCounts.length} filled` : '—' },
     { label: 'Pending imports', value: pendingImports === null ? '—' : String(pendingImports) },
+  ]
+
+  const conversionCards: Array<{ label: string; value: string; detail: string }> = [
+    {
+      label: 'Unique visitors',
+      value: formatNumber(landingConversion?.uniqueVisitors),
+      detail: `${formatNumber(landingConversion?.totalVisits)} homepage hits tracked`,
+    },
+    {
+      label: 'Visitor -> registration',
+      value: formatPercent(landingConversion?.visitorToRegistrationRate),
+      detail: `${formatNumber(landingConversion?.registrations)} registrations`,
+    },
+    {
+      label: 'Registration -> squad',
+      value: formatPercent(landingConversion?.registrationToSquadSubmissionRate),
+      detail: `${formatNumber(landingConversion?.squadSubmissions)} squad submissions`,
+    },
+    {
+      label: 'Reloads suppressed',
+      value: formatNumber(landingConversion?.reloadCount),
+      detail: `${formatNumber(landingConversion?.unsubmittedRegistrations)} registrations without submitted squad`,
+    },
   ]
 
   return (
@@ -83,6 +118,26 @@ export function DashboardLanding() {
             <div key={card.label} className="rounded-[1rem] border border-white/8 bg-black/15 px-4 py-3">
               <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{card.label}</p>
               <p className="mt-2 text-lg font-semibold text-white">{card.value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="glass-panel rounded-[1.15rem] p-4 sm:p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">homepage conversion</p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">Visitor funnel.</h3>
+          </div>
+          <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">IP deduped</span>
+        </div>
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {conversionCards.map((card) => (
+            <div key={card.label} className="surface-row rounded-[0.95rem] p-4">
+              <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{card.label}</p>
+              <p className="mono mt-2 text-2xl font-semibold tracking-tight text-white">{card.value}</p>
+              <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">{card.detail}</p>
             </div>
           ))}
         </div>

@@ -45,6 +45,15 @@ The frontend proxies `/api` to `http://localhost:3000` in development.
 - `docker-compose.yml`: Traefik-facing `app` plus PostgreSQL `db`
 - `deploy.ps1`: Hetzner deployment script adapted from `SVtool`
 
+Deployment environments:
+
+- Test/staging is the current Hetzner installation: `https://worldcup.svtool.info`, remote path `/opt/svworldcup`, DB volume `/var/lib/svworldcup/db`, env file `.env`.
+- Production is prepared for `https://event.svtool.info`, remote path `/opt/svworldcup-event`, DB volume `/var/lib/svworldcup-event/db`, env file `.env.production`.
+- Use `.\deploy.ps1 -Environment test` for the current test installation.
+- Use `.\deploy.ps1 -Environment production` after filling `.env.production` with production DB credentials and secrets. The committed `.env.production.example` mirrors the expected shape.
+- Keep production on its own `DB_VOLUME_PATH`, `DB_NAME`, `DB_USER`, and `DB_PASS`; do not point it at the test database if a fresh production database is required.
+- A new production `DB_VOLUME_PATH` initializes schema and tournament seed data only; participant registrations, sessions, squads, and match-entry results are not copied from test.
+
 Expected production env highlights:
 
 - `PUBLIC_WEB_URL`
@@ -57,7 +66,7 @@ Expected production env highlights:
 - `CSRF_TOKEN_SECRET`
 - `COMMUNITY_PACK_URL`
 - SMTP variables
-- either `DATABASE_URL` or the discrete `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASS`
+- `DB_NAME` / `DB_USER` / `DB_PASS` for the bundled Compose PostgreSQL service
 
 Optional tuning (safe defaults apply when unset; `RATE_LIMIT_TRUST_PROXY` defaults on in production):
 
@@ -77,6 +86,7 @@ Database initialization:
 
 - `db/init/01-schema.sql` creates the schema
 - `db/init/02-seed-tournament.sql` seeds scoring config, 48 teams, and 72 group-stage fixtures
+- A fresh production database starts without participant registrations or submitted squads as long as it uses a new, empty `DB_VOLUME_PATH`
 - `tools/apply-migrations.sh` records applied migration filenames and SHA-256 checksums in `schema_migrations`
 - `db/migrations/2026-05-08-session-and-team-pools.sql` upgrades an existing database with admin sessions, participant sessions, and team-pool tables
 - `db/migrations/2026-05-14-referrer-soccerverse-username.sql` stores optional `ref` campaign attribution on participant registrations
@@ -88,6 +98,7 @@ Database initialization:
 - `cd server && npx tsx ../tools/check-env.ts`
 - `cd server && npx tsx ../tools/check-soccerverse.ts`
 - `npx --prefix server tsx tools/check-deploy-readiness.ts`
+- `npx --prefix server tsx tools/check-deploy-readiness.ts .env.production`
 - `npm run test:e2e`
 
 ## Validation completed

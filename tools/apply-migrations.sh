@@ -3,12 +3,19 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
+if [ -f .env ]; then
+  env_db_container=$(sed -n 's/^[[:space:]]*DB_CONTAINER_NAME[[:space:]]*=[[:space:]]*//p' .env | tail -n 1 | tr -d '\r')
+  env_db_container=$(printf "%s" "$env_db_container" | sed 's/^["'\'']//; s/["'\'']$//')
+fi
+
+DB_CONTAINER_NAME=${DB_CONTAINER_NAME:-${env_db_container:-svworldcup-db}}
+
 psql_exec() {
-  docker exec -i svworldcup-db sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+  docker exec -i "$DB_CONTAINER_NAME" sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 }
 
 psql_query() {
-  docker exec -i svworldcup-db sh -lc 'psql -v ON_ERROR_STOP=1 -At -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+  docker exec -i "$DB_CONTAINER_NAME" sh -lc 'psql -v ON_ERROR_STOP=1 -At -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 }
 
 sql_escape() {

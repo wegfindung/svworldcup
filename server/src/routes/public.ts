@@ -10,6 +10,8 @@ import type { RegistrationRepository } from '../repositories/registrationReposit
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
+import type { LandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
+import { buildRequestRiskSignal } from '../lib/riskSignals.js'
 import { handleShareCardImage } from './share.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
 import { buildPublicFixtureResults } from '../services/matchResults.js'
@@ -24,6 +26,10 @@ const playerSearchSchema = z.object({
 
 const referralClickSchema = z.object({
   referrerSoccerverseUsername: z.string().trim().max(60),
+  landingPath: z.string().trim().max(300).optional(),
+})
+
+const landingPageVisitSchema = z.object({
   landingPath: z.string().trim().max(300).optional(),
 })
 
@@ -87,9 +93,18 @@ interface Dependencies {
   teamPoolRepository: TeamPoolRepository
   scoringRepository: ScoringRepository
   squadRepository: SquadRepository
+  landingAnalyticsRepository: LandingAnalyticsRepository
 }
 
-export function createPublicRouter({ configRepository, registrationRepository, fixtureRepository, teamPoolRepository, scoringRepository, squadRepository }: Dependencies) {
+export function createPublicRouter({
+  configRepository,
+  registrationRepository,
+  fixtureRepository,
+  teamPoolRepository,
+  scoringRepository,
+  squadRepository,
+  landingAnalyticsRepository,
+}: Dependencies) {
   const router = Router()
 
   router.get('/health', async (_req, res) => {
@@ -165,6 +180,20 @@ export function createPublicRouter({ configRepository, registrationRepository, f
         referrerSoccerverseUsername,
         landingPath: parsed.landingPath,
         userAgent: req.header('user-agent')?.slice(0, 300),
+      })
+    }
+
+    res.status(204).end()
+  })
+
+  router.post('/landing-page-visit', async (req, res) => {
+    const parsed = landingPageVisitSchema.parse(req.body)
+    const signal = buildRequestRiskSignal(req)
+    if (signal.ipHash) {
+      await landingAnalyticsRepository.recordLandingPageVisit({
+        ipHash: signal.ipHash,
+        userAgentHash: signal.userAgentHash,
+        landingPath: parsed.landingPath,
       })
     }
 

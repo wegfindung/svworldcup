@@ -9,6 +9,7 @@ import { MemoryScoringRepository } from '../repositories/scoringRepository.js'
 import { MemorySquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
+import { MemoryLandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
 import { publicProfileSlug } from '../repositories/registrationRepository.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import type { SoccerversePlayerRecord, SlotClass } from '../domain/types.js'
@@ -88,6 +89,7 @@ function makeApp() {
       teamPoolRepository: pools,
       scoringRepository: scoring,
       squadRepository: squads,
+      landingAnalyticsRepository: new MemoryLandingAnalyticsRepository(),
     } as never),
   )
   return { app, config, registrations, squads, scoring }

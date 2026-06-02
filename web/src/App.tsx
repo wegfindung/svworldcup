@@ -4,7 +4,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
 import { useBootstrap } from './hooks/useBootstrap'
-import { getMessages } from './i18n/messages'
+import { getShellMessages } from './i18n/shellMessages'
 import { recordReferralClick } from './lib/api'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from './lib/competitionWindow'
 import {
@@ -37,7 +37,7 @@ const VerifyPage = lazy(() => import('./pages/VerifyPage').then((module) => ({ d
 
 function RouteFallback() {
   return (
-    <section className="glass-panel rounded-[1.15rem] p-5">
+    <section className="glass-panel min-h-[70dvh] rounded-[1.15rem] p-5">
       <div className="skeleton h-40 rounded-[1rem]" />
     </section>
   )
@@ -48,111 +48,6 @@ function readLocaleFromSearch(search: string) {
   const rawLocale = params.get('share_locale') ?? params.get('lang') ?? params.get('locale') ?? ''
   const normalizedLocale = rawLocale.trim().toLowerCase().split(/[-_]/, 1)[0] as LocaleCode
   return supportedLocales.includes(normalizedLocale) ? normalizedLocale : null
-}
-
-const footerCopyByLocale: Record<
-  LocaleCode,
-  {
-    event: string
-    mainProject: string
-    playSoccerverse: string
-    help: string
-    about: string
-    privacy: string
-    admin: string
-    note: string
-  }
-> = {
-  en: {
-    event: 'Event',
-    mainProject: 'Main project',
-    playSoccerverse: 'Play Soccerverse',
-    help: 'Help',
-    about: 'About',
-    privacy: 'Privacy',
-    admin: 'Admin',
-    note: 'Fan-made community event. Not an official Soccerverse product.',
-  },
-  es: {
-    event: 'Evento',
-    mainProject: 'Proyecto principal',
-    playSoccerverse: 'Jugar Soccerverse',
-    help: 'Ayuda',
-    about: 'Acerca de',
-    privacy: 'Privacidad',
-    admin: 'Admin',
-    note: 'Evento comunitario hecho por fans. No es un producto oficial de Soccerverse.',
-  },
-  it: {
-    event: 'Evento',
-    mainProject: 'Progetto principale',
-    playSoccerverse: 'Gioca a Soccerverse',
-    help: 'Aiuto',
-    about: 'Info',
-    privacy: 'Privacy',
-    admin: 'Admin',
-    note: 'Evento della community fatto dai fan. Non è un prodotto ufficiale Soccerverse.',
-  },
-  de: {
-    event: 'Event',
-    mainProject: 'Hauptprojekt',
-    playSoccerverse: 'Soccerverse spielen',
-    help: 'Help',
-    about: 'About',
-    privacy: 'Datenschutz',
-    admin: 'Admin',
-    note: 'Fan-gemachtes Community-Event. Kein offizielles Soccerverse-Produkt.',
-  },
-  fr: {
-    event: 'Événement',
-    mainProject: 'Projet principal',
-    playSoccerverse: 'Jouer à Soccerverse',
-    help: 'Aide',
-    about: 'À propos',
-    privacy: 'Confidentialité',
-    admin: 'Admin',
-    note: 'Événement communautaire fait par des fans. Ce n’est pas un produit officiel Soccerverse.',
-  },
-  pt: {
-    event: 'Evento',
-    mainProject: 'Projeto principal',
-    playSoccerverse: 'Jogar Soccerverse',
-    help: 'Ajuda',
-    about: 'Sobre',
-    privacy: 'Privacidade',
-    admin: 'Admin',
-    note: 'Evento comunitário feito por fãs. Não é um produto oficial Soccerverse.',
-  },
-  ru: {
-    event: 'Событие',
-    mainProject: 'Основной проект',
-    playSoccerverse: 'Играть в Soccerverse',
-    help: 'Помощь',
-    about: 'О проекте',
-    privacy: 'Конфиденциальность',
-    admin: 'Admin',
-    note: 'Фанатское событие сообщества. Это не официальный продукт Soccerverse.',
-  },
-  zh: {
-    event: '活动',
-    mainProject: '主项目',
-    playSoccerverse: '进入 Soccerverse',
-    help: '帮助',
-    about: '关于',
-    privacy: '隐私',
-    admin: 'Admin',
-    note: '粉丝制作的社区活动。并非 Soccerverse 官方产品。',
-  },
-  ja: {
-    event: 'イベント',
-    mainProject: 'メインプロジェクト',
-    playSoccerverse: 'Soccerverse をプレイ',
-    help: 'Help',
-    about: 'About',
-    privacy: 'プライバシー',
-    admin: 'Admin',
-    note: 'ファンによるコミュニティイベントです。Soccerverse 公式製品ではありません。',
-  },
 }
 
 function App() {
@@ -186,8 +81,8 @@ function App() {
   }, [locale])
 
   const referrerSoccerverseUsername = resolveReferrerSoccerverseUsername(location.search)
-  const copy = getMessages(locale)
-  const footerCopy = footerCopyByLocale[locale]
+  const copy = getShellMessages(locale)
+  const footerCopy = copy.footer
   const { data: bootstrap, error: bootstrapError } = useBootstrap()
   const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
   const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
@@ -223,10 +118,13 @@ function App() {
             >
               <span className="block h-[4.25rem] w-fit sm:h-[6.75rem] lg:h-[8.25rem] xl:h-[8.75rem]">
                 <img
-                  src="/brand/logo-nav-tournament-large-tight.webp"
+                  src="/brand/logo-nav-tournament-280.webp"
+                  srcSet="/brand/logo-nav-tournament-280.webp 280w, /brand/logo-nav-tournament-560.webp 560w"
+                  sizes="(min-width: 1280px) 276px, (min-width: 1024px) 260px, (min-width: 640px) 213px, 134px"
                   alt={copy.nav.logoAlt}
-                  width={1337}
-                  height={679}
+                  width={560}
+                  height={284}
+                  decoding="async"
                   className="h-full w-auto object-contain transition duration-500 group-hover:scale-[1.03]"
                 />
               </span>

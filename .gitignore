@@ -5,6 +5,7 @@
 .env.production
 .env.test
 .env.*.local
+.env.*.example
 !.env.example
 
 # Dependencies

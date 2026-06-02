@@ -111,9 +111,14 @@ function replaceMetaContent(html: string, attribute: string, content: string) {
   return html.replace(pattern, `$1${escapedContent}$2`)
 }
 
+function buildAbsoluteUrl(pathname: string, baseUrl: string) {
+  return new URL(pathname, baseUrl).toString()
+}
+
 export function renderIndexSocialMeta(html: string, locale: SupportedLocale, pageUrl: string) {
   const copy = homeSocialCopyByLocale[locale] ?? homeSocialCopyByLocale[defaultLocale]
   const escapedTitle = escapeHtmlAttribute(copy.title)
+  const imageUrl = buildAbsoluteUrl('/brand/og-image.jpg', pageUrl)
 
   return [
     (value: string) => value.replace(/<html lang="[^"]*">/i, `<html lang="${escapeHtmlAttribute(copy.htmlLang)}">`),
@@ -123,9 +128,11 @@ export function renderIndexSocialMeta(html: string, locale: SupportedLocale, pag
     (value: string) => replaceMetaContent(value, 'property="og:url"', pageUrl),
     (value: string) => replaceMetaContent(value, 'property="og:title"', copy.title),
     (value: string) => replaceMetaContent(value, 'property="og:description"', copy.description),
+    (value: string) => replaceMetaContent(value, 'property="og:image"', imageUrl),
     (value: string) => replaceMetaContent(value, 'property="og:image:alt"', copy.imageAlt),
     (value: string) => replaceMetaContent(value, 'name="twitter:title"', copy.title),
     (value: string) => replaceMetaContent(value, 'name="twitter:description"', copy.description),
+    (value: string) => replaceMetaContent(value, 'name="twitter:image"', imageUrl),
     (value: string) => replaceMetaContent(value, 'name="twitter:image:alt"', copy.imageAlt),
   ].reduce((currentHtml, transform) => transform(currentHtml), html)
 }

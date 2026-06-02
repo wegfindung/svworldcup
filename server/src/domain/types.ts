@@ -137,6 +137,29 @@ export interface ReferralAnalyticsRow {
   conversionRate: number
 }
 
+export interface LandingPageVisitInput {
+  ipHash: string
+  userAgentHash?: string
+  landingPath?: string
+}
+
+export interface LandingPageVisitStats {
+  uniqueVisitors: number
+  totalVisits: number
+  reloadCount: number
+}
+
+export interface LandingPageConversionStats extends LandingPageVisitStats {
+  registrations: number
+  activeRegistrations: number
+  pendingRegistrations: number
+  squadSubmissions: number
+  unsubmittedRegistrations: number
+  visitorToRegistrationRate: number
+  registrationToSquadSubmissionRate: number
+  activeToSquadSubmissionRate: number
+}
+
 export interface RegistrationRecord extends ParticipantProfile {
   verificationTokenHash: string
   verificationTokenExpiresAt: string

@@ -280,6 +280,19 @@ export interface AdminOverview {
     pending: number
     active: number
   }
+  landingConversion: {
+    uniqueVisitors: number
+    totalVisits: number
+    reloadCount: number
+    registrations: number
+    activeRegistrations: number
+    pendingRegistrations: number
+    squadSubmissions: number
+    unsubmittedRegistrations: number
+    visitorToRegistrationRate: number
+    registrationToSquadSubmissionRate: number
+    activeToSquadSubmissionRate: number
+  }
   scoring: ScoringConfig
   eventControls: EventControls
   scoringLocked: boolean

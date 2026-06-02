@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { ScoringCalculator } from '../components/ScoringCalculator'
@@ -7,6 +7,7 @@ import { TeamFlag } from '../components/TeamFlag'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
 import { useBootstrap } from '../hooks/useBootstrap'
+import { recordLandingPageVisit } from '../lib/api'
 import { withReferral } from '../lib/referral'
 import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
 
@@ -204,7 +205,7 @@ function HeroPlayerWall({ label }: { label: string }) {
           </div>
           
           <div className="trading-card-info">
-            <h4 className="trading-card-name">{player.name}</h4>
+            <p className="trading-card-name">{player.name}</p>
             <p className="trading-card-sub">ID: {player.playerId}</p>
           </div>
         </PlayerTooltip>
@@ -424,6 +425,7 @@ interface HomePageProps {
 }
 
 export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageProps) {
+  const location = useLocation()
   const { data: bootstrap } = useBootstrap()
   const copy = getMessages(locale)
   const homeCopy = copy.home
@@ -436,6 +438,16 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const fixtures = bootstrap?.fixtures ?? emptyFixtures
   const fixtureCount = bootstrap?.fixtures.length ?? 104
   const competitionStartMs = useMemo(() => getCompetitionStartMs(fixtures), [fixtures])
+
+  useEffect(() => {
+    const landingPath = `${location.pathname}${location.search}`
+    const storageKey = `svworldcup-landing-visit:${landingPath}`
+    if (window.sessionStorage.getItem(storageKey)) {
+      return
+    }
+    window.sessionStorage.setItem(storageKey, '1')
+    void recordLandingPageVisit(landingPath).catch(() => undefined)
+  }, [location.pathname, location.search])
 
   return (
     <div className="space-y-4 pb-10">

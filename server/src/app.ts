@@ -36,6 +36,7 @@ import {
   createParticipantInfluenceSnapshotRepository,
   createParticipantRiskRepository,
   createSnapshotJobRepository,
+  createLandingAnalyticsRepository,
 } from './services/repos.js'
 
 export function createApp() {
@@ -55,6 +56,7 @@ export function createApp() {
   const participantInfluenceSnapshotRepository = createParticipantInfluenceSnapshotRepository()
   const participantRiskRepository = createParticipantRiskRepository()
   const snapshotJobRepository = createSnapshotJobRepository()
+  const landingAnalyticsRepository = createLandingAnalyticsRepository()
   const cwd = process.cwd()
   const publicDirCandidates = [
     resolve(cwd, 'public'),
@@ -148,6 +150,8 @@ export function createApp() {
           if (/[/\\]assets[/\\]/.test(filePath)) {
             // Vite fingerprints these — the content can never change under the same name.
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+          } else if (/[/\\](brand|flags|team-flags|link-previews|placeholders|prizes)[/\\]/.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400')
           } else {
             res.setHeader('Cache-Control', 'public, max-age=3600')
           }
@@ -184,7 +188,7 @@ export function createApp() {
   app.use(
     '/api/public',
     publicApiLimiter,
-    createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, fixtureRepository, scoringRepository, squadRepository }),
+    createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, fixtureRepository, scoringRepository, squadRepository, landingAnalyticsRepository }),
   )
   app.use(
     '/api/auth',
@@ -211,6 +215,8 @@ export function createApp() {
       emailMarketingRepository,
       snapshotJobRepository,
       participantRiskRepository,
+      squadRepository,
+      landingAnalyticsRepository,
     ),
   )
 

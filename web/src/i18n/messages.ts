@@ -1611,18 +1611,18 @@ const germanMessages: DeepPartial<AppMessages> = {
       eyebrow: 'community event 2026',
       badge: 'ein fester Kader',
       kicker: 'Verdeckte Kader. Öffentlicher Druck. Nationenstolz.',
-      titleLines: ['Draft 15.', 'Versteck den Kader.', 'Schlag deine Nation.'],
+      titleLines: ['Wähle 15.', 'Verstecke deinen Kader.', 'Führe deine Nation zum Sieg.'],
       body:
-        'Baue einen The Grand Tournament-Kader unter deinem gewählten Cap, locke ihn für den gesamten Wettbewerb und sieh zu, wie jedes echte Spiel Rookie-, Veteran- und Nationenranking bewegt.',
-      primaryCta: 'Entry registrieren',
+        'Stelle unter deinem gewählten Cap einen Kader für The Grand Tournament zusammen, lege ihn für den gesamten Wettbewerb fest und verfolge, wie jedes echte Spiel die Rookie-, Veteran- und Nationenrankings bewegt.',
+      primaryCta: 'Registrierung starten',
       secondaryCta: 'Builder starten',
     },
     mechanics: [
       { step: '01', title: 'Verdeckt draften', body: 'Wähle 15 Spieler unter dem aktuellen SVC Cap vor dem ersten Anpfiff.' },
-      { step: '02', title: 'Einmal locken', body: 'Dein Kader bleibt für den gesamten Wettbewerb fix. Kein Matchday-Tüfteln.' },
+      { step: '02', title: 'Einmal festlegen', body: 'Lege deinen Kader einmal fest; danach bleibt er für den gesamten Wettbewerb fix. Kein Matchday-Tüfteln.' },
       { step: '03', title: 'Tabellen klettern', body: 'Jedes Tor, jeder Assist, jedes Clean Sheet und jeder Performance-Punkt zählt.' },
     ],
-    squadBlueprint: { eyebrow: 'gelockter kader', body: 'Ein Entry, ein Cap, ein Kader für das gesamte Turnier.' },
+    squadBlueprint: { eyebrow: 'fester kader', body: 'Eine Registrierung, ein Cap, ein Kader für das gesamte Turnier.' },
     dataStrip: { teams: 'Teams', squad: 'Kader', matches: 'Spiele' },
     countdown: {
       eyebrow: 'Grand-Tournament-Countdown',
@@ -1636,9 +1636,9 @@ const germanMessages: DeepPartial<AppMessages> = {
     rankingTracks: {
       eyebrow: 'drei rennen gleichzeitig',
       items: [
-        { title: 'Rookie', body: 'Neue Manager kämpfen ab Tag eins in der offenen Tabelle.' },
-        { title: 'Veteran', body: 'Etablierte Accounts bekommen ihre eigene Druckspur.' },
-        { title: 'Nation', body: 'Jedes gewählte Land trägt seine Manager ins Nationenranking.' },
+        { title: 'Rookie', body: 'Dein Grand-Tournament-Kader spielt in der Einsteiger-Liga um Punkte und Preise.' },
+        { title: 'Veteran', body: 'Mit verknüpftem Soccerverse-Kader trittst du gegen andere erfahrene Manager an.' },
+        { title: 'Nation', body: 'Du nimmst automatisch auch an den Nationenligen teil. Jeder Punkt hilft im Nationenrennen.' },
       ],
     },
     nations: { eyebrow: 'Top-Fußballnationen' },
@@ -1666,7 +1666,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       eligibility: [
         'Keine Multi-Accounts.',
         'Alle Teams nutzen eine 4-3-3-Struktur mit vier festen Ersatzspielern.',
-        'Kader bleiben verborgen, bis du deinen revealst oder der globale Event-Reveal startet.',
+        'Kader bleiben verborgen, bis du deinen aufdeckst oder die globale Event-Aufdeckung startet.',
       ],
       budgetTitle: 'gehaltsbudget',
       budgetBody: 'Wähle ein engeres Budget für einen stärkeren Multiplikator oder gib mehr aus mit niedrigerem Multiplikator.',
@@ -1755,8 +1755,8 @@ const germanMessages: DeepPartial<AppMessages> = {
       access: 'Builder-Zugang',
       verificationRequired: 'Verifizierung nötig',
       title: 'Der Builder öffnet nach der Registrierung.',
-      body: 'Erstelle zuerst einen Entry, bestätige den E-Mail-Link und kehre dann hierher zurück, um dein geschütztes Kader-Dashboard zu öffnen.',
-      cta: 'Entry registrieren',
+      body: 'Registriere dich zuerst, bestätige den E-Mail-Link und kehre dann hierher zurück, um dein geschütztes Kader-Dashboard zu öffnen.',
+      cta: 'Registrierung starten',
     },
     register: {
       eyebrow: 'registrierungsflow',

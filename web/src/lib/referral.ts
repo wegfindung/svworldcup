@@ -76,7 +76,7 @@ function isLocaleCode(value: string): value is LocaleCode {
 }
 
 export function buildLandingReferralUrl(referrerSoccerverseUsername: string, origin?: string, shareLocale?: LocaleCode) {
-  const baseOrigin = origin ?? (typeof window === 'undefined' ? 'https://worldcup.svtool.info' : window.location.origin)
+  const baseOrigin = origin ?? (typeof window === 'undefined' ? 'https://event.svtool.info' : window.location.origin)
   const normalizedOrigin = baseOrigin.replace(/\/+$/, '')
   const referrer = sanitizeReferrerSoccerverseUsername(referrerSoccerverseUsername)
   const params = new URLSearchParams()

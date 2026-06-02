@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('./lib/api', () => ({ recordReferralClick: vi.fn() }))
+vi.mock('./lib/api', () => ({ recordReferralClick: vi.fn(), recordLandingPageVisit: vi.fn() }))
 
 const bootstrapResult = { data: null as unknown, error: null as string | null, isLoading: false }
 vi.mock('./hooks/useBootstrap', () => ({

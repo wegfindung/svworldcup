@@ -103,6 +103,7 @@ export interface SquadRepository {
   swapPlayers(participantId: string, input: SwapPlayersInput, fixtures?: FixtureSeed[]): Promise<SwapResultSummary>
   listRoundLineupSlots(participantId: string): Promise<RoundLineupSlot[]>
   listSwaps(participantId: string): Promise<SwapRecord[]>
+  countLockedSquads(): Promise<number>
 }
 
 export class MemorySquadRepository implements SquadRepository {
@@ -392,6 +393,10 @@ export class MemorySquadRepository implements SquadRepository {
 
   async listSwaps(participantId: string): Promise<SwapRecord[]> {
     return [...(this.swaps.get(participantId) ?? [])]
+  }
+
+  async countLockedSquads(): Promise<number> {
+    return [...this.squads.values()].filter((squad) => squad.isLocked).length
   }
 }
 
@@ -1020,5 +1025,18 @@ export class PostgresSquadRepository implements SquadRepository {
       playerOutId: Number(row.player_out),
       appliedAt: typeof row.applied_at === 'string' ? row.applied_at : new Date(row.applied_at).toISOString(),
     }))
+  }
+
+  async countLockedSquads(): Promise<number> {
+    const result = await this.pool.query<{ count: number | string }>(
+      `
+        SELECT COUNT(*)::int AS count
+        FROM squads s
+        JOIN participants p ON p.participant_id = s.participant_id
+        WHERE s.is_locked = TRUE
+          AND p.status <> 'withdrawn'
+      `,
+    )
+    return Number(result.rows[0]?.count ?? 0)
   }
 }

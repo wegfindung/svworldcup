@@ -20,6 +20,9 @@ import { LeagueChangeError } from '../repositories/registrationRepository.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
+import type { SquadRepository } from '../repositories/squadRepository.js'
+import type { LandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
+import type { LandingPageConversionStats } from '../domain/types.js'
 import { createMatchImportRouter } from './matchImport.js'
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
@@ -125,6 +128,34 @@ function isScoringLocked(): boolean {
   return Date.now() >= env.TOURNAMENT_KICKOFF_AT.getTime()
 }
 
+function conversionRate(numerator: number, denominator: number) {
+  return denominator > 0 ? numerator / denominator : 0
+}
+
+function buildLandingConversionStats(input: {
+  pendingRegistrations: number
+  activeRegistrations: number
+  squadSubmissions: number
+  uniqueVisitors: number
+  totalVisits: number
+  reloadCount: number
+}): LandingPageConversionStats {
+  const registrations = input.pendingRegistrations + input.activeRegistrations
+  return {
+    uniqueVisitors: input.uniqueVisitors,
+    totalVisits: input.totalVisits,
+    reloadCount: input.reloadCount,
+    registrations,
+    activeRegistrations: input.activeRegistrations,
+    pendingRegistrations: input.pendingRegistrations,
+    squadSubmissions: input.squadSubmissions,
+    unsubmittedRegistrations: Math.max(0, registrations - input.squadSubmissions),
+    visitorToRegistrationRate: conversionRate(registrations, input.uniqueVisitors),
+    registrationToSquadSubmissionRate: conversionRate(input.squadSubmissions, registrations),
+    activeToSquadSubmissionRate: conversionRate(input.squadSubmissions, input.activeRegistrations),
+  }
+}
+
 export function createAdminRouter(
   adminRepository: AdminRepository,
   registrationRepository: RegistrationRepository,
@@ -137,6 +168,8 @@ export function createAdminRouter(
   emailMarketingRepository: EmailMarketingRepository,
   snapshotJobRepository: SnapshotJobRepository,
   participantRiskRepository: ParticipantRiskRepository,
+  squadRepository: SquadRepository,
+  landingAnalyticsRepository: LandingAnalyticsRepository,
 ) {
   const router = Router()
   const requireAdmin = createRequireAdmin(adminRepository)
@@ -325,10 +358,14 @@ export function createAdminRouter(
   })
 
   router.get('/overview', async (_req, res) => {
-    const counts = await registrationRepository.getCounts()
-    const scoring = await configRepository.getScoringConfig()
-    const eventControls = await configRepository.getEventControls()
-    const selectionCounts = await teamPoolRepository.getTeamSelectionCounts()
+    const [counts, scoring, eventControls, selectionCounts, landingVisitStats, squadSubmissions] = await Promise.all([
+      registrationRepository.getCounts(),
+      configRepository.getScoringConfig(),
+      configRepository.getEventControls(),
+      teamPoolRepository.getTeamSelectionCounts(),
+      landingAnalyticsRepository.getLandingPageVisitStats(),
+      squadRepository.countLockedSquads(),
+    ])
     res.json({
       counts,
       scoring,
@@ -336,6 +373,12 @@ export function createAdminRouter(
       scoringLocked: isScoringLocked(),
       defaults: scoringDefaults,
       teamSelectionCounts: selectionCounts,
+      landingConversion: buildLandingConversionStats({
+        pendingRegistrations: counts.pending,
+        activeRegistrations: counts.active,
+        squadSubmissions,
+        ...landingVisitStats,
+      }),
     })
   })
 

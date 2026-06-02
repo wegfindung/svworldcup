@@ -17,6 +17,19 @@ const batches = vi.mocked(fetchMatchImportBatches)
 // Only the fields DashboardLanding actually reads — cast to keep the mock small.
 const overviewFixture = {
   counts: { active: 12, pending: 3 },
+  landingConversion: {
+    uniqueVisitors: 100,
+    totalVisits: 118,
+    reloadCount: 18,
+    registrations: 15,
+    activeRegistrations: 12,
+    pendingRegistrations: 3,
+    squadSubmissions: 9,
+    unsubmittedRegistrations: 6,
+    visitorToRegistrationRate: 0.15,
+    registrationToSquadSubmissionRate: 0.6,
+    activeToSquadSubmissionRate: 0.75,
+  },
   scoringLocked: false,
   teamSelectionCounts: { ARG: 4, BRA: 0 },
 } as unknown as AdminOverview
@@ -38,6 +51,8 @@ describe('DashboardLanding partial loading', () => {
 
     // The overview-driven card still renders despite the batches fetch failing.
     expect(await screen.findByText('12 active · 3 pending')).toBeInTheDocument()
+    expect(screen.getByText('Visitor -> registration')).toBeInTheDocument()
+    expect(screen.getByText('15.0%')).toBeInTheDocument()
     // The banner names only the failed source, not a whole-page error.
     expect(screen.getByText(/Could not load: pending imports/)).toBeInTheDocument()
   })
