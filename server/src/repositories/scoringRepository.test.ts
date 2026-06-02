@@ -634,7 +634,7 @@ describe('MemoryScoringRepository ownership boost', () => {
     expect(board[0].totalScore).toBeCloseTo(14.35, 5)
   })
 
-  it('moves a linked Rookie to the Veteran leaderboard and keeps the ownership boost', async () => {
+  it('applies the boost to a linked Rookie on the Rookie leaderboard (boost is not league-gated)', async () => {
     const pools = new MemoryTeamPoolRepository()
     await seedSquadPools(
       pools,
@@ -652,8 +652,8 @@ describe('MemoryScoringRepository ownership boost', () => {
       'rookie-token',
     )
     await registrations.verifyByPlainToken('rookie-token')
-    // Link a Soccerverse account post-registration; linking moves the participant
-    // into the Veteran league immediately.
+    // Link a Soccerverse account post-registration; linking does NOT move the
+    // participant into the Veteran league. They stay on the Rookie leaderboard.
     await registrations.linkSoccerverseAccount(created.record.participantId, 'rookie-sv')
 
     const squads = new MemorySquadRepository(pools)
@@ -682,15 +682,15 @@ describe('MemoryScoringRepository ownership boost', () => {
       bonusPercent: 8,
     })
 
-    const veteranBoard = await scoring.getLeagueLeaderboard('veteran')
-    expect(veteranBoard).toHaveLength(1)
-    expect(veteranBoard[0].leagueType).toBe('veteran')
-    expect(veteranBoard[0].baseScore).toBe(7)
-    expect(veteranBoard[0].totalScore).toBeCloseTo(7.56, 5)
-    expect(veteranBoard[0].bonusPercent).toBeCloseTo(8, 5)
-
     const rookieBoard = await scoring.getLeagueLeaderboard('rookie')
-    expect(rookieBoard).toHaveLength(0)
+    expect(rookieBoard).toHaveLength(1)
+    expect(rookieBoard[0].leagueType).toBe('rookie')
+    expect(rookieBoard[0].baseScore).toBe(7)
+    expect(rookieBoard[0].totalScore).toBeCloseTo(7.56, 5)
+    expect(rookieBoard[0].bonusPercent).toBeCloseTo(8, 5)
+
+    const veteranBoard = await scoring.getLeagueLeaderboard('veteran')
+    expect(veteranBoard).toHaveLength(0)
   })
 
   it('pays DEF 3 and the conditional MID 1 per the 2026-05-28 clean-sheet rules', async () => {

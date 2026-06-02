@@ -77,7 +77,7 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
     expect(resubscribed?.marketingUnsubscribedAt).toBeUndefined()
   })
 
-  it('links a Soccerverse account and moves the participant into Veteran', async () => {
+  it('links a Soccerverse account without changing league_type', async () => {
     const { repo, participantId } = await createActiveRookie()
     const before = await repo.getByParticipantId(participantId)
     expect(before?.leagueType).toBe('rookie')
@@ -85,7 +85,7 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
     expect(before?.soccerverseLinkedAt).toBeUndefined()
 
     const linked = await repo.linkSoccerverseAccount(participantId, 'rookie-sv')
-    expect(linked.leagueType).toBe('veteran')
+    expect(linked.leagueType).toBe('rookie') // unchanged — admin moves them later
     expect(linked.soccerverseUsername).toBe('rookie-sv')
     expect(linked.soccerverseLinkedAt).toBeDefined()
     expect(new Date(linked.soccerverseLinkedAt ?? '').getTime()).toBeLessThanOrEqual(Date.now())
@@ -160,7 +160,7 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
 })
 
 describe('MemoryRegistrationRepository.setParticipantLeague', () => {
-  it('keeps an auto-promoted linked participant in the Veteran league', async () => {
+  it('moves a linked Rookie into the Veteran league', async () => {
     const { repo, participantId } = await createActiveRookie()
     await repo.linkSoccerverseAccount(participantId, 'now-vet')
 
