@@ -51,6 +51,7 @@ interface AuthParticipantResponse {
 
 let participantCsrfToken = ''
 let adminCsrfToken = ''
+let participantCsrfRefresh: Promise<void> | null = null
 
 function isUnsafeMethod(method?: string) {
   const normalizedMethod = (method ?? 'GET').toUpperCase()
@@ -65,6 +66,13 @@ function csrfTokenForPath(path: string) {
     return participantCsrfToken
   }
   return ''
+}
+
+function needsParticipantCsrfRefresh(path: string, init?: RequestInit) {
+  if (!isUnsafeMethod(init?.method)) {
+    return false
+  }
+  return path.startsWith('/api/participant') || path === '/api/auth/set-password' || path === '/api/auth/logout'
 }
 
 function riskHeadersForPath(path: string) {
@@ -203,15 +211,52 @@ async function fetchJsonOnce<T>(path: string, init: RequestInit | undefined, hea
   return payload
 }
 
+function isCsrfError(error: unknown) {
+  return (
+    error instanceof ApiError &&
+    error.status === 403 &&
+    typeof error.payload?.error === 'string' &&
+    /csrf/i.test(error.payload.error)
+  )
+}
+
+async function refreshParticipantCsrfToken() {
+  if (participantCsrfRefresh) {
+    return participantCsrfRefresh
+  }
+
+  participantCsrfRefresh = fetchJsonOnce<AuthParticipantResponse>(
+    '/api/auth/me',
+    { method: 'GET', headers: {} },
+    buildHeaders('/api/auth/me', { method: 'GET', headers: {} }),
+  )
+    .then(() => undefined)
+    .finally(() => {
+      participantCsrfRefresh = null
+    })
+
+  return participantCsrfRefresh
+}
+
 async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = buildHeaders(path, init)
   const callerSignal = init?.signal ?? undefined
   const maxRetries = isSafeMethod(init?.method) ? MAX_GET_RETRIES : 0
+  const shouldRefreshParticipantCsrf = needsParticipantCsrfRefresh(path, init)
+
+  if (shouldRefreshParticipantCsrf && !participantCsrfToken) {
+    await refreshParticipantCsrfToken()
+  }
 
   for (let attempt = 0; ; attempt += 1) {
+    const headers = buildHeaders(path, init)
     try {
       return await fetchJsonOnce<T>(path, init, headers)
     } catch (error) {
+      if (shouldRefreshParticipantCsrf && isCsrfError(error) && attempt === 0) {
+        participantCsrfToken = ''
+        await refreshParticipantCsrfToken()
+        continue
+      }
       // A caller-initiated abort (unmount / superseded request) is intentional — never retry it.
       if (callerSignal?.aborted || attempt >= maxRetries || !isTransientFailure(error)) {
         throw error
@@ -259,6 +304,13 @@ function getCachedJson<T>(path: string, ttlMs = DEFAULT_CACHE_TTL_MS): Promise<T
 export function clearApiCache() {
   apiCache.clear()
   apiInflight.clear()
+}
+
+export function clearApiClientState() {
+  clearApiCache()
+  participantCsrfToken = ''
+  adminCsrfToken = ''
+  participantCsrfRefresh = null
 }
 
 export function fetchBootstrap() {

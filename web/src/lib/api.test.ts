@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { clearApiCache, fetchRookieLeaderboard, fetchTeamPlayers, loginParticipant } from './api'
+import {
+  clearApiClientState,
+  fetchRookieLeaderboard,
+  fetchTeamPlayers,
+  linkSoccerverseAccount,
+  loginParticipant,
+} from './api'
 
 function jsonResponse(body: unknown): Response {
   return { ok: true, status: 200, json: async () => body } as Response
@@ -10,7 +16,7 @@ function errorResponse(status: number, body: unknown = {}): Response {
 }
 
 afterEach(() => {
-  clearApiCache()
+  clearApiClientState()
   vi.unstubAllGlobals()
 })
 
@@ -98,5 +104,72 @@ describe('api selective GET retry', () => {
 
     await expect(loginParticipant('a@b.c', 'pw')).rejects.toBeInstanceOf(TypeError)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('api participant CSRF refresh', () => {
+  it('refreshes the participant CSRF token before a protected write when none is loaded', async () => {
+    const fetchMock = vi.fn(async (path: string) => {
+      if (path === '/api/auth/me') {
+        return jsonResponse({
+          participant: {},
+          budgetLimit: 0,
+          squadSummary: {},
+          csrfToken: 'fresh-token',
+        })
+      }
+      if (path === '/api/participant/link-soccerverse') {
+        return jsonResponse({ participant: { soccerverseUsername: 'Liberterx' } })
+      }
+      throw new Error(`Unexpected path: ${path}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await linkSoccerverseAccount('Liberterx')
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/auth/me')
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/participant/link-soccerverse')
+    expect((fetchMock.mock.calls[1]?.[1] as RequestInit).headers).toMatchObject({
+      'x-csrf-token': 'fresh-token',
+    })
+  })
+
+  it('refreshes and retries once when a protected write rejects a stale CSRF token', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          participant: {},
+          budgetLimit: 0,
+          squadSummary: {},
+          csrfToken: 'stale-token',
+        }),
+      )
+      .mockResolvedValueOnce(errorResponse(403, { error: 'CSRF token is invalid or missing.' }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          participant: {},
+          budgetLimit: 0,
+          squadSummary: {},
+          csrfToken: 'fresh-token',
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ participant: { soccerverseUsername: 'Liberterx' } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await loginParticipant('user@example.com', 'password')
+    await linkSoccerverseAccount('Liberterx')
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/participant/link-soccerverse')
+    expect((fetchMock.mock.calls[1]?.[1] as RequestInit).headers).toMatchObject({
+      'x-csrf-token': 'stale-token',
+    })
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('/api/auth/me')
+    expect(fetchMock.mock.calls[3]?.[0]).toBe('/api/participant/link-soccerverse')
+    expect((fetchMock.mock.calls[3]?.[1] as RequestInit).headers).toMatchObject({
+      'x-csrf-token': 'fresh-token',
+    })
   })
 })
