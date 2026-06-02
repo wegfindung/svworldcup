@@ -79,6 +79,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registro',
+      logoAlt: 'Evento comunitario The Grand Tournament',
       toggle: 'Abrir navegación',
     },
     footer: {
@@ -123,6 +124,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registrati',
+      logoAlt: 'Evento community The Grand Tournament',
       toggle: 'Apri navigazione',
     },
     footer: {
@@ -167,6 +169,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registrieren',
+      logoAlt: 'The Grand Tournament Community-Event',
       toggle: 'Navigation öffnen',
     },
     footer: {
@@ -211,6 +214,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Inscription',
+      logoAlt: 'Événement communautaire The Grand Tournament',
       toggle: 'Ouvrir la navigation',
     },
     footer: {
@@ -255,6 +259,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registar',
+      logoAlt: 'Evento comunitário The Grand Tournament',
       toggle: 'Abrir navegação',
     },
     footer: {
@@ -299,6 +304,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Регистрация',
+      logoAlt: 'Комьюнити-событие The Grand Tournament',
       toggle: 'Открыть навигацию',
     },
     footer: {
@@ -343,6 +349,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/admin', label: 'Admin' },
       ],
       register: '注册',
+      logoAlt: 'The Grand Tournament 社区活动',
       toggle: '打开导航',
     },
     footer: {

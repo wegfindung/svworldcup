@@ -4590,7 +4590,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   de: {
-    nav: { logoAlt: 'The Grand Tournament Community Event' },
+    nav: { logoAlt: 'The Grand Tournament Community-Event' },
     home: {
       hero: { playerWallLabel: 'Hervorgehobene Soccerverse-Spieler' },
       squadBlueprint: { badge: 'fixierter Kader' },
