@@ -22,7 +22,68 @@ const newsletterInputStatuses: EmailCampaignStatus[] = ['draft', 'scheduled']
 const autoresponderInputStatuses: EmailCampaignStatus[] = ['draft', 'active', 'paused']
 const smtpMaxPerMinute = 95
 const smtpMaxPerTenMinutes = 1_000
+const emailLogoPath = '/brand/logo-email.png'
 const soccerverseAffiliateReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
+
+const unsubscribeCopy: Record<
+  SupportedLocale,
+  { beforeLink: string; linkLabel: string; afterLink: string; textLabel: string }
+> = {
+  en: {
+    beforeLink: 'You can unsubscribe from The Grand Tournament marketing emails here: ',
+    linkLabel: 'unsubscribe',
+    afterLink: '',
+    textLabel: 'Unsubscribe',
+  },
+  es: {
+    beforeLink: 'Puedes darte de baja de los emails de marketing de The Grand Tournament aquí: ',
+    linkLabel: 'darte de baja',
+    afterLink: '',
+    textLabel: 'Darse de baja',
+  },
+  it: {
+    beforeLink: "Puoi annullare l'iscrizione alle email di marketing di The Grand Tournament qui: ",
+    linkLabel: "annullare l'iscrizione",
+    afterLink: '',
+    textLabel: 'Annulla iscrizione',
+  },
+  de: {
+    beforeLink: 'Du kannst Marketing-Mails von The Grand Tournament hier ',
+    linkLabel: 'abbestellen',
+    afterLink: '.',
+    textLabel: 'Abbestellen',
+  },
+  fr: {
+    beforeLink: 'Tu peux te désabonner des emails marketing de The Grand Tournament ici : ',
+    linkLabel: 'te désabonner',
+    afterLink: '',
+    textLabel: 'Désabonnement',
+  },
+  pt: {
+    beforeLink: 'Podes cancelar a subscrição dos emails de marketing de The Grand Tournament aqui: ',
+    linkLabel: 'cancelar subscrição',
+    afterLink: '',
+    textLabel: 'Cancelar subscrição',
+  },
+  ru: {
+    beforeLink: 'Отписаться от маркетинговых писем The Grand Tournament можно здесь: ',
+    linkLabel: 'отписаться',
+    afterLink: '',
+    textLabel: 'Отписаться',
+  },
+  zh: {
+    beforeLink: '你可以在这里取消订阅 The Grand Tournament 营销邮件：',
+    linkLabel: '取消订阅',
+    afterLink: '',
+    textLabel: '取消订阅',
+  },
+  ja: {
+    beforeLink: 'The Grand Tournament のマーケティングメール配信停止はこちら: ',
+    linkLabel: '配信停止',
+    afterLink: '',
+    textLabel: '配信停止',
+  },
+}
 
 interface EmailRecipientSeed {
   participantId?: string
@@ -189,11 +250,21 @@ function stripHtml(value: string) {
     .trim()
 }
 
-function wrapMarketingHtml(content: string, unsubscribeUrl?: string) {
+function localizedUnsubscribeCopy(locale?: SupportedLocale) {
+  const resolvedLocale = locale && supportedLocales.includes(locale) ? locale : defaultLocale
+  return unsubscribeCopy[resolvedLocale] ?? unsubscribeCopy[defaultLocale]
+}
+
+function wrapMarketingHtml(content: string, unsubscribeUrl?: string, locale?: SupportedLocale) {
+  const unsubscribeText = localizedUnsubscribeCopy(locale)
   const unsubscribeFooter = unsubscribeUrl
-    ? `<p style="margin:18px 0 0;font-size:12px;color:#8fa39b;">You can unsubscribe from The Grand Tournament marketing emails here: <a href="${escapeHtml(
+    ? `<p style="margin:18px 0 0;font-size:12px;color:#8fa39b;">${escapeHtml(
+        unsubscribeText.beforeLink,
+      )}<a href="${escapeHtml(
         unsubscribeUrl,
-      )}" style="color:#22bd93;">unsubscribe</a></p>`
+      )}" style="color:#22bd93;">${escapeHtml(unsubscribeText.linkLabel)}</a>${escapeHtml(
+        unsubscribeText.afterLink,
+      )}</p>`
     : ''
 
   return `
@@ -318,7 +389,7 @@ function applyPlaceholders(value: string, recipient: EmailRecipientSeed, unsubsc
     '{{prizes_url}}': `${publicWebUrl}/prizes`,
     '{{play_url}}': 'https://play.soccerverse.com/',
     '{{play_affiliate_url}}': `https://play.soccerverse.com/?ref=${encodeURIComponent(affiliateReferrer)}`,
-    '{{logo_url}}': `${publicWebUrl}/brand/logo-200.webp`,
+    '{{logo_url}}': `${publicWebUrl}${emailLogoPath}`,
     '{{public_web_url}}': publicWebUrl,
   }
 
@@ -410,11 +481,12 @@ async function sendCampaignMail(
   const body = htmlFromEditorValue(
     applyPlaceholders(localizedText(campaign.bodyHtml, campaign.bodyHtmlByLocale, recipient.browserLocale), recipient, unsubscribeUrl),
   )
+  const unsubscribeText = localizedUnsubscribeCopy(recipient.browserLocale)
   await sendAppMail({
     to: recipient.email,
     subject,
-    html: wrapMarketingHtml(body, unsubscribeUrl),
-    text: unsubscribeUrl ? `${stripHtml(body)}\n\nUnsubscribe: ${unsubscribeUrl}` : stripHtml(body),
+    html: wrapMarketingHtml(body, unsubscribeUrl, recipient.browserLocale),
+    text: unsubscribeUrl ? `${stripHtml(body)}\n\n${unsubscribeText.textLabel}: ${unsubscribeUrl}` : stripHtml(body),
     headers: unsubscribeUrl
       ? {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,

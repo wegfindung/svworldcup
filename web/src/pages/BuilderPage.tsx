@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { NationSelect } from '../components/NationSelect'
@@ -93,6 +93,11 @@ function leagueLabel(mode: LeagueType, copy: BuilderCopy) {
 
 function formatBudget(value: number) {
   return `${value.toLocaleString(undefined)} SVC`
+}
+
+function formatBudgetTick(value: number) {
+  const millions = value / 1_000_000
+  return `${millions.toLocaleString(undefined, { maximumFractionDigits: 1 })}M`
 }
 
 function formatMultiplier(value: number) {
@@ -210,6 +215,9 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const [builderError, setBuilderError] = useState<string | null>(null)
   const [publicProfileUrl, setPublicProfileUrl] = useState<string | null>(null)
   const [budgetMenuOpen, setBudgetMenuOpen] = useState(false)
+  const [budgetSliderIndex, setBudgetSliderIndex] = useState(() =>
+    Math.max(0, budgetOptions.findIndex((option) => option.budgetLimit === (initialReadyState?.budgetLimit ?? defaultBudgetLimit))),
+  )
 
   const [registrationForm, setRegistrationForm] = useState<RegistrationFormState>(initialRegistrationForm)
   const [registrationBusy, setRegistrationBusy] = useState(false)
@@ -308,8 +316,21 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   }, [draftedPlayerIds, playerSearch, selectedSlot, teamPlayers])
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
   const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
-  const competitionStart = useMemo(() => getCompetitionStartEpoch(bootstrap?.fixtures ?? []), [bootstrap?.fixtures])
   const canEditSquad = !squad?.isLocked || !competitionStarted
+  const activeBudgetIndex = useMemo(() => {
+    const index = budgetOptions.findIndex((option) => option.budgetLimit === (squad?.budgetLimit ?? budgetLimit))
+    if (index >= 0) {
+      return index
+    }
+
+    return Math.max(0, budgetOptions.findIndex((option) => option.budgetLimit === defaultBudgetLimit))
+  }, [budgetLimit, squad?.budgetLimit])
+  const budgetSliderOption = budgetOptions[budgetSliderIndex] ?? budgetOptions[activeBudgetIndex] ?? budgetOptions[0]
+  const budgetSliderProgress = budgetOptions.length > 1 ? (budgetSliderIndex / (budgetOptions.length - 1)) * 100 : 0
+  const budgetSliderTooLow = squad ? budgetSliderOption.budgetLimit < squad.budgetUsed : false
+  const budgetSliderUnchanged = squad ? budgetSliderOption.budgetLimit === squad.budgetLimit : true
+  const budgetSliderCanApply = canEditSquad && !budgetSliderTooLow && !budgetSliderUnchanged
+  const competitionStart = useMemo(() => getCompetitionStartEpoch(bootstrap?.fixtures ?? []), [bootstrap?.fixtures])
 
   // Load swap state (windows + effective lineup) once the squad is locked; the SwapPanel and the
   // pitch both read from it. Refetched after each committed swap so the pitch updates immediately.
@@ -1466,7 +1487,13 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
               <button
                 type="button"
                 aria-expanded={budgetMenuOpen}
-                onClick={() => setBudgetMenuOpen((current) => !current)}
+                onClick={() => {
+                  const nextOpen = !budgetMenuOpen
+                  if (nextOpen) {
+                    setBudgetSliderIndex(activeBudgetIndex)
+                  }
+                  setBudgetMenuOpen(nextOpen)
+                }}
                 className={['budget-command-button', budgetMenuOpen ? 'is-open' : ''].join(' ')}
               >
                 <span className="budget-command-main">
@@ -1503,35 +1530,79 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                       {copy.common.close}
                     </button>
                   </div>
-                  <div className="mt-3 grid gap-2">
-                    {budgetOptions.map((option) => {
-                      const isSelected = option.budgetLimit === squad.budgetLimit
-                      const isTooLow = option.budgetLimit < squad.budgetUsed
-                      return (
-                        <button
-                          key={option.budgetLimit}
-                          type="button"
-                          onClick={() => {
-                            setBudgetMenuOpen(false)
-                            void handleBudgetChange(option.budgetLimit)
-                          }}
-                          disabled={!canEditSquad || isSelected || isTooLow}
-                          className={[
-                            'grid grid-cols-[1fr_auto] items-center gap-3 rounded-[0.75rem] border px-3 py-2.5 text-left transition hover:-translate-y-[1px] active:scale-[0.98]',
-                            isSelected
-                              ? 'border-[var(--color-accent)]/45 bg-[var(--color-accent)]/12 text-white'
-                              : 'border-white/8 bg-white/[0.03] text-[var(--color-muted)] hover:border-white/14 hover:text-white',
-                            !canEditSquad || isTooLow ? 'disabled:cursor-not-allowed disabled:opacity-50' : '',
-                          ].join(' ')}
-                        >
-                          <span>
-                            <span className="block text-sm font-semibold">{formatBudget(option.budgetLimit)}</span>
-                            {isTooLow ? <span className="mt-0.5 block text-[11px] text-[var(--color-sand)]">{copy.active.removePlayersFirst}</span> : null}
-                          </span>
-                          <span className="mono text-xs text-[var(--color-accent)]">{formatMultiplier(option.scoreMultiplier)}</span>
-                        </button>
-                      )
-                    })}
+                  <div className="budget-slider-panel mt-4">
+                    <div className="budget-slider-summary">
+                      <div className="min-w-0">
+                        <p className="mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                          {budgetSliderUnchanged ? copy.active.budgetCurrent : copy.active.cap}
+                        </p>
+                        <p className="mt-1 truncate text-lg font-semibold text-white">{formatBudget(budgetSliderOption.budgetLimit)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.scoreMultiplier}</p>
+                        <p className="mono mt-1 text-sm font-semibold text-[var(--color-accent)]">{formatMultiplier(budgetSliderOption.scoreMultiplier)}</p>
+                      </div>
+                    </div>
+                    {budgetSliderTooLow ? (
+                      <p className="mt-2 text-xs font-semibold text-[var(--color-sand)]">{copy.active.removePlayersFirst}</p>
+                    ) : null}
+                    <input
+                      type="range"
+                      min={0}
+                      max={budgetOptions.length - 1}
+                      step={1}
+                      value={budgetSliderIndex}
+                      disabled={!canEditSquad}
+                      aria-label={copy.active.changeCap}
+                      aria-valuetext={`${formatBudget(budgetSliderOption.budgetLimit)} ${formatMultiplier(budgetSliderOption.scoreMultiplier)}`}
+                      onChange={(event) => setBudgetSliderIndex(Number(event.target.value))}
+                      className="budget-slider-input mt-4"
+                      style={{ '--budget-progress': `${budgetSliderProgress}%` } as CSSProperties}
+                    />
+                    <div
+                      className="budget-slider-ticks mt-2"
+                      style={{ gridTemplateColumns: `repeat(${budgetOptions.length}, minmax(0, 1fr))` }}
+                    >
+                      {budgetOptions.map((option, index) => {
+                        const isCurrent = option.budgetLimit === squad.budgetLimit
+                        const isPreviewed = index === budgetSliderIndex
+                        const isTooLow = option.budgetLimit < squad.budgetUsed
+                        return (
+                          <button
+                            key={option.budgetLimit}
+                            type="button"
+                            onClick={() => setBudgetSliderIndex(index)}
+                            disabled={!canEditSquad}
+                            aria-label={`${formatBudget(option.budgetLimit)} ${formatMultiplier(option.scoreMultiplier)}`}
+                            className={[
+                              'budget-slider-tick',
+                              isPreviewed ? 'is-previewed' : '',
+                              isCurrent ? 'is-current' : '',
+                              isTooLow ? 'is-unavailable' : '',
+                            ].join(' ')}
+                          >
+                            <span className="budget-slider-tick-dot" aria-hidden="true" />
+                            <span className="budget-slider-tick-label">{formatBudgetTick(option.budgetLimit)}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className={budgetSliderTooLow ? 'mt-4 grid grid-cols-[1fr_auto] items-center gap-3' : 'mt-4 flex justify-end'}>
+                      {budgetSliderTooLow ? (
+                        <p className="text-xs leading-relaxed text-[var(--color-muted)]">{copy.active.removePlayersFirst}</p>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={!budgetSliderCanApply}
+                        onClick={() => {
+                          setBudgetMenuOpen(false)
+                          void handleBudgetChange(budgetSliderOption.budgetLimit)
+                        }}
+                        className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {copy.active.budgetApply}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : null}

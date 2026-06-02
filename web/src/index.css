@@ -571,6 +571,155 @@ textarea:focus-visible {
   touch-action: manipulation;
 }
 
+.budget-slider-panel {
+  border: 1px solid rgba(234, 225, 205, 0.09);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(3, 9, 8, 0.28);
+  padding: 0.85rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.budget-slider-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.budget-slider-input {
+  --budget-progress: 0%;
+  display: block;
+  width: 100%;
+  height: 2rem;
+  cursor: pointer;
+  appearance: none;
+  background: transparent;
+}
+
+.budget-slider-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.budget-slider-input::-webkit-slider-runnable-track {
+  height: 0.44rem;
+  border: 1px solid rgba(234, 225, 205, 0.1);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(34, 189, 147, 0.95) 0 var(--budget-progress), rgba(255, 255, 255, 0.08) var(--budget-progress) 100%),
+    rgba(3, 9, 8, 0.56);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.budget-slider-input::-webkit-slider-thumb {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: -0.52rem;
+  appearance: none;
+  border: 2px solid rgba(242, 239, 231, 0.92);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(242, 239, 231, 0.96), rgba(217, 173, 93, 0.72) 34%, rgba(34, 189, 147, 0.94) 72%),
+    var(--color-accent);
+  box-shadow:
+    0 12px 26px -14px rgba(34, 189, 147, 0.95),
+    0 0 0 4px rgba(34, 189, 147, 0.12);
+}
+
+.budget-slider-input::-moz-range-track {
+  height: 0.44rem;
+  border: 1px solid rgba(234, 225, 205, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.budget-slider-input::-moz-range-progress {
+  height: 0.44rem;
+  border-radius: 999px;
+  background: rgba(34, 189, 147, 0.95);
+}
+
+.budget-slider-input::-moz-range-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid rgba(242, 239, 231, 0.92);
+  border-radius: 999px;
+  background: var(--color-accent);
+  box-shadow:
+    0 12px 26px -14px rgba(34, 189, 147, 0.95),
+    0 0 0 4px rgba(34, 189, 147, 0.12);
+}
+
+.budget-slider-ticks {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.budget-slider-tick {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: 0.3rem;
+  border: 0;
+  background: transparent;
+  color: rgba(143, 163, 155, 0.82);
+  padding: 0;
+  cursor: pointer;
+}
+
+.budget-slider-tick:disabled {
+  cursor: not-allowed;
+}
+
+.budget-slider-tick-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid rgba(234, 225, 205, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.budget-slider-tick-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  line-height: 1;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.budget-slider-tick.is-current {
+  color: var(--color-paper);
+}
+
+.budget-slider-tick.is-current .budget-slider-tick-dot {
+  border-color: rgba(217, 173, 93, 0.74);
+  background: var(--color-sand);
+}
+
+.budget-slider-tick.is-previewed {
+  color: var(--color-accent);
+}
+
+.budget-slider-tick.is-previewed .budget-slider-tick-dot {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-color: rgba(34, 189, 147, 0.82);
+  background: var(--color-accent);
+}
+
+.budget-slider-tick.is-unavailable {
+  color: rgba(217, 173, 93, 0.54);
+}
+
+.budget-slider-tick.is-unavailable .budget-slider-tick-dot {
+  border-color: rgba(217, 173, 93, 0.45);
+  background: rgba(217, 173, 93, 0.16);
+}
+
 @media (min-width: 760px) {
   .builder-flow-strip {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -586,18 +735,14 @@ textarea:focus-visible {
 
 @media (max-width: 759px) {
   .budget-popover {
-    position: fixed;
-    z-index: 80;
-    right: 1rem;
-    bottom: 1rem;
-    left: 1rem;
-    top: auto;
-    width: auto;
-    max-height: min(38rem, calc(100dvh - 2rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
+    top: calc(100% + 0.58rem);
+    right: auto;
+    bottom: auto;
+    left: 0;
+    width: min(23rem, calc(100vw - 2rem));
+    max-height: none;
+    overflow: visible;
+    padding-bottom: 0.85rem;
   }
 }
 

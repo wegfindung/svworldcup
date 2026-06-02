@@ -1,6 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryEmailMarketingRepository } from './emailMarketingRepository.js'
 import type { ParticipantProfile } from '../domain/types.js'
+
+const mailerMock = vi.hoisted(() => ({
+  sendAppMail: vi.fn(async () => undefined),
+}))
+
+vi.mock('../lib/mailer.js', () => ({
+  sendAppMail: mailerMock.sendAppMail,
+}))
 
 const participant: ParticipantProfile = {
   participantId: 'participant-1',
@@ -16,6 +24,10 @@ const participant: ParticipantProfile = {
 }
 
 describe('MemoryEmailMarketingRepository', () => {
+  beforeEach(() => {
+    mailerMock.sendAppMail.mockClear()
+  })
+
   it('queues and sends active autoresponders for matching registration events', async () => {
     const repository = new MemoryEmailMarketingRepository()
     const campaign = await repository.saveCampaign(
@@ -142,5 +154,41 @@ describe('MemoryEmailMarketingRepository', () => {
 
     expect(runs).toHaveLength(0)
     expect(recipients).toHaveLength(0)
+  })
+
+  it('renders campaign emails with the PNG logo and localized unsubscribe footer', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+    await repository.saveCampaign(
+      {
+        kind: 'autoresponder',
+        status: 'active',
+        triggerKey: 'registration_verified',
+        subject: 'Rookie briefing',
+        bodyHtml: '<p><img src="{{logo_url}}" alt="Logo">Welcome {{first_name}}.</p>',
+        bodyHtmlByLocale: {
+          de: '<p><img src="{{logo_url}}" alt="Logo">Willkommen {{first_name}}.</p>',
+        },
+        audienceStatus: 'active',
+        audienceLeague: 'rookie',
+        requiresMarketingOptIn: false,
+      },
+      'admin@example.com',
+    )
+
+    await repository.queueAutoresponders('registration_verified', {
+      ...participant,
+      browserLocale: 'de',
+      marketingOptIn: false,
+    })
+
+    expect(mailerMock.sendAppMail).toHaveBeenCalledTimes(1)
+    const mail = mailerMock.sendAppMail.mock.calls[0]?.[0] as { html: string; text: string }
+
+    expect(mail.html).toContain('/brand/logo-email.png')
+    expect(mail.html).not.toContain('/brand/logo-200.webp')
+    expect(mail.html).toContain('Du kannst Marketing-Mails von The Grand Tournament hier')
+    expect(mail.html).toContain('>abbestellen</a>.')
+    expect(mail.text).toContain('Abbestellen: ')
+    expect(mail.text).not.toContain('Unsubscribe: ')
   })
 })

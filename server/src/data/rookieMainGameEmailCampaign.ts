@@ -210,7 +210,7 @@ function paragraph(text: string) {
 function buildRookieMainGameBody(copy: RookieMainGameCopy) {
   return `
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${copy.preheader}</div>
-    <p style="margin:0 0 24px;text-align:center;"><img src="{{logo_url}}" alt="The Grand Tournament" width="128" style="display:inline-block;width:128px;max-width:45%;height:auto;"></p>
+    <p style="margin:0 0 24px;text-align:center;"><img src="{{logo_url}}" alt="The Grand Tournament" width="220" style="display:inline-block;width:220px;max-width:70%;height:auto;"></p>
     <h1 style="margin:0 0 18px;font-size:24px;line-height:1.2;color:#f2efe7;">${copy.title}</h1>
     <p style="margin:0 0 16px;color:#c6d3ce;">${copy.greeting}</p>
     ${copy.paragraphs.map(paragraph).join('')}
