@@ -515,6 +515,10 @@ export function createAdminRouter(
   router.get('/teams/:teamCode/candidates', async (req, res) => {
     const teamCode = String(req.params.teamCode ?? '').trim().toUpperCase()
     const query = String(req.query.query ?? '').trim()
+    // Opt-in: widen the search to the full player database, ignoring the team's nation filter.
+    // Soccerverse stores one nationality per player, so a player who really belongs to this nation
+    // but is stored under a different country can only be found via a full-database search.
+    const allCountries = String(req.query.allCountries ?? '') === 'true'
 
     if (!isKnownTeamCode(teamCode)) {
       return res.status(404).json({ error: 'Unknown team.' })
@@ -523,9 +527,12 @@ export function createAdminRouter(
       return res.json({ items: [] })
     }
 
-    const countryId = getSoccerverseCountryId(teamCode)
-    if (!countryId) {
-      return res.status(422).json({ error: 'No Soccerverse country mapping exists for this team.' })
+    let countryId: string | undefined
+    if (!allCountries) {
+      countryId = getSoccerverseCountryId(teamCode)
+      if (!countryId) {
+        return res.status(422).json({ error: 'No Soccerverse country mapping exists for this team.' })
+      }
     }
 
     const items = (await searchPlayersByCountryAndName(countryId, query)).map(withImageUrl)
