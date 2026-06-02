@@ -265,7 +265,9 @@ export function TeamPoolsView() {
                             as="div"
                             info={{
                               name: player.displayName,
-                              nationCode: player.nationalityCode,
+                              // Show the flag of the pool being edited, not the player's Soccerverse
+                              // stored country — a candidate is being considered for THIS nation's pool.
+                              nationCode: selectedTeamCode,
                               imageUrl: player.imageUrl,
                               meta: [
                                 { label: 'Rating', value: String(player.rating) },
