@@ -248,11 +248,6 @@ export class MemorySquadRepository implements SquadRepository {
 
   async lockSquad(participantId: string) {
     const squad = await this.getOrCreate(participantId)
-    if (squad.isLocked) {
-      return squad
-    }
-    assertSquadEditable(squad.isLocked, this.now())
-
     const missingSlot = squad.slots.find((slot) => !slot.player)
     if (missingSlot) {
       throw new SquadValidationError('Squad must contain all 15 players before final submission.')
@@ -261,6 +256,14 @@ export class MemorySquadRepository implements SquadRepository {
     if (findNationCapBreach(squad.slots.map((slot) => slot.player?.teamCode ?? ''))) {
       throw new SquadValidationError(`A squad may contain at most ${MAX_PLAYERS_PER_NATION} players from the same team.`)
     }
+
+    if (squad.isLocked) {
+      if (!squad.lockedAt) {
+        throw new SquadValidationError('Locked squad is missing its lock timestamp.')
+      }
+      return squad
+    }
+    assertSquadEditable(squad.isLocked, this.now())
 
     const lockedSquad: ParticipantSquad = {
       ...squad,
@@ -720,17 +723,11 @@ export class PostgresSquadRepository implements SquadRepository {
         [participantId, STARTING_BUDGET],
       )
 
-      const squadResult = await client.query<{ squad_id: string; is_locked: boolean }>(
-        'SELECT squad_id, is_locked FROM squads WHERE participant_id = $1 FOR UPDATE',
+      const squadResult = await client.query<{ squad_id: string; is_locked: boolean; locked_at: string | null }>(
+        'SELECT squad_id, is_locked, locked_at FROM squads WHERE participant_id = $1 FOR UPDATE',
         [participantId],
       )
       const squad = squadResult.rows[0]
-      if (squad.is_locked) {
-        await client.query('COMMIT')
-        return this.getOrCreate(participantId)
-      }
-      assertSquadEditable(squad.is_locked)
-
       const slotCount = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM squad_slots WHERE squad_id = $1', [
         squad.squad_id,
       ])
@@ -757,6 +754,15 @@ export class PostgresSquadRepository implements SquadRepository {
       if (findNationCapBreach(lockTeamCodesResult.rows.map((row) => row.team_code ?? ''))) {
         throw new SquadValidationError(`A squad may contain at most ${MAX_PLAYERS_PER_NATION} players from the same team.`)
       }
+
+      if (squad.is_locked) {
+        if (!squad.locked_at) {
+          throw new SquadValidationError('Locked squad is missing its lock timestamp.')
+        }
+        await client.query('COMMIT')
+        return this.getOrCreate(participantId)
+      }
+      assertSquadEditable(squad.is_locked)
 
       await client.query('UPDATE squads SET is_locked = TRUE, locked_at = NOW(), updated_at = NOW() WHERE squad_id = $1', [squad.squad_id])
       // Materialize the round-1 baseline lineup snapshot from the squad as it locks.

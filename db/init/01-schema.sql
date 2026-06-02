@@ -140,7 +140,8 @@ CREATE TABLE IF NOT EXISTS world_cup_team_selections (
     sort_order INTEGER NOT NULL DEFAULT 0,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (team_code, player_id)
+    UNIQUE (team_code, player_id),
+    CONSTRAINT world_cup_team_selections_player_id_key UNIQUE (player_id)
 );
 
 CREATE TABLE IF NOT EXISTS squads (
@@ -151,7 +152,8 @@ CREATE TABLE IF NOT EXISTS squads (
     is_locked BOOLEAN NOT NULL DEFAULT FALSE,
     locked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT squads_locked_at_required_chk CHECK (is_locked = FALSE OR locked_at IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS squad_slots (

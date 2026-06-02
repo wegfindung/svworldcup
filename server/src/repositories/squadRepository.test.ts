@@ -135,6 +135,21 @@ describe('MemorySquadRepository competition edit window', () => {
     expect(internals.roundLineups.has(participantId)).toBe(false)
   })
 
+  it('rejects a locked squad that is missing its lock timestamp', async () => {
+    const beforeKickoff = (competitionStartEpoch() ?? Date.now()) - 1_000
+    const { squads, participantId } = await createLockedSquad(() => beforeKickoff)
+    const internals = squads as unknown as {
+      squads: Map<string, Awaited<ReturnType<MemorySquadRepository['getOrCreate']>>>
+    }
+    const squad = internals.squads.get(participantId)
+    if (!squad) {
+      throw new Error('squad missing for participant')
+    }
+    internals.squads.set(participantId, { ...squad, lockedAt: null })
+
+    await expect(squads.lockSquad(participantId)).rejects.toThrow('lock timestamp')
+  })
+
   it('blocks submitted squad edits after the competition starts', async () => {
     const start = competitionStartEpoch() ?? Date.now()
     let now = start - 1_000

@@ -287,8 +287,8 @@ function calculateParticipantRows(
   return participants.map((participant) => {
     const participantSlots = slotsByParticipant.get(participant.participantId) ?? []
     const participantLineups = roundLineupsByParticipant.get(participant.participantId)
-    const lockEpoch = participant.lockedAt ? new Date(participant.lockedAt).getTime() : null
-    const hasLockCutoff = lockEpoch !== null && Number.isFinite(lockEpoch)
+    const lockEpoch = participant.lockedAt ? new Date(participant.lockedAt).getTime() : Number.NaN
+    const hasValidLockCutoff = Number.isFinite(lockEpoch)
 
     let baseScore = 0
     let bonusScore = 0
@@ -366,11 +366,12 @@ function calculateParticipantRows(
     }
 
     for (const [fixtureId, entryScores] of fixtureEntryScores) {
-      if (hasLockCutoff) {
-        const fixtureKickoff = kickoffByFixture.get(fixtureId)
-        if (fixtureKickoff !== undefined && fixtureKickoff <= (lockEpoch as number)) {
-          continue
-        }
+      if (!hasValidLockCutoff) {
+        continue
+      }
+      const fixtureKickoff = kickoffByFixture.get(fixtureId)
+      if (fixtureKickoff !== undefined && fixtureKickoff <= lockEpoch) {
+        continue
       }
       const fixtureRound = fixtureRoundByFixture.get(fixtureId) ?? null
       const roundOverrides = resolveAsOfRoundLineup(participantLineups, fixtureRound)
@@ -581,6 +582,9 @@ export class MemoryScoringRepository implements ScoringRepository {
     for (const participant of participants) {
       const squad = await this.squadRepository.getOrCreate(participant.participantId)
       if (!squad.isLocked) {
+        continue
+      }
+      if (!squad.lockedAt || !Number.isFinite(new Date(squad.lockedAt).getTime())) {
         continue
       }
 
@@ -803,7 +807,7 @@ export class PostgresScoringRepository implements ScoringRepository {
         SELECT p.participant_id, p.display_name, p.league_type, p.primary_team_code, p.secondary_team_code, p.created_at,
                s.locked_at, COALESCE(s.budget_limit, $1)::integer AS budget_limit
         FROM participants p
-        LEFT JOIN squads s ON s.participant_id = p.participant_id AND s.is_locked = TRUE
+        JOIN squads s ON s.participant_id = p.participant_id AND s.is_locked = TRUE AND s.locked_at IS NOT NULL
         WHERE p.status = 'active'
       `,
       [STARTING_BUDGET],

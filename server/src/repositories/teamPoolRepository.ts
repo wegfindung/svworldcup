@@ -59,6 +59,16 @@ export class MemoryTeamPoolRepository implements TeamPoolRepository {
   }
 
   async replaceTeamPlayers(teamCode: string, players: SoccerversePlayerRecord[]) {
+    const playerIds = new Set(players.map((player) => player.playerId))
+    for (const [existingTeamCode, existingPlayers] of this.byTeam.entries()) {
+      if (existingTeamCode === teamCode) {
+        continue
+      }
+      this.byTeam.set(
+        existingTeamCode,
+        existingPlayers.filter((player) => !playerIds.has(player.playerId)),
+      )
+    }
     const normalized = players.map((player) => toTeamPoolPlayer(teamCode, player))
     this.byTeam.set(teamCode, normalized)
     // team-pool rewrite changes team codes / names shown on the board (cosmetic, not score).
@@ -200,6 +210,10 @@ export class PostgresTeamPoolRepository implements TeamPoolRepository {
         )
       }
 
+      const playerIds = players.map((player) => player.playerId)
+      if (playerIds.length > 0) {
+        await client.query('DELETE FROM world_cup_team_selections WHERE player_id = ANY($1::bigint[])', [playerIds])
+      }
       await client.query('DELETE FROM world_cup_team_selections WHERE team_code = $1', [teamCode])
 
       for (const [index, player] of players.entries()) {
