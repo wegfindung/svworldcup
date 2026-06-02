@@ -58,7 +58,7 @@ interface BuilderPageProps {
 }
 
 interface RegistrationFormState {
-  mode: LeagueType
+  mode: LeagueType | null
   displayName: string
   email: string
   soccerverseUsername: string
@@ -75,7 +75,7 @@ interface PasswordFormState {
 type BuilderCopy = AppMessages['builder']
 
 const initialRegistrationForm: RegistrationFormState = {
-  mode: 'rookie',
+  mode: null,
   displayName: '',
   email: '',
   soccerverseUsername: '',
@@ -1058,7 +1058,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
 
               <button
                 type="submit"
-                disabled={registrationBusy}
+                disabled={registrationBusy || !registrationForm.mode}
                 className="inline-flex w-fit items-center rounded-full bg-[var(--color-accent)] px-8 py-4 text-base font-semibold text-[var(--color-ink)] shadow-[0_20px_30px_-20px_rgba(24,180,133,0.8)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
                 {registrationBusy ? copy.register.submitting : copy.register.submit}
