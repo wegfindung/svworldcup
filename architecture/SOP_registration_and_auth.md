@@ -108,7 +108,8 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - A participant who already has a `soccerverse_username` (whether they registered as Veteran
   or linked earlier) cannot re-link; the endpoint rejects with `reason: 'already_linked'`.
 - The submitted `soccerverseUsername` is validated identically to initial registration
-  (trim, allowed characters, length, server-side uniqueness across all participants).
+  (trim, reject any value containing `@` since that signals an email pasted by mistake, length,
+  server-side uniqueness across all participants).
 - Uniqueness applies to all participants regardless of league — the same Soccerverse account
   cannot back two participant rows.
 - The write is audited as `participant.link_soccerverse`.
@@ -124,6 +125,27 @@ participant between Rookie and Veteran public-table membership is an admin-media
   participant's league table membership going forward, and their eligibility for the
   Soccerverse ownership boost.
 - The write is audited as `admin.participant_league_change` with `detail: {from, to}`.
+
+### Correcting a Soccerverse username (admin-initiated)
+
+Because the username field historically accepted any string, some participants entered their **email
+address** instead of their Soccerverse username. That value never matches their trade history, so they
+earn a `0%` ownership boost despite owning influence. Admins can correct it.
+
+- An admin corrects a participant's username via `POST /api/admin/participants/:id/soccerverse-username`
+  with `{ soccerverseUsername }`. It validates the same way as registration/linking (trim, reject any
+  value containing `@`, length, server-side uniqueness across all participants).
+- It is a **correction**: the participant must already have a `soccerverse_username` set (the erroneous
+  one). It updates **only** `soccerverse_username`. It does **not** change `league_type`.
+- **`soccerverse_linked_at` is deliberately preserved** — never re-stamped. This is essential: the boost
+  cutoff is `soccerverse_linked_at ?? created_at`, so preserving it keeps the cutoff at the moment the
+  participant first attempted to link (for a Rookie who linked late) or at registration (for a Veteran
+  who registered already carrying a username, where `soccerverse_linked_at` is null and the cutoff falls
+  back to `created_at`). Re-stamping it to "now" would wrongly discard the influence the participant
+  bought between joining and the correction.
+- The correction invalidates the leaderboard cache and the participant's boost cache so their boost
+  recomputes against the corrected username.
+- The write is audited as `admin.participant_soccerverse_correction` with `detail: { from, to }`.
 
 ### Boost eligibility
 
@@ -190,7 +212,15 @@ participant between Rookie and Veteran public-table membership is an admin-media
 
 - `email` must be normalized and syntactically valid.
 - `displayName` must be length-limited and trimmed.
-- `soccerverseUsername` is required for veteran registrations and empty for rookies.
+- `soccerverseUsername` is required for veteran registrations and empty for rookies. It is the
+  participant's **Soccerverse username** — case-sensitive (never canonicalized, see "Participant Session
+  Rules") and **not** an email address or a display/personal name. The most frequent operator-observed
+  mistake is entering an email instead of the username, so any value containing `@` is **rejected** at the
+  validation layer (registration and linking alike). The rejection is enforced server-side (the
+  authoritative gate) and pre-checked client-side with a clarifying message; the field also carries
+  always-visible helper text stating it is the case-sensitive Soccerverse username, not an email or name.
+  No broader character allowlist is imposed, since the full set of valid Soccerverse username characters
+  is not authoritatively known here — only the `@` (email) signal is blocked.
 - `referrerSoccerverseUsername` is optional, trimmed, safe-character filtered, and length-limited to 60 characters.
 - `primaryCountryCode` is required.
 - `secondaryCountryCode` is optional.

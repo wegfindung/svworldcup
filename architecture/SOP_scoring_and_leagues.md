@@ -194,6 +194,36 @@ The two leagues divide the leaderboards (a participant appears on exactly one of
 - **Time-invariant capture.** Because the trade-history fetch is bounded by `fixture_kickoff` on the upper side, the snapshot is identical regardless of when it is computed — at promotion time, days later, or via an admin re-run. The "frozen at kickoff" semantic is enforced by the data filter, not by the scheduling of the capture job.
 - **Boost is never retroactive.** Past fixtures keep the `bonus_percent` they captured. Each fixture snapshots independently from the trades that existed at *that* fixture's kickoff instant; a participant who keeps buying influence sees the new total in subsequent fixtures' snapshots but never on past ones.
 
+### Participant boost view (live, on-demand)
+
+A logged-in participant can see their **current** ownership-boost standing per drafted player. This is a
+participant-facing read surface, distinct from the per-fixture scoring snapshot above.
+
+- **Per drafted player it shows:** influence **bought**, influence **sold**, **net** (`max(0, bought −
+  sold)`), and the resulting **% boost** (`floor(net / 10)`, capped at `10%`, reached at `100` net). Both
+  buys and sells are shown because net — not gross holdings — drives the boost.
+- **Counted from the event-link cutoff.** Only influence bought **after the Soccerverse account was
+  linked to the event** counts. For a Rookie who links after registering, the cutoff is the link
+  timestamp (`soccerverse_linked_at`); influence bought before linking does not count. A Veteran who
+  registered already carrying a username has **no separate link timestamp** (`soccerverse_linked_at` is
+  null — it is only ever set by the link action), so their cutoff is their registration time. This is the
+  same cutoff the per-fixture scoring snapshot uses, so the live view and the points actually scored
+  agree on where counting begins.
+- **Live, not frozen.** Trades are counted up to **now** (no upper kickoff bound). It is a *current
+  standing* indicator, separate from `participant_influence_snapshot`, which freezes each fixture's boost
+  at that fixture's kickoff. The view's number for a player can therefore exceed what was actually applied
+  to an already-played fixture; the view is informational and **never retroactive** to past scoring. This
+  distinction must be surfaced to the participant (a short note), so the live number is not mistaken for
+  the frozen per-fixture value.
+- **Linked accounts only.** A participant without a linked `soccerverse_username` has no boost; the view
+  shows a prompt to link, not numbers.
+- **On-demand + cached.** Computed on request — one Soccerverse trade-history fetch per drafted player,
+  paced by the shared Soccerverse gate — then cached in-process per participant for a short TTL.
+  Recomputed when the participant's drafted set changes or on an explicit refresh. It is never computed
+  in the background for non-viewers, so it adds no standing load.
+- **Expensive endpoint.** The participant boost endpoint carries a tighter per-endpoint rate limit on top
+  of the participant limit, since a cold read is uncached and is the costliest participant call.
+
 ## National Tables
 
 - Each participant chooses one primary country.

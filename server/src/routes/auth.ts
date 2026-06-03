@@ -28,12 +28,18 @@ import type { EmailMarketingRepository } from '../repositories/emailMarketingRep
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
+import { isEmailLikeUsername, SOCCERVERSE_USERNAME_EMAIL_MESSAGE } from '../lib/soccerverseUsername.js'
 
 const registrationSchema = z
   .object({
     email: z.string().trim().email(),
     displayName: z.string().trim().min(2).max(40),
-    soccerverseUsername: z.string().trim().max(60).optional(),
+    soccerverseUsername: z
+      .string()
+      .trim()
+      .max(60)
+      .refine((value) => !isEmailLikeUsername(value), { message: SOCCERVERSE_USERNAME_EMAIL_MESSAGE })
+      .optional(),
     referrerSoccerverseUsername: z.string().trim().max(60).optional(),
     marketingOptIn: z.boolean().optional().default(false),
     browserLocale: z.enum(['en', 'es', 'it', 'de', 'fr', 'pt', 'ru', 'zh', 'ja']).optional(),

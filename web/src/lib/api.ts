@@ -22,6 +22,7 @@ import type {
   ScoringConfig,
   ParticipantProfile,
   ParticipantLineup,
+  ParticipantBoostResult,
   ParticipantSquad,
   ParticipantSquadSummary,
   SwapState,
@@ -515,6 +516,14 @@ export function fetchSwapState() {
   })
 }
 
+export function fetchParticipantBoost(refresh = false) {
+  const query = refresh ? '?refresh=1' : ''
+  return getJson<ParticipantBoostResult>(`/api/participant/boost${query}`, {
+    method: 'GET',
+    headers: {},
+  })
+}
+
 export function swapSquadPlayers(playerInId: number, playerOutId: number) {
   return getJson<{ swap: SwapResultSummary; squad: ParticipantSquad }>('/api/participant/squad/swap', {
     method: 'POST',
@@ -587,6 +596,16 @@ export function adminSetParticipantLeague(participantId: string, leagueType: 'ro
     {
       method: 'POST',
       body: JSON.stringify({ leagueType }),
+    },
+  )
+}
+
+export function adminCorrectSoccerverseUsername(participantId: string, soccerverseUsername: string) {
+  return getJson<{ participant: ParticipantProfile }>(
+    `/api/admin/participants/${encodeURIComponent(participantId)}/soccerverse-username`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ soccerverseUsername }),
     },
   )
 }

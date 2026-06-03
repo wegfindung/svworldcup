@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import { verifyPassword } from '../lib/passwords.js'
 import { hashToken } from '../lib/tokens.js'
+import { isEmailLikeUsername } from '../lib/soccerverseUsername.js'
 import type { LeaderboardCache } from './leaderboardCache.js'
 import type {
   AdminParticipantRecord,
@@ -22,7 +23,12 @@ export class ActiveRegistrationExistsError extends Error {
   }
 }
 
-export type SoccerverseLinkFailureReason = 'already_linked' | 'username_taken' | 'invalid_username' | 'not_found'
+export type SoccerverseLinkFailureReason =
+  | 'already_linked'
+  | 'username_taken'
+  | 'invalid_username'
+  | 'not_found'
+  | 'not_linked'
 
 export class SoccerverseLinkError extends Error {
   constructor(public readonly reason: SoccerverseLinkFailureReason, message: string) {
@@ -48,6 +54,7 @@ export interface RegistrationRepository {
   authenticateWithPassword(email: string, password: string): Promise<ParticipantProfile | null>
   setPassword(participantId: string, passwordHash: string): Promise<ParticipantProfile | null>
   linkSoccerverseAccount(participantId: string, soccerverseUsername: string): Promise<ParticipantProfile>
+  correctSoccerverseUsername(participantId: string, soccerverseUsername: string): Promise<ParticipantProfile>
   setParticipantLeague(participantId: string, leagueType: LeagueType): Promise<ParticipantProfile>
   createPasswordReset(email: string, plainToken: string): Promise<ParticipantProfile | null>
   resetPasswordByPlainToken(plainToken: string, passwordHash: string): Promise<ParticipantProfile | null>
@@ -80,6 +87,7 @@ interface ParticipantRow {
   status: RegistrationRecord['status']
   verified_at: string | null
   soccerverse_linked_at: string | null
+  created_at?: string | null
   has_password: boolean
   reveal_profile?: boolean
   reveal_squad?: boolean
@@ -143,6 +151,7 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     status: record.status,
     verifiedAt: record.verifiedAt,
     soccerverseLinkedAt: record.soccerverseLinkedAt,
+    createdAt: record.createdAt,
     hasPassword: record.hasPassword,
     revealProfile: record.revealProfile,
     revealSquad: record.revealSquad,
@@ -166,6 +175,7 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     status: row.status,
     verifiedAt: row.verified_at ?? undefined,
     soccerverseLinkedAt: row.soccerverse_linked_at ?? undefined,
+    createdAt: row.created_at ?? undefined,
     hasPassword: row.has_password,
     revealProfile: row.reveal_profile ?? false,
     revealSquad: row.reveal_squad ?? false,
@@ -346,6 +356,35 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
     })
     this.byEmail.set(nextRecord.email, nextRecord)
     // affects veteran-bonus eligibility on the board.
+    this.leaderboardCache?.invalidate()
+    return toParticipantProfile(nextRecord)
+  }
+
+  async correctSoccerverseUsername(participantId: string, soccerverseUsername: string) {
+    const trimmed = soccerverseUsername.trim()
+    if (!trimmed || trimmed.length > 60 || isEmailLikeUsername(trimmed)) {
+      throw new SoccerverseLinkError('invalid_username', 'Enter a valid Soccerverse username (1–60 characters, not an email address).')
+    }
+
+    const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
+    if (!record) {
+      throw new SoccerverseLinkError('not_found', 'Participant not found.')
+    }
+    if (!record.soccerverseUsername?.trim()) {
+      throw new SoccerverseLinkError('not_linked', 'This participant has no Soccerverse username to correct.')
+    }
+
+    const duplicate = [...this.byEmail.values()].some(
+      (item) => item.participantId !== participantId && item.soccerverseUsername?.trim() === trimmed,
+    )
+    if (duplicate) {
+      throw new SoccerverseLinkError('username_taken', 'Soccerverse username is already linked to another participant.')
+    }
+
+    // Correction only: update the username but DELIBERATELY preserve soccerverseLinkedAt, so the boost
+    // cutoff stays the original link/attempt date (see SOP_registration_and_auth.md).
+    const nextRecord: RegistrationRecord = this.attachPasswordState({ ...record, soccerverseUsername: trimmed })
+    this.byEmail.set(nextRecord.email, nextRecord)
     this.leaderboardCache?.invalidate()
     return toParticipantProfile(nextRecord)
   }
@@ -1072,6 +1111,86 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     }
   }
 
+  async correctSoccerverseUsername(participantId: string, soccerverseUsername: string) {
+    const trimmed = soccerverseUsername.trim()
+    if (!trimmed || trimmed.length > 60 || isEmailLikeUsername(trimmed)) {
+      throw new SoccerverseLinkError('invalid_username', 'Enter a valid Soccerverse username (1–60 characters, not an email address).')
+    }
+
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      const existing = await client.query<{ soccerverse_username: string | null }>(
+        'SELECT soccerverse_username FROM participants WHERE participant_id = $1 FOR UPDATE',
+        [participantId],
+      )
+      const target = existing.rows[0]
+      if (!target) {
+        await client.query('ROLLBACK')
+        throw new SoccerverseLinkError('not_found', 'Participant not found.')
+      }
+      if (!target.soccerverse_username || !target.soccerverse_username.trim()) {
+        await client.query('ROLLBACK')
+        throw new SoccerverseLinkError('not_linked', 'This participant has no Soccerverse username to correct.')
+      }
+
+      const duplicate = await client.query<{ participant_id: string }>(
+        `
+          SELECT participant_id
+          FROM participants
+          WHERE soccerverse_username = $2
+            AND participant_id <> $1
+          LIMIT 1
+        `,
+        [participantId, trimmed],
+      )
+      if (duplicate.rows[0]) {
+        await client.query('ROLLBACK')
+        throw new SoccerverseLinkError('username_taken', 'Soccerverse username is already linked to another participant.')
+      }
+
+      // Correction only: update the username but DELIBERATELY preserve soccerverse_linked_at, so the boost
+      // cutoff stays the original link/attempt date (see SOP_registration_and_auth.md).
+      const updated = await client.query<ParticipantRow>(
+        `
+          UPDATE participants
+          SET soccerverse_username = $2,
+              updated_at = NOW()
+          WHERE participant_id = $1
+          RETURNING
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            soccerverse_linked_at,
+            created_at,
+            (password_hash IS NOT NULL) AS has_password
+        `,
+        [participantId, trimmed],
+      )
+      await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
+      return mapParticipantRow(updated.rows[0])
+    } catch (error) {
+      if (!(error instanceof SoccerverseLinkError)) {
+        await client.query('ROLLBACK')
+      }
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
   async setParticipantLeague(participantId: string, leagueType: LeagueType) {
     if (leagueType !== 'rookie' && leagueType !== 'veteran') {
       throw new LeagueChangeError('invalid_league', 'League type must be either rookie or veteran.')
@@ -1302,6 +1421,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           status,
           verified_at,
           soccerverse_linked_at,
+          created_at,
           (password_hash IS NOT NULL) AS has_password,
           reveal_profile,
           reveal_squad

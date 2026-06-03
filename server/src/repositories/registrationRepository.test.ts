@@ -159,6 +159,55 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
   })
 })
 
+describe('MemoryRegistrationRepository.correctSoccerverseUsername', () => {
+  it('updates the username but preserves the original link date (late-linking Rookie)', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    const linked = await repo.linkSoccerverseAccount(participantId, 'user@example.com') // the mistaken email
+    expect(linked.soccerverseLinkedAt).toBeTruthy()
+
+    const corrected = await repo.correctSoccerverseUsername(participantId, 'RealName')
+    expect(corrected.soccerverseUsername).toBe('RealName')
+    expect(corrected.soccerverseLinkedAt).toBe(linked.soccerverseLinkedAt) // preserved, not re-stamped
+  })
+
+  it('preserves a null link date for a Veteran who registered with the wrong value', async () => {
+    const repo = new MemoryRegistrationRepository()
+    const participantId = await createActiveVeteran(repo, 'vet@example.com', 'vet-token', 'vet@example.com')
+    expect((await repo.getByParticipantId(participantId))?.soccerverseLinkedAt).toBeUndefined()
+
+    const corrected = await repo.correctSoccerverseUsername(participantId, 'RealVet')
+    expect(corrected.soccerverseUsername).toBe('RealVet')
+    expect(corrected.soccerverseLinkedAt).toBeUndefined()
+  })
+
+  it('rejects an email address as the corrected username', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await repo.linkSoccerverseAccount(participantId, 'placeholder')
+    await expect(repo.correctSoccerverseUsername(participantId, 'real@example.com')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
+      reason: 'invalid_username',
+    })
+  })
+
+  it('refuses to correct a participant that has no username yet', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await expect(repo.correctSoccerverseUsername(participantId, 'Name')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
+      reason: 'not_linked',
+    })
+  })
+
+  it('rejects a username already linked to another participant', async () => {
+    const repo = new MemoryRegistrationRepository()
+    await createActiveVeteran(repo, 'a@example.com', 'a-token', 'TakenName')
+    const targetId = await createActiveVeteran(repo, 'b@example.com', 'b-token', 'b@example.com')
+    await expect(repo.correctSoccerverseUsername(targetId, 'TakenName')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
+      reason: 'username_taken',
+    })
+  })
+})
+
 describe('MemoryRegistrationRepository.setParticipantLeague', () => {
   it('moves a linked Rookie into the Veteran league', async () => {
     const { repo, participantId } = await createActiveRookie()

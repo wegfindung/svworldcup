@@ -269,6 +269,23 @@ export interface ParticipantSquadSummary {
   isLocked: boolean
 }
 
+export interface ParticipantBoostPlayer {
+  playerId: number
+  displayName: string
+  teamCode: string
+  imageUrl?: string
+  bought: number
+  sold: number
+  net: number
+  bonusPercent: number
+}
+
+export interface ParticipantBoostResult {
+  linked: boolean
+  computedAt?: string
+  players?: ParticipantBoostPlayer[]
+}
+
 export interface AdminProfile {
   adminId: string
   email: string
