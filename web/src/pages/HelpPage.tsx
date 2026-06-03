@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { RulesHelpAssistant } from '../components/RulesHelpAssistant'
 import type { LocaleCode } from '../lib/types'
 
 interface HelpPageProps {
@@ -1129,6 +1130,8 @@ export function HelpPage({ locale }: HelpPageProps) {
           </Link>
         </div>
       </section>
+
+      <RulesHelpAssistant />
 
       <section className="grid gap-4 lg:grid-cols-2">
         {copy.sections.map((section) => (
