@@ -2,6 +2,7 @@ import { startTransition, useCallback, useEffect, useMemo, useRef, useState, typ
 import { Link } from 'react-router-dom'
 import { BoostPanel } from '../components/BoostPanel'
 import { EmptyState } from '../components/EmptyState'
+import { InfoModal } from '../components/InfoModal'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
@@ -239,6 +240,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [competitionStarted, setCompetitionStarted] = useState(false)
+  const [revealInfoOpen, setRevealInfoOpen] = useState(false)
 
   const selectedTeam = useMemo(
     () => eventTeams.find((team) => team.code === selectedTeamCode) ?? null,
@@ -1967,9 +1969,19 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                   <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-black/15 px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-white">
-                          {participant?.revealProfile ? copy.active.publicProfileLive : copy.active.readyToShare}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-white">
+                            {participant?.revealProfile ? copy.active.publicProfileLive : copy.active.readyToShare}
+                          </p>
+                          <button
+                            type="button"
+                            aria-label={copy.active.revealInfoTitle}
+                            onClick={() => setRevealInfoOpen(true)}
+                            className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-[var(--color-muted)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus:border-[var(--color-accent)] focus:text-[var(--color-accent)] focus:outline-none"
+                          >
+                            i
+                          </button>
+                        </div>
                         <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
                           {participant?.revealSquad
                             ? copy.active.squadVisible
@@ -1981,25 +1993,52 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                           </Link>
                         ) : null}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void handleReveal(false)}
-                          disabled={participant?.revealProfile}
-                          className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                        >
-                          {copy.active.revealProfile}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleReveal(true)}
-                          disabled={participant?.revealSquad}
-                          className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                        >
-                          {copy.active.revealSquad}
-                        </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {participant?.revealProfile ? (
+                          <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                            {copy.active.profileRevealed}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleReveal(false)}
+                            title={copy.active.revealProfileTip}
+                            className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                          >
+                            {copy.active.revealProfile}
+                          </button>
+                        )}
+                        {participant?.revealSquad ? (
+                          <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                            {copy.active.squadRevealed}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleReveal(true)}
+                            title={copy.active.revealSquadTip}
+                            className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+                          >
+                            {copy.active.revealSquad}
+                          </button>
+                        )}
                       </div>
                     </div>
+                    <InfoModal
+                      open={revealInfoOpen}
+                      title={copy.active.revealInfoTitle}
+                      closeLabel={copy.active.revealInfoClose}
+                      onClose={() => setRevealInfoOpen(false)}
+                    >
+                      <p>
+                        <span className="font-semibold text-white">{copy.active.revealProfile}:</span>{' '}
+                        {copy.active.revealInfoProfile}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-white">{copy.active.revealSquad}:</span>{' '}
+                        {copy.active.revealInfoSquad}
+                      </p>
+                    </InfoModal>
                   </div>
                 ) : null}
 
