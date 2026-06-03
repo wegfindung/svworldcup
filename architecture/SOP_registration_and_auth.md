@@ -47,6 +47,11 @@ Allow participants to register securely with verified email, enter the squad bui
 - A landing page `ref` parameter must survive navigation before registration via URL propagation and session storage.
 - The referral value must be stored separately as `referrerSoccerverseUsername` / `referrer_soccerverse_username`; it must not change rookie/veteran classification and must not overwrite the participant's own `soccerverseUsername`.
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
+- While a participant is logged in, the app shell header must reflect it: the `Login` entry is
+  replaced by the participant's display name linking to their dashboard (the builder, `/builder`),
+  so an authenticated visitor is never routed back to the login page. Logged out, the `Login` entry
+  is shown. The nav updates on same-tab login and logout (no full page reload), and the `Admin` entry
+  is unaffected.
 - Verification link consumption must also establish the participant session.
 - Post-verification builder recovery from the frontend must start from an explicit user action such as `Start building my squad`.
 - Password login is optional at first verification and can be added from the verified dashboard.
@@ -90,6 +95,12 @@ Allow participants to register securely with verified email, enter the squad bui
 - slot-by-slot formation state
  - explicit `load team pool` action before player data is requested
 8. The builder must never rely on client-only validation for cap or slot legality.
+9. The builder shows the participant's chosen Nation-League nations (primary and optional secondary)
+   as a **read-only** display — flag plus nation name, with a clear "no secondary nation" state when
+   none is set. Participants cannot edit their nation picks from the builder; nation changes are
+   admin-mediated until kickoff (see "Correcting nation selections"). This display only reads the
+   participant's existing `primaryTeamCode` / `secondaryTeamCode`; the nation pick still feeds only the
+   Nation League and never selects a Grand Tournament draft pool.
 
 ## Account Linking and League Membership
 
