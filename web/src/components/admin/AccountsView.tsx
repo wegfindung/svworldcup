@@ -3,8 +3,26 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
 import { eventTeams } from '../../data/eventConfig'
 import { getNationName } from '../../data/soccerverseNations'
-import { ApiError, adminSetParticipantLeague, fetchAdminParticipants } from '../../lib/api'
+import { ApiError, adminCorrectSoccerverseUsername, adminSetParticipantLeague, fetchAdminParticipants } from '../../lib/api'
 import type { AdminParticipantRecord, LeagueType } from '../../lib/types'
+
+function correctUsernameErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const reason = typeof error.payload?.reason === 'string' ? (error.payload.reason as string) : null
+    switch (reason) {
+      case 'invalid_username':
+        return 'Enter a valid Soccerverse username (1–60 characters, not an email address).'
+      case 'username_taken':
+        return 'That Soccerverse username is already linked to another participant.'
+      case 'not_linked':
+        return 'This participant has no Soccerverse username to correct.'
+      case 'not_found':
+        return 'Participant not found.'
+    }
+    return error.message
+  }
+  return error instanceof Error ? error.message : 'Could not correct the username.'
+}
 
 function leagueChangeErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -51,6 +69,42 @@ export function AccountsView() {
   const [error, setError] = useState<string | null>(null)
   const [leagueBusyId, setLeagueBusyId] = useState<string | null>(null)
   const [leagueError, setLeagueError] = useState<string | null>(null)
+  const [editingUsernameId, setEditingUsernameId] = useState<string | null>(null)
+  const [usernameDraft, setUsernameDraft] = useState('')
+  const [usernameBusyId, setUsernameBusyId] = useState<string | null>(null)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+
+  function startEditUsername(participant: AdminParticipantRecord) {
+    setEditingUsernameId(participant.participantId)
+    setUsernameDraft(participant.soccerverseUsername ?? '')
+    setUsernameError(null)
+  }
+
+  async function handleCorrectUsername(participantId: string) {
+    const next = usernameDraft.trim()
+    if (!next) {
+      setUsernameError('Enter a Soccerverse username.')
+      return
+    }
+    if (next.includes('@')) {
+      setUsernameError('That looks like an email — enter the Soccerverse username instead.')
+      return
+    }
+    setUsernameBusyId(participantId)
+    setUsernameError(null)
+    try {
+      const response = await adminCorrectSoccerverseUsername(participantId, next)
+      setParticipants((current) =>
+        current.map((row) => (row.participantId === participantId ? { ...row, ...response.participant } : row)),
+      )
+      setEditingUsernameId(null)
+      setUsernameDraft('')
+    } catch (err) {
+      setUsernameError(correctUsernameErrorMessage(err))
+    } finally {
+      setUsernameBusyId(null)
+    }
+  }
 
   async function handleMoveLeague(participantId: string, target: LeagueType) {
     setLeagueBusyId(participantId)
@@ -157,6 +211,12 @@ export function AccountsView() {
         </div>
       ) : null}
 
+      {usernameError ? (
+        <div className="mt-5 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+          {usernameError}
+        </div>
+      ) : null}
+
       <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {[
           ['Total', participantCounts.total],
@@ -211,6 +271,51 @@ export function AccountsView() {
                     <p className="mt-3 text-xs text-[var(--color-muted)]">
                       Soccerverse: <span className="text-white">{participant.soccerverseUsername || 'None'}</span>
                     </p>
+                    {participant.soccerverseUsername ? (
+                      editingUsernameId === participant.participantId ? (
+                        <div className="mt-2 grid gap-1.5">
+                          <input
+                            value={usernameDraft}
+                            onChange={(event) => setUsernameDraft(event.target.value)}
+                            maxLength={60}
+                            autoComplete="off"
+                            placeholder="Soccerverse username"
+                            className="rounded-[0.6rem] border border-white/12 bg-black/30 px-2 py-1 text-xs text-white outline-none transition focus:border-[var(--color-accent)]"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleCorrectUsername(participant.participantId)}
+                              disabled={usernameBusyId === participant.participantId}
+                              className="rounded-full bg-[var(--color-accent)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                            >
+                              {usernameBusyId === participant.participantId ? 'Saving…' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUsernameId(null)
+                                setUsernameError(null)
+                              }}
+                              className="rounded-full border border-white/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/6 active:scale-[0.98]"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <p className="text-[10px] leading-relaxed text-[var(--color-muted)]">
+                            Keeps the original link date — only fixes the username.
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => startEditUsername(participant)}
+                          className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)] transition hover:underline"
+                        >
+                          Correct username
+                        </button>
+                      )
+                    ) : null}
                     {participant.leagueType === 'rookie' ? (
                       <button
                         type="button"
@@ -284,6 +389,7 @@ export function AccountsView() {
                   <td className="px-4 py-4 align-top">
                     <div className="grid gap-1 text-xs text-[var(--color-muted)]">
                       <span>Created: {formatAdminDate(participant.createdAt)}</span>
+                      <span>Linked: {formatAdminDate(participant.soccerverseLinkedAt)}</span>
                       <span>Verified: {formatAdminDate(participant.verifiedAt)}</span>
                       <span>Verification sent: {formatAdminDate(participant.verificationSentAt)}</span>
                     </div>

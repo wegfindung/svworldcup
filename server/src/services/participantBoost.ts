@@ -128,6 +128,13 @@ function toResult(entry: BoostCacheEntry): CachedBoostResult {
   return { computedAt: new Date(entry.computedAt).toISOString(), players: entry.rows }
 }
 
+// Drop a single participant's cached boost — call when something the cache key does not capture changes
+// (e.g. an admin corrects their Soccerverse username, which changes which trades match).
+export function clearParticipantBoostCache(participantId: string) {
+  cache.delete(participantId)
+  inFlight.delete(participantId)
+}
+
 export function _resetParticipantBoostCacheForTests() {
   cache.clear()
   inFlight.clear()

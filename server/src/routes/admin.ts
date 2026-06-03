@@ -16,7 +16,8 @@ import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
-import { LeagueChangeError } from '../repositories/registrationRepository.js'
+import { LeagueChangeError, SoccerverseLinkError } from '../repositories/registrationRepository.js'
+import { clearParticipantBoostCache } from '../services/participantBoost.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
@@ -451,6 +452,41 @@ export function createAdminRouter(
     } catch (error) {
       if (error instanceof LeagueChangeError) {
         const status = error.reason === 'invalid_league' ? 422 : error.reason === 'not_found' ? 404 : 409
+        return res.status(status).json({ error: error.message, reason: error.reason })
+      }
+      throw error
+    }
+  })
+
+  const correctUsernameSchema = z.object({
+    soccerverseUsername: z.string().trim().min(1).max(60),
+  })
+
+  // Correct a participant's Soccerverse username (e.g. they entered an email by mistake). Updates only
+  // the username; soccerverse_linked_at is preserved by the repository so the boost cutoff stays the
+  // original attempt date. See SOP_registration_and_auth.md "Correcting a Soccerverse username".
+  router.post('/participants/:participantId/soccerverse-username', async (req, res) => {
+    const participantId = String(req.params.participantId ?? '').trim()
+    const parsed = correctUsernameSchema.parse(req.body)
+    const before = await registrationRepository.getByParticipantId(participantId)
+    if (!before) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+    try {
+      const profile = await registrationRepository.correctSoccerverseUsername(participantId, parsed.soccerverseUsername)
+      clearParticipantBoostCache(participantId)
+      await auditRepository.record({
+        actorEmail: res.locals.admin.email,
+        actionKey: 'admin.participant_soccerverse_correction',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: { from: before.soccerverseUsername, to: profile.soccerverseUsername },
+      })
+      res.json({ participant: profile })
+    } catch (error) {
+      if (error instanceof SoccerverseLinkError) {
+        const status =
+          error.reason === 'invalid_username' ? 422 : error.reason === 'not_found' ? 404 : 409
         return res.status(status).json({ error: error.message, reason: error.reason })
       }
       throw error

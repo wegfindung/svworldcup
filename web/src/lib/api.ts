@@ -600,6 +600,16 @@ export function adminSetParticipantLeague(participantId: string, leagueType: 'ro
   )
 }
 
+export function adminCorrectSoccerverseUsername(participantId: string, soccerverseUsername: string) {
+  return getJson<{ participant: ParticipantProfile }>(
+    `/api/admin/participants/${encodeURIComponent(participantId)}/soccerverse-username`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ soccerverseUsername }),
+    },
+  )
+}
+
 export function revealParticipantProfile(revealSquad: boolean) {
   return getJson<{ participant: ParticipantProfile; publicProfileUrl: string }>('/api/participant/reveal', {
     method: 'POST',
