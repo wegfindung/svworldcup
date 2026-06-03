@@ -429,6 +429,12 @@ const englishMessages = {
       boostLabel: 'Boost',
       note: 'This is your current standing. The boost applied to a match is frozen at that match’s kickoff and is never changed afterwards, so it can differ from the figure here.',
       updatedAt: 'Updated',
+      aboutTitle: 'What is Soccerverse?',
+      aboutClose: 'Got it',
+      aboutBody1:
+        'Soccerverse is an online football game where you can own and trade "influence" in real players and clubs and earn from how they perform. This event is built together with Soccerverse and uses it as its foundation — but you don’t need to play Soccerverse to take part. You can register, build your squad, and compete for prizes without owning a Soccerverse account.',
+      aboutBody2:
+        'Prizes are awarded inside Soccerverse, so you need a Soccerverse account to receive your winnings. If you’d rather not keep a prize, you can sell it directly to other Soccerverse users straight away. Linking an account also adds the optional influence boost above on top of your score.',
     },
     errors: {
       openBuilder: 'Could not open the protected builder.',
@@ -900,6 +906,10 @@ const spanishMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: 'Tu plantilla está enviada, pero aún puedes editarla hasta el kickoff.',
       lockedNote: 'La competición empezó, así que las plantillas enviadas están bloqueadas.',
       mainAccount: 'Cuenta principal de Soccerverse:',
+      nationsTitle: 'Tus naciones',
+      nationsPrimary: 'Principal',
+      nationsSecondary: 'Secundaria',
+      nationsSecondaryNone: 'Sin nación secundaria',
       draftProgress: 'progreso del draft',
       slotsFilled: 'Slots completos',
       scoreMultiplier: 'Multiplicador',
@@ -1400,6 +1410,10 @@ const italianMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: 'La tua rosa è inviata, ma puoi ancora modificarla fino al kickoff.',
       lockedNote: 'La competizione è iniziata, quindi le rose inviate sono bloccate.',
       mainAccount: 'Account Soccerverse principale:',
+      nationsTitle: 'Le tue nazioni',
+      nationsPrimary: 'Principale',
+      nationsSecondary: 'Secondaria',
+      nationsSecondaryNone: 'Nessuna nazione secondaria',
       draftProgress: 'progresso draft',
       slotsFilled: 'Slot completi',
       scoreMultiplier: 'Moltiplicatore',
@@ -1899,6 +1913,10 @@ const germanMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: 'Dein Kader ist eingereicht, aber du kannst ihn bis zum Kickoff noch bearbeiten.',
       lockedNote: 'Der Wettbewerb hat begonnen, eingereichte Kader sind jetzt gesperrt.',
       mainAccount: 'Haupt-Soccerverse-Account:',
+      nationsTitle: 'Deine Nationen',
+      nationsPrimary: 'Primär',
+      nationsSecondary: 'Sekundär',
+      nationsSecondaryNone: 'Keine zweite Nation',
       draftProgress: 'draft-fortschritt',
       slotsFilled: 'Slots gefüllt',
       scoreMultiplier: 'Score-Multiplikator',
@@ -2396,6 +2414,10 @@ const frenchMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: 'Ton effectif est soumis, mais tu peux encore le modifier jusqu’au kickoff.',
       lockedNote: 'La compétition a commencé, les effectifs soumis sont verrouillés.',
       mainAccount: 'Compte Soccerverse principal :',
+      nationsTitle: 'Tes nations',
+      nationsPrimary: 'Principale',
+      nationsSecondary: 'Secondaire',
+      nationsSecondaryNone: 'Aucune nation secondaire',
       draftProgress: 'progression du draft',
       slotsFilled: 'Slots remplis',
       scoreMultiplier: 'Multiplicateur de score',
@@ -2893,6 +2915,10 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: 'O plantel foi submetido, mas ainda podes editar até ao kickoff.',
       lockedNote: 'A competição começou, por isso os plantéis submetidos estão bloqueados.',
       mainAccount: 'Conta Soccerverse principal:',
+      nationsTitle: 'As tuas nações',
+      nationsPrimary: 'Principal',
+      nationsSecondary: 'Secundária',
+      nationsSecondaryNone: 'Sem nação secundária',
       draftProgress: 'progresso do draft',
       slotsFilled: 'Slots preenchidos',
       scoreMultiplier: 'Multiplicador',
@@ -3391,6 +3417,10 @@ const russianMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: 'Состав отправлен, но его можно редактировать до старта события.',
       lockedNote: 'Соревнование началось, отправленные составы заблокированы.',
       mainAccount: 'Основной аккаунт Soccerverse:',
+      nationsTitle: 'Ваши страны',
+      nationsPrimary: 'Основная',
+      nationsSecondary: 'Дополнительная',
+      nationsSecondaryNone: 'Нет второй страны',
       draftProgress: 'прогресс драфта',
       slotsFilled: 'Заполнено слотов',
       scoreMultiplier: 'Множитель очков',
@@ -3891,6 +3921,10 @@ const chineseMessages: DeepPartial<AppMessages> = {
       submittedEditableNote: '阵容已提交，但 kickoff 前仍可编辑。',
       lockedNote: '赛事已开始，已提交阵容现在锁定。',
       mainAccount: '主 Soccerverse 账号：',
+      nationsTitle: '你的国家',
+      nationsPrimary: '主要',
+      nationsSecondary: '次要',
+      nationsSecondaryNone: '没有次要国家',
       draftProgress: 'draft 进度',
       slotsFilled: '已填位置',
       scoreMultiplier: '得分倍数',
@@ -4330,6 +4364,10 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       capSuffix: '上限内に収めてください。',
       multiplierPrefix: 'スコア倍率:',
       changeCap: '上限を変更',
+      nationsTitle: 'あなたの国',
+      nationsPrimary: 'メイン',
+      nationsSecondary: 'サブ',
+      nationsSecondaryNone: 'サブの国はありません',
       draftProgress: 'ドラフト進行',
       slotsFilled: '埋まったスロット',
       scoreMultiplier: 'スコア倍率',
@@ -4629,6 +4667,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'Boost',
         note: 'Esta es tu situación actual. El boost aplicado a un partido se congela en su inicio y no cambia después, por lo que puede diferir de la cifra de aquí.',
         updatedAt: 'Actualizado',
+        aboutTitle: '¿Qué es Soccerverse?',
+        aboutClose: 'Entendido',
+        aboutBody1:
+          'Soccerverse es un juego de fútbol en línea donde puedes poseer y comerciar "influencia" en jugadores y clubes reales y ganar según su rendimiento. Este evento está creado junto con Soccerverse y lo usa como base, pero no necesitas jugar a Soccerverse para participar. Puedes registrarte, formar tu plantilla y competir por premios sin tener una cuenta de Soccerverse.',
+        aboutBody2:
+          'Los premios se otorgan dentro de Soccerverse, así que necesitas una cuenta de Soccerverse para recibir tus ganancias. Si prefieres no quedarte con un premio, puedes venderlo de inmediato directamente a otros usuarios de Soccerverse. Vincular una cuenta también añade a tu puntuación el refuerzo de influencia opcional de arriba.',
       },
     },
     tables: {
@@ -4718,6 +4762,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'Boost',
         note: 'Questa è la tua situazione attuale. Il boost applicato a una partita viene congelato al suo calcio d’inizio e non cambia più, quindi può differire dal valore mostrato qui.',
         updatedAt: 'Aggiornato',
+        aboutTitle: 'Cos’è Soccerverse?',
+        aboutClose: 'Ho capito',
+        aboutBody1:
+          'Soccerverse è un gioco di calcio online in cui puoi possedere e scambiare "influenza" su giocatori e club reali e guadagnare in base al loro rendimento. Questo evento è creato insieme a Soccerverse e lo usa come base, ma non devi giocare a Soccerverse per partecipare. Puoi registrarti, costruire la tua rosa e competere per i premi senza possedere un account Soccerverse.',
+        aboutBody2:
+          'I premi vengono assegnati dentro Soccerverse, quindi ti serve un account Soccerverse per ricevere le tue vincite. Se preferisci non tenere un premio, puoi venderlo subito direttamente ad altri utenti Soccerverse. Collegare un account aggiunge anche al tuo punteggio il bonus influenza opzionale qui sopra.',
       },
     },
     tables: {
@@ -4807,6 +4857,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'Boost',
         note: 'Das ist dein aktueller Stand. Der für ein Spiel angewandte Boost wird zum Anstoß dieses Spiels eingefroren und danach nie geändert, daher kann er vom hier gezeigten Wert abweichen.',
         updatedAt: 'Aktualisiert',
+        aboutTitle: 'Was ist Soccerverse?',
+        aboutClose: 'Verstanden',
+        aboutBody1:
+          'Soccerverse ist ein Online-Fußballspiel, in dem du "Einfluss" an echten Spielern und Klubs besitzen und handeln und an deren Leistung verdienen kannst. Dieses Event wird gemeinsam mit Soccerverse erstellt und baut darauf auf – aber du musst Soccerverse nicht spielen, um teilzunehmen. Du kannst dich registrieren, deinen Kader zusammenstellen und um Preise mitspielen, ohne ein Soccerverse-Konto zu besitzen.',
+        aboutBody2:
+          'Die Preise werden innerhalb von Soccerverse vergeben, daher brauchst du ein Soccerverse-Konto, um deinen Gewinn zu erhalten. Wenn du einen Preis lieber nicht behalten möchtest, kannst du ihn sofort direkt an andere Soccerverse-Nutzer verkaufen. Ein verknüpftes Konto fügt deiner Punktzahl zusätzlich den optionalen Einfluss-Boost von oben hinzu.',
       },
     },
     tables: {
@@ -4897,6 +4953,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'Boost',
         note: 'Ceci est ta situation actuelle. Le boost appliqué à un match est figé au coup d’envoi de ce match et n’est jamais modifié ensuite, il peut donc différer du chiffre affiché ici.',
         updatedAt: 'Mis à jour',
+        aboutTitle: 'Qu’est-ce que Soccerverse ?',
+        aboutClose: 'Compris',
+        aboutBody1:
+          'Soccerverse est un jeu de football en ligne où tu peux posséder et échanger de l’"influence" sur de vrais joueurs et clubs et gagner selon leurs performances. Cet événement est créé avec Soccerverse et s’appuie dessus, mais tu n’as pas besoin de jouer à Soccerverse pour participer. Tu peux t’inscrire, composer ton effectif et concourir pour des prix sans posséder de compte Soccerverse.',
+        aboutBody2:
+          'Les prix sont attribués au sein de Soccerverse, il te faut donc un compte Soccerverse pour recevoir tes gains. Si tu préfères ne pas garder un prix, tu peux le vendre tout de suite directement à d’autres utilisateurs Soccerverse. Lier un compte ajoute aussi à ton score le bonus d’influence facultatif ci-dessus.',
       },
     },
     tables: {
@@ -4987,6 +5049,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'Boost',
         note: 'Esta é a tua situação atual. O boost aplicado a um jogo é congelado no apito inicial desse jogo e nunca muda depois, por isso pode diferir do valor aqui mostrado.',
         updatedAt: 'Atualizado',
+        aboutTitle: 'O que é o Soccerverse?',
+        aboutClose: 'Entendido',
+        aboutBody1:
+          'O Soccerverse é um jogo de futebol online onde podes possuir e negociar "influência" em jogadores e clubes reais e ganhar com o desempenho deles. Este evento é criado em conjunto com o Soccerverse e usa-o como base — mas não precisas de jogar Soccerverse para participar. Podes registar-te, montar o teu plantel e competir por prémios sem teres uma conta Soccerverse.',
+        aboutBody2:
+          'Os prémios são atribuídos dentro do Soccerverse, por isso precisas de uma conta Soccerverse para receber os teus ganhos. Se preferires não ficar com um prémio, podes vendê-lo de imediato diretamente a outros utilizadores do Soccerverse. Associar uma conta também adiciona à tua pontuação o reforço de influência opcional acima.',
       },
     },
     tables: {
@@ -5076,6 +5144,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'Бонус',
         note: 'Это твоё текущее состояние. Бонус, применённый к матчу, фиксируется на момент его начала и потом не меняется, поэтому может отличаться от показанного здесь значения.',
         updatedAt: 'Обновлено',
+        aboutTitle: 'Что такое Soccerverse?',
+        aboutClose: 'Понятно',
+        aboutBody1:
+          'Soccerverse — это онлайн-футбольная игра, где вы можете владеть и торговать «влиянием» в реальных игроках и клубах и зарабатывать на их результатах. Это событие создано вместе с Soccerverse и построено на его основе, но для участия вам не нужно играть в Soccerverse. Вы можете зарегистрироваться, собрать состав и бороться за призы, не имея аккаунта Soccerverse.',
+        aboutBody2:
+          'Призы выдаются внутри Soccerverse, поэтому для получения выигрыша нужен аккаунт Soccerverse. Если вы не хотите оставлять приз себе, его можно сразу продать напрямую другим пользователям Soccerverse. Привязка аккаунта также добавляет к вашему счёту необязательный бонус влияния, описанный выше.',
       },
     },
     tables: {
@@ -5162,6 +5236,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: '加成',
         note: '这是你的当前情况。某场比赛的加成会在该场比赛开球时锁定，之后不再改变，因此可能与此处显示的数值不同。',
         updatedAt: '更新于',
+        aboutTitle: '什么是 Soccerverse？',
+        aboutClose: '知道了',
+        aboutBody1:
+          'Soccerverse 是一款在线足球游戏，你可以拥有并交易真实球员和俱乐部的"影响力"，并从他们的表现中获利。本活动与 Soccerverse 共同打造并以其为基础——但你无需玩 Soccerverse 即可参加。你可以注册、组建阵容并争夺奖品，无需拥有 Soccerverse 账号。',
+        aboutBody2:
+          '奖品在 Soccerverse 内发放，因此你需要一个 Soccerverse 账号来领取奖励。如果你不想保留奖品，可以立即直接卖给其他 Soccerverse 用户。绑定账号还会在你的得分之上额外增加上面提到的可选影响力加成。',
       },
     },
     tables: {
@@ -5381,6 +5461,12 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         boostLabel: 'ブースト',
         note: 'これは現在の状況です。各試合に適用されるブーストはその試合のキックオフ時に固定され、その後は変わらないため、ここに表示される数値と異なる場合があります。',
         updatedAt: '更新',
+        aboutTitle: 'Soccerverse とは？',
+        aboutClose: '了解',
+        aboutBody1:
+          'Soccerverse は、実在する選手やクラブの「インフルエンス」を所有・取引し、その活躍に応じて利益を得られるオンラインサッカーゲームです。このイベントは Soccerverse と共同で作られ、それを基盤としていますが、参加するために Soccerverse をプレイする必要はありません。Soccerverse のアカウントがなくても、登録してスカッドを組み、賞品を目指して競えます。',
+        aboutBody2:
+          '賞品は Soccerverse 内で授与されるため、賞金を受け取るには Soccerverse のアカウントが必要です。賞品を保有したくない場合は、すぐに他の Soccerverse ユーザーに直接売却できます。アカウントを連携すると、上記の任意のインフルエンスブーストもスコアに加算されます。',
       },
       errors: {
         passwordSessionExpired: 'セッションの期限が切れました。再度ログインしてからパスワードを設定してください。',

@@ -2072,7 +2072,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                   <SwapPanel squad={squad} copy={copy.swap} locale={locale} state={activeSwapState} onSwapped={refreshSwapState} />
                 ) : null}
 
-                <BoostPanel copy={copy.boost} locale={locale} />
+                <BoostPanel copy={copy.boost} locale={locale} showAboutSoccerverse={participant.leagueType === 'rookie'} />
 
                 <div className="mt-5">
                   <div className="squad-pitch">

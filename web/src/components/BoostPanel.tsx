@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { fetchParticipantBoost } from '../lib/api'
+import { InfoModal } from './InfoModal'
 import { PlayerPortrait } from './PlayerPortrait'
 import { TeamFlag } from './TeamFlag'
 import type { AppMessages } from '../i18n/messages'
@@ -8,18 +9,22 @@ import type { LocaleCode, ParticipantBoostResult } from '../lib/types'
 interface BoostPanelProps {
   copy: AppMessages['builder']['boost']
   locale: LocaleCode
+  // Rookies may not know the game the event is built on; show a "What is Soccerverse?" explainer
+  // next to the (Soccerverse-driven) boost heading. Veterans already own an account, so it's hidden.
+  showAboutSoccerverse?: boolean
 }
 
 // Self-contained: the boost view is the costliest participant read (a cold load fans out one paced
 // Soccerverse call per drafted player), so it loads lazily on an explicit click rather than on every
 // builder render. See SOP_scoring_and_leagues.md "Participant boost view (live, on-demand)".
-export function BoostPanel({ copy, locale }: BoostPanelProps) {
+export function BoostPanel({ copy, locale, showAboutSoccerverse = false }: BoostPanelProps) {
   const [result, setResult] = useState<ParticipantBoostResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(false)
   // Collapse hides the loaded body without dropping `result`, so re-opening costs no reload.
   const [collapsed, setCollapsed] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
 
   async function load(refresh = false) {
     setError(false)
@@ -47,7 +52,19 @@ export function BoostPanel({ copy, locale }: BoostPanelProps) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">{copy.heading}</p>
-          <h3 className="mt-2 text-lg font-semibold text-white">{copy.title}</h3>
+          <div className="mt-2 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-white">{copy.title}</h3>
+            {showAboutSoccerverse ? (
+              <button
+                type="button"
+                aria-label={copy.aboutTitle}
+                onClick={() => setAboutOpen(true)}
+                className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-[var(--color-muted)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus:border-[var(--color-accent)] focus:text-[var(--color-accent)] focus:outline-none"
+              >
+                i
+              </button>
+            ) : null}
+          </div>
           <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.intro}</p>
         </div>
         {result && !collapsed ? (
@@ -161,6 +178,18 @@ export function BoostPanel({ copy, locale }: BoostPanelProps) {
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {showAboutSoccerverse ? (
+        <InfoModal
+          open={aboutOpen}
+          title={copy.aboutTitle}
+          closeLabel={copy.aboutClose}
+          onClose={() => setAboutOpen(false)}
+        >
+          <p>{copy.aboutBody1}</p>
+          <p>{copy.aboutBody2}</p>
+        </InfoModal>
       ) : null}
     </div>
   )
