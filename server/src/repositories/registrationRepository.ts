@@ -1018,7 +1018,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           verified_at,
           soccerverse_linked_at,
           password_hash,
-          (password_hash IS NOT NULL) AS has_password
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
         FROM participants
         WHERE email = $1
           AND status = 'active'
@@ -1055,7 +1057,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           status,
           verified_at,
           soccerverse_linked_at,
-          (password_hash IS NOT NULL) AS has_password
+          (password_hash IS NOT NULL) AS has_password,
+          reveal_profile,
+          reveal_squad
       `,
       [participantId, passwordHash],
     )
@@ -1124,7 +1128,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             status,
             verified_at,
             soccerverse_linked_at,
-            (password_hash IS NOT NULL) AS has_password
+            (password_hash IS NOT NULL) AS has_password,
+            reveal_profile,
+            reveal_squad
         `,
         [participantId, trimmed],
       )
