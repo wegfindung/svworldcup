@@ -18,6 +18,8 @@ export function BoostPanel({ copy, locale }: BoostPanelProps) {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(false)
+  // Collapse hides the loaded body without dropping `result`, so re-opening costs no reload.
+  const [collapsed, setCollapsed] = useState(false)
 
   async function load(refresh = false) {
     setError(false)
@@ -48,14 +50,32 @@ export function BoostPanel({ copy, locale }: BoostPanelProps) {
           <h3 className="mt-2 text-lg font-semibold text-white">{copy.title}</h3>
           <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.intro}</p>
         </div>
-        {result ? (
+        {result && !collapsed ? (
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void load(true)}
+              disabled={refreshing}
+              className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+            >
+              {refreshing ? copy.refreshing : copy.refresh}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+            >
+              {copy.hide}
+            </button>
+          </div>
+        ) : null}
+        {result && collapsed ? (
           <button
             type="button"
-            onClick={() => void load(true)}
-            disabled={refreshing}
-            className="shrink-0 rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+            onClick={() => setCollapsed(false)}
+            className="shrink-0 rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
           >
-            {refreshing ? copy.refreshing : copy.refresh}
+            {copy.show}
           </button>
         ) : null}
       </div>
@@ -85,18 +105,18 @@ export function BoostPanel({ copy, locale }: BoostPanelProps) {
         </div>
       ) : null}
 
-      {result && !result.linked ? (
+      {result && !collapsed && !result.linked ? (
         <div className="mt-4 rounded-[0.9rem] border border-white/8 bg-black/14 p-4">
           <p className="text-sm font-semibold text-white">{copy.unlinkedTitle}</p>
           <p className="mt-1 text-sm text-[var(--color-muted)]">{copy.unlinkedBody}</p>
         </div>
       ) : null}
 
-      {result?.linked && players.length === 0 ? (
+      {result?.linked && !collapsed && players.length === 0 ? (
         <p className="mt-4 text-sm text-[var(--color-muted)]">{copy.empty}</p>
       ) : null}
 
-      {result?.linked && players.length > 0 ? (
+      {result?.linked && !collapsed && players.length > 0 ? (
         <div className="mt-4 grid gap-2">
           {players.map((player) => (
             <div

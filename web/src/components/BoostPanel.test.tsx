@@ -37,6 +37,30 @@ describe('BoostPanel', () => {
     expect(mockFetch).toHaveBeenCalledWith(false)
   })
 
+  it('collapses and re-expands the loaded panel without refetching', async () => {
+    mockFetch.mockResolvedValue({
+      linked: true,
+      computedAt: '2026-06-03T12:00:00.000Z',
+      players: [
+        { playerId: 1, displayName: 'Alpha', teamCode: 'SWE', imageUrl: '', bought: 120, sold: 20, net: 100, bonusPercent: 10 },
+      ],
+    })
+
+    renderPanel()
+    fireEvent.click(screen.getByText(copy.show))
+    expect(await screen.findByText('Alpha')).toBeInTheDocument()
+    const callsAfterLoad = mockFetch.mock.calls.length
+
+    // Hide collapses the body but keeps the result in state.
+    fireEvent.click(screen.getByText(copy.hide))
+    expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
+
+    // Re-expanding shows the same data with no extra fetch.
+    fireEvent.click(screen.getByText(copy.show))
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(mockFetch.mock.calls.length).toBe(callsAfterLoad)
+  })
+
   it('shows the link prompt for an unlinked participant', async () => {
     mockFetch.mockResolvedValue({ linked: false })
 

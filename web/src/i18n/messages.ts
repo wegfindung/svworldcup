@@ -401,6 +401,7 @@ const englishMessages = {
       title: 'Your influence boost',
       intro: 'Boost from the influence you have bought in your drafted players since linking your account. You gain 1% per 10 net influence in a player, up to 10% at 100 net. Selling reduces it.',
       show: 'Show my boost',
+      hide: 'Hide',
       refresh: 'Refresh',
       refreshing: 'Refreshing...',
       loading: 'Loading your boost...',
@@ -4543,6 +4544,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'Boost por la influencia que has comprado en tus jugadores desde que vinculaste tu cuenta. Ganas 1% por cada 10 de influencia neta en un jugador, hasta un 10% con 100 netos. Vender la reduce.',
         show: 'Ver mi boost',
+        hide: 'Ocultar',
         refresh: 'Actualizar',
         refreshing: 'Actualizando...',
         loading: 'Cargando tu boost...',
@@ -4630,6 +4632,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'Boost dall’influence che hai comprato nei tuoi giocatori da quando hai collegato l’account. Guadagni 1% ogni 10 di influence netta su un giocatore, fino al 10% con 100 netti. Vendere la riduce.',
         show: 'Mostra il mio boost',
+        hide: 'Nascondi',
         refresh: 'Aggiorna',
         refreshing: 'Aggiornamento...',
         loading: 'Caricamento del tuo boost...',
@@ -4717,6 +4720,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'Boost durch den Einfluss, den du seit dem Verknüpfen deines Kontos in deinen Spielern gekauft hast. Du erhältst 1% je 10 Netto-Einfluss bei einem Spieler, bis zu 10% bei 100 netto. Verkaufen verringert ihn.',
         show: 'Meinen Boost anzeigen',
+        hide: 'Ausblenden',
         refresh: 'Aktualisieren',
         refreshing: 'Wird aktualisiert...',
         loading: 'Dein Boost wird geladen...',
@@ -4805,6 +4809,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'Boost lié à l’influence que tu as achetée sur tes joueurs depuis que tu as lié ton compte. Tu gagnes 1% par tranche de 10 d’influence nette sur un joueur, jusqu’à 10% à 100 net. Vendre la réduit.',
         show: 'Voir mon boost',
+        hide: 'Masquer',
         refresh: 'Actualiser',
         refreshing: 'Actualisation...',
         loading: 'Chargement de ton boost...',
@@ -4893,6 +4898,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'Boost da influência que compraste nos teus jogadores desde que associaste a tua conta. Ganhas 1% por cada 10 de influência líquida num jogador, até 10% com 100 líquidos. Vender reduz.',
         show: 'Ver o meu boost',
+        hide: 'Ocultar',
         refresh: 'Atualizar',
         refreshing: 'A atualizar...',
         loading: 'A carregar o teu boost...',
@@ -4980,6 +4986,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'Бонус за влияние, купленное в твоих игроках с момента привязки аккаунта. Ты получаешь 1% за каждые 10 чистого влияния в игроке, до 10% при 100 чистых. Продажа его уменьшает.',
         show: 'Показать мой бонус',
+        hide: 'Скрыть',
         refresh: 'Обновить',
         refreshing: 'Обновление...',
         loading: 'Загрузка твоего бонуса...',
@@ -5064,6 +5071,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         title: '你的影响力加成',
         intro: '关联账号后，你在所选球员上买入的影响力会带来加成。每名球员每 10 点净影响力获得 1%，100 点净影响力达到上限 10%。卖出会减少加成。',
         show: '查看我的加成',
+        hide: '隐藏',
         refresh: '刷新',
         refreshing: '正在刷新...',
         loading: '正在加载你的加成...',
@@ -5273,6 +5281,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         intro:
           'アカウントを連携してから、選んだ選手に購入したインフルエンスによるブーストです。選手ごとに純インフルエンス10につき1%、純100で上限の10%になります。売却すると減ります。',
         show: 'ブーストを表示',
+        hide: '非表示',
         refresh: '更新',
         refreshing: '更新中...',
         loading: 'ブーストを読み込み中...',
