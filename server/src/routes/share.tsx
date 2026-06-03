@@ -12,13 +12,15 @@ import { getOgLocale, noIndexRobotsValue } from '../lib/socialMeta.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '10'
+const shareRenderVersion = '11'
+export const shareTextFontFamily = 'Outfit, OutfitLatinExt'
+const shareSvgFontFamily = "'Outfit', 'OutfitLatinExt', sans-serif"
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
 const requestTimeoutMs = 4_000
 const defaultShareReferrers = ['ackydraal', 'Libertaerx', 'Blvck9999', 'klo'] as const
 
 interface LoadedFont {
-  name: string
+  name: 'Outfit' | 'OutfitLatinExt'
   format: 'woff'
   data: ArrayBuffer
   weight: 500 | 700
@@ -188,35 +190,44 @@ async function findFontPath(prefix: string) {
 
 let loadedFontsPromise: Promise<LoadedFont[]> | null = null
 
-async function loadShareFonts() {
+async function loadFont(name: LoadedFont['name'], path: string, weight: LoadedFont['weight']): Promise<LoadedFont> {
+  const data = await readFile(path)
+  return {
+    name,
+    format: 'woff',
+    data: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
+    weight,
+    style: 'normal',
+  }
+}
+
+export async function loadShareFonts() {
   loadedFontsPromise ??= (async () => {
     const regularPath = await findFontPath('outfit-latin-500-normal-')
     const boldPath = await findFontPath('outfit-latin-700-normal-')
     const fallbackRegularPath = regularPath ?? (await findFontPath('outfit-latin-400-normal-'))
     const fallbackBoldPath = boldPath ?? fallbackRegularPath
+    const latinExtRegularPath =
+      (await findFontPath('outfit-latin-ext-500-normal-')) ?? (await findFontPath('outfit-latin-ext-400-normal-'))
+    const latinExtBoldPath = (await findFontPath('outfit-latin-ext-700-normal-')) ?? latinExtRegularPath
 
     if (!fallbackRegularPath || !fallbackBoldPath) {
       throw new Error('Share fonts could not be found.')
     }
 
-    const [regularData, boldData] = await Promise.all([readFile(fallbackRegularPath), readFile(fallbackBoldPath)])
-
-    return [
-      {
-        name: 'Outfit',
-        format: 'woff',
-        data: regularData.buffer.slice(regularData.byteOffset, regularData.byteOffset + regularData.byteLength),
-        weight: 500,
-        style: 'normal',
-      },
-      {
-        name: 'Outfit',
-        format: 'woff',
-        data: boldData.buffer.slice(boldData.byteOffset, boldData.byteOffset + boldData.byteLength),
-        weight: 700,
-        style: 'normal',
-      },
+    const fontLoaders = [
+      loadFont('Outfit', fallbackRegularPath, 500),
+      loadFont('Outfit', fallbackBoldPath, 700),
     ]
+
+    if (latinExtRegularPath && latinExtBoldPath) {
+      fontLoaders.push(
+        loadFont('OutfitLatinExt', latinExtRegularPath, 500),
+        loadFont('OutfitLatinExt', latinExtBoldPath, 700),
+      )
+    }
+
+    return Promise.all(fontLoaders)
   })()
 
   return loadedFontsPromise
@@ -360,7 +371,7 @@ async function renderTextDataUrl(
           color: options.fill,
           display: 'flex',
           flexDirection: 'column',
-          fontFamily: 'Outfit',
+          fontFamily: shareTextFontFamily,
           fontSize: `${options.fontSize}px`,
           fontWeight: options.weight,
           height: `${options.height}px`,
@@ -541,7 +552,7 @@ async function buildShareCardSvg(
   <defs>
     <style>
       ${buildEmbeddedFontCss(fonts)}
-      text { font-family: 'Outfit', sans-serif; }
+      text { font-family: ${shareSvgFontFamily}; }
     </style>
     <linearGradient id="share-bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#071410" />
@@ -632,7 +643,7 @@ async function renderFallbackShareCardPng() {
   <defs>
     <style>
       ${buildEmbeddedFontCss(fonts)}
-      text { font-family: 'Outfit', sans-serif; }
+      text { font-family: ${shareSvgFontFamily}; }
     </style>
     <linearGradient id="fallback-bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#07120f" />
