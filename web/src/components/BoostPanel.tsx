@@ -132,7 +132,15 @@ export function BoostPanel({ copy, locale }: BoostPanelProps) {
               />
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
-                <p className="truncate text-sm font-semibold text-white">{player.displayName}</p>
+                <p className="min-w-0 truncate text-sm font-semibold text-white">{player.displayName}</p>
+                <a
+                  href={`https://play.soccerverse.com/player/${player.playerId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-full border border-white/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)] transition hover:bg-white/6 hover:text-white"
+                >
+                  {copy.profileBadge}
+                </a>
               </div>
               <div className="mono flex shrink-0 items-center gap-3 text-right text-xs text-[var(--color-muted)]">
                 <span title={copy.bought}>+{player.bought}</span>

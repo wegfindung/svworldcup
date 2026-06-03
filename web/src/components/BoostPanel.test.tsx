@@ -35,6 +35,11 @@ describe('BoostPanel', () => {
     expect(screen.getByText('+10%')).toBeInTheDocument()
     expect(screen.getByText('+3%')).toBeInTheDocument()
     expect(mockFetch).toHaveBeenCalledWith(false)
+
+    // Each player carries a Soccerverse profile badge opening in a new tab.
+    const profileLinks = screen.getAllByRole('link', { name: copy.profileBadge })
+    expect(profileLinks[0]).toHaveAttribute('href', 'https://play.soccerverse.com/player/1')
+    expect(profileLinks[0]).toHaveAttribute('target', '_blank')
   })
 
   it('collapses and re-expands the loaded panel without refetching', async () => {
