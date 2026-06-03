@@ -7,6 +7,7 @@ import { useBootstrap } from './hooks/useBootstrap'
 import { getShellMessages } from './i18n/shellMessages'
 import { recordReferralClick } from './lib/api'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from './lib/competitionWindow'
+import { readParticipantReady, subscribeParticipantReady } from './lib/participantReady'
 import {
   getDefaultShareReferrerSoccerverseUsername,
   readReferralFromSearch,
@@ -72,6 +73,11 @@ function App() {
     return supportedLocales[0]
   })
 
+  const [participantReady, setParticipantReady] = useState(() => readParticipantReady())
+
+  // Keep the nav in sync with same-tab login/logout (App never unmounts on SPA navigation).
+  useEffect(() => subscribeParticipantReady(() => setParticipantReady(readParticipantReady())), [])
+
   useEffect(() => {
     window.localStorage.setItem('svworldcup-locale', locale)
   }, [locale])
@@ -86,7 +92,13 @@ function App() {
   const { data: bootstrap, error: bootstrapError } = useBootstrap()
   const registrationCloseEpoch = resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch)
   const registrationClosed = hasRegistrationClosed(registrationCloseEpoch)
-  const headerAccountItems = copy.nav.account.filter((item) => item.to !== '/admin')
+  // When logged in, the "Login" item becomes the participant's name linking to their dashboard
+  // (/builder) instead of the login page. Logged out keeps the localized "Login" item as-is.
+  const headerAccountItems = copy.nav.account
+    .filter((item) => item.to !== '/admin')
+    .map((item) =>
+      item.to === '/login' && participantReady ? { to: '/builder', label: participantReady.displayName } : item,
+    )
   const adminItem = copy.nav.account.find((item) => item.to === '/admin')
   const footerAffiliateUrl = `https://play.soccerverse.com/?ref=${encodeURIComponent(footerAffiliateReferrer)}`
   const importantActive = copy.nav.important.items.some(

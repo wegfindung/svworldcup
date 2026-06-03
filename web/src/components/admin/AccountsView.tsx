@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
+import { NationSelect } from '../NationSelect'
 import { eventTeams } from '../../data/eventConfig'
-import { getNationName } from '../../data/soccerverseNations'
-import { ApiError, adminCorrectSoccerverseUsername, adminSetParticipantLeague, fetchAdminParticipants } from '../../lib/api'
+import { getNationName, soccerverseNations } from '../../data/soccerverseNations'
+import {
+  ApiError,
+  adminCorrectSoccerverseUsername,
+  adminSetParticipantLeague,
+  adminUpdateParticipantNations,
+  fetchAdminParticipants,
+} from '../../lib/api'
 import type { AdminParticipantRecord, LeagueType } from '../../lib/types'
 
 function correctUsernameErrorMessage(error: unknown): string {
@@ -22,6 +29,26 @@ function correctUsernameErrorMessage(error: unknown): string {
     return error.message
   }
   return error instanceof Error ? error.message : 'Could not correct the username.'
+}
+
+function nationUpdateErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const reason = typeof error.payload?.reason === 'string' ? (error.payload.reason as string) : null
+    switch (reason) {
+      case 'locked':
+        return 'Nation picks are locked — the tournament has already started.'
+      case 'invalid_primary':
+        return 'Choose a valid primary nation.'
+      case 'invalid_secondary':
+        return 'Choose a valid secondary nation.'
+      case 'same_nation':
+        return 'Secondary nation must be different from the primary nation.'
+      case 'not_found':
+        return 'Participant not found.'
+    }
+    return error.message
+  }
+  return error instanceof Error ? error.message : 'Could not update the nations.'
 }
 
 function leagueChangeErrorMessage(error: unknown): string {
@@ -73,6 +100,46 @@ export function AccountsView() {
   const [usernameDraft, setUsernameDraft] = useState('')
   const [usernameBusyId, setUsernameBusyId] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [editingNationsId, setEditingNationsId] = useState<string | null>(null)
+  const [nationPrimaryDraft, setNationPrimaryDraft] = useState<string | undefined>(undefined)
+  const [nationSecondaryDraft, setNationSecondaryDraft] = useState<string | undefined>(undefined)
+  const [nationBusyId, setNationBusyId] = useState<string | null>(null)
+  const [nationError, setNationError] = useState<string | null>(null)
+
+  function startEditNations(participant: AdminParticipantRecord) {
+    setEditingNationsId(participant.participantId)
+    setNationPrimaryDraft(participant.primaryTeamCode || undefined)
+    setNationSecondaryDraft(participant.secondaryTeamCode || undefined)
+    setNationError(null)
+  }
+
+  async function handleSaveNations(participantId: string) {
+    if (!nationPrimaryDraft) {
+      setNationError('Choose a primary nation.')
+      return
+    }
+    if (nationSecondaryDraft && nationSecondaryDraft === nationPrimaryDraft) {
+      setNationError('Secondary nation must be different from the primary nation.')
+      return
+    }
+    setNationBusyId(participantId)
+    setNationError(null)
+    try {
+      const response = await adminUpdateParticipantNations(
+        participantId,
+        nationPrimaryDraft,
+        nationSecondaryDraft ?? null,
+      )
+      setParticipants((current) =>
+        current.map((row) => (row.participantId === participantId ? { ...row, ...response.participant } : row)),
+      )
+      setEditingNationsId(null)
+    } catch (err) {
+      setNationError(nationUpdateErrorMessage(err))
+    } finally {
+      setNationBusyId(null)
+    }
+  }
 
   function startEditUsername(participant: AdminParticipantRecord) {
     setEditingUsernameId(participant.participantId)
@@ -217,6 +284,12 @@ export function AccountsView() {
         </div>
       ) : null}
 
+      {nationError ? (
+        <div className="mt-5 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">
+          {nationError}
+        </div>
+      ) : null}
+
       <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {[
           ['Total', participantCounts.total],
@@ -338,10 +411,60 @@ export function AccountsView() {
                     )}
                   </td>
                   <td className="px-4 py-4 align-top">
-                    <p className="text-xs text-white">{teamLabel(participant.primaryTeamCode)}</p>
-                    <p className="mt-1 text-xs text-[var(--color-muted)]">
-                      Secondary: <span className="text-white">{teamLabel(participant.secondaryTeamCode)}</span>
-                    </p>
+                    {editingNationsId === participant.participantId ? (
+                      <div className="grid w-60 gap-2">
+                        <NationSelect
+                          label="Primary nation"
+                          nations={soccerverseNations}
+                          value={nationPrimaryDraft}
+                          placeholder="Select nation"
+                          excludeCode={nationSecondaryDraft}
+                          onChange={(code) => setNationPrimaryDraft(code)}
+                        />
+                        <NationSelect
+                          label="Secondary nation (optional)"
+                          nations={soccerverseNations}
+                          value={nationSecondaryDraft}
+                          placeholder="None"
+                          excludeCode={nationPrimaryDraft}
+                          onChange={(code) => setNationSecondaryDraft(code)}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleSaveNations(participant.participantId)}
+                            disabled={nationBusyId === participant.participantId}
+                            className="rounded-full bg-[var(--color-accent)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                          >
+                            {nationBusyId === participant.participantId ? 'Saving…' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingNationsId(null)
+                              setNationError(null)
+                            }}
+                            className="rounded-full border border-white/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/6 active:scale-[0.98]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs text-white">{teamLabel(participant.primaryTeamCode)}</p>
+                        <p className="mt-1 text-xs text-[var(--color-muted)]">
+                          Secondary: <span className="text-white">{teamLabel(participant.secondaryTeamCode)}</span>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => startEditNations(participant)}
+                          className="mt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)] transition hover:underline"
+                        >
+                          Edit nations
+                        </button>
+                      </>
+                    )}
                   </td>
                   <td className="px-4 py-4 align-top">
                     <p className="text-xs text-white">{participant.referrerSoccerverseUsername || 'None'}</p>

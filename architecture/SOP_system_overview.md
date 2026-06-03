@@ -102,6 +102,7 @@ on-demand)".
 - verification resend actions
 - multi-accounting review status changes
 - admin Soccerverse username correction
+- admin participant nation correction
 - match-data import
 - pending match-stat edits
 - match-stat fixture confirmations

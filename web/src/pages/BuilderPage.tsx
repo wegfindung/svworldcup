@@ -2,6 +2,7 @@ import { startTransition, useCallback, useEffect, useMemo, useRef, useState, typ
 import { Link } from 'react-router-dom'
 import { BoostPanel } from '../components/BoostPanel'
 import { EmptyState } from '../components/EmptyState'
+import { InfoModal } from '../components/InfoModal'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
@@ -9,7 +10,7 @@ import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { MAX_PLAYERS_PER_NATION, budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
-import { soccerverseNations } from '../data/soccerverseNations'
+import { getNationName, soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from '../lib/competitionWindow'
 import { getMessages, type AppMessages } from '../i18n/messages'
@@ -239,6 +240,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [competitionStarted, setCompetitionStarted] = useState(false)
+  const [revealInfoOpen, setRevealInfoOpen] = useState(false)
 
   const selectedTeam = useMemo(
     () => eventTeams.find((team) => team.code === selectedTeamCode) ?? null,
@@ -1460,6 +1462,32 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                       {copy.common.signOut}
                     </button>
                   </div>
+
+                  <div className="mt-3 border-t border-white/8 pt-3">
+                    <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.active.nationsTitle}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="flex items-center gap-2 rounded-full border border-white/10 bg-[rgba(255,255,255,0.03)] px-2.5 py-1.5">
+                        <TeamFlag teamCode={participant.primaryTeamCode} label={getNationName(participant.primaryTeamCode)} size="sm" />
+                        <span className="min-w-0">
+                          <span className="block truncate text-xs font-semibold text-white">{getNationName(participant.primaryTeamCode)}</span>
+                          <span className="mono block text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.nationsPrimary}</span>
+                        </span>
+                      </span>
+                      {participant.secondaryTeamCode ? (
+                        <span className="flex items-center gap-2 rounded-full border border-white/10 bg-[rgba(255,255,255,0.03)] px-2.5 py-1.5">
+                          <TeamFlag teamCode={participant.secondaryTeamCode} label={getNationName(participant.secondaryTeamCode)} size="sm" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-semibold text-white">{getNationName(participant.secondaryTeamCode)}</span>
+                            <span className="mono block text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.nationsSecondary}</span>
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center rounded-full border border-white/8 bg-[rgba(255,255,255,0.02)] px-2.5 py-1.5 text-[10px] text-[var(--color-muted)]">
+                          {copy.active.nationsSecondaryNone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="surface-row rounded-[0.9rem] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
@@ -1923,14 +1951,17 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.active.currentSquad}</p>
                     <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 + bench</h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleReset()}
-                    disabled={!canEditSquad}
-                    className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                  >
-                    {copy.common.reset}
-                  </button>
+                  {/* Hidden once the squad is locked AND the tournament has started — reset only
+                      clears the squad selection and is useless past that point (server blocks it too). */}
+                  {canEditSquad ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleReset()}
+                      className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                    >
+                      {copy.common.reset}
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="mt-4 rounded-[1rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-3 py-3">
@@ -1964,9 +1995,19 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                   <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-black/15 px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-white">
-                          {participant?.revealProfile ? copy.active.publicProfileLive : copy.active.readyToShare}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-white">
+                            {participant?.revealProfile ? copy.active.publicProfileLive : copy.active.readyToShare}
+                          </p>
+                          <button
+                            type="button"
+                            aria-label={copy.active.revealInfoTitle}
+                            onClick={() => setRevealInfoOpen(true)}
+                            className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-[var(--color-muted)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus:border-[var(--color-accent)] focus:text-[var(--color-accent)] focus:outline-none"
+                          >
+                            i
+                          </button>
+                        </div>
                         <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
                           {participant?.revealSquad
                             ? copy.active.squadVisible
@@ -1978,25 +2019,52 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                           </Link>
                         ) : null}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void handleReveal(false)}
-                          disabled={participant?.revealProfile}
-                          className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                        >
-                          {copy.active.revealProfile}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleReveal(true)}
-                          disabled={participant?.revealSquad}
-                          className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                        >
-                          {copy.active.revealSquad}
-                        </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {participant?.revealProfile ? (
+                          <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                            {copy.active.profileRevealed}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleReveal(false)}
+                            title={copy.active.revealProfileTip}
+                            className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                          >
+                            {copy.active.revealProfile}
+                          </button>
+                        )}
+                        {participant?.revealSquad ? (
+                          <span className="rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                            {copy.active.squadRevealed}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleReveal(true)}
+                            title={copy.active.revealSquadTip}
+                            className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+                          >
+                            {copy.active.revealSquad}
+                          </button>
+                        )}
                       </div>
                     </div>
+                    <InfoModal
+                      open={revealInfoOpen}
+                      title={copy.active.revealInfoTitle}
+                      closeLabel={copy.active.revealInfoClose}
+                      onClose={() => setRevealInfoOpen(false)}
+                    >
+                      <p>
+                        <span className="font-semibold text-white">{copy.active.revealProfile}:</span>{' '}
+                        {copy.active.revealInfoProfile}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-white">{copy.active.revealSquad}:</span>{' '}
+                        {copy.active.revealInfoSquad}
+                      </p>
+                    </InfoModal>
                   </div>
                 ) : null}
 
@@ -2004,7 +2072,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                   <SwapPanel squad={squad} copy={copy.swap} locale={locale} state={activeSwapState} onSwapped={refreshSwapState} />
                 ) : null}
 
-                <BoostPanel copy={copy.boost} locale={locale} />
+                <BoostPanel copy={copy.boost} locale={locale} showAboutSoccerverse={participant.leagueType === 'rookie'} />
 
                 <div className="mt-5">
                   <div className="squad-pitch">

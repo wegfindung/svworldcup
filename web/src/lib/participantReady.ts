@@ -65,6 +65,7 @@ export function writeParticipantReady(state: ParticipantReadyState) {
   }
 
   window.localStorage.setItem(participantReadyStorageKey, JSON.stringify(state))
+  emitParticipantReadyChange()
 }
 
 export function clearParticipantReady() {
@@ -73,4 +74,24 @@ export function clearParticipantReady() {
   }
 
   window.localStorage.removeItem(participantReadyStorageKey)
+  emitParticipantReadyChange()
+}
+
+// Same-tab login/logout mutate localStorage without firing the native `storage` event (that only
+// fires in other tabs). The nav needs to react to login/logout while App stays mounted, so write/clear
+// notify subscribers directly. Returns an unsubscribe.
+type ParticipantReadyListener = () => void
+const participantReadyListeners = new Set<ParticipantReadyListener>()
+
+function emitParticipantReadyChange() {
+  for (const listener of participantReadyListeners) {
+    listener()
+  }
+}
+
+export function subscribeParticipantReady(listener: ParticipantReadyListener) {
+  participantReadyListeners.add(listener)
+  return () => {
+    participantReadyListeners.delete(listener)
+  }
 }

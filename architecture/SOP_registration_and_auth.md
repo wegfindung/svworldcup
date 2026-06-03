@@ -47,6 +47,11 @@ Allow participants to register securely with verified email, enter the squad bui
 - A landing page `ref` parameter must survive navigation before registration via URL propagation and session storage.
 - The referral value must be stored separately as `referrerSoccerverseUsername` / `referrer_soccerverse_username`; it must not change rookie/veteran classification and must not overwrite the participant's own `soccerverseUsername`.
 - Participant sessions must be cookie-based, httpOnly, server-issued, and revocable.
+- While a participant is logged in, the app shell header must reflect it: the `Login` entry is
+  replaced by the participant's display name linking to their dashboard (the builder, `/builder`),
+  so an authenticated visitor is never routed back to the login page. Logged out, the `Login` entry
+  is shown. The nav updates on same-tab login and logout (no full page reload), and the `Admin` entry
+  is unaffected.
 - Verification link consumption must also establish the participant session.
 - Post-verification builder recovery from the frontend must start from an explicit user action such as `Start building my squad`.
 - Password login is optional at first verification and can be added from the verified dashboard.
@@ -90,6 +95,12 @@ Allow participants to register securely with verified email, enter the squad bui
 - slot-by-slot formation state
  - explicit `load team pool` action before player data is requested
 8. The builder must never rely on client-only validation for cap or slot legality.
+9. The builder shows the participant's chosen Nation-League nations (primary and optional secondary)
+   as a **read-only** display — flag plus nation name, with a clear "no secondary nation" state when
+   none is set. Participants cannot edit their nation picks from the builder; nation changes are
+   admin-mediated until kickoff (see "Correcting nation selections"). This display only reads the
+   participant's existing `primaryTeamCode` / `secondaryTeamCode`; the nation pick still feeds only the
+   Nation League and never selects a Grand Tournament draft pool.
 
 ## Account Linking and League Membership
 
@@ -147,6 +158,31 @@ earn a `0%` ownership boost despite owning influence. Admins can correct it.
   recomputes against the corrected username.
 - The write is audited as `admin.participant_soccerverse_correction` with `detail: { from, to }`.
 
+### Correcting nation selections (admin-initiated)
+
+Some participants finish registration having picked only a primary nation (the secondary is optional and
+easy to skip), or picked the wrong nation. They later ask for a secondary nation to be assigned, or for a
+pick to be changed. Admins can edit both picks retroactively, up until the tournament starts.
+
+- An admin edits a participant's nation picks via `POST /api/admin/participants/:id/nations` with
+  `{ primaryTeamCode, secondaryTeamCode? }`. It updates **only** the nation picks — it does **not**
+  touch `league_type`, `soccerverse_username`, `soccerverse_linked_at`, the squad, or the boost.
+- **Both codes are validated exactly as at registration:** `primaryTeamCode` is required and must be a
+  known Soccerverse nation code (`server/src/data/soccerverseNations.ts`); `secondaryTeamCode` is
+  optional and, when present, must be a known code **different** from the primary. Codes are
+  lower-cased before validation (same as the registration path). Sending `secondaryTeamCode` empty/null
+  clears the secondary pick.
+- **Editable only until the first match kicks off.** The endpoint is gated on the tournament kickoff
+  instant (`TOURNAMENT_KICKOFF_AT`) — the **same** instant the scoring config locks — and rejects with
+  `423 Locked` once reached. The rationale: nation tables begin accumulating score at the first match,
+  and moving a participant between nations after that would retroactively reshuffle standings; before
+  any match no nation scores exist, so the change is safe. If `TOURNAMENT_KICKOFF_AT` is unset the gate
+  never engages (same env dependency the scoring-config lock already has).
+- The edit invalidates the leaderboard cache so the nation board recomputes against the new picks. The
+  boost cache is **not** touched (nation picks do not affect the boost).
+- The write is audited as `admin.participant_nation_correction` with
+  `detail: { primaryFrom, primaryTo, secondaryFrom, secondaryTo }`.
+
 ### Boost eligibility
 
 - The Soccerverse ownership boost applies to **any participant with `soccerverse_username
@@ -201,6 +237,8 @@ earn a `0%` ownership boost despite owning influence. Admins can correct it.
 - `POST /api/participant/squad/reset`
 - `POST /api/participant/link-soccerverse`
 - `POST /api/admin/participants/:id/league`
+- `POST /api/admin/participants/:id/soccerverse-username`
+- `POST /api/admin/participants/:id/nations`
 - `GET /api/admin/risk-cases`
 - `POST /api/admin/risk-cases/:caseId/status`
 - `POST /api/admin/login`

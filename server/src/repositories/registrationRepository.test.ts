@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   LeagueChangeError,
   MemoryRegistrationRepository,
+  NationUpdateError,
   SoccerverseLinkError,
 } from './registrationRepository.js'
 
@@ -208,6 +209,44 @@ describe('MemoryRegistrationRepository.correctSoccerverseUsername', () => {
   })
 })
 
+describe('MemoryRegistrationRepository.updateParticipantNations', () => {
+  it('assigns a secondary nation that was skipped at registration', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    expect((await repo.getByParticipantId(participantId))?.secondaryTeamCode).toBeUndefined()
+
+    const updated = await repo.updateParticipantNations(participantId, 'fra', 'bra')
+    expect(updated.primaryTeamCode).toBe('fra')
+    expect(updated.secondaryTeamCode).toBe('bra')
+  })
+
+  it('changes the primary and clears the secondary when null is passed', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await repo.updateParticipantNations(participantId, 'fra', 'bra')
+
+    const cleared = await repo.updateParticipantNations(participantId, 'gb-sct', null)
+    expect(cleared.primaryTeamCode).toBe('gb-sct')
+    expect(cleared.secondaryTeamCode).toBeUndefined()
+  })
+
+  it('leaves league, username, and link date untouched', async () => {
+    const repo = new MemoryRegistrationRepository()
+    const participantId = await createActiveVeteran(repo, 'vet@example.com', 'vet-token', 'VetName')
+
+    const updated = await repo.updateParticipantNations(participantId, 'swe', null)
+    expect(updated.leagueType).toBe('veteran')
+    expect(updated.soccerverseUsername).toBe('VetName')
+    expect(updated.primaryTeamCode).toBe('swe')
+  })
+
+  it('rejects an unknown participant', async () => {
+    const repo = new MemoryRegistrationRepository()
+    await expect(repo.updateParticipantNations('missing', 'fra', null)).rejects.toMatchObject({
+      name: 'NationUpdateError',
+      reason: 'not_found',
+    })
+  })
+})
+
 describe('MemoryRegistrationRepository.setParticipantLeague', () => {
   it('moves a linked Rookie into the Veteran league', async () => {
     const { repo, participantId } = await createActiveRookie()
@@ -273,5 +312,13 @@ describe('LeagueChangeError', () => {
     const error = new LeagueChangeError('requires_soccerverse_username', 'needs link')
     expect(error.reason).toBe('requires_soccerverse_username')
     expect(error.message).toBe('needs link')
+  })
+})
+
+describe('NationUpdateError', () => {
+  it('preserves the failure reason', () => {
+    const error = new NationUpdateError('not_found', 'missing')
+    expect(error.reason).toBe('not_found')
+    expect(error.message).toBe('missing')
   })
 })

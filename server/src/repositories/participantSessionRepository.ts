@@ -84,6 +84,8 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
       status: ParticipantProfile['status']
       verified_at: string | null
       has_password: boolean
+      reveal_profile: boolean
+      reveal_squad: boolean
     }>(
       `
         SELECT
@@ -100,7 +102,9 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
           p.secondary_team_code,
           p.status,
           p.verified_at,
-          (p.password_hash IS NOT NULL) AS has_password
+          (p.password_hash IS NOT NULL) AS has_password,
+          p.reveal_profile,
+          p.reveal_squad
         FROM participant_sessions s
         JOIN participants p ON p.participant_id = s.participant_id
         WHERE s.token_hash = $1
@@ -130,6 +134,8 @@ export class PostgresParticipantSessionRepository implements ParticipantSessionR
       status: row.status,
       verifiedAt: row.verified_at ?? undefined,
       hasPassword: row.has_password,
+      revealProfile: row.reveal_profile,
+      revealSquad: row.reveal_squad,
     }
   }
 

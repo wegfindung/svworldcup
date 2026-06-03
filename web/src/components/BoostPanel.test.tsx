@@ -35,6 +35,35 @@ describe('BoostPanel', () => {
     expect(screen.getByText('+10%')).toBeInTheDocument()
     expect(screen.getByText('+3%')).toBeInTheDocument()
     expect(mockFetch).toHaveBeenCalledWith(false)
+
+    // Each player carries a Soccerverse profile badge opening in a new tab.
+    const profileLinks = screen.getAllByRole('link', { name: copy.profileBadge })
+    expect(profileLinks[0]).toHaveAttribute('href', 'https://play.soccerverse.com/player/1')
+    expect(profileLinks[0]).toHaveAttribute('target', '_blank')
+  })
+
+  it('collapses and re-expands the loaded panel without refetching', async () => {
+    mockFetch.mockResolvedValue({
+      linked: true,
+      computedAt: '2026-06-03T12:00:00.000Z',
+      players: [
+        { playerId: 1, displayName: 'Alpha', teamCode: 'SWE', imageUrl: '', bought: 120, sold: 20, net: 100, bonusPercent: 10 },
+      ],
+    })
+
+    renderPanel()
+    fireEvent.click(screen.getByText(copy.show))
+    expect(await screen.findByText('Alpha')).toBeInTheDocument()
+    const callsAfterLoad = mockFetch.mock.calls.length
+
+    // Hide collapses the body but keeps the result in state.
+    fireEvent.click(screen.getByText(copy.hide))
+    expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
+
+    // Re-expanding shows the same data with no extra fetch.
+    fireEvent.click(screen.getByText(copy.show))
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(mockFetch.mock.calls.length).toBe(callsAfterLoad)
   })
 
   it('shows the link prompt for an unlinked participant', async () => {

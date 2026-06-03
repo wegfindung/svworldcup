@@ -49,4 +49,29 @@ describe('OperationsView partial loading', () => {
     // The failed source's section is omitted rather than dropping the whole view.
     expect(screen.queryByText('email scheduler')).not.toBeInTheDocument()
   })
+
+  it('shows from→to detail for a correction audit row', async () => {
+    overview.mockResolvedValue(overviewFixture)
+    audit.mockResolvedValue({
+      items: [
+        {
+          auditId: 'a1',
+          actorEmail: 'admin@example.com',
+          actionKey: 'admin.participant_nation_correction',
+          entityType: 'participant',
+          entityId: 'p1',
+          detail: { primaryFrom: 'fra', primaryTo: 'swe', secondaryFrom: null, secondaryTo: 'bra' },
+          createdAt: '2026-06-03T10:00:00.000Z',
+        },
+      ],
+    })
+    events.mockResolvedValue({ items: [] })
+    batches.mockResolvedValue({ items: [] })
+    campaigns.mockResolvedValue({ items: [] })
+
+    render(<OperationsView />)
+
+    expect(await screen.findByText('primary: fra → swe')).toBeInTheDocument()
+    expect(screen.getByText('secondary: — → bra')).toBeInTheDocument()
+  })
 })

@@ -217,6 +217,14 @@ participant-facing read surface, distinct from the per-fixture scoring snapshot 
   the frozen per-fixture value.
 - **Linked accounts only.** A participant without a linked `soccerverse_username` has no boost; the view
   shows a prompt to link, not numbers.
+- **"What is Soccerverse?" explainer (rookies).** Because the boost view is the one participant surface
+  driven directly by Soccerverse, it carries an optional info modal for participants who may not know the
+  game the event is built on. It is shown **only to Rookies** (`league_type === 'rookie'`); Veterans
+  already own a Soccerverse account. The explainer states, in plain language, what Soccerverse is, that
+  the event is built on it but **you do not need to play it to take part or compete for prizes**, and that
+  prizes are awarded **inside** Soccerverse — so a Soccerverse account is needed to **receive** winnings,
+  though a prize can be sold directly to other Soccerverse users straight away. It is purely informational
+  (no action) and does not change boost eligibility, which still requires a linked account.
 - **On-demand + cached.** Computed on request — one Soccerverse trade-history fetch per drafted player,
   paced by the shared Soccerverse gate — then cached in-process per participant for a short TTL.
   Recomputed when the participant's drafted set changes or on an explicit refresh. It is never computed

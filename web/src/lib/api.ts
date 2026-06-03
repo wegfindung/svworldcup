@@ -610,6 +610,20 @@ export function adminCorrectSoccerverseUsername(participantId: string, soccerver
   )
 }
 
+export function adminUpdateParticipantNations(
+  participantId: string,
+  primaryTeamCode: string,
+  secondaryTeamCode: string | null,
+) {
+  return getJson<{ participant: ParticipantProfile }>(
+    `/api/admin/participants/${encodeURIComponent(participantId)}/nations`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ primaryTeamCode, secondaryTeamCode }),
+    },
+  )
+}
+
 export function revealParticipantProfile(revealSquad: boolean) {
   return getJson<{ participant: ParticipantProfile; publicProfileUrl: string }>('/api/participant/reveal', {
     method: 'POST',
