@@ -46,6 +46,15 @@ export class LeagueChangeError extends Error {
   }
 }
 
+export type NationUpdateFailureReason = 'not_found'
+
+export class NationUpdateError extends Error {
+  constructor(public readonly reason: NationUpdateFailureReason, message: string) {
+    super(message)
+    this.name = 'NationUpdateError'
+  }
+}
+
 export interface RegistrationRepository {
   storageKind: 'memory' | 'postgres'
   createPending(input: RegistrationInput, plainToken: string): Promise<RegistrationCreationResult>
@@ -55,6 +64,11 @@ export interface RegistrationRepository {
   setPassword(participantId: string, passwordHash: string): Promise<ParticipantProfile | null>
   linkSoccerverseAccount(participantId: string, soccerverseUsername: string): Promise<ParticipantProfile>
   correctSoccerverseUsername(participantId: string, soccerverseUsername: string): Promise<ParticipantProfile>
+  updateParticipantNations(
+    participantId: string,
+    primaryTeamCode: string,
+    secondaryTeamCode: string | null,
+  ): Promise<ParticipantProfile>
   setParticipantLeague(participantId: string, leagueType: LeagueType): Promise<ParticipantProfile>
   createPasswordReset(email: string, plainToken: string): Promise<ParticipantProfile | null>
   resetPasswordByPlainToken(plainToken: string, passwordHash: string): Promise<ParticipantProfile | null>
@@ -385,6 +399,23 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
     // cutoff stays the original link/attempt date (see SOP_registration_and_auth.md).
     const nextRecord: RegistrationRecord = this.attachPasswordState({ ...record, soccerverseUsername: trimmed })
     this.byEmail.set(nextRecord.email, nextRecord)
+    this.leaderboardCache?.invalidate()
+    return toParticipantProfile(nextRecord)
+  }
+
+  async updateParticipantNations(participantId: string, primaryTeamCode: string, secondaryTeamCode: string | null) {
+    const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
+    if (!record) {
+      throw new NationUpdateError('not_found', 'Participant not found.')
+    }
+
+    const nextRecord: RegistrationRecord = this.attachPasswordState({
+      ...record,
+      primaryTeamCode,
+      secondaryTeamCode: secondaryTeamCode ?? undefined,
+    })
+    this.byEmail.set(nextRecord.email, nextRecord)
+    // Nation picks feed the nation leaderboard, so the cached boards must recompute.
     this.leaderboardCache?.invalidate()
     return toParticipantProfile(nextRecord)
   }
@@ -1183,6 +1214,61 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       return mapParticipantRow(updated.rows[0])
     } catch (error) {
       if (!(error instanceof SoccerverseLinkError)) {
+        await client.query('ROLLBACK')
+      }
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async updateParticipantNations(participantId: string, primaryTeamCode: string, secondaryTeamCode: string | null) {
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      const existing = await client.query<{ participant_id: string }>(
+        'SELECT participant_id FROM participants WHERE participant_id = $1 FOR UPDATE',
+        [participantId],
+      )
+      if (!existing.rows[0]) {
+        await client.query('ROLLBACK')
+        throw new NationUpdateError('not_found', 'Participant not found.')
+      }
+
+      const updated = await client.query<ParticipantRow>(
+        `
+          UPDATE participants
+          SET primary_team_code = $2,
+              secondary_team_code = $3,
+              updated_at = NOW()
+          WHERE participant_id = $1
+          RETURNING
+            participant_id,
+            email,
+            display_name,
+            soccerverse_username,
+            referrer_soccerverse_username,
+            marketing_opt_in,
+            marketing_unsubscribed_at,
+            marketing_unsubscribe_token,
+            league_type,
+            primary_team_code,
+            secondary_team_code,
+            status,
+            verified_at,
+            soccerverse_linked_at,
+            created_at,
+            (password_hash IS NOT NULL) AS has_password
+        `,
+        [participantId, primaryTeamCode, secondaryTeamCode],
+      )
+      await client.query('COMMIT')
+      // Nation picks feed the nation leaderboard, so the cached boards must recompute.
+      this.leaderboardCache?.invalidate()
+      return mapParticipantRow(updated.rows[0])
+    } catch (error) {
+      if (!(error instanceof NationUpdateError)) {
         await client.query('ROLLBACK')
       }
       throw error

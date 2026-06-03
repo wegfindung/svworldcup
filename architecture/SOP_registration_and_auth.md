@@ -147,6 +147,31 @@ earn a `0%` ownership boost despite owning influence. Admins can correct it.
   recomputes against the corrected username.
 - The write is audited as `admin.participant_soccerverse_correction` with `detail: { from, to }`.
 
+### Correcting nation selections (admin-initiated)
+
+Some participants finish registration having picked only a primary nation (the secondary is optional and
+easy to skip), or picked the wrong nation. They later ask for a secondary nation to be assigned, or for a
+pick to be changed. Admins can edit both picks retroactively, up until the tournament starts.
+
+- An admin edits a participant's nation picks via `POST /api/admin/participants/:id/nations` with
+  `{ primaryTeamCode, secondaryTeamCode? }`. It updates **only** the nation picks — it does **not**
+  touch `league_type`, `soccerverse_username`, `soccerverse_linked_at`, the squad, or the boost.
+- **Both codes are validated exactly as at registration:** `primaryTeamCode` is required and must be a
+  known Soccerverse nation code (`server/src/data/soccerverseNations.ts`); `secondaryTeamCode` is
+  optional and, when present, must be a known code **different** from the primary. Codes are
+  lower-cased before validation (same as the registration path). Sending `secondaryTeamCode` empty/null
+  clears the secondary pick.
+- **Editable only until the first match kicks off.** The endpoint is gated on the tournament kickoff
+  instant (`TOURNAMENT_KICKOFF_AT`) — the **same** instant the scoring config locks — and rejects with
+  `423 Locked` once reached. The rationale: nation tables begin accumulating score at the first match,
+  and moving a participant between nations after that would retroactively reshuffle standings; before
+  any match no nation scores exist, so the change is safe. If `TOURNAMENT_KICKOFF_AT` is unset the gate
+  never engages (same env dependency the scoring-config lock already has).
+- The edit invalidates the leaderboard cache so the nation board recomputes against the new picks. The
+  boost cache is **not** touched (nation picks do not affect the boost).
+- The write is audited as `admin.participant_nation_correction` with
+  `detail: { primaryFrom, primaryTo, secondaryFrom, secondaryTo }`.
+
 ### Boost eligibility
 
 - The Soccerverse ownership boost applies to **any participant with `soccerverse_username
@@ -201,6 +226,8 @@ earn a `0%` ownership boost despite owning influence. Admins can correct it.
 - `POST /api/participant/squad/reset`
 - `POST /api/participant/link-soccerverse`
 - `POST /api/admin/participants/:id/league`
+- `POST /api/admin/participants/:id/soccerverse-username`
+- `POST /api/admin/participants/:id/nations`
 - `GET /api/admin/risk-cases`
 - `POST /api/admin/risk-cases/:caseId/status`
 - `POST /api/admin/login`

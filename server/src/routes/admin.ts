@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { adminSessionCookieName, adminSessionTtlSeconds, shouldUseSecureCookies } from '../config/auth.js'
 import { env } from '../config/env.js'
 import { isKnownTeamCode, teams } from '../data/worldCupSeed.js'
+import { isKnownNationCode } from '../data/soccerverseNations.js'
 import { clearCookie, createCookie } from '../lib/cookies.js'
 import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
 import { sendVerificationMail } from '../lib/mailer.js'
@@ -16,7 +17,7 @@ import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
-import { LeagueChangeError, SoccerverseLinkError } from '../repositories/registrationRepository.js'
+import { LeagueChangeError, NationUpdateError, SoccerverseLinkError } from '../repositories/registrationRepository.js'
 import { clearParticipantBoostCache } from '../services/participantBoost.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
@@ -121,7 +122,10 @@ const riskCaseStatusSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 })
 
-function isScoringLocked(): boolean {
+// True once the tournament has kicked off (first match). The scoring config and admin nation edits
+// both lock on this same instant — see SOP_scoring_and_leagues.md "Score Configuration" and
+// SOP_registration_and_auth.md "Correcting nation selections".
+function isAfterKickoff(): boolean {
   if (!env.TOURNAMENT_KICKOFF_AT) {
     return false
   }
@@ -371,7 +375,7 @@ export function createAdminRouter(
       counts,
       scoring,
       eventControls,
-      scoringLocked: isScoringLocked(),
+      scoringLocked: isAfterKickoff(),
       defaults: scoringDefaults,
       teamSelectionCounts: selectionCounts,
       landingConversion: buildLandingConversionStats({
@@ -493,6 +497,62 @@ export function createAdminRouter(
     }
   })
 
+  const updateNationsSchema = z.object({
+    primaryTeamCode: z.string().trim().toLowerCase().min(1).max(6),
+    secondaryTeamCode: z.string().trim().toLowerCase().max(6).optional().nullable(),
+  })
+
+  // Edit a participant's nation picks (e.g. they skipped the optional secondary at registration and now
+  // want one assigned, or picked the wrong nation). Updates only the picks, not league/boost/squad.
+  // Locked once the tournament kicks off — see SOP_registration_and_auth.md "Correcting nation
+  // selections (admin-initiated)".
+  router.post('/participants/:participantId/nations', async (req, res) => {
+    if (isAfterKickoff()) {
+      return res.status(423).json({ error: 'Nation picks are locked after the tournament starts.', reason: 'locked' })
+    }
+
+    const participantId = String(req.params.participantId ?? '').trim()
+    const parsed = updateNationsSchema.parse(req.body)
+    const secondary = parsed.secondaryTeamCode?.trim() ? parsed.secondaryTeamCode.trim() : null
+
+    if (!isKnownNationCode(parsed.primaryTeamCode)) {
+      return res.status(422).json({ error: 'Unknown primary nation.', reason: 'invalid_primary' })
+    }
+    if (secondary && !isKnownNationCode(secondary)) {
+      return res.status(422).json({ error: 'Unknown secondary nation.', reason: 'invalid_secondary' })
+    }
+    if (secondary && secondary === parsed.primaryTeamCode) {
+      return res.status(422).json({ error: 'Secondary nation must differ from primary.', reason: 'same_nation' })
+    }
+
+    const before = await registrationRepository.getByParticipantId(participantId)
+    if (!before) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+
+    try {
+      const profile = await registrationRepository.updateParticipantNations(participantId, parsed.primaryTeamCode, secondary)
+      await auditRepository.record({
+        actorEmail: res.locals.admin.email,
+        actionKey: 'admin.participant_nation_correction',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: {
+          primaryFrom: before.primaryTeamCode,
+          primaryTo: profile.primaryTeamCode,
+          secondaryFrom: before.secondaryTeamCode ?? null,
+          secondaryTo: profile.secondaryTeamCode ?? null,
+        },
+      })
+      res.json({ participant: profile })
+    } catch (error) {
+      if (error instanceof NationUpdateError) {
+        return res.status(404).json({ error: error.message, reason: error.reason })
+      }
+      throw error
+    }
+  })
+
   router.get('/referrals', async (_req, res) => {
     const items = await registrationRepository.getReferralAnalytics()
     res.json({ items })
@@ -576,7 +636,7 @@ export function createAdminRouter(
   })
 
   router.put('/scoring', async (req, res) => {
-    if (isScoringLocked()) {
+    if (isAfterKickoff()) {
       return res.status(423).json({ error: 'Scoring configuration is locked after kickoff.' })
     }
 
