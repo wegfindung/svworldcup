@@ -10,7 +10,7 @@ import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
 import { MAX_PLAYERS_PER_NATION, budgetLimit as defaultBudgetLimit, budgetOptions, eventTeams, getBudgetScoreMultiplier } from '../data/eventConfig'
-import { soccerverseNations } from '../data/soccerverseNations'
+import { getNationName, soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from '../lib/competitionWindow'
 import { getMessages, type AppMessages } from '../i18n/messages'
@@ -1461,6 +1461,32 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     >
                       {copy.common.signOut}
                     </button>
+                  </div>
+
+                  <div className="mt-3 border-t border-white/8 pt-3">
+                    <p className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">{copy.active.nationsTitle}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="flex items-center gap-2 rounded-full border border-white/10 bg-[rgba(255,255,255,0.03)] px-2.5 py-1.5">
+                        <TeamFlag teamCode={participant.primaryTeamCode} label={getNationName(participant.primaryTeamCode)} size="sm" />
+                        <span className="min-w-0">
+                          <span className="block truncate text-xs font-semibold text-white">{getNationName(participant.primaryTeamCode)}</span>
+                          <span className="mono block text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.nationsPrimary}</span>
+                        </span>
+                      </span>
+                      {participant.secondaryTeamCode ? (
+                        <span className="flex items-center gap-2 rounded-full border border-white/10 bg-[rgba(255,255,255,0.03)] px-2.5 py-1.5">
+                          <TeamFlag teamCode={participant.secondaryTeamCode} label={getNationName(participant.secondaryTeamCode)} size="sm" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-semibold text-white">{getNationName(participant.secondaryTeamCode)}</span>
+                            <span className="mono block text-[9px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.active.nationsSecondary}</span>
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center rounded-full border border-white/8 bg-[rgba(255,255,255,0.02)] px-2.5 py-1.5 text-[10px] text-[var(--color-muted)]">
+                          {copy.active.nationsSecondaryNone}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
