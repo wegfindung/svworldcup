@@ -50,6 +50,49 @@ function actionLabel(actionKey: string) {
     .join(' / ')
 }
 
+function formatDetailValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '—'
+  }
+  return typeof value === 'string' ? value : JSON.stringify(value)
+}
+
+// Render an audit row's detail_json as readable lines. `<prefix>From`/`<prefix>To` and plain
+// `from`/`to` pairs collapse into `prefix: old → new` so corrections (nation, username, league)
+// show what changed; any other keys render as `key: value`.
+function formatAuditDetail(detail: Record<string, unknown>): string[] {
+  const consumed = new Set<string>()
+  const lines: string[] = []
+
+  for (const key of Object.keys(detail)) {
+    if (!key.endsWith('From')) {
+      continue
+    }
+    const prefix = key.slice(0, -'From'.length)
+    const toKey = `${prefix}To`
+    if (toKey in detail) {
+      consumed.add(key)
+      consumed.add(toKey)
+      const label = prefix || 'value'
+      lines.push(`${label}: ${formatDetailValue(detail[key])} → ${formatDetailValue(detail[toKey])}`)
+    }
+  }
+
+  if ('from' in detail && 'to' in detail && !consumed.has('from') && !consumed.has('to')) {
+    consumed.add('from')
+    consumed.add('to')
+    lines.push(`${formatDetailValue(detail.from)} → ${formatDetailValue(detail.to)}`)
+  }
+
+  for (const key of Object.keys(detail)) {
+    if (!consumed.has(key)) {
+      lines.push(`${key}: ${formatDetailValue(detail[key])}`)
+    }
+  }
+
+  return lines
+}
+
 function eventTypeLabel(type: OperationEvent['type']) {
   return type === 'email_scheduler' ? 'Email scheduler' : 'Soccerverse API'
 }
@@ -392,19 +435,31 @@ export function OperationsView() {
                   <div className="mt-4 max-h-[38rem] overflow-y-auto rounded-[0.95rem] border border-white/8">
                     {data.auditLogs.length ? (
                       <div className="divide-y divide-white/8">
-                        {data.auditLogs.map((entry) => (
-                        <article key={entry.auditId} className="bg-black/12 px-3.5 py-3">
-                          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-white">{actionLabel(entry.actionKey)}</p>
-                              <p className="mono mt-1 truncate text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
-                                {entry.actorEmail} - {entry.entityType} - {entry.entityId}
-                              </p>
-                            </div>
-                            <span className="text-xs text-[var(--color-muted)]">{formatDateTime(entry.createdAt)}</span>
-                          </div>
-                        </article>
-                      ))}
+                        {data.auditLogs.map((entry) => {
+                          const detailLines = formatAuditDetail(entry.detail)
+                          return (
+                            <article key={entry.auditId} className="bg-black/12 px-3.5 py-3">
+                              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-white">{actionLabel(entry.actionKey)}</p>
+                                  <p className="mono mt-1 truncate text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                                    {entry.actorEmail} - {entry.entityType} - {entry.entityId}
+                                  </p>
+                                  {detailLines.length ? (
+                                    <ul className="mono mt-1.5 grid gap-0.5 text-[11px] text-[var(--color-muted)]">
+                                      {detailLines.map((line, index) => (
+                                        <li key={index} className="break-words">
+                                          {line}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : null}
+                                </div>
+                                <span className="text-xs text-[var(--color-muted)]">{formatDateTime(entry.createdAt)}</span>
+                              </div>
+                            </article>
+                          )
+                        })}
                     </div>
                   ) : (
                     <div className="bg-black/12 p-5">
