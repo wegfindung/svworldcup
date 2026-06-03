@@ -66,4 +66,15 @@ describe('POST /register — verification mail is off the response path', () => 
     expect(response.body.mailer).toBeUndefined()
     expect(response.body.verificationPreviewUrl).toContain('/verify?token=')
   })
+
+  it('rejects a soccerverseUsername that contains @ (an email pasted by mistake)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send({ ...validRegistration, soccerverseUsername: 'newuser@example.com' })
+
+    expect(response.status).toBe(400)
+    expect(sendVerificationMail).not.toHaveBeenCalled()
+  })
 })

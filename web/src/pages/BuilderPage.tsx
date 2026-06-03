@@ -531,6 +531,11 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
         throw new Error(copy.errors.chooseCountry)
       }
 
+      // Most common operator-observed mistake: pasting an email into the Soccerverse username field.
+      if (registrationForm.mode === 'veteran' && registrationForm.soccerverseUsername.trim().includes('@')) {
+        throw new Error(copy.errors.usernameLooksLikeEmail)
+      }
+
       const response = await registerParticipant({
         email: registrationForm.email,
         displayName: registrationForm.displayName,
@@ -625,6 +630,10 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
     const trimmed = linkUsername.trim()
     if (!trimmed) {
       setLinkError(copy.errors.enterUsername)
+      return
+    }
+    if (trimmed.includes('@')) {
+      setLinkError(copy.errors.usernameLooksLikeEmail)
       return
     }
     setLinkBusy(true)
@@ -997,6 +1006,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     placeholder={copy.register.accountPlaceholder}
                     className="rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.72)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                   />
+                  <span className="text-xs leading-relaxed text-[var(--color-muted)]">{copy.register.accountHint}</span>
                 </label>
               ) : null}
 
@@ -1299,6 +1309,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                           placeholder={copy.ready.linkPlaceholder}
                           className="rounded-[0.95rem] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]"
                         />
+                        <span className="text-xs leading-relaxed text-[var(--color-muted)]">{copy.register.accountHint}</span>
                       </label>
                       {linkError ? (
                         <div className="rounded-[1.3rem] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-[var(--color-paper)]">

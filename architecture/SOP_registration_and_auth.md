@@ -108,7 +108,8 @@ participant between Rookie and Veteran public-table membership is an admin-media
 - A participant who already has a `soccerverse_username` (whether they registered as Veteran
   or linked earlier) cannot re-link; the endpoint rejects with `reason: 'already_linked'`.
 - The submitted `soccerverseUsername` is validated identically to initial registration
-  (trim, allowed characters, length, server-side uniqueness across all participants).
+  (trim, reject any value containing `@` since that signals an email pasted by mistake, length,
+  server-side uniqueness across all participants).
 - Uniqueness applies to all participants regardless of league — the same Soccerverse account
   cannot back two participant rows.
 - The write is audited as `participant.link_soccerverse`.
@@ -190,7 +191,15 @@ participant between Rookie and Veteran public-table membership is an admin-media
 
 - `email` must be normalized and syntactically valid.
 - `displayName` must be length-limited and trimmed.
-- `soccerverseUsername` is required for veteran registrations and empty for rookies.
+- `soccerverseUsername` is required for veteran registrations and empty for rookies. It is the
+  participant's **Soccerverse username** — case-sensitive (never canonicalized, see "Participant Session
+  Rules") and **not** an email address or a display/personal name. The most frequent operator-observed
+  mistake is entering an email instead of the username, so any value containing `@` is **rejected** at the
+  validation layer (registration and linking alike). The rejection is enforced server-side (the
+  authoritative gate) and pre-checked client-side with a clarifying message; the field also carries
+  always-visible helper text stating it is the case-sensitive Soccerverse username, not an email or name.
+  No broader character allowlist is imposed, since the full set of valid Soccerverse username characters
+  is not authoritatively known here — only the `@` (email) signal is blocked.
 - `referrerSoccerverseUsername` is optional, trimmed, safe-character filtered, and length-limited to 60 characters.
 - `primaryCountryCode` is required.
 - `secondaryCountryCode` is optional.

@@ -19,6 +19,7 @@ import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 import { SwapValidationError } from '../lib/swapGate.js'
 import { buildSwapWindows, getOpenSwapWindow, hasSwapHardStopPassed, swapHardStopEpoch } from '../data/swapWindows.js'
 import { getParticipantBoost, type BoostDraftedPlayer } from '../services/participantBoost.js'
+import { isEmailLikeUsername, SOCCERVERSE_USERNAME_EMAIL_MESSAGE } from '../lib/soccerverseUsername.js'
 
 const assignPlayerSchema = z.object({
   slotKey: z.string().trim().min(1),
@@ -30,7 +31,12 @@ const budgetSchema = z.object({
 })
 
 const linkSoccerverseSchema = z.object({
-  soccerverseUsername: z.string().trim().min(1).max(60),
+  soccerverseUsername: z
+    .string()
+    .trim()
+    .min(1)
+    .max(60)
+    .refine((value) => !isEmailLikeUsername(value), { message: SOCCERVERSE_USERNAME_EMAIL_MESSAGE }),
 })
 
 const swapSchema = z.object({
