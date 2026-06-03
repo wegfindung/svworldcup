@@ -1923,14 +1923,17 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.active.currentSquad}</p>
                     <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">4-3-3 + bench</h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleReset()}
-                    disabled={!canEditSquad}
-                    className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                  >
-                    {copy.common.reset}
-                  </button>
+                  {/* Hidden once the squad is locked AND the tournament has started — reset only
+                      clears the squad selection and is useless past that point (server blocks it too). */}
+                  {canEditSquad ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleReset()}
+                      className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                    >
+                      {copy.common.reset}
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="mt-4 rounded-[1rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-3 py-3">
