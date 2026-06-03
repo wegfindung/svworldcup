@@ -18,6 +18,7 @@ import type { ParticipantRiskRepository } from '../repositories/participantRiskR
 import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 import { SwapValidationError } from '../lib/swapGate.js'
 import { buildSwapWindows, getOpenSwapWindow, hasSwapHardStopPassed, swapHardStopEpoch } from '../data/swapWindows.js'
+import { getParticipantBoost, type BoostDraftedPlayer } from '../services/participantBoost.js'
 
 const assignPlayerSchema = z.object({
   slotKey: z.string().trim().min(1),
@@ -211,6 +212,39 @@ export function createParticipantRouter(
       hasHardStopPassed: hasSwapHardStopPassed(now, fixtures),
       currentLineup,
     })
+  })
+
+  // Live ownership-boost standing per drafted player (current net influence since the event-link cutoff
+  // up to now). Linked accounts only; computed on demand + cached per participant. See
+  // SOP_scoring_and_leagues.md "Participant boost view (live, on-demand)".
+  router.get('/boost', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const profile = await registrationRepository.getByParticipantId(participantId)
+    if (!profile?.soccerverseUsername) {
+      return res.json({ linked: false })
+    }
+
+    // Cutoff = event-link date: the link timestamp when the account was linked after registering, else
+    // (Veteran who registered already carrying a username, no link timestamp stored) registration time.
+    // This matches the cutoff scoring uses, so the live view agrees with the points actually scored.
+    const cutoffIso = profile.soccerverseLinkedAt ?? profile.createdAt
+    const cutoffUnix = cutoffIso ? Math.floor(new Date(cutoffIso).getTime() / 1000) : 0
+
+    const squad = await squadRepository.getOrCreate(participantId)
+    const players: BoostDraftedPlayer[] = squad.slots
+      .filter((slot) => slot.player)
+      .map((slot) => ({
+        playerId: slot.player!.playerId,
+        displayName: slot.player!.displayName,
+        teamCode: slot.player!.teamCode,
+        imageUrl: slot.player!.imageUrl,
+      }))
+
+    const refresh = req.query.refresh === '1' || req.query.refresh === 'true'
+    const { computedAt, players: rows } = await getParticipantBoost(participantId, profile.soccerverseUsername, cutoffUnix, players, {
+      refresh,
+    })
+    res.json({ linked: true, computedAt, players: rows })
   })
 
   router.post('/link-soccerverse', async (req, res) => {

@@ -22,6 +22,7 @@ import type {
   ScoringConfig,
   ParticipantProfile,
   ParticipantLineup,
+  ParticipantBoostResult,
   ParticipantSquad,
   ParticipantSquadSummary,
   SwapState,
@@ -510,6 +511,14 @@ export function lockSquad() {
 
 export function fetchSwapState() {
   return getJson<SwapState>('/api/participant/squad/swaps', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function fetchParticipantBoost(refresh = false) {
+  const query = refresh ? '?refresh=1' : ''
+  return getJson<ParticipantBoostResult>(`/api/participant/boost${query}`, {
     method: 'GET',
     headers: {},
   })

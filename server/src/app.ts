@@ -99,6 +99,15 @@ export function createApp() {
     standardHeaders: true,
     legacyHeaders: false,
   })
+  // The participant boost view is likewise expensive: a cold read fans out one paced Soccerverse call
+  // per drafted player. Its result is cached per participant, so this tighter cap only bites cold /
+  // refresh reads. See SOP_system_overview.md "Security Rules".
+  const expensiveParticipantLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
 
   void bootstrapInitialTeamPools(teamPoolRepository).catch((error) => {
     logger.error({ err: error }, 'Failed to bootstrap initial team pools')
@@ -187,6 +196,7 @@ export function createApp() {
   // budget on top of the shared one.
   app.use('/api/public/player-search', expensivePublicLimiter)
   app.use('/api/public/match-results', expensivePublicLimiter)
+  app.use('/api/participant/boost', expensiveParticipantLimiter)
   app.use(
     '/api/public',
     publicApiLimiter,

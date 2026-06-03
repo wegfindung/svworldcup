@@ -53,6 +53,7 @@ export interface ParticipantProfile {
   status: ParticipantStatus
   verifiedAt?: string
   soccerverseLinkedAt?: string
+  createdAt?: string
   hasPassword: boolean
   revealProfile?: boolean
   revealSquad?: boolean
@@ -286,6 +287,26 @@ export interface ParticipantSquadSummary {
   budgetRemaining: number
   draftedCount: number
   isLocked: boolean
+}
+
+// Live ownership-boost standing per drafted player for the logged-in participant. Distinct from the
+// frozen per-fixture participant_influence_snapshot used by scoring — see SOP_scoring_and_leagues.md
+// "Participant boost view (live, on-demand)".
+export interface ParticipantBoostPlayer {
+  playerId: number
+  displayName: string
+  teamCode: string
+  imageUrl?: string
+  bought: number
+  sold: number
+  net: number
+  bonusPercent: number
+}
+
+export interface ParticipantBoostResult {
+  linked: boolean
+  computedAt?: string
+  players?: ParticipantBoostPlayer[]
 }
 
 export interface AssignPlayerInput {

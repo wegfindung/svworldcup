@@ -67,6 +67,11 @@ block (its own load-error/"unavailable" state) and never drops the whole view. U
 with per-source state, not an all-or-nothing `Promise.all` + single `catch`. Sources that are only
 meaningful together (e.g. the share composer needs both the participant session and their squad) stay
 coupled by design — partial render does not apply there.
+10. Logged-in participant ownership-boost view: a participant sees their current ownership-boost standing
+per drafted player — influence bought, sold, net, and resulting % boost — computed live on demand and
+cached per participant, linked accounts only. This is a current-standing indicator, distinct from the
+frozen per-fixture scoring snapshot. See `SOP_scoring_and_leagues.md` "Participant boost view (live,
+on-demand)".
 
 ## Security Rules
 
@@ -77,6 +82,9 @@ coupled by design — partial render does not apply there.
 - Public APIs must be rate limited.
 - Expensive public endpoints (player search, match results) must carry a tighter per-endpoint rate
   limit on top of the general public limit, since they are uncached and the costliest to hammer.
+- The logged-in participant boost endpoint is likewise expensive (a cold read fans out one Soccerverse
+  trade-history fetch per drafted player) and must carry a tighter per-endpoint rate limit on top of the
+  participant limit. Its result is cached per participant so repeat views add no Soccerverse load.
 - Rate limiting must key on the real client IP. In production the service runs behind a single
   trusted proxy (Traefik), so `trust proxy` defaults on in production (overridable via
   `RATE_LIMIT_TRUST_PROXY`); otherwise every visitor shares the proxy's IP and the limiter mis-keys.

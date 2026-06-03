@@ -80,6 +80,7 @@ interface ParticipantRow {
   status: RegistrationRecord['status']
   verified_at: string | null
   soccerverse_linked_at: string | null
+  created_at?: string | null
   has_password: boolean
   reveal_profile?: boolean
   reveal_squad?: boolean
@@ -143,6 +144,7 @@ function toParticipantProfile(record: RegistrationRecord): ParticipantProfile {
     status: record.status,
     verifiedAt: record.verifiedAt,
     soccerverseLinkedAt: record.soccerverseLinkedAt,
+    createdAt: record.createdAt,
     hasPassword: record.hasPassword,
     revealProfile: record.revealProfile,
     revealSquad: record.revealSquad,
@@ -166,6 +168,7 @@ function mapParticipantRow(row: ParticipantRow): ParticipantProfile {
     status: row.status,
     verifiedAt: row.verified_at ?? undefined,
     soccerverseLinkedAt: row.soccerverse_linked_at ?? undefined,
+    createdAt: row.created_at ?? undefined,
     hasPassword: row.has_password,
     revealProfile: row.reveal_profile ?? false,
     revealSquad: row.reveal_squad ?? false,
@@ -1302,6 +1305,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
           status,
           verified_at,
           soccerverse_linked_at,
+          created_at,
           (password_hash IS NOT NULL) AS has_password,
           reveal_profile,
           reveal_squad

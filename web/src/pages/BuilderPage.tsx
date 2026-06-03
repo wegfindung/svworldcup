@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { BoostPanel } from '../components/BoostPanel'
 import { EmptyState } from '../components/EmptyState'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
@@ -1991,6 +1992,8 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                 {squad.isLocked ? (
                   <SwapPanel squad={squad} copy={copy.swap} locale={locale} state={activeSwapState} onSwapped={refreshSwapState} />
                 ) : null}
+
+                <BoostPanel copy={copy.boost} locale={locale} />
 
                 <div className="mt-5">
                   <div className="squad-pitch">
