@@ -344,8 +344,7 @@ export function AccountsView() {
                     <p className="mt-3 text-xs text-[var(--color-muted)]">
                       Soccerverse: <span className="text-white">{participant.soccerverseUsername || 'None'}</span>
                     </p>
-                    {participant.soccerverseUsername ? (
-                      editingUsernameId === participant.participantId ? (
+                    {editingUsernameId === participant.participantId ? (
                         <div className="mt-2 grid gap-1.5">
                           <input
                             value={usernameDraft}
@@ -376,7 +375,7 @@ export function AccountsView() {
                             </button>
                           </div>
                           <p className="text-[10px] leading-relaxed text-[var(--color-muted)]">
-                            Keeps the original link date — only fixes the username.
+                            Existing link dates are preserved; new usernames get a link date now.
                           </p>
                         </div>
                       ) : (
@@ -385,10 +384,9 @@ export function AccountsView() {
                           onClick={() => startEditUsername(participant)}
                           className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)] transition hover:underline"
                         >
-                          Correct username
+                          {participant.soccerverseUsername ? 'Correct username' : 'Add username'}
                         </button>
-                      )
-                    ) : null}
+                      )}
                     {participant.leagueType === 'rookie' ? (
                       <button
                         type="button"

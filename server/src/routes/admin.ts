@@ -466,9 +466,8 @@ export function createAdminRouter(
     soccerverseUsername: z.string().trim().min(1).max(60),
   })
 
-  // Correct a participant's Soccerverse username (e.g. they entered an email by mistake). Updates only
-  // the username; soccerverse_linked_at is preserved by the repository so the boost cutoff stays the
-  // original attempt date. See SOP_registration_and_auth.md "Correcting a Soccerverse username".
+  // Set or correct a participant's Soccerverse username from the admin panel. Existing links preserve
+  // soccerverse_linked_at; empty links use the normal linking path and stamp the link date.
   router.post('/participants/:participantId/soccerverse-username', async (req, res) => {
     const participantId = String(req.params.participantId ?? '').trim()
     const parsed = correctUsernameSchema.parse(req.body)
@@ -477,14 +476,17 @@ export function createAdminRouter(
       return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
     }
     try {
-      const profile = await registrationRepository.correctSoccerverseUsername(participantId, parsed.soccerverseUsername)
+      const hadUsername = Boolean(before.soccerverseUsername?.trim())
+      const profile = hadUsername
+        ? await registrationRepository.correctSoccerverseUsername(participantId, parsed.soccerverseUsername)
+        : await registrationRepository.linkSoccerverseAccount(participantId, parsed.soccerverseUsername)
       clearParticipantBoostCache(participantId)
       await auditRepository.record({
         actorEmail: res.locals.admin.email,
         actionKey: 'admin.participant_soccerverse_correction',
         entityType: 'participant',
         entityId: participantId,
-        detail: { from: before.soccerverseUsername, to: profile.soccerverseUsername },
+        detail: { from: before.soccerverseUsername, to: profile.soccerverseUsername, mode: hadUsername ? 'correct' : 'link' },
       })
       res.json({ participant: profile })
     } catch (error) {
