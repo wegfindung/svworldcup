@@ -151,6 +151,14 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
     })
   })
 
+  it('rejects an email address as the linked username', async () => {
+    const { repo, participantId } = await createActiveRookie()
+    await expect(repo.linkSoccerverseAccount(participantId, 'real@example.com')).rejects.toMatchObject({
+      name: 'SoccerverseLinkError',
+      reason: 'invalid_username',
+    })
+  })
+
   it('throws when participant does not exist', async () => {
     const repo = new MemoryRegistrationRepository()
     await expect(repo.linkSoccerverseAccount('00000000-0000-4000-8000-000000000000', 'whatever')).rejects.toMatchObject({
@@ -163,7 +171,7 @@ describe('MemoryRegistrationRepository.linkSoccerverseAccount', () => {
 describe('MemoryRegistrationRepository.correctSoccerverseUsername', () => {
   it('updates the username but preserves the original link date (late-linking Rookie)', async () => {
     const { repo, participantId } = await createActiveRookie()
-    const linked = await repo.linkSoccerverseAccount(participantId, 'user@example.com') // the mistaken email
+    const linked = await repo.linkSoccerverseAccount(participantId, 'WrongName')
     expect(linked.soccerverseLinkedAt).toBeTruthy()
 
     const corrected = await repo.correctSoccerverseUsername(participantId, 'RealName')

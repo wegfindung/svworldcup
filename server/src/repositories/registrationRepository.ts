@@ -344,8 +344,8 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
 
   async linkSoccerverseAccount(participantId: string, soccerverseUsername: string) {
     const trimmed = soccerverseUsername.trim()
-    if (!trimmed || trimmed.length > 60) {
-      throw new SoccerverseLinkError('invalid_username', 'Soccerverse username must be 1–60 characters.')
+    if (!trimmed || trimmed.length > 60 || isEmailLikeUsername(trimmed)) {
+      throw new SoccerverseLinkError('invalid_username', 'Enter a valid Soccerverse username (1-60 characters, not an email address).')
     }
 
     const record = [...this.byEmail.values()].find((item) => item.participantId === participantId)
@@ -1069,8 +1069,8 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
 
   async linkSoccerverseAccount(participantId: string, soccerverseUsername: string) {
     const trimmed = soccerverseUsername.trim()
-    if (!trimmed || trimmed.length > 60) {
-      throw new SoccerverseLinkError('invalid_username', 'Soccerverse username must be 1–60 characters.')
+    if (!trimmed || trimmed.length > 60 || isEmailLikeUsername(trimmed)) {
+      throw new SoccerverseLinkError('invalid_username', 'Enter a valid Soccerverse username (1-60 characters, not an email address).')
     }
 
     const client = await this.pool.connect()
