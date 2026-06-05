@@ -926,6 +926,38 @@ const spanishMessages: DeepPartial<AppMessages> = {
       passwordReady: 'Luego podrás entrar desde Login con email y contraseña, o pedir un enlace de recuperación.',
       filledSuffix: 'completos',
     },
+    nudge: {
+      eyebrow: 'tu plantilla',
+      emptyTitle: 'Aún no has creado tu plantilla',
+      emptyBody:
+        'Solo te llevará unos minutos. Elige 15 jugadores y bloquea tu plantilla — bloquearla no es definitivo, puedes seguir editándola hasta el primer partido el {date}.',
+      emptyBodyNoDate:
+        'Solo te llevará unos minutos. Elige 15 jugadores y bloquea tu plantilla — bloquearla no es definitivo, puedes seguir editándola hasta el primer partido.',
+      emptyCta: 'Crear mi plantilla',
+      partialTitle: 'Quedan {remaining} huecos por completar',
+      partialTitleOne: 'Queda 1 hueco por completar',
+      partialBody:
+        'Completa tus 15 y bloquea la plantilla antes del primer partido el {date}. Bloquearla no es definitivo — aún puedes editarla hasta entonces.',
+      partialBodyNoDate:
+        'Completa tus 15 y bloquea la plantilla antes del primer partido. Bloquearla no es definitivo — aún puedes editarla hasta entonces.',
+      partialCta: 'Terminar mi plantilla',
+      completeTitle: 'Tu plantilla está completa — falta un paso',
+      completeBody:
+        'Bloquéala para que puntúe desde el inicio. Tranquilo: una plantilla bloqueada se puede editar hasta el primer partido el {date}.',
+      completeBodyNoDate:
+        'Bloquéala para que puntúe desde el inicio. Tranquilo: una plantilla bloqueada se puede editar hasta el primer partido.',
+      completeCta: 'Bloquear mi plantilla',
+      lockedTitle: 'Ya estás dentro — plantilla enviada',
+      lockedBody:
+        'No tienes que hacer nada más. Si cambias de opinión, aún puedes ajustar tu plantilla hasta el primer partido el {date}.',
+      lockedBodyNoDate:
+        'No tienes que hacer nada más. Si cambias de opinión, aún puedes ajustar tu plantilla hasta el primer partido.',
+      lockedCta: 'Revisar mi plantilla',
+      startedUnlockedTitle: 'El torneo ha comenzado',
+      startedUnlockedBody:
+        'Tu plantilla aún no está bloqueada, así que no puntúa. Bloquéala ahora para puntuar los partidos restantes.',
+      startedUnlockedCta: 'Bloquear mi plantilla ahora',
+    },
     active: {
       unlocked: 'Builder desbloqueado',
       submittedEditable: 'Enviada, editable',
@@ -1430,6 +1462,38 @@ const italianMessages: DeepPartial<AppMessages> = {
       passwordReady: 'Più tardi potrai accedere da Login con email e password, oppure richiedere un link di recupero.',
       filledSuffix: 'completi',
     },
+    nudge: {
+      eyebrow: 'la tua rosa',
+      emptyTitle: 'Non hai ancora creato la tua rosa',
+      emptyBody:
+        'Bastano pochi minuti. Scegli 15 giocatori e blocca la rosa — bloccarla non è definitivo, puoi continuare a modificarla fino alla prima partita il {date}.',
+      emptyBodyNoDate:
+        'Bastano pochi minuti. Scegli 15 giocatori e blocca la rosa — bloccarla non è definitivo, puoi continuare a modificarla fino alla prima partita.',
+      emptyCta: 'Crea la mia rosa',
+      partialTitle: 'Mancano {remaining} slot da riempire',
+      partialTitleOne: 'Manca 1 slot da riempire',
+      partialBody:
+        'Completa i tuoi 15 e blocca la rosa prima della prima partita il {date}. Bloccarla non è definitivo — puoi ancora modificarla fino ad allora.',
+      partialBodyNoDate:
+        'Completa i tuoi 15 e blocca la rosa prima della prima partita. Bloccarla non è definitivo — puoi ancora modificarla fino ad allora.',
+      partialCta: 'Completa la mia rosa',
+      completeTitle: 'La tua rosa è completa — manca un passo',
+      completeBody:
+        'Bloccala così segna punti fin dall’inizio. Tranquillo: una rosa bloccata si può modificare fino alla prima partita il {date}.',
+      completeBodyNoDate:
+        'Bloccala così segna punti fin dall’inizio. Tranquillo: una rosa bloccata si può modificare fino alla prima partita.',
+      completeCta: 'Blocca la mia rosa',
+      lockedTitle: 'Ci sei — rosa inviata',
+      lockedBody:
+        'Non devi fare altro. Se cambi idea, puoi ancora ritoccare la rosa fino alla prima partita il {date}.',
+      lockedBodyNoDate:
+        'Non devi fare altro. Se cambi idea, puoi ancora ritoccare la rosa fino alla prima partita.',
+      lockedCta: 'Rivedi la mia rosa',
+      startedUnlockedTitle: 'Il torneo è iniziato',
+      startedUnlockedBody:
+        'La tua rosa non è ancora bloccata, quindi non segna punti. Bloccala ora per segnare nelle partite rimanenti.',
+      startedUnlockedCta: 'Blocca subito la mia rosa',
+    },
     active: {
       unlocked: 'Builder sbloccato',
       submittedEditable: 'Inviata, modificabile',
@@ -1933,6 +1997,38 @@ const germanMessages: DeepPartial<AppMessages> = {
       passwordReady: 'Du kannst dich später über Login mit E-Mail und Passwort anmelden oder einen Recovery-Link anfordern.',
       filledSuffix: 'gefüllt',
     },
+    nudge: {
+      eyebrow: 'dein Kader',
+      emptyTitle: 'Du hast deinen Kader noch nicht erstellt',
+      emptyBody:
+        'Es dauert nur ein paar Minuten. Wähle 15 Spieler und sperre deinen Kader — das Sperren ist nicht endgültig, du kannst ihn bis zum ersten Spiel am {date} weiter bearbeiten.',
+      emptyBodyNoDate:
+        'Es dauert nur ein paar Minuten. Wähle 15 Spieler und sperre deinen Kader — das Sperren ist nicht endgültig, du kannst ihn bis zum ersten Spiel weiter bearbeiten.',
+      emptyCta: 'Meinen Kader erstellen',
+      partialTitle: 'Noch {remaining} Plätze zu füllen',
+      partialTitleOne: 'Noch 1 Platz zu füllen',
+      partialBody:
+        'Vervollständige deine 15 und sperre den Kader vor dem ersten Spiel am {date}. Das Sperren ist nicht endgültig — du kannst ihn bis dahin noch bearbeiten.',
+      partialBodyNoDate:
+        'Vervollständige deine 15 und sperre den Kader vor dem ersten Spiel. Das Sperren ist nicht endgültig — du kannst ihn bis dahin noch bearbeiten.',
+      partialCta: 'Meinen Kader fertigstellen',
+      completeTitle: 'Dein Kader ist komplett — ein Schritt fehlt',
+      completeBody:
+        'Sperre ihn, damit er von Anfang an punktet. Keine Sorge: ein gesperrter Kader kann bis zum ersten Spiel am {date} bearbeitet werden.',
+      completeBodyNoDate:
+        'Sperre ihn, damit er von Anfang an punktet. Keine Sorge: ein gesperrter Kader kann bis zum ersten Spiel bearbeitet werden.',
+      completeCta: 'Meinen Kader sperren',
+      lockedTitle: 'Du bist dabei — Kader eingereicht',
+      lockedBody:
+        'Mehr ist nicht zu tun. Falls du es dir anders überlegst, kannst du deinen Kader bis zum ersten Spiel am {date} noch anpassen.',
+      lockedBodyNoDate:
+        'Mehr ist nicht zu tun. Falls du es dir anders überlegst, kannst du deinen Kader bis zum ersten Spiel noch anpassen.',
+      lockedCta: 'Meinen Kader ansehen',
+      startedUnlockedTitle: 'Das Turnier hat begonnen',
+      startedUnlockedBody:
+        'Dein Kader ist noch nicht gesperrt und punktet daher nicht. Sperre ihn jetzt, um in den verbleibenden Spielen zu punkten.',
+      startedUnlockedCta: 'Meinen Kader jetzt sperren',
+    },
     active: {
       unlocked: 'Builder freigeschaltet',
       submittedEditable: 'Eingereicht, editierbar',
@@ -2433,6 +2529,38 @@ const frenchMessages: DeepPartial<AppMessages> = {
       savePassword: 'Enregistrer l’accès',
       passwordReady: 'Tu pourras te connecter depuis Login avec email et mot de passe, ou demander un lien de récupération.',
       filledSuffix: 'remplis',
+    },
+    nudge: {
+      eyebrow: 'ton effectif',
+      emptyTitle: 'Tu n’as pas encore créé ton effectif',
+      emptyBody:
+        'Ça ne prend que quelques minutes. Choisis 15 joueurs et verrouille ton effectif — le verrouillage n’est pas définitif, tu peux continuer à le modifier jusqu’au premier match le {date}.',
+      emptyBodyNoDate:
+        'Ça ne prend que quelques minutes. Choisis 15 joueurs et verrouille ton effectif — le verrouillage n’est pas définitif, tu peux continuer à le modifier jusqu’au premier match.',
+      emptyCta: 'Créer mon effectif',
+      partialTitle: 'Il reste {remaining} places à remplir',
+      partialTitleOne: 'Il reste 1 place à remplir',
+      partialBody:
+        'Complète tes 15 et verrouille l’effectif avant le premier match le {date}. Le verrouillage n’est pas définitif — tu peux encore le modifier jusque-là.',
+      partialBodyNoDate:
+        'Complète tes 15 et verrouille l’effectif avant le premier match. Le verrouillage n’est pas définitif — tu peux encore le modifier jusque-là.',
+      partialCta: 'Terminer mon effectif',
+      completeTitle: 'Ton effectif est complet — une étape reste',
+      completeBody:
+        'Verrouille-le pour qu’il marque dès le début. Pas d’inquiétude : un effectif verrouillé peut être modifié jusqu’au premier match le {date}.',
+      completeBodyNoDate:
+        'Verrouille-le pour qu’il marque dès le début. Pas d’inquiétude : un effectif verrouillé peut être modifié jusqu’au premier match.',
+      completeCta: 'Verrouiller mon effectif',
+      lockedTitle: 'Tu es inscrit — effectif envoyé',
+      lockedBody:
+        'Rien de plus à faire. Si tu changes d’avis, tu peux encore ajuster ton effectif jusqu’au premier match le {date}.',
+      lockedBodyNoDate:
+        'Rien de plus à faire. Si tu changes d’avis, tu peux encore ajuster ton effectif jusqu’au premier match.',
+      lockedCta: 'Revoir mon effectif',
+      startedUnlockedTitle: 'Le tournoi a commencé',
+      startedUnlockedBody:
+        'Ton effectif n’est pas encore verrouillé, il ne marque donc pas. Verrouille-le maintenant pour marquer sur les matchs restants.',
+      startedUnlockedCta: 'Verrouiller mon effectif maintenant',
     },
     active: {
       unlocked: 'Builder débloqué',
@@ -2935,6 +3063,38 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       passwordReady: 'Podes entrar depois pelo Login com email e password, ou pedir um link de recuperação.',
       filledSuffix: 'preenchidos',
     },
+    nudge: {
+      eyebrow: 'o teu plantel',
+      emptyTitle: 'Ainda não criaste o teu plantel',
+      emptyBody:
+        'Só leva alguns minutos. Escolhe 15 jogadores e bloqueia o teu plantel — bloquear não é definitivo, podes continuar a editá-lo até ao primeiro jogo a {date}.',
+      emptyBodyNoDate:
+        'Só leva alguns minutos. Escolhe 15 jogadores e bloqueia o teu plantel — bloquear não é definitivo, podes continuar a editá-lo até ao primeiro jogo.',
+      emptyCta: 'Criar o meu plantel',
+      partialTitle: 'Faltam {remaining} lugares por preencher',
+      partialTitleOne: 'Falta 1 lugar por preencher',
+      partialBody:
+        'Completa os teus 15 e bloqueia o plantel antes do primeiro jogo a {date}. Bloquear não é definitivo — ainda podes editá-lo até lá.',
+      partialBodyNoDate:
+        'Completa os teus 15 e bloqueia o plantel antes do primeiro jogo. Bloquear não é definitivo — ainda podes editá-lo até lá.',
+      partialCta: 'Terminar o meu plantel',
+      completeTitle: 'O teu plantel está completo — falta um passo',
+      completeBody:
+        'Bloqueia-o para pontuar desde o início. Não te preocupes: um plantel bloqueado pode ser editado até ao primeiro jogo a {date}.',
+      completeBodyNoDate:
+        'Bloqueia-o para pontuar desde o início. Não te preocupes: um plantel bloqueado pode ser editado até ao primeiro jogo.',
+      completeCta: 'Bloquear o meu plantel',
+      lockedTitle: 'Estás dentro — plantel enviado',
+      lockedBody:
+        'Não tens mais nada a fazer. Se mudares de ideias, ainda podes ajustar o teu plantel até ao primeiro jogo a {date}.',
+      lockedBodyNoDate:
+        'Não tens mais nada a fazer. Se mudares de ideias, ainda podes ajustar o teu plantel até ao primeiro jogo.',
+      lockedCta: 'Rever o meu plantel',
+      startedUnlockedTitle: 'O torneio já começou',
+      startedUnlockedBody:
+        'O teu plantel ainda não está bloqueado, por isso não pontua. Bloqueia-o agora para pontuar nos jogos restantes.',
+      startedUnlockedCta: 'Bloquear o meu plantel agora',
+    },
     active: {
       unlocked: 'Builder desbloqueado',
       submittedEditable: 'Submetido, editável',
@@ -3436,6 +3596,38 @@ const russianMessages: DeepPartial<AppMessages> = {
       savePassword: 'Сохранить доступ',
       passwordReady: 'Позже можно войти через Login с email и паролем или запросить ссылку восстановления.',
       filledSuffix: 'заполнено',
+    },
+    nudge: {
+      eyebrow: 'ваш состав',
+      emptyTitle: 'Вы ещё не собрали состав',
+      emptyBody:
+        'Это займёт всего пару минут. Выберите 15 игроков и зафиксируйте состав — фиксация не окончательна, вы можете редактировать его вплоть до первого матча {date}.',
+      emptyBodyNoDate:
+        'Это займёт всего пару минут. Выберите 15 игроков и зафиксируйте состав — фиксация не окончательна, вы можете редактировать его вплоть до первого матча.',
+      emptyCta: 'Собрать состав',
+      partialTitle: 'Осталось заполнить мест: {remaining}',
+      partialTitleOne: 'Осталось заполнить 1 место',
+      partialBody:
+        'Доберите 15 игроков и зафиксируйте состав до первого матча {date}. Фиксация не окончательна — до этого момента состав можно менять.',
+      partialBodyNoDate:
+        'Доберите 15 игроков и зафиксируйте состав до первого матча. Фиксация не окончательна — до этого момента состав можно менять.',
+      partialCta: 'Завершить состав',
+      completeTitle: 'Состав готов — остался один шаг',
+      completeBody:
+        'Зафиксируйте его, чтобы он набирал очки с самого начала. Не волнуйтесь: зафиксированный состав можно менять вплоть до первого матча {date}.',
+      completeBodyNoDate:
+        'Зафиксируйте его, чтобы он набирал очки с самого начала. Не волнуйтесь: зафиксированный состав можно менять вплоть до первого матча.',
+      completeCta: 'Зафиксировать состав',
+      lockedTitle: 'Вы в игре — состав отправлен',
+      lockedBody:
+        'Больше ничего делать не нужно. Если передумаете, состав можно подправить вплоть до первого матча {date}.',
+      lockedBodyNoDate:
+        'Больше ничего делать не нужно. Если передумаете, состав можно подправить вплоть до первого матча.',
+      lockedCta: 'Посмотреть состав',
+      startedUnlockedTitle: 'Турнир начался',
+      startedUnlockedBody:
+        'Ваш состав ещё не зафиксирован и не набирает очки. Зафиксируйте его сейчас, чтобы набирать очки в оставшихся матчах.',
+      startedUnlockedCta: 'Зафиксировать состав сейчас',
     },
     active: {
       unlocked: 'Конструктор открыт',
@@ -3940,6 +4132,38 @@ const chineseMessages: DeepPartial<AppMessages> = {
       savePassword: '保存密码访问',
       passwordReady: '之后可使用邮箱和密码从 Login 登录，也可请求 recovery link。',
       filledSuffix: '已填',
+    },
+    nudge: {
+      eyebrow: '你的阵容',
+      emptyTitle: '你还没有创建阵容',
+      emptyBody:
+        '只需几分钟。选好 15 名球员并锁定阵容——锁定并非最终决定，你可以一直修改到 {date} 的首场比赛开始。',
+      emptyBodyNoDate:
+        '只需几分钟。选好 15 名球员并锁定阵容——锁定并非最终决定，你可以一直修改到首场比赛开始。',
+      emptyCta: '创建我的阵容',
+      partialTitle: '还有 {remaining} 个位置待填',
+      partialTitleOne: '还有 1 个位置待填',
+      partialBody:
+        '选满 15 人并在 {date} 的首场比赛前锁定阵容。锁定并非最终决定——在那之前你仍可修改。',
+      partialBodyNoDate:
+        '选满 15 人并在首场比赛前锁定阵容。锁定并非最终决定——在那之前你仍可修改。',
+      partialCta: '完成我的阵容',
+      completeTitle: '你的阵容已完成——还差一步',
+      completeBody:
+        '锁定它，让它从一开始就得分。别担心：锁定后的阵容仍可一直修改到 {date} 的首场比赛。',
+      completeBodyNoDate:
+        '锁定它，让它从一开始就得分。别担心：锁定后的阵容仍可一直修改到首场比赛。',
+      completeCta: '锁定我的阵容',
+      lockedTitle: '你已参赛——阵容已提交',
+      lockedBody:
+        '无需再做任何操作。如果改变主意，你仍可在 {date} 的首场比赛前调整阵容。',
+      lockedBodyNoDate:
+        '无需再做任何操作。如果改变主意，你仍可在首场比赛前调整阵容。',
+      lockedCta: '查看我的阵容',
+      startedUnlockedTitle: '比赛已经开始',
+      startedUnlockedBody:
+        '你的阵容尚未锁定，因此不会得分。立即锁定，以便在剩余比赛中得分。',
+      startedUnlockedCta: '立即锁定我的阵容',
     },
     active: {
       unlocked: 'Builder 已解锁',
@@ -5390,6 +5614,38 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         savePassword: 'パスワードアクセスを保存',
         passwordReady: 'メールとパスワードで再ログインできます。',
         filledSuffix: '埋まりました',
+      },
+      nudge: {
+        eyebrow: 'あなたのスカッド',
+        emptyTitle: 'まだスカッドを作成していません',
+        emptyBody:
+          '数分で完了します。15人を選んでスカッドをロックしましょう。ロックは最終決定ではなく、{date}の最初の試合まで編集できます。',
+        emptyBodyNoDate:
+          '数分で完了します。15人を選んでスカッドをロックしましょう。ロックは最終決定ではなく、最初の試合まで編集できます。',
+        emptyCta: 'スカッドを作成',
+        partialTitle: '残り{remaining}枠',
+        partialTitleOne: '残り1枠',
+        partialBody:
+          '15人をそろえ、{date}の最初の試合までにスカッドをロックしましょう。ロックは最終決定ではなく、それまで編集できます。',
+        partialBodyNoDate:
+          '15人をそろえ、最初の試合までにスカッドをロックしましょう。ロックは最終決定ではなく、それまで編集できます。',
+        partialCta: 'スカッドを完成',
+        completeTitle: 'スカッド完成——あと1ステップ',
+        completeBody:
+          'ロックすれば最初から得点します。ご安心ください：ロック後も{date}の最初の試合まで編集できます。',
+        completeBodyNoDate:
+          'ロックすれば最初から得点します。ご安心ください：ロック後も最初の試合まで編集できます。',
+        completeCta: 'スカッドをロック',
+        lockedTitle: '参加完了——スカッド送信済み',
+        lockedBody:
+          'これ以上の操作は不要です。気が変わったら、{date}の最初の試合まで調整できます。',
+        lockedBodyNoDate:
+          'これ以上の操作は不要です。気が変わったら、最初の試合まで調整できます。',
+        lockedCta: 'スカッドを確認',
+        startedUnlockedTitle: '大会が始まりました',
+        startedUnlockedBody:
+          'スカッドがまだロックされていないため、得点していません。今すぐロックして、残りの試合で得点しましょう。',
+        startedUnlockedCta: '今すぐスカッドをロック',
       },
       active: {
         submittedEditableNote: 'スカッドは送信済みですが、キックオフまでは編集できます。',
