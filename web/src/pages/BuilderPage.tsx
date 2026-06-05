@@ -6,6 +6,7 @@ import { InfoModal } from '../components/InfoModal'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
+import { SquadNudge } from '../components/SquadNudge'
 import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
 import { TeamSelect } from '../components/TeamSelect'
@@ -13,6 +14,7 @@ import { MAX_PLAYERS_PER_NATION, budgetLimit as defaultBudgetLimit, budgetOption
 import { getNationName, soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from '../lib/competitionWindow'
+import { resolveSquadNudgeStatus } from '../lib/squadNudgeStatus'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import {
   ApiError,
@@ -320,6 +322,15 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const budgetUsedRatio = squad ? Math.min(100, (squad.budgetUsed / squad.budgetLimit) * 100) : 0
   const activeScoreMultiplier = squad?.scoreMultiplier ?? getBudgetScoreMultiplier(budgetLimit)
   const canEditSquad = !squad?.isLocked || !competitionStarted
+  // Cohort for the "don't forget to submit" nudge in the open builder. Inside the builder we only
+  // surface it for the actionable cases (complete-but-unlocked, or started-but-unlocked) — the
+  // empty/partial states are already obvious from the pitch and the submit panel below.
+  const builderNudgeStatus = resolveSquadNudgeStatus({
+    draftedCount,
+    isLocked: squad?.isLocked ?? false,
+    competitionStarted,
+  })
+  const canLockNow = draftedCount === 15 && !squadViolatesNationCap
   const activeBudgetIndex = useMemo(() => {
     const index = budgetOptions.findIndex((option) => option.budgetLimit === (squad?.budgetLimit ?? budgetLimit))
     if (index >= 0) {
@@ -1139,6 +1150,17 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
         </section>
       ) : null}
 
+      {(accessState === 'registered' || accessState === 'ready') && dashboardSeed ? (
+        <SquadNudge
+          draftedCount={dashboardSeed.draftedCount ?? 0}
+          isLocked={dashboardSeed.isLocked ?? false}
+          competitionStarted={competitionStarted}
+          firstMatchEpoch={competitionStart}
+          locale={locale}
+          copy={copy.nudge}
+        />
+      ) : null}
+
       {accessState === 'registered' && dashboardSeed ? (
         <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6 lg:px-7">
           <div className="flex flex-wrap items-center gap-3">
@@ -1410,6 +1432,17 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
 
       {accessState === 'active' && participant && squad ? (
         <section className="space-y-4">
+          {builderNudgeStatus === 'complete' || builderNudgeStatus === 'startedUnlocked' ? (
+            <SquadNudge
+              draftedCount={draftedCount}
+              isLocked={squad.isLocked}
+              competitionStarted={competitionStarted}
+              firstMatchEpoch={competitionStart}
+              locale={locale}
+              copy={copy.nudge}
+              cta={canLockNow ? { onClick: () => void handleLockSquad() } : undefined}
+            />
+          ) : null}
           <div className="hero-card builder-command rounded-[1.15rem] px-4 py-5 sm:px-5">
             <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
               <div>

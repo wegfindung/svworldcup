@@ -101,6 +101,19 @@ Allow participants to register securely with verified email, enter the squad bui
    admin-mediated until kickoff (see "Correcting nation selections"). This display only reads the
    participant's existing `primaryTeamCode` / `secondaryTeamCode`; the nation pick still feeds only the
    Nation League and never selects a Grand Tournament draft pool.
+10. The builder surfaces a **cohort-aware submit reminder** to logged-in participants who have not yet
+    locked a squad, to reduce the register-but-never-lock drop-off (a large share of registrations,
+    especially Rookies, never lock and therefore score nothing — only a **locked** squad scores, and
+    only fixtures whose kickoff is after its lock instant; see `SOP_scoring_and_leagues.md`). The
+    reminder is **display-only** — it reads the participant's existing lock state and drafted count, adds
+    no new data and no new write path — and adapts its message to where the participant stopped:
+    not-built, partially built, complete-but-unlocked (the one-step-left case), submitted-and-still-
+    editable, or (after the first kickoff) unlocked-and-not-scoring. Its core promise must stay truthful
+    to the edit window: a locked squad remains fully editable until the first Grand Tournament fixture
+    kicks off (`assertSquadEditable` allows edits to a locked squad until competition start; an unlocked
+    squad until registration close — whichever applies first). It appears on the participant dashboard
+    (the strongest leak: registered participants who never open the builder) and, for the actionable
+    states, at the top of the open builder.
 
 ## Account Linking and League Membership
 

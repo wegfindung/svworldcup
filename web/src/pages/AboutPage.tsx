@@ -52,7 +52,7 @@ const officialLinks: LinkItem[] = [
 
 const communityLinks: LinkItem[] = [
   { id: 'svbase', label: 'SVBase', href: 'https://svbase.eu/', by: 'Klo', preview: { src: '/link-previews/svbase.jpg', fit: 'contain' } },
-  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/que-es-soccerverse.html', by: 'cipone', preview: { src: '/link-previews/elrincon.jpg', fit: 'cover' } },
+  { id: 'elrincon', label: 'El Rincón del DT', href: 'https://elrincondeldt.com/Blogs/Soccerverse/', by: 'cipone', preview: { src: '/link-previews/elrincon.jpg', fit: 'cover' } },
   { id: 'svworld', label: 'SV World Club', href: 'https://svworld.club/', by: 'Blvck', preview: { src: '/link-previews/svworld.jpg', fit: 'cover' } },
   { id: 'svfootball', label: 'SV Football', href: 'https://svfootball.com/', by: 'jackxxx', preview: { src: '/link-previews/svfootball.jpg', fit: 'cover' } },
   { id: 'office', label: 'Soccerverse Office', href: 'https://soccerversetool.vercel.app/', by: 'acky', preview: { src: '/link-previews/office.jpg', fit: 'cover' } },
