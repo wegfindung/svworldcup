@@ -292,6 +292,38 @@ const englishMessages = {
         'You can sign in later from the Login screen with your email and password, or request a recovery link if you lose access.',
       filledSuffix: 'filled',
     },
+    nudge: {
+      eyebrow: 'your squad',
+      emptyTitle: 'You haven’t built your squad yet',
+      emptyBody:
+        'It only takes a few minutes. Pick 15 players and lock your squad — locking isn’t final, you can keep editing it right up to the first match on {date}.',
+      emptyBodyNoDate:
+        'It only takes a few minutes. Pick 15 players and lock your squad — locking isn’t final, you can keep editing it right up to the first match.',
+      emptyCta: 'Build my squad',
+      partialTitle: '{remaining} slots left to fill',
+      partialTitleOne: '1 slot left to fill',
+      partialBody:
+        'Finish your 15 and lock the squad before the first match on {date}. Locking isn’t final — you can still edit it until then.',
+      partialBodyNoDate:
+        'Finish your 15 and lock the squad before the first match. Locking isn’t final — you can still edit it until then.',
+      partialCta: 'Finish my squad',
+      completeTitle: 'Your squad is complete — one step left',
+      completeBody:
+        'Lock it in so it scores from the start. Don’t worry: a locked squad can still be edited right up to the first match on {date}.',
+      completeBodyNoDate:
+        'Lock it in so it scores from the start. Don’t worry: a locked squad can still be edited right up to the first match.',
+      completeCta: 'Lock my squad',
+      lockedTitle: 'You’re in — squad submitted',
+      lockedBody:
+        'Nothing more to do. You can still tweak your squad until the first match on {date} if you change your mind.',
+      lockedBodyNoDate:
+        'Nothing more to do. You can still tweak your squad until the first match if you change your mind.',
+      lockedCta: 'Review my squad',
+      startedUnlockedTitle: 'The tournament has started',
+      startedUnlockedBody:
+        'Your squad isn’t locked yet, so it isn’t scoring. Lock it now to score the remaining fixtures.',
+      startedUnlockedCta: 'Lock my squad now',
+    },
     active: {
       unlocked: 'Builder unlocked',
       submittedEditable: 'Submitted, editable',
