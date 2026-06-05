@@ -496,7 +496,7 @@ const englishMessages = {
     },
     confirms: {
       reset: 'Reset this competition squad and restore the selected budget?',
-      submit: 'Submit this squad? You can still edit it until the competition starts.',
+      submit: 'Locking isn’t final — you can still edit your squad until the first match. Lock it in now so it scores from the start?',
       revealWithSquad: 'Reveal your public profile and submitted squad?',
       revealProfile: 'Reveal your public profile without showing the squad?',
     },
@@ -1075,7 +1075,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: '¿Resetear esta plantilla y restaurar el presupuesto seleccionado?',
-      submit: '¿Enviar esta plantilla? Aún podrás editarla hasta que empiece la competición.',
+      submit: 'Bloquearla no es definitivo — aún puedes editar tu plantilla hasta el primer partido. ¿Bloquearla ahora para que puntúe desde el inicio?',
       revealWithSquad: '¿Revelar tu perfil público y la plantilla enviada?',
       revealProfile: '¿Revelar tu perfil público sin mostrar la plantilla?',
     },
@@ -1611,7 +1611,7 @@ const italianMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: 'Resettare questa rosa e ripristinare il budget selezionato?',
-      submit: 'Inviare questa rosa? Potrai ancora modificarla fino all’inizio della competizione.',
+      submit: 'Bloccarla non è definitivo — puoi ancora modificare la rosa fino alla prima partita. La blocchi ora così segna punti fin dall’inizio?',
       revealWithSquad: 'Rivelare profilo pubblico e rosa inviata?',
       revealProfile: 'Rivelare il profilo pubblico senza mostrare la rosa?',
     },
@@ -2146,7 +2146,7 @@ const germanMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: 'Diesen Wettbewerbskader zurücksetzen und das gewählte Budget wiederherstellen?',
-      submit: 'Diesen Kader einreichen? Du kannst ihn bis zum Wettbewerbsstart noch bearbeiten.',
+      submit: 'Das Sperren ist nicht endgültig — du kannst deinen Kader bis zum ersten Spiel noch bearbeiten. Jetzt sperren, damit er von Anfang an punktet?',
       revealWithSquad: 'Öffentliches Profil und eingereichten Kader revealen?',
       revealProfile: 'Öffentliches Profil ohne Kader revealen?',
     },
@@ -2679,7 +2679,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: 'Réinitialiser cet effectif et restaurer le budget choisi ?',
-      submit: 'Soumettre cet effectif ? Tu peux encore le modifier jusqu’au début.',
+      submit: 'Le verrouillage n’est pas définitif — tu peux encore modifier ton effectif jusqu’au premier match. Le verrouiller maintenant pour qu’il marque dès le début ?',
       revealWithSquad: 'Révéler ton profil public et ton effectif soumis ?',
       revealProfile: 'Révéler ton profil public sans montrer l’effectif ?',
     },
@@ -3212,7 +3212,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: 'Repor este plantel e restaurar o orçamento selecionado?',
-      submit: 'Submeter este plantel? Ainda podes editar até ao início da competição.',
+      submit: 'Bloquear não é definitivo — ainda podes editar o teu plantel até ao primeiro jogo. Bloquear agora para pontuar desde o início?',
       revealWithSquad: 'Revelar o perfil público e o plantel submetido?',
       revealProfile: 'Revelar o perfil público sem mostrar o plantel?',
     },
@@ -3746,7 +3746,7 @@ const russianMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: 'Сбросить этот состав и восстановить выбранный бюджет?',
-      submit: 'Отправить этот состав? До начала соревнования его еще можно редактировать.',
+      submit: 'Фиксация не окончательна — состав можно редактировать вплоть до первого матча. Зафиксировать сейчас, чтобы он набирал очки с самого начала?',
       revealWithSquad: 'Раскрыть публичный профиль и отправленный состав?',
       revealProfile: 'Раскрыть публичный профиль без показа состава?',
     },
@@ -4282,7 +4282,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: '重置此比赛阵容并恢复所选预算？',
-      submit: '提交此阵容？赛事开始前仍可编辑。',
+      submit: '锁定并非最终决定——首场比赛前你仍可修改阵容。现在锁定，让它从一开始就得分？',
       revealWithSquad: 'Reveal 你的公开资料和已提交阵容？',
       revealProfile: 'Reveal 公开资料但不显示阵容？',
     },
@@ -4669,7 +4669,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     },
     confirms: {
       reset: 'このスカッドをリセットして、選択した予算に戻しますか？',
-      submit: 'このスカッドを送信しますか？大会開始までは編集できます。',
+      submit: 'ロックは最終決定ではありません。最初の試合までスカッドを編集できます。今すぐロックして最初から得点しますか？',
       revealWithSquad: '公開プロフィールと送信済みスカッドを公開しますか？',
       revealProfile: 'スカッドを表示せず、公開プロフィールだけを公開しますか？',
     },
