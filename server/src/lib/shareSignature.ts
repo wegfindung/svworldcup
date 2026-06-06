@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { env } from '../config/env.js'
 import { decodeShareSnapshotPayload, encodeShareSnapshotPayload, type ShareSnapshotPayload } from './sharePayload.js'
 
-const shareSignatureVersion = '11'
+const shareSignatureVersion = '12'
 
 function shareSecret() {
   return env.SHARE_SNAPSHOT_SECRET ?? env.ADMIN_API_TOKEN ?? env.SESSION_SECRET ?? 'development-share-snapshot-secret'
