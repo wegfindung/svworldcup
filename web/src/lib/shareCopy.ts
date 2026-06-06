@@ -48,11 +48,11 @@ interface ShareComposerCopy {
 
 const englishCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Create a polished Grant Tournament picks card.',
+  title: 'Create a polished Grand Tournament picks card.',
   body: 'Choose two or three featured players, fine-tune the names shown on the artwork, and publish a cleaner public preview link without locking your squad.',
   shareLanguageLabel: 'Share language',
   shareLanguageHelp: 'Controls the public preview, social snippet, share image copy, and invite link language.',
-  nativeShareTitle: 'The Grant Tournament',
+  nativeShareTitle: 'The Grand Tournament',
   statementLabel: 'Choose the headline',
   statementHelp: 'Preset headlines adapt automatically to 2 or 3 selected players. You can also write your own.',
   presetsLabel: 'Preset headlines',
@@ -83,21 +83,21 @@ const englishCopy: ShareComposerCopy = {
   loading: 'Loading your current squad…',
   errorTitle: 'Share composer unavailable',
   selectionHint: 'Select at least 2 and at most 3 players.',
-  prizeCta: 'Join The Grant Tournament and compete for prizes.',
+  prizeCta: 'Join The Grand Tournament and compete for prizes.',
   presets: [
-    { id: 'top-picks', template: 'My {count} top picks for The Grant Tournament.' },
-    { id: 'backing', template: 'These are the {count} players I am backing for The Grant Tournament.' },
-    { id: 'featured', template: 'My featured {count} for The Grant Tournament.' },
+    { id: 'top-picks', template: 'My {count} top picks for The Grand Tournament.' },
+    { id: 'backing', template: 'These are the {count} players I am backing for The Grand Tournament.' },
+    { id: 'featured', template: 'My featured {count} for The Grand Tournament.' },
   ],
 }
 
 const germanCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Erstelle eine professionelle Grant Tournament-Picks-Grafik.',
+  title: 'Erstelle eine professionelle Grand Tournament-Picks-Grafik.',
   body: 'Wähle zwei oder drei Spieler aus, passe die angezeigten Namen bei Bedarf an und veröffentliche einen deutlich besseren Vorschaulink, ohne deinen Kader zu locken.',
   shareLanguageLabel: 'Share-Sprache',
   shareLanguageHelp: 'Steuert den öffentlichen Preview-Link, das Social Snippet, die Share-Grafik und die Sprache des Einladungstexts.',
-  nativeShareTitle: 'The Grant Tournament',
+  nativeShareTitle: 'The Grand Tournament',
   statementLabel: 'Wähle die Überschrift',
   statementHelp: 'Die Vorlagen passen sich automatisch an 2 oder 3 ausgewählte Spieler an. Du kannst auch deine eigene Überschrift schreiben.',
   presetsLabel: 'Vorlagen',
@@ -128,21 +128,21 @@ const germanCopy: ShareComposerCopy = {
   loading: 'Dein aktueller Kader wird geladen…',
   errorTitle: 'Share-Composer nicht verfügbar',
   selectionHint: 'Wähle mindestens 2 und höchstens 3 Spieler.',
-  prizeCta: 'Mach bei The Grant Tournament mit und spiele um Preise.',
+  prizeCta: 'Mach bei The Grand Tournament mit und spiele um Preise.',
   presets: [
-    { id: 'top-picks', template: 'Meine {count} Top Picks für The Grant Tournament.' },
-    { id: 'backing', template: 'Auf diese {count} Spieler setze ich bei The Grant Tournament.' },
-    { id: 'featured', template: 'Das sind meine {count} Featured Picks für The Grant Tournament.' },
+    { id: 'top-picks', template: 'Meine {count} Top Picks für The Grand Tournament.' },
+    { id: 'backing', template: 'Auf diese {count} Spieler setze ich bei The Grand Tournament.' },
+    { id: 'featured', template: 'Das sind meine {count} Featured Picks für The Grand Tournament.' },
   ],
 }
 
 const spanishCopy: ShareComposerCopy = {
   eyebrow: 'social sharing',
-  title: 'Crea una card pulida de picks para Grant Tournament.',
+  title: 'Crea una card pulida de picks para Grand Tournament.',
   body: 'Elige dos o tres jugadores destacados, ajusta los nombres que salen en la imagen y publica un enlace de vista previa limpio sin bloquear tu plantilla.',
   shareLanguageLabel: 'Idioma para compartir',
   shareLanguageHelp: 'Controla la vista publica, el snippet social, la imagen compartida y el idioma del texto de invitacion.',
-  nativeShareTitle: 'The Grant Tournament',
+  nativeShareTitle: 'The Grand Tournament',
   statementLabel: 'Elige el titular',
   statementHelp: 'Los titulares predefinidos se adaptan automaticamente a 2 o 3 jugadores seleccionados. Tambien puedes escribir el tuyo.',
   presetsLabel: 'Titulares predefinidos',
@@ -173,17 +173,17 @@ const spanishCopy: ShareComposerCopy = {
   loading: 'Cargando tu plantilla actual...',
   errorTitle: 'Share composer no disponible',
   selectionHint: 'Selecciona al menos 2 y como maximo 3 jugadores.',
-  prizeCta: 'Unete a The Grant Tournament y compite por premios.',
+  prizeCta: 'Unete a The Grand Tournament y compite por premios.',
   presets: [
-    { id: 'top-picks', template: 'Mis {count} top picks para The Grant Tournament.' },
-    { id: 'backing', template: 'Estos son los {count} jugadores por los que apuesto en The Grant Tournament.' },
-    { id: 'featured', template: 'Mis {count} destacados para The Grant Tournament.' },
+    { id: 'top-picks', template: 'Mis {count} top picks para The Grand Tournament.' },
+    { id: 'backing', template: 'Estos son los {count} jugadores por los que apuesto en The Grand Tournament.' },
+    { id: 'featured', template: 'Mis {count} destacados para The Grand Tournament.' },
   ],
 }
 
 const italianCopy: ShareComposerCopy = {
   ...englishCopy,
-  title: 'Crea una card pulita con i tuoi pick per Grant Tournament.',
+  title: 'Crea una card pulita con i tuoi pick per Grand Tournament.',
   shareLanguageLabel: 'Lingua di condivisione',
   shareLanguageHelp: 'Controlla anteprima pubblica, snippet social, immagine condivisa e lingua del testo invito.',
   statementLabel: 'Scegli il titolo',
@@ -193,17 +193,17 @@ const italianCopy: ShareComposerCopy = {
   previewButton: 'Apri anteprima pubblica',
   backButton: 'Torna al builder',
   selectionHint: 'Seleziona almeno 2 e al massimo 3 giocatori.',
-  prizeCta: 'Partecipa a The Grant Tournament e competi per i premi.',
+  prizeCta: 'Partecipa a The Grand Tournament e competi per i premi.',
   presets: [
-    { id: 'top-picks', template: 'I miei {count} top pick per The Grant Tournament.' },
-    { id: 'backing', template: 'Questi sono i {count} giocatori su cui punto in The Grant Tournament.' },
-    { id: 'featured', template: 'I miei {count} giocatori in evidenza per The Grant Tournament.' },
+    { id: 'top-picks', template: 'I miei {count} top pick per The Grand Tournament.' },
+    { id: 'backing', template: 'Questi sono i {count} giocatori su cui punto in The Grand Tournament.' },
+    { id: 'featured', template: 'I miei {count} giocatori in evidenza per The Grand Tournament.' },
   ],
 }
 
 const frenchCopy: ShareComposerCopy = {
   ...englishCopy,
-  title: 'Cree une carte soignee avec tes choix Grant Tournament.',
+  title: 'Cree une carte soignee avec tes choix Grand Tournament.',
   shareLanguageLabel: 'Langue du partage',
   shareLanguageHelp: 'Controle l apercu public, le snippet social, l image partagee et la langue du texte d invitation.',
   statementLabel: 'Choisis le titre',
@@ -213,17 +213,17 @@ const frenchCopy: ShareComposerCopy = {
   previewButton: 'Ouvrir l apercu public',
   backButton: 'Retour au builder',
   selectionHint: 'Selectionne au moins 2 et au plus 3 joueurs.',
-  prizeCta: 'Rejoins The Grant Tournament et joue pour les prix.',
+  prizeCta: 'Rejoins The Grand Tournament et joue pour les prix.',
   presets: [
-    { id: 'top-picks', template: 'Mes {count} meilleurs choix pour The Grant Tournament.' },
-    { id: 'backing', template: 'Voici les {count} joueurs que je soutiens dans The Grant Tournament.' },
-    { id: 'featured', template: 'Mes {count} joueurs en vedette pour The Grant Tournament.' },
+    { id: 'top-picks', template: 'Mes {count} meilleurs choix pour The Grand Tournament.' },
+    { id: 'backing', template: 'Voici les {count} joueurs que je soutiens dans The Grand Tournament.' },
+    { id: 'featured', template: 'Mes {count} joueurs en vedette pour The Grand Tournament.' },
   ],
 }
 
 const portugueseCopy: ShareComposerCopy = {
   ...englishCopy,
-  title: 'Cria uma card polida com as tuas escolhas Grant Tournament.',
+  title: 'Cria uma card polida com as tuas escolhas Grand Tournament.',
   shareLanguageLabel: 'Idioma de partilha',
   shareLanguageHelp: 'Controla a pre-visualizacao publica, o snippet social, a imagem partilhada e o idioma do convite.',
   statementLabel: 'Escolhe o titulo',
@@ -233,11 +233,11 @@ const portugueseCopy: ShareComposerCopy = {
   previewButton: 'Abrir pre-visualizacao publica',
   backButton: 'Voltar ao builder',
   selectionHint: 'Seleciona pelo menos 2 e no maximo 3 jogadores.',
-  prizeCta: 'Entra no The Grant Tournament e compete por premios.',
+  prizeCta: 'Entra no The Grand Tournament e compete por premios.',
   presets: [
-    { id: 'top-picks', template: 'As minhas {count} principais escolhas para The Grant Tournament.' },
-    { id: 'backing', template: 'Estes sao os {count} jogadores em que aposto no The Grant Tournament.' },
-    { id: 'featured', template: 'Os meus {count} destaques para The Grant Tournament.' },
+    { id: 'top-picks', template: 'As minhas {count} principais escolhas para The Grand Tournament.' },
+    { id: 'backing', template: 'Estes sao os {count} jogadores em que aposto no The Grand Tournament.' },
+    { id: 'featured', template: 'Os meus {count} destaques para The Grand Tournament.' },
   ],
 }
 

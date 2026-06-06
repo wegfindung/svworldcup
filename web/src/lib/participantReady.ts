@@ -5,6 +5,7 @@ const participantReadyStorageKey = 'svworldcup-participant-ready'
 export interface ParticipantReadyState {
   displayName: string
   email: string
+  soccerverseUsername?: string
   leagueType: LeagueType
   budgetLimit: number
   scoreMultiplier?: number
@@ -30,6 +31,7 @@ export function readParticipantReady(): ParticipantReadyState | null {
     if (
       typeof parsed.displayName !== 'string' ||
       typeof parsed.email !== 'string' ||
+      (parsed.soccerverseUsername !== undefined && typeof parsed.soccerverseUsername !== 'string') ||
       (parsed.leagueType !== 'rookie' && parsed.leagueType !== 'veteran') ||
       typeof parsed.budgetLimit !== 'number' ||
       (parsed.scoreMultiplier !== undefined && typeof parsed.scoreMultiplier !== 'number') ||
@@ -45,6 +47,7 @@ export function readParticipantReady(): ParticipantReadyState | null {
     return {
       displayName: parsed.displayName,
       email: parsed.email,
+      soccerverseUsername: parsed.soccerverseUsername,
       leagueType: parsed.leagueType,
       budgetLimit: parsed.budgetLimit,
       scoreMultiplier: parsed.scoreMultiplier,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { SquadPitchModal } from '../components/SquadPitchModal'
@@ -132,6 +132,51 @@ function nationName(code: string) {
   return getNationName(code)
 }
 
+function normalizeSearchTerm(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function matchesText(query: string, ...values: Array<string | number | undefined>) {
+  if (!query) {
+    return true
+  }
+
+  return values.some((value) => String(value ?? '').toLowerCase().includes(query))
+}
+
+function participantRowMatchesSearch(row: ParticipantScoreRow, query: string) {
+  return matchesText(
+    query,
+    row.displayName,
+    row.leagueType,
+    row.primaryTeamCode,
+    nationName(row.primaryTeamCode),
+    row.secondaryTeamCode,
+    row.secondaryTeamCode ? nationName(row.secondaryTeamCode) : undefined,
+  )
+}
+
+function nationRowMatchesSearch(row: NationScoreRow, query: string) {
+  return (
+    matchesText(query, row.teamCode, nationName(row.teamCode)) ||
+    row.contributors.some((contributor) =>
+      matchesText(
+        query,
+        contributor.displayName,
+        contributor.leagueType,
+        contributor.primaryTeamCode,
+        nationName(contributor.primaryTeamCode),
+        contributor.secondaryTeamCode,
+        contributor.secondaryTeamCode ? nationName(contributor.secondaryTeamCode) : undefined,
+      ),
+    )
+  )
+}
+
+function nationParticipationRowMatchesSearch(row: NationParticipationRow, query: string) {
+  return matchesText(query, row.teamCode, nationName(row.teamCode))
+}
+
 // Render in local timezone
 function matchLabel(fixtureId: string, fixtureLookup: Map<string, FixtureSeed>) {
   const fixture = fixtureLookup.get(fixtureId)
@@ -259,8 +304,24 @@ function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy
   )
 }
 
-function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { copy: TablesCopy; title: string; rows: ParticipantScoreRow[]; fixtureLookup: Map<string, FixtureSeed>; onOpenSquad: (target: { displayName: string; slug: string }) => void }) {
+function ParticipantTable({
+  copy,
+  title,
+  rows,
+  searchTerm,
+  fixtureLookup,
+  onOpenSquad,
+}: {
+  copy: TablesCopy
+  title: string
+  rows: ParticipantScoreRow[]
+  searchTerm: string
+  fixtureLookup: Map<string, FixtureSeed>
+  onOpenSquad: (target: { displayName: string; slug: string }) => void
+}) {
   const [openParticipantIds, setOpenParticipantIds] = useState<Set<string>>(new Set())
+  const normalizedSearch = normalizeSearchTerm(searchTerm)
+  const filteredRows = normalizedSearch ? rows.filter((row) => participantRowMatchesSearch(row, normalizedSearch)) : rows
 
   function toggleParticipant(participantId: string) {
     setOpenParticipantIds((current) => {
@@ -281,13 +342,13 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
           <p className="eyebrow text-[10px]">{copy.tableEyebrow}</p>
           <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{title}</h3>
         </div>
-        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{rows.length} {copy.entriesSuffix}</span>
+        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{filteredRows.length} {copy.entriesSuffix}</span>
       </div>
 
       <div className="mt-4">
-        {rows.length ? (
+        {filteredRows.length ? (
           <div className="space-y-3.5">
-            {rows.map((row) => {
+            {filteredRows.map((row) => {
               const isOpen = openParticipantIds.has(row.participantId)
               const isPaidRank = row.rank <= PAID_PARTICIPANT_RANK_LIMIT
               const rankColor = row.rank === 1
@@ -374,7 +435,7 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
           </div>
         ) : (
           <div className="bg-black/12 p-5 rounded-[0.9rem] border border-white/6">
-            <EmptyState title={copy.noEntriesTitle} body={copy.noEntriesBody} />
+            <EmptyState title={normalizedSearch ? copy.noSearchTitle : copy.noEntriesTitle} body={normalizedSearch ? copy.noSearchBody : copy.noEntriesBody} />
           </div>
         )}
       </div>
@@ -382,8 +443,20 @@ function ParticipantTable({ copy, title, rows, fixtureLookup, onOpenSquad }: { c
   )
 }
 
-function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: NationScoreRow[]; onOpenSquad: (target: { displayName: string; slug: string }) => void }) {
+function NationTable({
+  copy,
+  rows,
+  searchTerm,
+  onOpenSquad,
+}: {
+  copy: TablesCopy
+  rows: NationScoreRow[]
+  searchTerm: string
+  onOpenSquad: (target: { displayName: string; slug: string }) => void
+}) {
   const [openTeamCodes, setOpenTeamCodes] = useState<Set<string>>(new Set())
+  const normalizedSearch = normalizeSearchTerm(searchTerm)
+  const filteredRows = normalizedSearch ? rows.filter((row) => nationRowMatchesSearch(row, normalizedSearch)) : rows
 
   function toggleTeam(teamCode: string) {
     setOpenTeamCodes((current) => {
@@ -404,13 +477,13 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
           <p className="eyebrow text-[10px]">{copy.nationEyebrow}</p>
           <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{copy.nationTitle}</h3>
         </div>
-        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{rows.length} {copy.nationsSuffix}</span>
+        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{filteredRows.length} {copy.nationsSuffix}</span>
       </div>
 
       <div className="mt-4">
-        {rows.length ? (
+        {filteredRows.length ? (
           <div className="space-y-3.5">
-            {rows.map((row) => {
+            {filteredRows.map((row) => {
               const isOpen = openTeamCodes.has(row.teamCode)
               const isPaidNation = row.rank <= PAID_NATION_RANK_LIMIT
               const rankColor = row.rank === 1
@@ -507,7 +580,7 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
           </div>
         ) : (
           <div className="bg-black/12 p-5 rounded-[0.9rem] border border-white/6">
-            <EmptyState title={copy.noNationTitle} body={copy.noNationBody} />
+            <EmptyState title={normalizedSearch ? copy.noSearchTitle : copy.noNationTitle} body={normalizedSearch ? copy.noSearchBody : copy.noNationBody} />
           </div>
         )}
       </div>
@@ -515,7 +588,10 @@ function NationTable({ copy, rows, onOpenSquad }: { copy: TablesCopy; rows: Nati
   )
 }
 
-function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: NationParticipationRow[] }) {
+function NationParticipationTable({ copy, rows, searchTerm }: { copy: TablesCopy; rows: NationParticipationRow[]; searchTerm: string }) {
+  const normalizedSearch = normalizeSearchTerm(searchTerm)
+  const filteredRows = normalizedSearch ? rows.filter((row) => nationParticipationRowMatchesSearch(row, normalizedSearch)) : rows
+
   return (
     <section className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12">
       <div className="flex items-end justify-between gap-4 border-b border-white/5 pb-3">
@@ -526,11 +602,11 @@ function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: Nati
             {copy.nationParticipationBody}
           </p>
         </div>
-        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{rows.length} {copy.nationsSuffix}</span>
+        <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">{filteredRows.length} {copy.nationsSuffix}</span>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/8">
-        {rows.length ? (
+        {filteredRows.length ? (
           <div className="max-h-[34rem] overflow-y-auto">
             <table className="min-w-[720px] w-full border-collapse text-left text-sm">
               <thead className="sticky top-0 border-b border-white/8 bg-[rgba(8,13,12,0.96)]">
@@ -543,7 +619,7 @@ function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: Nati
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <tr key={row.teamCode} className="border-b border-white/8 bg-black/10 last:border-b-0 hover:bg-white/[0.02] transition">
                     <td className="px-4 py-3">
                       <div className="flex min-w-0 items-center gap-2.5">
@@ -566,7 +642,7 @@ function NationParticipationTable({ copy, rows }: { copy: TablesCopy; rows: Nati
           </div>
         ) : (
           <div className="bg-black/12 p-5 rounded-[0.9rem] border border-white/6">
-            <EmptyState title={copy.noNationParticipationTitle} body={copy.noNationParticipationBody} />
+            <EmptyState title={normalizedSearch ? copy.noSearchTitle : copy.noNationParticipationTitle} body={normalizedSearch ? copy.noSearchBody : copy.noNationParticipationBody} />
           </div>
         )}
       </div>
@@ -580,17 +656,19 @@ function ParticipantBoardSection({
   copy,
   title,
   board,
+  searchTerm,
   fixtureLookup,
   onOpenSquad,
 }: {
   copy: TablesCopy
   title: string
   board: BoardState<ParticipantScoreRow[]>
+  searchTerm: string
   fixtureLookup: Map<string, FixtureSeed>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
 }) {
   if (board.rows) {
-    return <ParticipantTable copy={copy} title={title} rows={board.rows} fixtureLookup={fixtureLookup} onOpenSquad={onOpenSquad} />
+    return <ParticipantTable copy={copy} title={title} rows={board.rows} searchTerm={searchTerm} fixtureLookup={fixtureLookup} onOpenSquad={onOpenSquad} />
   }
   if (board.error) {
     const error = boardErrorCopy(copy, board.error)
@@ -660,6 +738,7 @@ export function TablesPage({ locale }: TablesPageProps) {
   const [loading, setLoading] = useState(true)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
   const [activeTab, setActiveTab] = useState<TablesTab>('nations')
+  const [tableSearch, setTableSearch] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -691,6 +770,23 @@ export function TablesPage({ locale }: TablesPageProps) {
         { key: 'finder', label: copy.tabFinder, count: tables.nationParticipation.rows?.length ?? 0, countLabel: copy.nationsSuffix },
       ]
     : []
+  const normalizedTableSearch = normalizeSearchTerm(tableSearch)
+  const searchResultCount = useMemo(() => {
+    if (!tables || !normalizedTableSearch) {
+      return null
+    }
+
+    if (activeTab === 'nations') {
+      return tables.nations.rows?.filter((row) => nationRowMatchesSearch(row, normalizedTableSearch)).length ?? 0
+    }
+    if (activeTab === 'rookie') {
+      return tables.rookies.rows?.filter((row) => participantRowMatchesSearch(row, normalizedTableSearch)).length ?? 0
+    }
+    if (activeTab === 'veteran') {
+      return tables.veterans.rows?.filter((row) => participantRowMatchesSearch(row, normalizedTableSearch)).length ?? 0
+    }
+    return tables.nationParticipation.rows?.filter((row) => nationParticipationRowMatchesSearch(row, normalizedTableSearch)).length ?? 0
+  }, [activeTab, normalizedTableSearch, tables])
 
   return (
     <div className="space-y-4 pb-10">
@@ -715,12 +811,43 @@ export function TablesPage({ locale }: TablesPageProps) {
         </div>
 
         {tables ? (
-          <div className="mt-4 rounded-[0.9rem] border border-white/8 bg-black/20 p-1" role="tablist" aria-label={copy.tabsLabel}>
-            <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-4">
-              {tabItems.map((tab) => (
-                <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
-              ))}
+          <div className="mt-4 grid gap-3">
+            <div className="rounded-[0.9rem] border border-white/8 bg-black/20 p-1" role="tablist" aria-label={copy.tabsLabel}>
+              <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-4">
+                {tabItems.map((tab) => (
+                  <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
+                ))}
+              </div>
             </div>
+
+            <label className="grid gap-2 rounded-[0.9rem] border border-white/8 bg-black/20 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <span className="grid gap-1">
+                <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.searchLabel}</span>
+                <input
+                  type="search"
+                  value={tableSearch}
+                  onChange={(event) => setTableSearch(event.target.value)}
+                  placeholder={copy.searchPlaceholder}
+                  className="min-w-0 rounded-[0.8rem] border border-white/10 bg-black/24 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]"
+                />
+              </span>
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {searchResultCount !== null ? (
+                  <span className="mono rounded-full border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                    {searchResultCount} {activeTab === 'rookie' || activeTab === 'veteran' ? copy.entriesSuffix : copy.nationsSuffix}
+                  </span>
+                ) : null}
+                {tableSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => setTableSearch('')}
+                    className="rounded-full border border-white/12 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                  >
+                    {copy.clearSearch}
+                  </button>
+                ) : null}
+              </div>
+            </label>
           </div>
         ) : null}
       </section>
@@ -738,7 +865,7 @@ export function TablesPage({ locale }: TablesPageProps) {
           >
             {activeTab === 'nations' ? (
               tables.nations.rows ? (
-                <NationTable copy={copy} rows={tables.nations.rows} onOpenSquad={setSquadTarget} />
+                <NationTable copy={copy} rows={tables.nations.rows} searchTerm={tableSearch} onOpenSquad={setSquadTarget} />
               ) : tables.nations.error ? (
                 <section className="glass-panel rounded-[1.15rem] p-5">
                   <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
@@ -747,16 +874,16 @@ export function TablesPage({ locale }: TablesPageProps) {
             ) : null}
 
             {activeTab === 'rookie' ? (
-              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
             ) : null}
 
             {activeTab === 'veteran' ? (
-              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
             ) : null}
 
             {activeTab === 'finder' ? (
               tables.nationParticipation.rows ? (
-                <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} />
+                <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} searchTerm={tableSearch} />
               ) : tables.nationParticipation.error ? (
                 <section className="glass-panel rounded-[1.15rem] p-5">
                   <EmptyState {...boardErrorCopy(copy, tables.nationParticipation.error)} />

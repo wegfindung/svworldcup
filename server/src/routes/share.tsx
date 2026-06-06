@@ -12,7 +12,7 @@ import { getOgLocale, noIndexRobotsValue } from '../lib/socialMeta.js'
 
 const shareCardWidth = 1200
 const shareCardHeight = 630
-const shareRenderVersion = '11'
+const shareRenderVersion = '12'
 export const shareTextFontFamily = 'Outfit, OutfitLatinExt'
 const shareSvgFontFamily = "'Outfit', 'OutfitLatinExt', sans-serif"
 const immutableCacheControl = 'public, immutable, no-transform, max-age=31536000'
@@ -616,7 +616,7 @@ async function renderFallbackShareCardPng() {
   const copy = getShareCopy('en')
   const [titleTextUrl, ctaTextUrl] = await Promise.all([
     renderTextDataUrl(fonts, {
-      lines: ['The Grant Tournament'],
+      lines: ['The Grand Tournament'],
       width: 980,
       height: 76,
       fontSize: 58,
