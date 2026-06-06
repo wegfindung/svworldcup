@@ -166,6 +166,7 @@ function buildReadyState(
   return {
     displayName: participant.displayName,
     email: participant.email,
+    soccerverseUsername: participant.soccerverseUsername,
     leagueType: participant.leagueType,
     budgetLimit: squadSummary?.budgetLimit ?? budgetLimit,
     scoreMultiplier: squadSummary?.scoreMultiplier ?? getBudgetScoreMultiplier(squadSummary?.budgetLimit ?? budgetLimit),
@@ -387,6 +388,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const previousDraftedCountRef = useRef<number | null>(null)
   const readyBudgetLabel = dashboardSeed?.budgetRemaining !== undefined ? copy.common.budgetLeft : copy.common.budget
   const readyBudgetValue = dashboardSeed?.budgetRemaining ?? dashboardSeed?.budgetLimit ?? budgetLimit
+  const hasLinkedSoccerverseAccount = Boolean(participant?.soccerverseUsername || dashboardSeed?.soccerverseUsername)
 
   useEffect(() => {
     if (!squad) {
@@ -661,6 +663,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
           ...currentReadyState,
           displayName: response.participant.displayName,
           email: response.participant.email,
+          soccerverseUsername: response.participant.soccerverseUsername,
           leagueType: response.participant.leagueType,
           hasPassword: response.participant.hasPassword,
         })
@@ -1037,19 +1040,24 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     }))
                   }
                 />
-                <NationSelect
-                  label={copy.register.secondaryCountry}
-                  nations={soccerverseNations}
-                  value={registrationForm.secondaryTeamCode}
-                  placeholder={copy.register.secondaryCountryPlaceholder}
-                  excludeCode={registrationForm.primaryTeamCode}
-                  onChange={(code) =>
-                    setRegistrationForm((current) => ({
-                      ...current,
-                      secondaryTeamCode: code,
-                    }))
-                  }
-                />
+                <div className="grid gap-2">
+                  <NationSelect
+                    label={`${copy.register.secondaryCountry} (${copy.register.secondaryCountryOptional})`}
+                    nations={soccerverseNations}
+                    value={registrationForm.secondaryTeamCode}
+                    placeholder={copy.register.secondaryCountryPlaceholder}
+                    excludeCode={registrationForm.primaryTeamCode}
+                    onChange={(code) =>
+                      setRegistrationForm((current) => ({
+                        ...current,
+                        secondaryTeamCode: code,
+                      }))
+                    }
+                  />
+                  <p className="-mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+                    {copy.register.secondaryCountryHint}
+                  </p>
+                </div>
               </div>
 
               <label className="flex items-start gap-3 rounded-[1.2rem] border border-white/10 bg-[rgba(8,13,12,0.62)] px-4 py-3 text-sm leading-relaxed text-[var(--color-muted)]">
@@ -1227,7 +1235,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     disabled={sessionBusy}
                     className="premium-button px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {sessionBusy ? copy.ready.opening : copy.ready.start}
+                    {sessionBusy ? copy.ready.opening : dashboardSeed.draftedCount && dashboardSeed.draftedCount > 0 ? copy.ready.viewSquad : copy.ready.start}
                   </button>
                   <Link
                     to={withReferral('/tables', referrerSoccerverseUsername)}
@@ -1313,7 +1321,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                     </button>
                   </div>
 
-                  {!participant?.soccerverseUsername ? (
+                  {!hasLinkedSoccerverseAccount ? (
                     <form onSubmit={handleLinkSoccerverse} className="mt-5 grid gap-3 rounded-[1rem] border border-[var(--color-accent)]/15 bg-[var(--color-accent)]/5 p-4">
                       <div>
                         <p className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)]">{copy.ready.linkTitle}</p>

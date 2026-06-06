@@ -14,6 +14,7 @@ vi.mock('../lib/api', async () => {
 })
 
 import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import type { ParticipantScoreRow } from '../lib/types'
 import { TablesPage } from './TablesPage'
 
 const rookie = vi.mocked(fetchRookieLeaderboard)
@@ -21,6 +22,29 @@ const veteran = vi.mocked(fetchVeteranLeaderboard)
 const nation = vi.mocked(fetchNationLeaderboard)
 const participation = vi.mocked(fetchNationParticipation)
 const fixtures = vi.mocked(fetchFixtures)
+
+function participantRow(input: { participantId: string; displayName: string; primaryTeamCode: string }): ParticipantScoreRow {
+  return {
+    participantId: input.participantId,
+    displayName: input.displayName,
+    leagueType: 'rookie',
+    primaryTeamCode: input.primaryTeamCode,
+    totalScore: 0,
+    baseScore: 0,
+    bonusPercent: 0,
+    scoreMultiplier: 1,
+    breakdown: {
+      goals: { count: 0, points: 0 },
+      assists: { count: 0, points: 0 },
+      appearances: { count: 0, points: 0 },
+      minutes: { count: 0, points: 0 },
+      cleanSheets: { count: 0, points: 0 },
+      performance: { points: 0 },
+    },
+    fixtures: [],
+    rank: 1,
+  }
+}
 
 describe('TablesPage partial loading', () => {
   it('renders the boards that succeeded and an error only for the one that failed', async () => {
@@ -51,5 +75,29 @@ describe('TablesPage partial loading', () => {
 
     expect(await screen.findByRole('tab', { name: /Rookie/i })).toBeInTheDocument()
     expect(screen.getByText('No standings yet')).toBeInTheDocument()
+  })
+
+  it('filters participant rows by manager search', async () => {
+    rookie.mockResolvedValue({
+      items: [
+        participantRow({ participantId: '11111111-1111-4111-8111-111111111111', displayName: 'Alice Manager', primaryTeamCode: 'FRA' }),
+        participantRow({ participantId: '22222222-2222-4222-8222-222222222222', displayName: 'Bob Builder', primaryTeamCode: 'BRA' }),
+      ],
+    })
+    veteran.mockResolvedValue({ items: [] })
+    nation.mockResolvedValue({ items: [] })
+    participation.mockResolvedValue({ items: [] })
+    fixtures.mockResolvedValue({ items: [] })
+
+    render(<TablesPage locale="en" />)
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Rookie/i }))
+    expect(screen.getByText('Alice Manager')).toBeInTheDocument()
+    expect(screen.getByText('Bob Builder')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Search standings'), { target: { value: 'alice' } })
+
+    expect(screen.getByText('Alice Manager')).toBeInTheDocument()
+    expect(screen.queryByText('Bob Builder')).not.toBeInTheDocument()
   })
 })
