@@ -17,8 +17,9 @@ const englishShellMessages = {
       { to: '/tables', label: 'Tables' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
+        { to: '/how-to-play', label: 'How to play' },
         { to: '/rules', label: 'Rules' },
         { to: '/about', label: 'About' },
         { to: '/prizes', label: 'Prizes' },
@@ -66,8 +67,9 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Tablas' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guía',
         items: [
+          { to: '/how-to-play', label: 'Cómo jugar' },
           { to: '/rules', label: 'Reglas' },
           { to: '/about', label: 'Acerca de' },
           { to: '/prizes', label: 'Premios' },
@@ -106,13 +108,14 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
     nav: {
       primary: [
         { to: '/', label: 'Panoramica' },
-        { to: '/builder', label: 'Builder' },
+        { to: '/builder', label: 'Costruttore' },
         { to: '/results', label: 'Risultati' },
         { to: '/tables', label: 'Classifiche' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guida',
         items: [
+          { to: '/how-to-play', label: 'Come giocare' },
           { to: '/rules', label: 'Regole' },
           { to: '/about', label: 'Informazioni' },
           { to: '/prizes', label: 'Premi' },
@@ -120,7 +123,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         ],
       },
       account: [
-        { to: '/login', label: 'Login' },
+        { to: '/login', label: 'Accedi' },
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registrati',
@@ -151,13 +154,14 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
     nav: {
       primary: [
         { to: '/', label: 'Übersicht' },
-        { to: '/builder', label: 'Builder' },
+        { to: '/builder', label: 'Aufstellung' },
         { to: '/results', label: 'Ergebnisse' },
         { to: '/tables', label: 'Tabellen' },
       ],
       important: {
-        label: 'Important',
+        label: 'Infos',
         items: [
+          { to: '/how-to-play', label: 'Anleitung' },
           { to: '/rules', label: 'Regeln' },
           { to: '/about', label: 'Über uns' },
           { to: '/prizes', label: 'Preise' },
@@ -165,7 +169,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         ],
       },
       account: [
-        { to: '/login', label: 'Login' },
+        { to: '/login', label: 'Anmelden' },
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registrieren',
@@ -176,8 +180,8 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
       event: 'Event',
       mainProject: 'Hauptprojekt',
       playSoccerverse: 'Soccerverse spielen',
-      help: 'Help',
-      about: 'About',
+      help: 'Hilfe',
+      about: 'Über uns',
       privacy: 'Datenschutz',
       admin: 'Admin',
       note: 'Fan-gemachtes Community-Event. Kein offizielles Soccerverse-Produkt.',
@@ -196,13 +200,14 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
     nav: {
       primary: [
         { to: '/', label: 'Aperçu' },
-        { to: '/builder', label: 'Builder' },
+        { to: '/builder', label: 'Composition' },
         { to: '/results', label: 'Résultats' },
         { to: '/tables', label: 'Classements' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
+          { to: '/how-to-play', label: 'Comment jouer' },
           { to: '/rules', label: 'Règles' },
           { to: '/about', label: 'À propos' },
           { to: '/prizes', label: 'Prix' },
@@ -210,7 +215,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         ],
       },
       account: [
-        { to: '/login', label: 'Login' },
+        { to: '/login', label: 'Connexion' },
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Inscription',
@@ -241,13 +246,14 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
     nav: {
       primary: [
         { to: '/', label: 'Visão geral' },
-        { to: '/builder', label: 'Builder' },
+        { to: '/builder', label: 'Construtor' },
         { to: '/results', label: 'Resultados' },
         { to: '/tables', label: 'Tabelas' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guia',
         items: [
+          { to: '/how-to-play', label: 'Como jogar' },
           { to: '/rules', label: 'Regras' },
           { to: '/about', label: 'Sobre' },
           { to: '/prizes', label: 'Prémios' },
@@ -255,7 +261,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         ],
       },
       account: [
-        { to: '/login', label: 'Login' },
+        { to: '/login', label: 'Entrar' },
         { to: '/admin', label: 'Admin' },
       ],
       register: 'Registar',
@@ -291,8 +297,9 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Таблицы' },
       ],
       important: {
-        label: 'Important',
+        label: 'Гид',
         items: [
+          { to: '/how-to-play', label: 'Как играть' },
           { to: '/rules', label: 'Правила' },
           { to: '/about', label: 'О проекте' },
           { to: '/prizes', label: 'Призы' },
@@ -336,8 +343,9 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: '榜单' },
       ],
       important: {
-        label: 'Important',
+        label: '指南',
         items: [
+          { to: '/how-to-play', label: '玩法' },
           { to: '/rules', label: '规则' },
           { to: '/about', label: '关于' },
           { to: '/prizes', label: '奖品' },
@@ -380,8 +388,9 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: '順位表' },
       ],
       important: {
-        label: 'Important',
+        label: 'ガイド',
         items: [
+          { to: '/how-to-play', label: '遊び方' },
           { to: '/rules', label: 'ルール' },
           { to: '/about', label: 'について' },
           { to: '/prizes', label: '賞品' },
@@ -400,8 +409,8 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
       event: 'イベント',
       mainProject: 'メインプロジェクト',
       playSoccerverse: 'Soccerverse をプレイ',
-      help: 'Help',
-      about: 'About',
+      help: 'ヘルプ',
+      about: 'について',
       privacy: 'プライバシー',
       admin: 'Admin',
       note: 'ファンによるコミュニティイベントです。Soccerverse 公式製品ではありません。',

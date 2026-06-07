@@ -34,7 +34,7 @@ const envSchema = z.object({
   // Structured-logging level (see SOP_system_overview.md "Operations Observability"). Silent under
   // test regardless of this value.
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  PUBLIC_WEB_URL: z.string().url().default('https://worldcup.svtool.info'),
+  PUBLIC_WEB_URL: z.string().url().default('https://event.svtool.info'),
   DATABASE_URL: optionalString,
   DB_HOST: optionalString,
   DB_PORT: optionalPositiveInt,

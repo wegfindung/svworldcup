@@ -4,11 +4,14 @@ import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { ScoringCalculator } from '../components/ScoringCalculator'
 import { TeamFlag } from '../components/TeamFlag'
+import { InfoModal } from '../components/InfoModal'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
+import { prizeLeagues, prizeTotalWithUnit } from '../data/prizePool'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { recordLandingPageVisit } from '../lib/api'
 import { withReferral } from '../lib/referral'
+import { readParticipantReady } from '../lib/participantReady'
 import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
 
 type HomeCopy = AppMessages['home']
@@ -419,6 +422,101 @@ function LandingProofCard({ copy, scoring }: { copy: HomeCopy['proof']; scoring:
   )
 }
 
+// Newcomer onboarding: the landing is where someone first meets the word "Soccerverse". Reuses the
+// boost panel's translated explainer copy + InfoModal so a visitor can learn what Soccerverse is (and
+// that they do not need it to take part) without leaving the page. See SOP_scoring_and_leagues.md
+// "What is Soccerverse? explainer".
+function SoccerverseExplainerCard({ copy }: { copy: AppMessages['builder']['boost'] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="glass-panel block w-full rounded-[1.15rem] p-4 text-left transition hover:border-[var(--color-accent)]/30"
+      >
+        <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-accent)]">{copy.aboutTitle}</p>
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--color-muted)]">{copy.aboutBody1}</p>
+        <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent)]">
+          {copy.aboutTitle} →
+        </span>
+      </button>
+      <InfoModal open={open} title={copy.aboutTitle} closeLabel={copy.aboutClose} onClose={() => setOpen(false)}>
+        <p>{copy.aboutBody1}</p>
+        <p>{copy.aboutBody2}</p>
+      </InfoModal>
+    </>
+  )
+}
+
+function LandingPrizeSection({
+  copy,
+  referrerSoccerverseUsername,
+}: {
+  copy: AppMessages['prizes']
+  referrerSoccerverseUsername: string
+}) {
+  return (
+    <section className="glass-panel rounded-[1.25rem] p-4 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">{copy.title}</h2>
+          <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-[var(--color-muted)]">
+            {copy.freeNote} {copy.vouchersNote}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.totalLabel}</p>
+          <p className="mono text-3xl font-extrabold tracking-tight text-[var(--color-sand)]">{prizeTotalWithUnit}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {prizeLeagues.map((league) => (
+          <div key={league.key} className="surface-row rounded-[0.95rem] border border-white/6 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-white">{league.name}</p>
+              <span className="mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                {league.sharePercent}% {copy.shareSuffix}
+              </span>
+            </div>
+            <p className="mono mt-1 text-xl font-bold text-[var(--color-sand)]">{league.total}</p>
+            <ul className="mt-3 space-y-1.5 text-sm">
+              {league.places.map((place) => (
+                <li key={place.place} className="flex items-baseline justify-between gap-3">
+                  <span className="text-[var(--color-muted)]">{place.place}</span>
+                  <span className="font-semibold text-white">
+                    {place.amount}
+                    {place.note ? <span className="ml-1 text-xs text-[var(--color-sand)]">{place.note}</span> : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {league.key === 'nations' ? (
+              <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">{copy.nationsSplitNote}</p>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">{copy.activation}</p>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Link to={withReferral('/register', referrerSoccerverseUsername)} className="premium-button px-6 py-3 text-sm font-semibold">
+          {copy.registerCta}
+        </Link>
+        <Link
+          to={withReferral('/prizes', referrerSoccerverseUsername)}
+          className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+        >
+          {copy.landingCta}
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 interface HomePageProps {
   locale: LocaleCode
   referrerSoccerverseUsername?: string
@@ -429,6 +527,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const { data: bootstrap } = useBootstrap()
   const copy = getMessages(locale)
   const homeCopy = copy.home
+  // SSR-safe (null when no window). "Start building" goes to the builder, which only opens for a
+  // logged-in participant — so a guest is shown the register/how-to-play path instead of that wall.
+  const returningParticipant = readParticipantReady()
   const scoring = bootstrap?.scoring ?? defaultScoring
   const budgetLimit = bootstrap?.budgetLimit ?? defaultBudgetLimit
   const budgetOptions = bootstrap?.budgetOptions ?? defaultBudgetOptions
@@ -476,21 +577,37 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                     )
                   })}
                 </h2>
-                <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">{homeCopy.hero.body}</p>
-                <div className="mt-6 flex flex-wrap gap-3">
+                <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-paper)] sm:text-[1.05rem]">{homeCopy.hero.lede}</p>
+                <p className="mt-3 max-w-[58ch] text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.hero.body}</p>
+                <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)]">
+                  <span aria-hidden>✓</span>
+                  {homeCopy.hero.freeNote}
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
                   <Link
                     to={withReferral('/register', referrerSoccerverseUsername)}
                     className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
                   >
                     {homeCopy.hero.primaryCta}
                   </Link>
-                  <Link
-                    to={withReferral('/builder', referrerSoccerverseUsername)}
-                    className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
-                  >
-                    {homeCopy.hero.secondaryCta}
-                  </Link>
+                  {returningParticipant ? (
+                    <Link
+                      to={withReferral('/builder', referrerSoccerverseUsername)}
+                      className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+                    >
+                      {homeCopy.hero.secondaryCta}
+                    </Link>
+                  ) : null}
                 </div>
+                <p className="mt-4 text-sm text-[var(--color-muted)]">
+                  {homeCopy.hero.newHereLabel}{' '}
+                  <Link
+                    to={withReferral('/how-to-play', referrerSoccerverseUsername)}
+                    className="font-semibold text-[var(--color-accent)] underline-offset-4 hover:underline"
+                  >
+                    {homeCopy.hero.howToCta} →
+                  </Link>
+                </p>
               </div>
 
               <div className="hero-stage">
@@ -530,6 +647,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               <p className="mono mt-2 text-2xl text-white">{fixtureCount}</p>
             </div>
           </div>
+          <SoccerverseExplainerCard copy={copy.builder.boost} />
           <RankingTracksCard copy={homeCopy.rankingTracks} />
           <NationFlagsCard copy={homeCopy.nations} />
           <DiscordCard copy={homeCopy.discord} />
@@ -631,6 +749,8 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
 
         <NextKickoffCard copy={homeCopy.nextKickoff} fixtures={fixtures} referrerSoccerverseUsername={referrerSoccerverseUsername} teams={teams} />
       </section>
+
+      <LandingPrizeSection copy={copy.prizes} referrerSoccerverseUsername={referrerSoccerverseUsername} />
 
       <section id="score-calculator">
         <ScoringCalculator budgetOptions={budgetOptions} copy={copy.scoringCalculator} scoring={scoring} />
