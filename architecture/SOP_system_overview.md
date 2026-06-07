@@ -78,7 +78,10 @@ Soccerverse — it states plainly what the event is, that it is **free with no e
 "how to play" page (`/how-to-play`, in the nav) walks a newcomer through joining in a few steps and
 **links out to `/rules` and `/help` instead of duplicating them**. The prize pool is surfaced as real
 text on the landing page (not only as the image on `/prizes`), so skimmers and crawlers can read it
-(see `SOP_scoring_and_leagues.md` "Prize Pool").
+(see `SOP_scoring_and_leagues.md` "Prize Pool"). The "What is Soccerverse?" explainer (reused from the
+boost panel) is also surfaced on the landing for any visitor, and the locked builder state links to
+`/how-to-play` so a not-yet-registered visitor always has the onboarding path. "How to play" lives in
+the site nav under the **Guide** menu.
 
 ## Security Rules
 
@@ -196,6 +199,9 @@ text on the landing page (not only as the image on `/prizes`), so skimmers and c
 - English is the source language for code and default UI copy.
 - All user-facing copy must be stored in translation dictionaries, not hardcoded inline in business logic.
 - Supported locales (9): `en`, `es`, `de`, `fr`, `pt`, `ru`, `zh`, `it`, `ja`.
+- The initial UI locale is resolved in order: a `?share_locale`/`?lang`/`?locale` query param, then the
+  visitor's stored choice (`localStorage`), then the **browser language** (`detectBrowserLocale` reads
+  `navigator.languages`), falling back to English. The locale picker always overrides and persists.
 
 ## SEO & Discoverability
 

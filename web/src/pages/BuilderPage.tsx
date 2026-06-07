@@ -197,7 +197,8 @@ function getCompetitionStartEpoch(fixtures: FixtureSeed[]) {
 }
 
 export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = 'builder' }: BuilderPageProps) {
-  const copy = getMessages(locale).builder
+  const messages = getMessages(locale)
+  const copy = messages.builder
   const slotClassCopy = copy.slotClasses
   const { data: bootstrap } = useBootstrap()
   const registrationClosed = hasRegistrationClosed(resolveRegistrationCloseEpoch(bootstrap?.registrationCloseEpoch))
@@ -901,6 +902,12 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
               className="premium-button px-7 py-4 text-base font-semibold"
             >
               {copy.locked.cta}
+            </Link>
+            <Link
+              to="/how-to-play"
+              className="inline-flex items-center rounded-full border border-white/12 px-7 py-4 text-base font-semibold text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+            >
+              {messages.home.hero.howToCta}
             </Link>
           </div>
         </section>

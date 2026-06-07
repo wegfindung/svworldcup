@@ -17,7 +17,7 @@ const englishMessages = {
       { to: '/tables', label: 'Tables' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'How to play' },
         { to: '/rules', label: 'Rules' },
@@ -719,7 +719,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tablas' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'Cómo jugar' },
           { to: '/rules', label: 'Reglas' },
@@ -1256,7 +1256,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Classifiche' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'Come giocare' },
           { to: '/rules', label: 'Regole' },
@@ -1793,7 +1793,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tabellen' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'Anleitung' },
           { to: '/rules', label: 'Regeln' },
@@ -2329,7 +2329,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Classements' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'Comment jouer' },
           { to: '/rules', label: 'Règles' },
@@ -2863,7 +2863,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tabelas' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'Como jogar' },
           { to: '/rules', label: 'Regras' },
@@ -3397,7 +3397,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Таблицы' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'Как играть' },
           { to: '/rules', label: 'Правила' },
@@ -3932,7 +3932,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: '榜单' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: '玩法' },
           { to: '/rules', label: '规则' },
@@ -4469,7 +4469,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: '順位表' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: '遊び方' },
           { to: '/rules', label: 'ルール' },

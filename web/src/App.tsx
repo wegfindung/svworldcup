@@ -3,6 +3,7 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { LocaleRail } from './components/LocaleRail'
 import { supportedLocales } from './data/eventConfig'
+import { detectBrowserLocale } from './lib/browserLocale'
 import { useBootstrap } from './hooks/useBootstrap'
 import { getShellMessages } from './i18n/shellMessages'
 import { recordReferralClick } from './lib/api'
@@ -71,7 +72,8 @@ function App() {
       return storedLocale as LocaleCode
     }
 
-    return supportedLocales[0]
+    // First-time visitor with no explicit choice → match the browser language when we support it.
+    return detectBrowserLocale()
   })
 
   const [participantReady, setParticipantReady] = useState(() => readParticipantReady())

@@ -225,6 +225,9 @@ participant-facing read surface, distinct from the per-fixture scoring snapshot 
   prizes are awarded **inside** Soccerverse — so a Soccerverse account is needed to **receive** winnings,
   though a prize can be sold directly to other Soccerverse users straight away. It is purely informational
   (no action) and does not change boost eligibility, which still requires a linked account.
+- **Also on the public landing.** The same explainer copy is surfaced on the landing page for **any**
+  visitor (newcomer onboarding), independent of login or league — newcomers meet the term "Soccerverse"
+  there first. The rookie-only gate above still governs only the in-builder boost-panel instance.
 - **On-demand + cached.** Computed on request — one Soccerverse trade-history fetch per drafted player,
   paced by the shared Soccerverse gate — then cached in-process per participant for a short TTL.
   Recomputed when the participant's drafted set changes or on an explicit refresh. It is never computed

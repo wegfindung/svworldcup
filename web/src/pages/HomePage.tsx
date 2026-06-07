@@ -4,12 +4,14 @@ import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { ScoringCalculator } from '../components/ScoringCalculator'
 import { TeamFlag } from '../components/TeamFlag'
+import { InfoModal } from '../components/InfoModal'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
 import { prizeLeagues, prizeTotalWithUnit } from '../data/prizePool'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { recordLandingPageVisit } from '../lib/api'
 import { withReferral } from '../lib/referral'
+import { readParticipantReady } from '../lib/participantReady'
 import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
 
 type HomeCopy = AppMessages['home']
@@ -420,6 +422,33 @@ function LandingProofCard({ copy, scoring }: { copy: HomeCopy['proof']; scoring:
   )
 }
 
+// Newcomer onboarding: the landing is where someone first meets the word "Soccerverse". Reuses the
+// boost panel's translated explainer copy + InfoModal so a visitor can learn what Soccerverse is (and
+// that they do not need it to take part) without leaving the page. See SOP_scoring_and_leagues.md
+// "What is Soccerverse? explainer".
+function SoccerverseExplainerCard({ copy }: { copy: AppMessages['builder']['boost'] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="glass-panel block w-full rounded-[1.15rem] p-4 text-left transition hover:border-[var(--color-accent)]/30"
+      >
+        <p className="mono text-[11px] uppercase tracking-[0.24em] text-[var(--color-accent)]">{copy.aboutTitle}</p>
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--color-muted)]">{copy.aboutBody1}</p>
+        <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent)]">
+          {copy.aboutTitle} →
+        </span>
+      </button>
+      <InfoModal open={open} title={copy.aboutTitle} closeLabel={copy.aboutClose} onClose={() => setOpen(false)}>
+        <p>{copy.aboutBody1}</p>
+        <p>{copy.aboutBody2}</p>
+      </InfoModal>
+    </>
+  )
+}
+
 function LandingPrizeSection({
   copy,
   referrerSoccerverseUsername,
@@ -498,6 +527,9 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const { data: bootstrap } = useBootstrap()
   const copy = getMessages(locale)
   const homeCopy = copy.home
+  // SSR-safe (null when no window). "Start building" goes to the builder, which only opens for a
+  // logged-in participant — so a guest is shown the register/how-to-play path instead of that wall.
+  const returningParticipant = readParticipantReady()
   const scoring = bootstrap?.scoring ?? defaultScoring
   const budgetLimit = bootstrap?.budgetLimit ?? defaultBudgetLimit
   const budgetOptions = bootstrap?.budgetOptions ?? defaultBudgetOptions
@@ -558,12 +590,14 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                   >
                     {homeCopy.hero.primaryCta}
                   </Link>
-                  <Link
-                    to={withReferral('/builder', referrerSoccerverseUsername)}
-                    className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
-                  >
-                    {homeCopy.hero.secondaryCta}
-                  </Link>
+                  {returningParticipant ? (
+                    <Link
+                      to={withReferral('/builder', referrerSoccerverseUsername)}
+                      className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+                    >
+                      {homeCopy.hero.secondaryCta}
+                    </Link>
+                  ) : null}
                 </div>
                 <p className="mt-4 text-sm text-[var(--color-muted)]">
                   {homeCopy.hero.newHereLabel}{' '}
@@ -613,6 +647,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
               <p className="mono mt-2 text-2xl text-white">{fixtureCount}</p>
             </div>
           </div>
+          <SoccerverseExplainerCard copy={copy.builder.boost} />
           <RankingTracksCard copy={homeCopy.rankingTracks} />
           <NationFlagsCard copy={homeCopy.nations} />
           <DiscordCard copy={homeCopy.discord} />

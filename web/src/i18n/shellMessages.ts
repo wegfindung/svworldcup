@@ -17,7 +17,7 @@ const englishShellMessages = {
       { to: '/tables', label: 'Tables' },
     ],
     important: {
-      label: 'Important',
+      label: 'Guide',
       items: [
         { to: '/how-to-play', label: 'How to play' },
         { to: '/rules', label: 'Rules' },
@@ -67,7 +67,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Tablas' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: 'Cómo jugar' },
           { to: '/rules', label: 'Reglas' },
@@ -113,7 +113,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Classifiche' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: 'Come giocare' },
           { to: '/rules', label: 'Regole' },
@@ -159,7 +159,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Tabellen' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: 'Anleitung' },
           { to: '/rules', label: 'Regeln' },
@@ -205,7 +205,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Classements' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: 'Comment jouer' },
           { to: '/rules', label: 'Règles' },
@@ -251,7 +251,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Tabelas' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: 'Como jogar' },
           { to: '/rules', label: 'Regras' },
@@ -297,7 +297,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: 'Таблицы' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: 'Как играть' },
           { to: '/rules', label: 'Правила' },
@@ -343,7 +343,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: '榜单' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: '玩法' },
           { to: '/rules', label: '规则' },
@@ -388,7 +388,7 @@ const shellMessages: Record<LocaleCode, DeepPartial<ShellMessages>> = {
         { to: '/tables', label: '順位表' },
       ],
       important: {
-        label: 'Important',
+        label: 'Guide',
         items: [
           { to: '/how-to-play', label: '遊び方' },
           { to: '/rules', label: 'ルール' },
