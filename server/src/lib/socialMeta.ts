@@ -115,26 +115,202 @@ function buildAbsoluteUrl(pathname: string, baseUrl: string) {
   return new URL(pathname, baseUrl).toString()
 }
 
-export function renderIndexSocialMeta(html: string, locale: SupportedLocale, pageUrl: string) {
-  const copy = homeSocialCopyByLocale[locale] ?? homeSocialCopyByLocale[defaultLocale]
-  const escapedTitle = escapeHtmlAttribute(copy.title)
-  const imageUrl = buildAbsoluteUrl('/brand/og-image.jpg', pageUrl)
+export const indexRobotsValue = 'index, follow'
 
+const siteName = 'The Grand Tournament'
+
+interface RouteMeta {
+  title: string
+  description: string
+}
+
+// Per-route SEO metadata for the indexable public pages other than home (home uses the localized
+// social copy above). English-only — locale variants are covered by hreflang alternates and the
+// localized page body. See SOP_system_overview.md "SEO & Discoverability".
+const routeMetaByPath: Record<string, RouteMeta> = {
+  '/prizes': {
+    title: `Prizes — ${siteName}`,
+    description:
+      'A $5,000 SVV prize pool, free to enter. Veteran 50%, Nations 30%, Rookie 20% — the full breakdown of how the prizes are shared.',
+  },
+  '/rules': {
+    title: `Rules — ${siteName}`,
+    description:
+      'How The Grand Tournament works: squad building, the salary-budget multiplier, scoring, swap windows, and league rules.',
+  },
+  '/help': {
+    title: `Help & FAQ — ${siteName}`,
+    description:
+      'Answers for registration, account access, squad changes, scoring, and the Soccerverse game behind the event.',
+  },
+  '/about': {
+    title: `About — ${siteName}`,
+    description:
+      'A free, fan-made fantasy game for the 2026 tournament, built by the Soccerverse community. Not an official Soccerverse product.',
+  },
+  '/privacy': {
+    title: `Privacy — ${siteName}`,
+    description: 'How The Grand Tournament Community Event handles your data.',
+  },
+  '/how-to-play': {
+    title: `How to play — ${siteName}`,
+    description:
+      'New here? The whole game in five steps. Free to enter, no Soccerverse account needed — pick a squad, lock it, and climb the leaderboards.',
+  },
+  '/tables': {
+    title: `Leaderboards — ${siteName}`,
+    description: 'Live Rookie, Veteran, and Nation standings for The Grand Tournament.',
+  },
+  '/results': {
+    title: `Results — ${siteName}`,
+    description: 'Match results and fixtures for the 2026 Grand Tournament.',
+  },
+}
+
+// Prerendered marketing pages (body baked at build) — a strict subset of the indexable set.
+export const prerenderedPaths: string[] = ['/', '/prizes', '/rules', '/help', '/about', '/privacy', '/how-to-play']
+
+const indexablePaths = new Set<string>(['/', ...Object.keys(routeMetaByPath)])
+
+function normalizePath(pathname: string): string {
+  if (!pathname) {
+    return '/'
+  }
+  const trimmed = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+  return trimmed || '/'
+}
+
+export function isIndexablePath(pathname: string): boolean {
+  return indexablePaths.has(normalizePath(pathname))
+}
+
+function replaceCanonical(html: string, url: string): string {
+  const tag = `<link rel="canonical" href="${escapeHtmlAttribute(url)}" />`
+  if (/<link\s+rel="canonical"[^>]*>/i.test(html)) {
+    return html.replace(/<link\s+rel="canonical"[^>]*>/i, tag)
+  }
+  return injectIntoHead(html, tag)
+}
+
+function injectIntoHead(html: string, block: string): string {
+  if (!block) {
+    return html
+  }
+  if (/<\/head>/i.test(html)) {
+    return html.replace(/<\/head>/i, `${block}</head>`)
+  }
+  return html
+}
+
+function buildHreflangLinks(indexable: boolean, path: string, origin: string): string {
+  if (!indexable) {
+    return ''
+  }
+  const cleanUrl = buildAbsoluteUrl(path, origin)
+  const links = supportedLocales.map((loc) => {
+    const href = loc === defaultLocale ? cleanUrl : `${cleanUrl}?lang=${loc}`
+    return `<link rel="alternate" hreflang="${loc}" href="${escapeHtmlAttribute(href)}" />`
+  })
+  links.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtmlAttribute(cleanUrl)}" />`)
+  return links.join('')
+}
+
+function buildJsonLd(path: string, title: string, description: string, url: string, imageUrl: string, origin: string): string {
+  const graph: Record<string, unknown>[] = [
+    { '@type': 'Organization', '@id': `${origin}/#org`, name: siteName, url: origin, logo: imageUrl },
+    { '@type': 'WebSite', '@id': `${origin}/#website`, name: siteName, url: origin, publisher: { '@id': `${origin}/#org` } },
+    { '@type': 'WebPage', url, name: title, description, isPartOf: { '@id': `${origin}/#website` } },
+  ]
+  if (path === '/') {
+    graph.push({
+      '@type': 'SportsEvent',
+      name: 'The Grand Tournament Community Event',
+      description,
+      sport: 'Soccer',
+      eventStatus: 'https://schema.org/EventScheduled',
+      eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+      startDate: '2026-06-11T19:00:00Z',
+      url: origin,
+      image: imageUrl,
+      organizer: { '@id': `${origin}/#org` },
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        availability: 'https://schema.org/InStock',
+        url: `${origin}/register`,
+      },
+    })
+  }
+  const json = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c')
+  return `<script type="application/ld+json">${json}</script>`
+}
+
+export function renderIndexSocialMeta(
+  html: string,
+  locale: SupportedLocale,
+  pageUrl: string,
+  pathname = '/',
+  baseUrl?: string,
+) {
+  const path = normalizePath(pathname)
+  const home = homeSocialCopyByLocale[locale] ?? homeSocialCopyByLocale[defaultLocale]
+  const route = routeMetaByPath[path]
+  const indexable = indexablePaths.has(path)
+  const origin = (baseUrl ?? new URL(pageUrl).origin).replace(/\/+$/, '')
+  const canonicalUrl = buildAbsoluteUrl(path, origin)
+  const imageUrl = buildAbsoluteUrl('/brand/og-image.jpg', origin)
+  const title = path === '/' ? home.title : (route?.title ?? home.title)
+  const description = route?.description ?? home.description
+  const robots = indexable ? indexRobotsValue : noIndexRobotsValue
+
+  const transforms: ((value: string) => string)[] = [
+    (value) => value.replace(/<html lang="[^"]*">/i, `<html lang="${escapeHtmlAttribute(home.htmlLang)}">`),
+    (value) => value.replace(/<title>.*?<\/title>/i, `<title>${escapeHtmlAttribute(title)}</title>`),
+    (value) => replaceMetaContent(value, 'name="description"', description),
+    (value) => replaceMetaContent(value, 'name="robots"', robots),
+    (value) => replaceMetaContent(value, 'property="og:locale"', home.ogLocale),
+    (value) => replaceMetaContent(value, 'property="og:url"', pageUrl),
+    (value) => replaceMetaContent(value, 'property="og:title"', title),
+    (value) => replaceMetaContent(value, 'property="og:description"', description),
+    (value) => replaceMetaContent(value, 'property="og:image"', imageUrl),
+    (value) => replaceMetaContent(value, 'property="og:image:alt"', home.imageAlt),
+    (value) => replaceMetaContent(value, 'name="twitter:title"', title),
+    (value) => replaceMetaContent(value, 'name="twitter:description"', description),
+    (value) => replaceMetaContent(value, 'name="twitter:image"', imageUrl),
+    (value) => replaceMetaContent(value, 'name="twitter:image:alt"', home.imageAlt),
+    (value) => replaceCanonical(value, canonicalUrl),
+    (value) => injectIntoHead(value, buildHreflangLinks(indexable, path, origin)),
+    (value) => injectIntoHead(value, buildJsonLd(path, title, description, canonicalUrl, imageUrl, origin)),
+  ]
+
+  return transforms.reduce((currentHtml, transform) => transform(currentHtml), html)
+}
+
+export function buildRobotsTxt(baseUrl: string): string {
+  const origin = baseUrl.replace(/\/+$/, '')
   return [
-    (value: string) => value.replace(/<html lang="[^"]*">/i, `<html lang="${escapeHtmlAttribute(copy.htmlLang)}">`),
-    (value: string) => value.replace(/<title>.*?<\/title>/i, `<title>${escapedTitle}</title>`),
-    (value: string) => replaceMetaContent(value, 'name="description"', copy.description),
-    (value: string) => replaceMetaContent(value, 'property="og:locale"', copy.ogLocale),
-    (value: string) => replaceMetaContent(value, 'property="og:url"', pageUrl),
-    (value: string) => replaceMetaContent(value, 'property="og:title"', copy.title),
-    (value: string) => replaceMetaContent(value, 'property="og:description"', copy.description),
-    (value: string) => replaceMetaContent(value, 'property="og:image"', imageUrl),
-    (value: string) => replaceMetaContent(value, 'property="og:image:alt"', copy.imageAlt),
-    (value: string) => replaceMetaContent(value, 'name="twitter:title"', copy.title),
-    (value: string) => replaceMetaContent(value, 'name="twitter:description"', copy.description),
-    (value: string) => replaceMetaContent(value, 'name="twitter:image"', imageUrl),
-    (value: string) => replaceMetaContent(value, 'name="twitter:image:alt"', copy.imageAlt),
-  ].reduce((currentHtml, transform) => transform(currentHtml), html)
+    'User-agent: *',
+    'Disallow: /admin',
+    'Disallow: /builder',
+    'Disallow: /register',
+    'Disallow: /verify',
+    'Disallow: /login',
+    'Disallow: /reset-password',
+    'Disallow: /profiles',
+    'Allow: /',
+    `Sitemap: ${origin}/sitemap.xml`,
+    '',
+  ].join('\n')
+}
+
+export function buildSitemapXml(baseUrl: string): string {
+  const origin = baseUrl.replace(/\/+$/, '')
+  const urls = [...indexablePaths]
+    .sort()
+    .map((path) => `  <url><loc>${escapeHtmlAttribute(buildAbsoluteUrl(path, origin))}</loc></url>`)
+    .join('\n')
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
 }
 
 export function getOgLocale(locale: SupportedLocale) {

@@ -501,7 +501,7 @@ Validation draft:
 
 ### Infrastructure
 
-- Host: `https://worldcup.svtool.info`
+- Host: `https://event.svtool.info`
 - Server: Hetzner
 - Database: PostgreSQL
 - Email: All-Inkl SMTP

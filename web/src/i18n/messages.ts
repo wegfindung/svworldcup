@@ -19,6 +19,7 @@ const englishMessages = {
     important: {
       label: 'Important',
       items: [
+        { to: '/how-to-play', label: 'How to play' },
         { to: '/rules', label: 'Rules' },
         { to: '/about', label: 'About' },
         { to: '/prizes', label: 'Prizes' },
@@ -39,10 +40,15 @@ const englishMessages = {
       badge: 'one locked entry',
       kicker: 'Hidden squads. Public pressure. Nation pride.',
       titleLines: ['Draft 15.', 'Hide the squad.', 'Beat your nation.'],
+      lede:
+        'A free fantasy football game for the 2026 World Cup. Pick a team of real tournament players, lock it in before kickoff, and climb the leaderboards as the matches play out. No experience needed — and you do not need a Soccerverse account to take part.',
       body:
         'Build one Grand Tournament squad under your chosen cap, lock it for the full competition, then watch every official match swing the rookie, veteran, and nation rankings.',
+      freeNote: 'Free to enter · No entry fee · No Soccerverse account required',
       primaryCta: 'Register your entry',
       secondaryCta: 'Start building',
+      newHereLabel: 'New here?',
+      howToCta: 'How to play',
       playerWallLabel: 'Featured Soccerverse players',
     },
     mechanics: [
@@ -130,6 +136,20 @@ const englishMessages = {
       requestPolicyBody:
         'One verified entry per person. Keep your squad inside the selected budget, submit it before kickoff, and let the public tables do the rest.',
     },
+  },
+  prizes: {
+    eyebrow: 'prize pool',
+    landingTitle: 'Prize pool',
+    title: 'A $5,000 prize pool',
+    totalLabel: 'Total prize pool',
+    freeNote: 'Free to enter — no entry fee.',
+    vouchersNote: 'Paid in Soccerverse Vouchers (SVV).',
+    activation: 'The full prize pool activates once the event reaches 1,000 participants.',
+    shareSuffix: 'of the pool',
+    placesLabel: 'Top places',
+    nationsSplitNote: 'Each winning nation’s share is split among its top 10 managers.',
+    landingCta: 'See the full prize breakdown',
+    registerCta: 'Register your squad',
   },
   scoringCalculator: {
     eyebrow: 'score calculator',
@@ -701,7 +721,8 @@ const spanishMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'Reglas' },
+        { to: '/how-to-play', label: 'Cómo jugar' },
+          { to: '/rules', label: 'Reglas' },
         { to: '/about', label: 'Acerca de' },
         { to: '/prizes', label: 'Premios' },
         { to: '/help', label: 'Ayuda' },
@@ -1237,7 +1258,8 @@ const italianMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'Regole' },
+        { to: '/how-to-play', label: 'Come giocare' },
+          { to: '/rules', label: 'Regole' },
         { to: '/about', label: 'Informazioni' },
         { to: '/prizes', label: 'Premi' },
         { to: '/help', label: 'Aiuto' },
@@ -1773,7 +1795,8 @@ const germanMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'Regeln' },
+        { to: '/how-to-play', label: 'Anleitung' },
+          { to: '/rules', label: 'Regeln' },
         { to: '/about', label: 'Über uns' },
         { to: '/prizes', label: 'Preise' },
         { to: '/help', label: 'Hilfe' },
@@ -2308,7 +2331,8 @@ const frenchMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'Règles' },
+        { to: '/how-to-play', label: 'Comment jouer' },
+          { to: '/rules', label: 'Règles' },
         { to: '/about', label: 'À propos' },
         { to: '/prizes', label: 'Prix' },
         { to: '/help', label: 'Aide' },
@@ -2841,7 +2865,8 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'Regras' },
+        { to: '/how-to-play', label: 'Como jogar' },
+          { to: '/rules', label: 'Regras' },
         { to: '/about', label: 'Sobre' },
         { to: '/prizes', label: 'Prémios' },
         { to: '/help', label: 'Ajuda' },
@@ -3374,7 +3399,8 @@ const russianMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'Правила' },
+        { to: '/how-to-play', label: 'Как играть' },
+          { to: '/rules', label: 'Правила' },
         { to: '/about', label: 'О проекте' },
         { to: '/prizes', label: 'Призы' },
         { to: '/help', label: 'Помощь' },
@@ -3908,7 +3934,8 @@ const chineseMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: '规则' },
+        { to: '/how-to-play', label: '玩法' },
+          { to: '/rules', label: '规则' },
         { to: '/about', label: '关于' },
         { to: '/prizes', label: '奖品' },
         { to: '/help', label: '帮助' },
@@ -4444,7 +4471,8 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     important: {
       label: 'Important',
       items: [
-        { to: '/rules', label: 'ルール' },
+        { to: '/how-to-play', label: '遊び方' },
+          { to: '/rules', label: 'ルール' },
         { to: '/about', label: 'について' },
         { to: '/prizes', label: '賞品' },
         { to: '/help', label: 'ヘルプ' },

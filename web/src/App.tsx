@@ -21,6 +21,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage').then((module) => ({ def
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })))
 const BuilderPage = lazy(() => import('./pages/BuilderPage').then((module) => ({ default: module.BuilderPage })))
 const HelpPage = lazy(() => import('./pages/HelpPage').then((module) => ({ default: module.HelpPage })))
+const HowToPlayPage = lazy(() => import('./pages/HowToPlayPage').then((module) => ({ default: module.HowToPlayPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const PlayerLoginPage = lazy(() => import('./pages/PlayerLoginPage').then((module) => ({ default: module.PlayerLoginPage })))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })))
@@ -390,6 +391,7 @@ function App() {
               <Route path="/prizes" element={<PrizesPage locale={locale} />} />
               <Route path="/rules" element={<RulesPage locale={locale} />} />
               <Route path="/help" element={<HelpPage locale={locale} />} />
+              <Route path="/how-to-play" element={<HowToPlayPage locale={locale} />} />
               <Route path="/about" element={<AboutPage locale={locale} />} />
               <Route path="/privacy" element={<PrivacyPage locale={locale} />} />
               <Route path="/tables" element={<TablesPage locale={locale} />} />

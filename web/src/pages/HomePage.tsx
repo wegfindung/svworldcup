@@ -6,6 +6,7 @@ import { ScoringCalculator } from '../components/ScoringCalculator'
 import { TeamFlag } from '../components/TeamFlag'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
+import { prizeLeagues, prizeTotalWithUnit } from '../data/prizePool'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { recordLandingPageVisit } from '../lib/api'
 import { withReferral } from '../lib/referral'
@@ -419,6 +420,74 @@ function LandingProofCard({ copy, scoring }: { copy: HomeCopy['proof']; scoring:
   )
 }
 
+function LandingPrizeSection({
+  copy,
+  referrerSoccerverseUsername,
+}: {
+  copy: AppMessages['prizes']
+  referrerSoccerverseUsername: string
+}) {
+  return (
+    <section className="glass-panel rounded-[1.25rem] p-4 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">{copy.title}</h2>
+          <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-[var(--color-muted)]">
+            {copy.freeNote} {copy.vouchersNote}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.totalLabel}</p>
+          <p className="mono text-3xl font-extrabold tracking-tight text-[var(--color-sand)]">{prizeTotalWithUnit}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {prizeLeagues.map((league) => (
+          <div key={league.key} className="surface-row rounded-[0.95rem] border border-white/6 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-white">{league.name}</p>
+              <span className="mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                {league.sharePercent}% {copy.shareSuffix}
+              </span>
+            </div>
+            <p className="mono mt-1 text-xl font-bold text-[var(--color-sand)]">{league.total}</p>
+            <ul className="mt-3 space-y-1.5 text-sm">
+              {league.places.map((place) => (
+                <li key={place.place} className="flex items-baseline justify-between gap-3">
+                  <span className="text-[var(--color-muted)]">{place.place}</span>
+                  <span className="font-semibold text-white">
+                    {place.amount}
+                    {place.note ? <span className="ml-1 text-xs text-[var(--color-sand)]">{place.note}</span> : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {league.key === 'nations' ? (
+              <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">{copy.nationsSplitNote}</p>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">{copy.activation}</p>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Link to={withReferral('/register', referrerSoccerverseUsername)} className="premium-button px-6 py-3 text-sm font-semibold">
+          {copy.registerCta}
+        </Link>
+        <Link
+          to={withReferral('/prizes', referrerSoccerverseUsername)}
+          className="inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
+        >
+          {copy.landingCta}
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 interface HomePageProps {
   locale: LocaleCode
   referrerSoccerverseUsername?: string
@@ -476,8 +545,13 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                     )
                   })}
                 </h2>
-                <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-muted)] sm:text-[1.05rem]">{homeCopy.hero.body}</p>
-                <div className="mt-6 flex flex-wrap gap-3">
+                <p className="mt-5 max-w-[58ch] text-base leading-relaxed text-[var(--color-paper)] sm:text-[1.05rem]">{homeCopy.hero.lede}</p>
+                <p className="mt-3 max-w-[58ch] text-sm leading-relaxed text-[var(--color-muted)]">{homeCopy.hero.body}</p>
+                <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)]">
+                  <span aria-hidden>✓</span>
+                  {homeCopy.hero.freeNote}
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
                   <Link
                     to={withReferral('/register', referrerSoccerverseUsername)}
                     className="premium-button px-6 py-3 text-sm font-semibold sm:px-7"
@@ -491,6 +565,15 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
                     {homeCopy.hero.secondaryCta}
                   </Link>
                 </div>
+                <p className="mt-4 text-sm text-[var(--color-muted)]">
+                  {homeCopy.hero.newHereLabel}{' '}
+                  <Link
+                    to={withReferral('/how-to-play', referrerSoccerverseUsername)}
+                    className="font-semibold text-[var(--color-accent)] underline-offset-4 hover:underline"
+                  >
+                    {homeCopy.hero.howToCta} →
+                  </Link>
+                </p>
               </div>
 
               <div className="hero-stage">
@@ -631,6 +714,8 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
 
         <NextKickoffCard copy={homeCopy.nextKickoff} fixtures={fixtures} referrerSoccerverseUsername={referrerSoccerverseUsername} teams={teams} />
       </section>
+
+      <LandingPrizeSection copy={copy.prizes} referrerSoccerverseUsername={referrerSoccerverseUsername} />
 
       <section id="score-calculator">
         <ScoringCalculator budgetOptions={budgetOptions} copy={copy.scoringCalculator} scoring={scoring} />

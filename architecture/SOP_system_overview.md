@@ -72,6 +72,13 @@ per drafted player — influence bought, sold, net, and resulting % boost — co
 cached per participant, linked accounts only. This is a current-standing indicator, distinct from the
 frozen per-fixture scoring snapshot. See `SOP_scoring_and_leagues.md` "Participant boost view (live,
 on-demand)".
+11. Beginner onboarding. The landing hero must be legible to a first-timer who has never heard of
+Soccerverse — it states plainly what the event is, that it is **free with no entry fee**, and that
+**no Soccerverse account is needed to enter** — and offers a first-timer entry point. A linear
+"how to play" page (`/how-to-play`, in the nav) walks a newcomer through joining in a few steps and
+**links out to `/rules` and `/help` instead of duplicating them**. The prize pool is surfaced as real
+text on the landing page (not only as the image on `/prizes`), so skimmers and crawlers can read it
+(see `SOP_scoring_and_leagues.md` "Prize Pool").
 
 ## Security Rules
 
@@ -189,3 +196,39 @@ on-demand)".
 - English is the source language for code and default UI copy.
 - All user-facing copy must be stored in translation dictionaries, not hardcoded inline in business logic.
 - Supported locales (9): `en`, `es`, `de`, `fr`, `pt`, `ru`, `zh`, `it`, `ja`.
+
+## SEO & Discoverability
+
+The public marketing surface is open to search engines; private and interactive surfaces stay
+`noindex`. This replaces the previous blanket `noindex` (a closed-beta posture).
+
+- **Indexable set** (search engines welcome): `/`, `/prizes`, `/rules`, `/help`, `/about`,
+  `/privacy`, `/how-to-play`, plus the public data pages `/tables` and `/results`.
+- **Non-indexable set** (`noindex, nofollow`): registration/auth and account surfaces (`/register`,
+  `/verify`, `/login`, `/reset-password`, `/builder`, `/builder/share`), all `/admin/*`, and public
+  profile pages (`/profiles/:slug`) — squads are hidden by default, so profiles must not be indexed.
+- **Per-route `<head>` is server-rendered.** The SPA-shell response injects per-route `title`,
+  `description`, `canonical`, `robots`, Open Graph / Twitter tags, `hreflang` alternates for the 9
+  locales (via the `?lang=` query), and JSON-LD. The route→SEO map and the indexable/non-indexable
+  split live in `server/src/lib/socialMeta.ts`; the home/social copy already there is folded into it.
+- **Canonical origin** is `PUBLIC_WEB_URL` (the same env var used for email links), so the canonical
+  host always matches the participant-facing origin. Per-route canonical = `PUBLIC_WEB_URL` + path
+  (query stripped). The previous blanket `X-Robots-Tag: noindex` header is removed in favour of the
+  per-route `robots` value.
+- **Prerendering (build-time, marketing pages only).** The seven static marketing routes (`/`,
+  `/prizes`, `/rules`, `/help`, `/about`, `/privacy`, `/how-to-play`) have their page body prerendered
+  to static HTML at `vite build` via a post-build script (`web/scripts/prerender.mjs` +
+  `web/src/entry-prerender.tsx`), so a crawler that does not run JavaScript still receives real
+  content. The interactive/data routes stay client-rendered (an empty shell + correct head). Prerender
+  renders each page in isolation with English copy and safe default data (no live fetch); a render
+  failure degrades gracefully to the empty shell for that route rather than failing the build.
+- **Static serving.** The Node server serves the per-route prerendered `dist/<route>/index.html` when
+  one exists, otherwise the shared `dist/index.html` shell; both still pass through the per-route head
+  injection. The SPA shell stays `no-store` (a new deploy is picked up immediately); fingerprinted
+  assets stay `immutable`.
+- **`robots.txt` and `sitemap.xml`** are served by the Node server (dynamic, built from
+  `PUBLIC_WEB_URL`), listing the indexable set and pointing at the sitemap. Both paths are exempt from
+  the closed-beta basic-auth gate.
+- **Operational caveat.** Indexing only takes effect when the closed-beta basic-auth
+  (`CLOSED_BETA_AUTH_ENABLED`) is disabled on the public origin — while enabled it returns `401` to
+  crawlers regardless of `robots` values.

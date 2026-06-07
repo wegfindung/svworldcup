@@ -252,6 +252,29 @@ participant-facing read surface, distinct from the per-fixture scoring snapshot 
 - **Prize-pool payout:** each paying nation's pool is split **equally among its top 10 managers**, paid **as if every nation had 10 managers**. If a nation has **fewer than 10** qualifying managers, the leftover share **spills to the next ranked nation(s)**, with a **minimum payout of 10 SVV**. The exact wording mirrors the prize-distribution graphic on the Prizes page: *"Prize distribution equally among top 10 managers of each winning nation. If <10 managers, the budget spills to next ranked nation(s) (min 10 SVV payout)."*
 - A participant contributes their **full** total score to both their primary and their optional secondary nation (the contribution is not halved or split between the two).
 
+## Prize Pool
+
+The event has a total prize pool of **$5,000 in Soccerverse Vouchers (SVV)**. **Entry is free — there
+is no entry fee.** The full pool activates once the event reaches **1,000 participants**.
+
+The pool is split across the three leaderboards:
+
+| League | Share | Total | Places |
+|---|---|---|---|
+| Veteran | 50% | $2,500 | 1st $1,000 + shirt · 2nd $500 + lanyard · 3rd $300 + lanyard · 4th–10th $100 each |
+| Nations | 30% | $1,500 | Nation champion $750 · runner-up $450 · third place $300 |
+| Rookie | 20% | $1,000 | 1st $350 + shirt · 2nd $200 + lanyard · 3rd $100 + lanyard · 4th–10th $50 each |
+
+- The **Veteran** and **Rookie** prizes go to the top finishers on each league leaderboard (ordering
+  per "Individual ranking tiebreak").
+- The **Nations** pool ($1,500) is awarded by nation rank (champion / runner-up / third); each winning
+  nation's amount is then split among its members per "National Tables → Nation winner determination"
+  (equally among the top 10 managers, paid as if every nation had 10 managers; if a nation has fewer
+  than 10 qualifying managers the leftover spills to the next ranked nation(s), minimum 10 SVV payout).
+- These figures are the **canonical source** for the prize copy on `/` and `/prizes`. The prize
+  graphic (`web/public/prizes/final_prize_distribution.webp`) mirrors them; if the figures change,
+  update this section and the on-site text together.
+
 ## Substitution Rules
 
 - One substitute per class: `GK`, `DEF`, `MID`, `FWD`. Subs are locked to their slot class.

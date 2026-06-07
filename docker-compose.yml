@@ -21,7 +21,7 @@ services:
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-svworldcup}.rule=Host(`${APP_HOST:-worldcup.svtool.info}`)"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-svworldcup}.rule=Host(`${APP_HOST:-event.svtool.info}`)"
       - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-svworldcup}.entrypoints=websecure"
       - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-svworldcup}.tls.certresolver=letsencrypt"
       - "traefik.http.services.${TRAEFIK_SERVICE_NAME:-svworldcup}.loadbalancer.server.port=3000"

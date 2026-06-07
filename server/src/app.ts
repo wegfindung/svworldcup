@@ -15,7 +15,16 @@ import { createAdminRouter } from './routes/admin.js'
 import { createParticipantRouter } from './routes/participant.js'
 import { createPublicRouter } from './routes/public.js'
 import { handleShareSnapshotPage } from './routes/share.js'
-import { noIndexRobotsValue, renderIndexSocialMeta, resolveSocialLocaleFromQuery } from './lib/socialMeta.js'
+import {
+  buildRobotsTxt,
+  buildSitemapXml,
+  indexRobotsValue,
+  isIndexablePath,
+  noIndexRobotsValue,
+  prerenderedPaths,
+  renderIndexSocialMeta,
+  resolveSocialLocaleFromQuery,
+} from './lib/socialMeta.js'
 import { bootstrapDefaultEmailCampaigns } from './services/bootstrapEmailCampaigns.js'
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
@@ -127,10 +136,6 @@ export function createApp() {
       },
     }),
   )
-  app.use((_req, res, next) => {
-    res.setHeader('X-Robots-Tag', noIndexRobotsValue)
-    next()
-  })
   app.use(
     cors({
       origin: true,
@@ -144,12 +149,19 @@ export function createApp() {
       password: env.CLOSED_BETA_AUTH_PASSWORD,
       adminApiToken: env.ADMIN_API_TOKEN,
       adminBootstrapEmails: env.ADMIN_BOOTSTRAP_EMAILS,
-      exemptPaths: ['/api/public/health'],
+      exemptPaths: ['/api/public/health', '/robots.txt', '/sitemap.xml'],
     }),
   )
   app.use(express.json({ limit: '1mb' }))
 
   app.get('/share/snapshot', handleShareSnapshotPage)
+
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain').send(buildRobotsTxt(env.PUBLIC_WEB_URL))
+  })
+  app.get('/sitemap.xml', (_req, res) => {
+    res.type('application/xml').send(buildSitemapXml(env.PUBLIC_WEB_URL))
+  })
 
   if (publicDir) {
     app.use(
@@ -178,11 +190,24 @@ export function createApp() {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
       res.setHeader('Pragma', 'no-cache')
       res.setHeader('Expires', '0')
+      // Per-route indexability replaces the former blanket noindex header. The same value is mirrored
+      // into the `<meta name="robots">` by renderIndexSocialMeta. See SOP_system_overview.md "SEO".
+      res.setHeader('X-Robots-Tag', isIndexablePath(req.path) ? indexRobotsValue : noIndexRobotsValue)
       try {
-        const indexHtml = await readFile(resolve(publicDir, 'index.html'), 'utf8')
+        // Serve the build-time prerendered body for the marketing routes (real content for crawlers);
+        // every other route gets the shared shell. Both pass through the per-route head injection.
+        const normalizedPath = req.path.length > 1 && req.path.endsWith('/') ? req.path.slice(0, -1) : req.path
+        let filePath = resolve(publicDir, 'index.html')
+        if (normalizedPath !== '/' && prerenderedPaths.includes(normalizedPath)) {
+          const candidate = resolve(publicDir, `.${normalizedPath}`, 'index.html')
+          if (existsSync(candidate)) {
+            filePath = candidate
+          }
+        }
+        const indexHtml = await readFile(filePath, 'utf8')
         const pageUrl = `${req.protocol}://${req.get('host') ?? 'localhost'}${req.originalUrl}`
         const locale = resolveSocialLocaleFromQuery(req.query)
-        res.type('html').send(renderIndexSocialMeta(indexHtml, locale, pageUrl))
+        res.type('html').send(renderIndexSocialMeta(indexHtml, locale, pageUrl, req.path, env.PUBLIC_WEB_URL))
       } catch (error) {
         next(error)
       }
