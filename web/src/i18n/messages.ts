@@ -719,7 +719,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Tablas' },
     ],
     important: {
-      label: 'Guide',
+      label: 'Guía',
       items: [
         { to: '/how-to-play', label: 'Cómo jugar' },
           { to: '/rules', label: 'Reglas' },
@@ -1251,12 +1251,12 @@ const italianMessages: DeepPartial<AppMessages> = {
   nav: {
     primary: [
       { to: '/', label: 'Panoramica' },
-      { to: '/builder', label: 'Builder' },
+      { to: '/builder', label: 'Costruttore' },
       { to: '/results', label: 'Risultati' },
       { to: '/tables', label: 'Classifiche' },
     ],
     important: {
-      label: 'Guide',
+      label: 'Guida',
       items: [
         { to: '/how-to-play', label: 'Come giocare' },
           { to: '/rules', label: 'Regole' },
@@ -1266,7 +1266,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       ],
     },
     account: [
-      { to: '/login', label: 'Login' },
+      { to: '/login', label: 'Accedi' },
       { to: '/admin', label: 'Admin' },
     ],
     register: 'Registrati',
@@ -1788,12 +1788,12 @@ const germanMessages: DeepPartial<AppMessages> = {
   nav: {
     primary: [
       { to: '/', label: 'Übersicht' },
-      { to: '/builder', label: 'Builder' },
+      { to: '/builder', label: 'Aufstellung' },
       { to: '/results', label: 'Ergebnisse' },
       { to: '/tables', label: 'Tabellen' },
     ],
     important: {
-      label: 'Guide',
+      label: 'Infos',
       items: [
         { to: '/how-to-play', label: 'Anleitung' },
           { to: '/rules', label: 'Regeln' },
@@ -1803,7 +1803,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       ],
     },
     account: [
-      { to: '/login', label: 'Login' },
+      { to: '/login', label: 'Anmelden' },
       { to: '/admin', label: 'Admin' },
     ],
     register: 'Registrieren',
@@ -2324,7 +2324,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
   nav: {
     primary: [
       { to: '/', label: 'Aperçu' },
-      { to: '/builder', label: 'Builder' },
+      { to: '/builder', label: 'Composition' },
       { to: '/results', label: 'Résultats' },
       { to: '/tables', label: 'Classements' },
     ],
@@ -2339,7 +2339,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       ],
     },
     account: [
-      { to: '/login', label: 'Login' },
+      { to: '/login', label: 'Connexion' },
       { to: '/admin', label: 'Admin' },
     ],
     register: 'Inscription',
@@ -2858,12 +2858,12 @@ const portugueseMessages: DeepPartial<AppMessages> = {
   nav: {
     primary: [
       { to: '/', label: 'Visão geral' },
-      { to: '/builder', label: 'Builder' },
+      { to: '/builder', label: 'Construtor' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tabelas' },
     ],
     important: {
-      label: 'Guide',
+      label: 'Guia',
       items: [
         { to: '/how-to-play', label: 'Como jogar' },
           { to: '/rules', label: 'Regras' },
@@ -2873,7 +2873,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       ],
     },
     account: [
-      { to: '/login', label: 'Login' },
+      { to: '/login', label: 'Entrar' },
       { to: '/admin', label: 'Admin' },
     ],
     register: 'Registar',
@@ -3397,7 +3397,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: 'Таблицы' },
     ],
     important: {
-      label: 'Guide',
+      label: 'Гид',
       items: [
         { to: '/how-to-play', label: 'Как играть' },
           { to: '/rules', label: 'Правила' },
@@ -3932,7 +3932,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: '榜单' },
     ],
     important: {
-      label: 'Guide',
+      label: '指南',
       items: [
         { to: '/how-to-play', label: '玩法' },
           { to: '/rules', label: '规则' },
@@ -4469,7 +4469,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       { to: '/tables', label: '順位表' },
     ],
     important: {
-      label: 'Guide',
+      label: 'ガイド',
       items: [
         { to: '/how-to-play', label: '遊び方' },
           { to: '/rules', label: 'ルール' },
