@@ -72,6 +72,16 @@ per drafted player — influence bought, sold, net, and resulting % boost — co
 cached per participant, linked accounts only. This is a current-standing indicator, distinct from the
 frozen per-fixture scoring snapshot. See `SOP_scoring_and_leagues.md` "Participant boost view (live,
 on-demand)".
+11. Beginner onboarding. The landing hero must be legible to a first-timer who has never heard of
+Soccerverse — it states plainly what the event is, that it is **free with no entry fee**, and that
+**no Soccerverse account is needed to enter** — and offers a first-timer entry point. A linear
+"how to play" page (`/how-to-play`, in the nav) walks a newcomer through joining in a few steps and
+**links out to `/rules` and `/help` instead of duplicating them**. The prize pool is surfaced as real
+text on the landing page (not only as the image on `/prizes`), so skimmers can read it
+(see `SOP_scoring_and_leagues.md` "Prize Pool"). The "What is Soccerverse?" explainer (reused from the
+boost panel) is also surfaced on the landing for any visitor, and the locked builder state links to
+`/how-to-play` so a not-yet-registered visitor always has the onboarding path. "How to play" lives in
+the site nav under the **Guide** menu.
 
 ## Security Rules
 
@@ -189,3 +199,6 @@ on-demand)".
 - English is the source language for code and default UI copy.
 - All user-facing copy must be stored in translation dictionaries, not hardcoded inline in business logic.
 - Supported locales (9): `en`, `es`, `de`, `fr`, `pt`, `ru`, `zh`, `it`, `ja`.
+- The initial UI locale is resolved in order: a `?share_locale`/`?lang`/`?locale` query param, then the
+  visitor's stored choice (`localStorage`), then the **browser language** (`detectBrowserLocale` reads
+  `navigator.languages`), falling back to English. The locale picker always overrides and persists.
