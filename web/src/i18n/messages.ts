@@ -4898,10 +4898,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   es: {
     nav: { logoAlt: 'Evento comunitario The Grand Tournament' },
     home: {
-      hero: { playerWallLabel: 'Jugadores destacados de Soccerverse' },
+      hero: {
+        playerWallLabel: 'Jugadores destacados de Soccerverse',
+        lede:
+          'Un juego de fútbol fantasy gratuito para el Mundial 2026. Elige un equipo de jugadores reales del torneo, bloquéalo antes del pitido inicial y escala las clasificaciones a medida que se juegan los partidos. No hace falta experiencia, y no necesitas una cuenta de Soccerverse para participar.',
+        freeNote: 'Entrada gratuita · Sin cuota de inscripción · No se requiere cuenta de Soccerverse',
+        newHereLabel: '¿Nuevo por aquí?',
+        howToCta: 'Cómo jugar',
+      },
       squadBlueprint: { badge: 'plantilla bloqueada' },
       nextKickoff: { versus: 'vs' },
       rules: { minutes: '60+ min' },
+    },
+    prizes: {
+      eyebrow: 'bote de premios',
+      landingTitle: 'Bote de premios',
+      title: 'Un bote de premios de $5,000',
+      totalLabel: 'Bote de premios total',
+      freeNote: 'Entrada gratuita — sin cuota de inscripción.',
+      vouchersNote: 'Pagado en Soccerverse Vouchers (SVV).',
+      activation: 'El bote de premios completo se activa cuando el evento alcanza los 1.000 participantes.',
+      shareSuffix: 'del bote',
+      placesLabel: 'Mejores puestos',
+      nationsSplitNote: 'La parte de cada nación ganadora se reparte entre sus 10 mejores managers.',
+      landingCta: 'Ver el desglose completo de premios',
+      registerCta: 'Registra tu plantilla',
     },
     scoringCalculator: { components: { minutes: '60+ min' } },
     builder: {
@@ -4993,10 +5014,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   it: {
     nav: { logoAlt: 'Evento community The Grand Tournament' },
     home: {
-      hero: { playerWallLabel: 'Giocatori Soccerverse in evidenza' },
+      hero: {
+        playerWallLabel: 'Giocatori Soccerverse in evidenza',
+        lede:
+          'Un gioco di fantacalcio gratuito per il Mondiale 2026. Scegli una squadra di veri giocatori del torneo, bloccala prima del calcio d’inizio e scala le classifiche mentre si giocano le partite. Non serve esperienza, e non ti serve un account Soccerverse per partecipare.',
+        freeNote: 'Iscrizione gratuita · Nessuna quota d’ingresso · Nessun account Soccerverse richiesto',
+        newHereLabel: 'Nuovo qui?',
+        howToCta: 'Come si gioca',
+      },
       squadBlueprint: { badge: 'rosa bloccata' },
       nextKickoff: { versus: 'vs' },
       rules: { minutes: '60+ min' },
+    },
+    prizes: {
+      eyebrow: 'montepremi',
+      landingTitle: 'Montepremi',
+      title: 'Un montepremi di $5,000',
+      totalLabel: 'Montepremi totale',
+      freeNote: 'Iscrizione gratuita — nessuna quota d’ingresso.',
+      vouchersNote: 'Pagato in Soccerverse Vouchers (SVV).',
+      activation: 'Il montepremi completo si attiva quando l’evento raggiunge 1.000 partecipanti.',
+      shareSuffix: 'del montepremi',
+      placesLabel: 'Migliori posizioni',
+      nationsSplitNote: 'La quota di ogni nazione vincitrice viene divisa tra i suoi 10 migliori manager.',
+      landingCta: 'Vedi la ripartizione completa dei premi',
+      registerCta: 'Registra la tua rosa',
     },
     scoringCalculator: { components: { minutes: '60+ min' } },
     builder: {
@@ -5088,10 +5130,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   de: {
     nav: { logoAlt: 'The Grand Tournament Community-Event' },
     home: {
-      hero: { playerWallLabel: 'Hervorgehobene Soccerverse-Spieler' },
+      hero: {
+        playerWallLabel: 'Hervorgehobene Soccerverse-Spieler',
+        lede:
+          'Ein kostenloses Fantasy-Football-Spiel zur WM 2026. Stelle ein Team aus echten Turnierspielern zusammen, fixiere es vor dem Anpfiff und klettere die Bestenlisten hinauf, während die Spiele laufen. Keine Erfahrung nötig – und du brauchst kein Soccerverse-Konto, um mitzumachen.',
+        freeNote: 'Kostenlose Teilnahme · Keine Teilnahmegebühr · Kein Soccerverse-Konto erforderlich',
+        newHereLabel: 'Neu hier?',
+        howToCta: 'So wird gespielt',
+      },
       squadBlueprint: { badge: 'fixierter Kader' },
       nextKickoff: { versus: 'gegen' },
       rules: { scroll: 'Scrollen', minutes: '60+ Min.' },
+    },
+    prizes: {
+      eyebrow: 'preispool',
+      landingTitle: 'Preispool',
+      title: 'Ein Preispool von $5,000',
+      totalLabel: 'Gesamter Preispool',
+      freeNote: 'Kostenlose Teilnahme – keine Teilnahmegebühr.',
+      vouchersNote: 'Ausgezahlt in Soccerverse Vouchers (SVV).',
+      activation: 'Der volle Preispool wird aktiviert, sobald das Event 1.000 Teilnehmer erreicht.',
+      shareSuffix: 'des Pools',
+      placesLabel: 'Top-Plätze',
+      nationsSplitNote: 'Der Anteil jeder siegreichen Nation wird unter ihren 10 besten Managern aufgeteilt.',
+      landingCta: 'Die vollständige Preisaufschlüsselung ansehen',
+      registerCta: 'Registriere deinen Kader',
     },
     scoringCalculator: { components: { minutes: '60+ Min.' } },
     builder: {
@@ -5183,10 +5246,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   fr: {
     nav: { logoAlt: 'Événement communautaire The Grand Tournament' },
     home: {
-      hero: { playerWallLabel: 'Joueurs Soccerverse en avant' },
+      hero: {
+        playerWallLabel: 'Joueurs Soccerverse en avant',
+        lede:
+          'Un jeu de football fantasy gratuit pour la Coupe du monde 2026. Choisis une équipe de vrais joueurs du tournoi, verrouille-la avant le coup d’envoi et grimpe les classements au fil des matchs. Aucune expérience requise — et tu n’as pas besoin d’un compte Soccerverse pour participer.',
+        freeNote: 'Participation gratuite · Aucun frais d’inscription · Aucun compte Soccerverse requis',
+        newHereLabel: 'Nouveau ici ?',
+        howToCta: 'Comment jouer',
+      },
       squadBlueprint: { badge: 'effectif verrouillé' },
       nextKickoff: { versus: 'vs' },
       rules: { scroll: 'Faire défiler', minutes: '60+ min' },
+    },
+    prizes: {
+      eyebrow: 'cagnotte',
+      landingTitle: 'Cagnotte',
+      title: 'Une cagnotte de $5,000',
+      totalLabel: 'Cagnotte totale',
+      freeNote: 'Participation gratuite — aucun frais d’inscription.',
+      vouchersNote: 'Versé en Soccerverse Vouchers (SVV).',
+      activation: 'La cagnotte complète s’active dès que l’événement atteint 1 000 participants.',
+      shareSuffix: 'de la cagnotte',
+      placesLabel: 'Meilleures places',
+      nationsSplitNote: 'La part de chaque nation gagnante est répartie entre ses 10 meilleurs managers.',
+      landingCta: 'Voir le détail complet des prix',
+      registerCta: 'Inscris ton effectif',
     },
     scoringCalculator: { components: { minutes: '60+ min' } },
     builder: {
@@ -5279,10 +5363,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   pt: {
     nav: { logoAlt: 'Evento comunitário The Grand Tournament' },
     home: {
-      hero: { playerWallLabel: 'Jogadores Soccerverse em destaque' },
+      hero: {
+        playerWallLabel: 'Jogadores Soccerverse em destaque',
+        lede:
+          'Um jogo de fantasy football gratuito para o Mundial 2026. Escolhe uma equipa de jogadores reais do torneio, bloqueia-a antes do apito inicial e sobe nas classificações à medida que os jogos decorrem. Não é preciso experiência — e não precisas de uma conta Soccerverse para participar.',
+        freeNote: 'Entrada gratuita · Sem taxa de inscrição · Não é necessária conta Soccerverse',
+        newHereLabel: 'Novo por aqui?',
+        howToCta: 'Como jogar',
+      },
       squadBlueprint: { badge: 'plantel bloqueado' },
       nextKickoff: { versus: 'vs' },
       rules: { scroll: 'Deslocar', minutes: '60+ min' },
+    },
+    prizes: {
+      eyebrow: 'bolsa de prémios',
+      landingTitle: 'Bolsa de prémios',
+      title: 'Uma bolsa de prémios de $5,000',
+      totalLabel: 'Bolsa de prémios total',
+      freeNote: 'Entrada gratuita — sem taxa de inscrição.',
+      vouchersNote: 'Pago em Soccerverse Vouchers (SVV).',
+      activation: 'A bolsa de prémios completa ativa-se quando o evento atingir 1.000 participantes.',
+      shareSuffix: 'da bolsa',
+      placesLabel: 'Melhores lugares',
+      nationsSplitNote: 'A parte de cada nação vencedora é dividida entre os seus 10 melhores managers.',
+      landingCta: 'Ver o detalhe completo dos prémios',
+      registerCta: 'Regista o teu plantel',
     },
     scoringCalculator: { components: { minutes: '60+ min' } },
     builder: {
@@ -5375,10 +5480,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   ru: {
     nav: { logoAlt: 'Комьюнити-событие The Grand Tournament' },
     home: {
-      hero: { playerWallLabel: 'Избранные игроки Soccerverse' },
+      hero: {
+        playerWallLabel: 'Избранные игроки Soccerverse',
+        lede:
+          'Бесплатная фэнтези-футбольная игра к чемпионату мира 2026. Собери команду из реальных игроков турнира, зафиксируй её до стартового свистка и поднимайся в таблицах по мере проведения матчей. Опыт не нужен — и для участия не требуется аккаунт Soccerverse.',
+        freeNote: 'Бесплатное участие · Без вступительного взноса · Аккаунт Soccerverse не требуется',
+        newHereLabel: 'Впервые здесь?',
+        howToCta: 'Как играть',
+      },
       squadBlueprint: { badge: 'зафиксированный состав' },
       nextKickoff: { versus: 'против' },
       rules: { scroll: 'Прокрутить', minutes: '60+ мин' },
+    },
+    prizes: {
+      eyebrow: 'призовой фонд',
+      landingTitle: 'Призовой фонд',
+      title: 'Призовой фонд $5,000',
+      totalLabel: 'Общий призовой фонд',
+      freeNote: 'Бесплатное участие — без вступительного взноса.',
+      vouchersNote: 'Выплачивается в Soccerverse Vouchers (SVV).',
+      activation: 'Полный призовой фонд активируется, когда в событии наберётся 1 000 участников.',
+      shareSuffix: 'фонда',
+      placesLabel: 'Лучшие места',
+      nationsSplitNote: 'Доля каждой нации-победителя делится между её 10 лучшими менеджерами.',
+      landingCta: 'Посмотреть полную разбивку призов',
+      registerCta: 'Зарегистрируй свой состав',
     },
     scoringCalculator: { components: { minutes: '60+ мин' } },
     builder: {
@@ -5470,9 +5596,30 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   zh: {
     nav: { logoAlt: 'The Grand Tournament 社区活动' },
     home: {
-      hero: { playerWallLabel: '精选 Soccerverse 球员' },
+      hero: {
+        playerWallLabel: '精选 Soccerverse 球员',
+        lede:
+          '一款面向 2026 世界杯的免费梦幻足球游戏。挑选一支由真实参赛球员组成的球队，在开球前锁定阵容，随着比赛进行在排行榜上攀升。无需经验，也无需 Soccerverse 账号即可参加。',
+        freeNote: '免费参加 · 无报名费 · 无需 Soccerverse 账号',
+        newHereLabel: '初次来到？',
+        howToCta: '玩法介绍',
+      },
       squadBlueprint: { badge: '锁定阵容' },
       rules: { scroll: '滚动' },
+    },
+    prizes: {
+      eyebrow: '奖金池',
+      landingTitle: '奖金池',
+      title: '$5,000 奖金池',
+      totalLabel: '奖金池总额',
+      freeNote: '免费参加——无报名费。',
+      vouchersNote: '以 Soccerverse Vouchers (SVV) 发放。',
+      activation: '当活动参与人数达到 1,000 人时，完整奖金池即激活。',
+      shareSuffix: '奖金池占比',
+      placesLabel: '最高名次',
+      nationsSplitNote: '每个获胜国家的份额由其前 10 名 managers 平分。',
+      landingCta: '查看完整奖金分配',
+      registerCta: '注册你的阵容',
     },
     scoringCalculator: { components: { minutes: '60+ 分钟' } },
     builder: {
@@ -5560,7 +5707,28 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   ja: {
+    prizes: {
+      eyebrow: '賞金プール',
+      landingTitle: '賞金プール',
+      title: '$5,000 の賞金プール',
+      totalLabel: '賞金プール総額',
+      freeNote: '参加無料——参加費はありません。',
+      vouchersNote: 'Soccerverse Vouchers (SVV) で支払われます。',
+      activation: 'イベントの参加者が1,000人に達すると、賞金プール全額が有効になります。',
+      shareSuffix: 'プールに占める割合',
+      placesLabel: '上位順位',
+      nationsSplitNote: '優勝した各国の取り分は、その上位10名のマネージャーで分配されます。',
+      landingCta: '賞金配分の詳細を見る',
+      registerCta: 'スカッドを登録',
+    },
     home: {
+      hero: {
+        lede:
+          '2026年ワールドカップ向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でチームを組み、キックオフ前にロックして、試合が進むにつれてリーダーボードを駆け上がりましょう。経験は不要で、参加に Soccerverse アカウントは必要ありません。',
+        freeNote: '参加無料 · 参加費なし · Soccerverse アカウント不要',
+        newHereLabel: 'はじめての方へ',
+        howToCta: '遊び方',
+      },
       squadBlueprint: { eyebrow: '固定スカッド', badge: '固定スカッド', body: '登録は1つ、上限は1つ、スカッドは大会全体で1つです。' },
       proof: { eyebrow: 'ライブスコアリング', goal: 'ゴール', assist: 'アシスト', cleanSheet: 'クリーンシート' },
       nations: { eyebrow: '国別ランキング' },
