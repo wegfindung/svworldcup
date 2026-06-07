@@ -191,4 +191,45 @@ describe('MemoryEmailMarketingRepository', () => {
     expect(mail.text).toContain('Abbestellen: ')
     expect(mail.text).not.toContain('Unsubscribe: ')
   })
+
+  it('renders localized test campaign emails with an unsubscribe footer', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+
+    await repository.sendTestMail(
+      {
+        kind: 'newsletter',
+        status: 'draft',
+        triggerKey: 'manual',
+        subject: 'Submit your squad',
+        bodyHtml: '<p>Submit your squad now.</p>',
+        subjectByLocale: {
+          de: 'Kader absenden',
+        },
+        bodyHtmlByLocale: {
+          de: '<p>Kader jetzt absenden.</p>',
+        },
+        audienceStatus: 'active',
+        audienceLeague: 'all',
+        requiresMarketingOptIn: true,
+        recipient: 'preview@example.com',
+        recipientLocale: 'de',
+      },
+      'admin@example.com',
+    )
+
+    expect(mailerMock.sendAppMail).toHaveBeenCalledTimes(1)
+    const mail = mailerMock.sendAppMail.mock.calls[0]?.[0] as {
+      subject: string
+      html: string
+      text: string
+      headers?: Record<string, string>
+    }
+
+    expect(mail.subject).toBe('[TEST] Kader absenden')
+    expect(mail.html).toContain('Kader jetzt absenden.')
+    expect(mail.html).toContain('Du kannst Marketing-Mails von The Grand Tournament hier')
+    expect(mail.html).toContain('/api/public/email/unsubscribe?token=test-')
+    expect(mail.text).toContain('Abbestellen: ')
+    expect(mail.headers?.['List-Unsubscribe']).toContain('/api/public/email/unsubscribe?token=test-')
+  })
 })

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { defaultEmailCampaigns } from '../data/defaultEmailCampaigns.js'
+import { supportedLocales } from '../data/worldCupSeed.js'
 import { MemoryEmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import { bootstrapDefaultEmailCampaigns } from './bootstrapEmailCampaigns.js'
 
+const squadSubmissionReminderSubject = '⚽️ Submit your squad and secure your points'
 const firstSwapReminderSubject = 'Your first Squad Swap Window opens in 24 hours'
 const swapNewsletterSubjects = [
   firstSwapReminderSubject,
@@ -75,7 +77,9 @@ describe('bootstrapDefaultEmailCampaigns', () => {
     await bootstrapDefaultEmailCampaigns(repository)
 
     const campaigns = await repository.listCampaigns()
-    const swapCampaigns = campaigns.filter((candidate) => candidate.kind === 'newsletter')
+    const swapCampaigns = campaigns.filter(
+      (candidate) => candidate.kind === 'newsletter' && swapNewsletterSubjects.includes(candidate.subject),
+    )
     const campaign = swapCampaigns.find((candidate) => candidate.subject === firstSwapReminderSubject)
 
     expect(swapCampaigns.map((candidate) => candidate.subject).sort()).toEqual([...swapNewsletterSubjects].sort())
@@ -92,6 +96,32 @@ describe('bootstrapDefaultEmailCampaigns', () => {
     expect(campaign?.bodyHtml).toContain('{{logo_url}}')
     expect(campaign?.bodyHtml).toContain('{{help_url}}')
     expect(campaign?.bodyHtmlByLocale?.de).toContain('Starting Eleven')
+  })
+
+  it('seeds the localized squad-submission reminder newsletter', async () => {
+    const repository = new MemoryEmailMarketingRepository()
+
+    await bootstrapDefaultEmailCampaigns(repository)
+
+    const campaigns = await repository.listCampaigns()
+    const campaign = campaigns.find((candidate) => candidate.subject === squadSubmissionReminderSubject)
+
+    expect(campaign).toMatchObject({
+      kind: 'newsletter',
+      status: 'scheduled',
+      triggerKey: 'manual',
+      audienceStatus: 'active',
+      audienceLeague: 'all',
+      scheduledAt: '2026-06-08T05:00:00.000Z',
+      requiresMarketingOptIn: true,
+    })
+    expect(Object.keys(campaign?.subjectByLocale ?? {}).sort()).toEqual([...supportedLocales].sort())
+    expect(Object.keys(campaign?.bodyHtmlByLocale ?? {}).sort()).toEqual([...supportedLocales].sort())
+    expect(campaign?.subjectByLocale?.de).toBe('⚽️ Kader absenden und Punkte sichern')
+    expect(campaign?.bodyHtml).toContain('{{logo_url}}')
+    expect(campaign?.bodyHtml).toContain('{{builder_url}}')
+    expect(campaign?.bodyHtmlByLocale?.de).toContain('Kader jetzt einreichen')
+    expect(campaign?.bodyHtmlByLocale?.de).toContain('Hallo liebe Turnier-Teilnehmer')
   })
 
   it('does not overwrite a manually edited one-off newsletter on later bootstraps', async () => {

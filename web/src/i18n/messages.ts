@@ -41,7 +41,7 @@ const englishMessages = {
       kicker: 'Hidden squads. Public pressure. Nation pride.',
       titleLines: ['Draft 15.', 'Hide the squad.', 'Beat your nation.'],
       lede:
-        'A free fantasy football game for the 2026 World Cup. Pick a team of real tournament players, lock it in before kickoff, and climb the leaderboards as the matches play out. No experience needed — and you do not need a Soccerverse account to take part.',
+        'A free fantasy football game built around the 2026 tournament. Pick a team of real tournament players, lock it in before kickoff, and climb the leaderboards as the matches play out. No experience needed — and you do not need a Soccerverse account to take part.',
       body:
         'Build one Grand Tournament squad under your chosen cap, lock it for the full competition, then watch every official match swing the rookie, veteran, and nation rankings.',
       freeNote: 'Free to enter · No entry fee · No Soccerverse account required',

@@ -90,7 +90,7 @@ const englishCopy: HelpCopy = {
         {
           question: 'How do I whitelist the email sender?',
           answer:
-            'Add noreply@svtool.info to your contacts or safe-senders list. Event emails are sent as "Soccerverse World Cup <noreply@svtool.info>". If you still cannot find the email, check spam, promotions, and filtered folders.',
+            'Add noreply@svtool.info to your contacts or safe-senders list. Event emails are sent as "Soccerverse Community Event <noreply@svtool.info>". If you still cannot find the email, check spam, promotions, and filtered folders.',
         },
         {
           question: 'Where can I reset my password?',
@@ -202,7 +202,7 @@ const germanCopy: HelpCopy = {
         {
           question: 'Wie whiteliste ich die E-Mail-Adresse?',
           answer:
-            'Füge noreply@svtool.info zu deinen Kontakten oder zur Liste sicherer Absender hinzu. Unsere Event-Mails kommen von "Soccerverse World Cup <noreply@svtool.info>". Wenn die Mail trotzdem nicht auftaucht, prüfe Spam, Werbung/Promotions und gefilterte Ordner.',
+            'Füge noreply@svtool.info zu deinen Kontakten oder zur Liste sicherer Absender hinzu. Unsere Event-Mails kommen von "Soccerverse Community Event <noreply@svtool.info>". Wenn die Mail trotzdem nicht auftaucht, prüfe Spam, Werbung/Promotions und gefilterte Ordner.',
         },
         {
           question: 'Wo kann ich mein Passwort zurücksetzen?',
@@ -314,7 +314,7 @@ const spanishCopy: HelpCopy = {
         {
           question: '¿Cómo agrego el remitente del correo a la lista de permitidos?',
           answer:
-            'Añade noreply@svtool.info a tus contactos o a tu lista de remitentes seguros. Los correos del evento se envían como "Soccerverse World Cup <noreply@svtool.info>". Si aun así no encuentras el correo, revisa las carpetas de spam, promociones y mensajes filtrados.',
+            'Añade noreply@svtool.info a tus contactos o a tu lista de remitentes seguros. Los correos del evento se envían como "Soccerverse Community Event <noreply@svtool.info>". Si aun así no encuentras el correo, revisa las carpetas de spam, promociones y mensajes filtrados.',
         },
         {
           question: '¿Dónde puedo restablecer mi contraseña?',
@@ -426,7 +426,7 @@ const italianCopy: HelpCopy = {
         {
           question: "Come aggiungo il mittente dell'email alla whitelist?",
           answer:
-            'Aggiungi noreply@svtool.info ai tuoi contatti o alla lista dei mittenti sicuri. Le email dell\'evento vengono inviate come "Soccerverse World Cup <noreply@svtool.info>". Se ancora non trovi l\'email, controlla le cartelle spam, promozioni e quelle filtrate.',
+            'Aggiungi noreply@svtool.info ai tuoi contatti o alla lista dei mittenti sicuri. Le email dell\'evento vengono inviate come "Soccerverse Community Event <noreply@svtool.info>". Se ancora non trovi l\'email, controlla le cartelle spam, promozioni e quelle filtrate.',
         },
         {
           question: 'Dove posso reimpostare la mia password?',
@@ -538,7 +538,7 @@ const frenchCopy: HelpCopy = {
         {
           question: "Comment ajouter l'expéditeur à ma liste blanche ?",
           answer:
-            "Ajoutez noreply@svtool.info à vos contacts ou à votre liste d'expéditeurs sûrs. Les e-mails de l'événement sont envoyés depuis \"Soccerverse World Cup <noreply@svtool.info>\". Si vous ne trouvez toujours pas l'e-mail, vérifiez les dossiers spam, promotions et messages filtrés.",
+            "Ajoutez noreply@svtool.info à vos contacts ou à votre liste d'expéditeurs sûrs. Les e-mails de l'événement sont envoyés depuis \"Soccerverse Community Event <noreply@svtool.info>\". Si vous ne trouvez toujours pas l'e-mail, vérifiez les dossiers spam, promotions et messages filtrés.",
         },
         {
           question: "Où puis-je réinitialiser mon mot de passe ?",
@@ -650,7 +650,7 @@ const portugueseCopy: HelpCopy = {
         {
           question: 'Como coloco o remetente do email na lista de permitidos?',
           answer:
-            'Adiciona noreply@svtool.info aos teus contactos ou à lista de remetentes seguros. Os emails do evento são enviados como "Soccerverse World Cup <noreply@svtool.info>". Se mesmo assim não encontrares o email, verifica o spam, as promoções e as pastas filtradas.',
+            'Adiciona noreply@svtool.info aos teus contactos ou à lista de remetentes seguros. Os emails do evento são enviados como "Soccerverse Community Event <noreply@svtool.info>". Se mesmo assim não encontrares o email, verifica o spam, as promoções e as pastas filtradas.',
         },
         {
           question: 'Onde posso repor a minha palavra-passe?',
@@ -762,7 +762,7 @@ const russianCopy: HelpCopy = {
         {
           question: 'Как добавить отправителя письма в белый список?',
           answer:
-            'Добавьте noreply@svtool.info в свои контакты или в список безопасных отправителей. Письма о событии отправляются как "Soccerverse World Cup <noreply@svtool.info>". Если письмо всё равно не находится, проверьте папки спама, промоакций и отфильтрованные папки.',
+            'Добавьте noreply@svtool.info в свои контакты или в список безопасных отправителей. Письма о событии отправляются как "Soccerverse Community Event <noreply@svtool.info>". Если письмо всё равно не находится, проверьте папки спама, промоакций и отфильтрованные папки.',
         },
         {
           question: 'Где я могу сбросить свой пароль?',
@@ -874,7 +874,7 @@ const chineseCopy: HelpCopy = {
         {
           question: '我该如何将邮件发件人加入白名单？',
           answer:
-            '请将 noreply@svtool.info 添加到你的联系人或安全发件人列表中。赛事邮件以 "Soccerverse World Cup <noreply@svtool.info>" 的名义发送。如果你仍然找不到邮件，请检查垃圾邮件、推广邮件以及被过滤的文件夹。',
+            '请将 noreply@svtool.info 添加到你的联系人或安全发件人列表中。赛事邮件以 "Soccerverse Community Event <noreply@svtool.info>" 的名义发送。如果你仍然找不到邮件，请检查垃圾邮件、推广邮件以及被过滤的文件夹。',
         },
         {
           question: '我可以在哪里重置密码？',
@@ -986,7 +986,7 @@ const japaneseCopy: HelpCopy = {
         {
           question: 'メール送信元をホワイトリストに登録するには？',
           answer:
-            'noreply@svtool.info を連絡先または安全な送信元（セーフセンダー）リストに追加してください。イベントのメールは "Soccerverse World Cup <noreply@svtool.info>" として送信されます。それでもメールが見つからない場合は、迷惑メール、プロモーション、フィルタ済みのフォルダをご確認ください。',
+            'noreply@svtool.info を連絡先または安全な送信元（セーフセンダー）リストに追加してください。イベントのメールは "Soccerverse Community Event <noreply@svtool.info>" として送信されます。それでもメールが見つからない場合は、迷惑メール、プロモーション、フィルタ済みのフォルダをご確認ください。',
         },
         {
           question: 'パスワードのリセットはどこでできますか？',

@@ -34,7 +34,7 @@ const englishCopy: HowToCopy = {
   eyebrow: 'how to play',
   title: 'New here? The whole game in five steps.',
   intro:
-    'The Grand Tournament is a free fantasy football game for the 2026 World Cup. You pick a squad of real tournament players, lock it in, and earn points from what those players actually do on the pitch. You do not need to know Soccerverse, and you do not need a Soccerverse account to take part.',
+    'The Grand Tournament is a free fantasy football game built around the 2026 tournament. You pick a squad of real tournament players, lock it in, and earn points from what those players actually do on the pitch. You do not need to know Soccerverse, and you do not need a Soccerverse account to take part.',
   freeNote: 'Free to enter · No entry fee · No Soccerverse account required',
   stepsTitle: 'Five steps to join',
   steps: [

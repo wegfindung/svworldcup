@@ -154,7 +154,7 @@ export interface EmailMarketingRepository {
   saveCampaign(input: EmailCampaignInput, actorEmail: string): Promise<EmailCampaignRecord>
   deleteCampaign(campaignId: string): Promise<boolean>
   listRecipients(campaignId: string): Promise<EmailCampaignRecipient[]>
-  sendTestMail(input: EmailCampaignInput & { recipient: string }, actorEmail: string): Promise<void>
+  sendTestMail(input: EmailCampaignInput & { recipient: string; recipientLocale?: SupportedLocale }, actorEmail: string): Promise<void>
   sendNow(campaignId: string): Promise<EmailCampaignDispatchSummary>
   runDueCampaigns(limit?: number): Promise<EmailCampaignDispatchSummary[]>
   queueAutoresponders(triggerKey: EmailCampaignTrigger, participant: ParticipantProfile): Promise<EmailCampaignDispatchSummary[]>
@@ -218,6 +218,29 @@ function localizedText(
 ) {
   const resolvedLocale = locale && supportedLocales.includes(locale) ? locale : defaultLocale
   return localized?.[resolvedLocale] ?? localized?.[defaultLocale] ?? fallback
+}
+
+function testSubject(subject: string) {
+  return `[TEST] ${subject}`
+}
+
+function testSubjectByLocale(subjectByLocale?: Partial<Record<SupportedLocale, string>>) {
+  if (!subjectByLocale) {
+    return undefined
+  }
+
+  return Object.fromEntries(
+    Object.entries(subjectByLocale).map(([locale, subject]) => [locale, testSubject(subject)]),
+  ) as Partial<Record<SupportedLocale, string>>
+}
+
+function testRecipientSeed(input: { recipient: string; recipientLocale?: SupportedLocale }, actorEmail: string): EmailRecipientSeed {
+  return {
+    email: input.recipient,
+    displayName: actorEmail,
+    marketingUnsubscribeToken: `test-${randomUUID()}`,
+    browserLocale: input.recipientLocale,
+  }
 }
 
 function escapeHtml(value: string) {
@@ -572,11 +595,16 @@ export class MemoryEmailMarketingRepository implements EmailMarketingRepository 
       .sort((left, right) => right.queuedAt.localeCompare(left.queuedAt))
   }
 
-  async sendTestMail(input: EmailCampaignInput & { recipient: string }, actorEmail: string) {
+  async sendTestMail(input: EmailCampaignInput & { recipient: string; recipientLocale?: SupportedLocale }, actorEmail: string) {
     const normalized = normalizeInput(input)
     await sendCampaignMail(
-      { subject: `[TEST] ${normalized.subject}`, bodyHtml: normalized.bodyHtml },
-      { email: input.recipient, displayName: actorEmail },
+      {
+        subject: testSubject(normalized.subject),
+        bodyHtml: normalized.bodyHtml,
+        subjectByLocale: testSubjectByLocale(normalized.subjectByLocale),
+        bodyHtmlByLocale: normalized.bodyHtmlByLocale,
+      },
+      testRecipientSeed(input, actorEmail),
     )
   }
 
@@ -855,11 +883,16 @@ export class PostgresEmailMarketingRepository implements EmailMarketingRepositor
     return result.rows.map(mapRecipientRow)
   }
 
-  async sendTestMail(input: EmailCampaignInput & { recipient: string }, actorEmail: string) {
+  async sendTestMail(input: EmailCampaignInput & { recipient: string; recipientLocale?: SupportedLocale }, actorEmail: string) {
     const normalized = normalizeInput(input)
     await sendCampaignMail(
-      { subject: `[TEST] ${normalized.subject}`, bodyHtml: normalized.bodyHtml },
-      { email: input.recipient, displayName: actorEmail },
+      {
+        subject: testSubject(normalized.subject),
+        bodyHtml: normalized.bodyHtml,
+        subjectByLocale: testSubjectByLocale(normalized.subjectByLocale),
+        bodyHtmlByLocale: normalized.bodyHtmlByLocale,
+      },
+      testRecipientSeed(input, actorEmail),
     )
   }
 
