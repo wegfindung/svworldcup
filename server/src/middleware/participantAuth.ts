@@ -16,6 +16,9 @@ export function createRequireParticipant(participantSessionRepository: Participa
     if (!participant) {
       return res.status(401).json({ error: 'Participant session is invalid or expired.' })
     }
+    if (participant.status !== 'active') {
+      return res.status(401).json({ error: 'Participant account is not active.' })
+    }
 
     res.locals.participant = participant
     res.locals.participantSessionToken = sessionToken

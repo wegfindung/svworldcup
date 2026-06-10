@@ -67,6 +67,21 @@ export interface AdminParticipantRecord extends ParticipantProfile {
   riskSummary?: ParticipantRiskSummary
 }
 
+export interface ParticipantTrashEntry {
+  participantId: string
+  email: string
+  displayName: string
+  leagueType: LeagueType
+  currentStatus: ParticipantStatus
+  previousStatus: ParticipantStatus
+  deletedAt: string
+  deleteAfter: string
+  deletedBy: string
+  reason?: string
+  restoredAt?: string
+  restoredBy?: string
+}
+
 export type ParticipantRiskEventType = 'registration' | 'login' | 'verify' | 'squad_lock' | 'lineup_lock'
 
 export type ParticipantRiskCaseStatus = 'open' | 'reviewing' | 'confirmed' | 'dismissed'

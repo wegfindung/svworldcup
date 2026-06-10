@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
-import { fetchAdminRiskCases, sendAdminRiskInquiryEmail, updateAdminRiskCaseStatus } from '../../lib/api'
-import type { ParticipantRiskCase, ParticipantRiskCaseMember, ParticipantRiskCaseStatus } from '../../lib/types'
+import {
+  fetchAdminParticipantTrash,
+  fetchAdminRiskCases,
+  moveAdminParticipantToTrash,
+  restoreAdminParticipantFromTrash,
+  sendAdminRiskInquiryEmail,
+  updateAdminRiskCaseStatus,
+} from '../../lib/api'
+import type { ParticipantRiskCase, ParticipantRiskCaseMember, ParticipantRiskCaseStatus, ParticipantTrashEntry } from '../../lib/types'
 
 const statusOptions: ParticipantRiskCaseStatus[] = ['open', 'reviewing', 'confirmed', 'dismissed']
 
@@ -159,21 +166,28 @@ export function MultiAccountingView() {
   const [searchParams] = useSearchParams()
   const focusedParticipantId = searchParams.get('participant') ?? ''
   const [cases, setCases] = useState<ParticipantRiskCase[]>([])
+  const [trashItems, setTrashItems] = useState<ParticipantTrashEntry[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
   const [inquiryBusyKey, setInquiryBusyKey] = useState<string | null>(null)
+  const [trashBusyId, setTrashBusyId] = useState<string | null>(null)
   const [manualSelection, setManualSelection] = useState<{ focusId: string; participantId: string } | null>(null)
   const selectedParticipantId = manualSelection?.focusId === focusedParticipantId ? manualSelection.participantId : focusedParticipantId
+
+  async function refreshReviewData() {
+    const [casesResponse, trashResponse] = await Promise.all([fetchAdminRiskCases(), fetchAdminParticipantTrash()])
+    setCases(casesResponse.items)
+    setTrashItems(trashResponse.items)
+  }
 
   async function loadCases() {
     setLoadState('loading')
     setError(null)
     setMessage(null)
     try {
-      const response = await fetchAdminRiskCases()
-      setCases(response.items)
+      await refreshReviewData()
       setLoadState('ready')
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load multi-accounting cases.')
@@ -211,14 +225,53 @@ export function MultiAccountingView() {
     }
   }
 
+  async function handleMoveToTrash(riskCase: ParticipantRiskCase, member: ParticipantRiskCaseMember) {
+    if (member.status === 'withdrawn') {
+      return
+    }
+    const confirmed = window.confirm(`Move ${member.displayName} to the account trash? The account can be restored for 90 days.`)
+    if (!confirmed) {
+      return
+    }
+
+    setTrashBusyId(member.participantId)
+    setError(null)
+    setMessage(null)
+    try {
+      const response = await moveAdminParticipantToTrash(member.participantId, `Multi-account review: ${riskCase.title}`)
+      await refreshReviewData()
+      setMessage(`${member.displayName} moved to trash. Delete after ${formatAdminDate(response.item.deleteAfter)}.`)
+    } catch (trashError) {
+      setError(trashError instanceof Error ? trashError.message : 'Could not move account to trash.')
+    } finally {
+      setTrashBusyId(null)
+    }
+  }
+
+  async function handleRestore(entry: ParticipantTrashEntry) {
+    setTrashBusyId(entry.participantId)
+    setError(null)
+    setMessage(null)
+    try {
+      await restoreAdminParticipantFromTrash(entry.participantId)
+      await refreshReviewData()
+      setMessage(`${entry.displayName} restored.`)
+    } catch (restoreError) {
+      setError(restoreError instanceof Error ? restoreError.message : 'Could not restore account.')
+    } finally {
+      setTrashBusyId(null)
+    }
+  }
+
   useEffect(() => {
     let active = true
-    void fetchAdminRiskCases()
-      .then((response) => {
+    void Promise.all([fetchAdminRiskCases(), fetchAdminParticipantTrash()])
+      .then(([casesResponse, trashResponse]) => {
         if (!active) {
           return
         }
-        setCases(response.items)
+        setCases(casesResponse.items)
+        setTrashItems(trashResponse.items)
         setLoadState('ready')
       })
       .catch((loadError) => {
@@ -481,7 +534,7 @@ export function MultiAccountingView() {
                 <table className="min-w-[920px] w-full border-collapse text-left text-sm">
                   <thead className="border-b border-white/8 bg-black/20">
                     <tr>
-                      {['Participant', 'League', 'State', 'Signal', 'Last seen', 'Inquiry'].map((heading) => (
+                      {['Participant', 'League', 'State', 'Signal', 'Last seen', 'Actions'].map((heading) => (
                         <th key={heading} className="mono px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
                           {heading}
                         </th>
@@ -528,26 +581,36 @@ export function MultiAccountingView() {
                         </td>
                         <td className="px-3 py-3 align-top text-xs text-[var(--color-muted)]">{formatAdminDate(member.lastSignalAt)}</td>
                         <td className="px-3 py-3 align-top">
-                          {member.inquiryEmailSentAt ? (
-                            <div className="min-w-[9rem]">
-                              <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
-                                inquiry sent
-                              </span>
-                              <p className="mt-2 text-xs text-[var(--color-muted)]">
-                                {formatAdminDate(member.inquiryEmailSentAt)}
-                                {member.inquiryEmailSentCount && member.inquiryEmailSentCount > 1 ? ` (${member.inquiryEmailSentCount}x)` : ''}
-                              </p>
-                            </div>
-                          ) : (
+                          <div className="flex min-w-[10rem] flex-col items-start gap-2">
+                            {member.inquiryEmailSentAt ? (
+                              <div>
+                                <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                                  inquiry sent
+                                </span>
+                                <p className="mt-2 text-xs text-[var(--color-muted)]">
+                                  {formatAdminDate(member.inquiryEmailSentAt)}
+                                  {member.inquiryEmailSentCount && member.inquiryEmailSentCount > 1 ? ` (${member.inquiryEmailSentCount}x)` : ''}
+                                </p>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => void handleInquiryEmail(riskCase, member)}
+                                disabled={inquiryBusyKey === `${riskCase.caseId}:${member.participantId}` || member.status === 'withdrawn'}
+                                className="rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/16 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                              >
+                                {inquiryBusyKey === `${riskCase.caseId}:${member.participantId}` ? 'Sending...' : 'Tag + send'}
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => void handleInquiryEmail(riskCase, member)}
-                              disabled={inquiryBusyKey === `${riskCase.caseId}:${member.participantId}`}
-                              className="rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/16 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                              onClick={() => void handleMoveToTrash(riskCase, member)}
+                              disabled={trashBusyId === member.participantId || member.status === 'withdrawn'}
+                              className="rounded-full border border-red-300/25 bg-red-400/8 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-100 transition hover:bg-red-400/14 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                             >
-                              {inquiryBusyKey === `${riskCase.caseId}:${member.participantId}` ? 'Sending...' : 'Tag + send'}
+                              {member.status === 'withdrawn' ? 'In trash' : trashBusyId === member.participantId ? 'Moving...' : 'Move to trash'}
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -556,6 +619,67 @@ export function MultiAccountingView() {
               </div>
             </article>
           ))
+        )}
+      </div>
+
+      <div className="mt-6 rounded-[1rem] border border-white/8 bg-black/15 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">account trash</p>
+            <h4 className="mt-2 text-lg font-semibold tracking-tight text-white">Deleted accounts</h4>
+          </div>
+          <span className="mono rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+            {trashItems.length} active
+          </span>
+        </div>
+
+        {trashItems.length === 0 ? (
+          <div className="mt-4 rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-3 text-sm text-[var(--color-muted)]">
+            Trash is empty.
+          </div>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-[0.95rem] border border-white/8">
+            <table className="min-w-[820px] w-full border-collapse text-left text-sm">
+              <thead className="border-b border-white/8 bg-black/20">
+                <tr>
+                  {['Account', 'Previous state', 'Deleted', 'Delete after', 'Action'].map((heading) => (
+                    <th key={heading} className="mono px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {trashItems.map((entry) => (
+                  <tr key={entry.participantId} className="border-b border-white/8 bg-black/10 last:border-b-0">
+                    <td className="px-3 py-3 align-top">
+                      <span className="block font-semibold text-white">{entry.displayName}</span>
+                      <span className="mt-1 block text-xs text-[var(--color-muted)]">{entry.email}</span>
+                      <span className="mono mt-1 block text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                        ID {entry.participantId.slice(0, 8)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 align-top text-xs text-[var(--color-muted)]">{entry.previousStatus.replace('_', ' ')}</td>
+                    <td className="px-3 py-3 align-top text-xs text-[var(--color-muted)]">
+                      {formatAdminDate(entry.deletedAt)}
+                      <span className="mt-1 block">by {entry.deletedBy}</span>
+                    </td>
+                    <td className="px-3 py-3 align-top text-xs text-[var(--color-muted)]">{formatAdminDate(entry.deleteAfter)}</td>
+                    <td className="px-3 py-3 align-top">
+                      <button
+                        type="button"
+                        onClick={() => void handleRestore(entry)}
+                        disabled={trashBusyId === entry.participantId}
+                        className="rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/16 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        {trashBusyId === entry.participantId ? 'Restoring...' : 'Restore'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </section>

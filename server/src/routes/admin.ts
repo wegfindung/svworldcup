@@ -122,6 +122,10 @@ const riskCaseStatusSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 })
 
+const participantTrashSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+})
+
 // True once the tournament has kicked off (first match). The scoring config and admin nation edits
 // both lock on this same instant — see SOP_scoring_and_leagues.md "Score Configuration" and
 // SOP_registration_and_auth.md "Correcting nation selections".
@@ -474,6 +478,62 @@ export function createAdminRouter(
         rejected: delivery.rejected,
       },
     })
+  })
+
+  router.get('/participant-trash', async (_req, res) => {
+    const items = await registrationRepository.listParticipantTrash()
+    res.json({ items })
+  })
+
+  router.post('/participants/:participantId/trash', async (req, res) => {
+    const participantId = String(req.params.participantId ?? '').trim()
+    const parsed = participantTrashSchema.parse(req.body)
+    const before = await registrationRepository.getByParticipantId(participantId)
+    if (!before) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+
+    const item = await registrationRepository.moveParticipantToTrash(participantId, res.locals.admin.email, parsed.reason)
+    if (!item) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+    clearParticipantBoostCache(participantId)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.participant_trash',
+      entityType: 'participant',
+      entityId: participantId,
+      detail: {
+        email: before.email,
+        displayName: before.displayName,
+        previousStatus: item.previousStatus,
+        deleteAfter: item.deleteAfter,
+        reason: parsed.reason,
+      },
+    })
+    res.json({ item })
+  })
+
+  router.post('/participants/:participantId/restore', async (req, res) => {
+    const participantId = String(req.params.participantId ?? '').trim()
+    const item = await registrationRepository.restoreParticipantFromTrash(participantId, res.locals.admin.email)
+    if (!item) {
+      return res.status(404).json({ error: 'Trash entry not found.', reason: 'not_found' })
+    }
+    clearParticipantBoostCache(participantId)
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.participant_restore',
+      entityType: 'participant',
+      entityId: participantId,
+      detail: {
+        email: item.email,
+        displayName: item.displayName,
+        restoredStatus: item.currentStatus,
+        deletedAt: item.deletedAt,
+      },
+    })
+    res.json({ item })
   })
 
   const participantLeagueSchema = z.object({

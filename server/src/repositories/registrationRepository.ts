@@ -9,6 +9,8 @@ import type {
   LeagueType,
   NationParticipationRow,
   ParticipantProfile,
+  ParticipantStatus,
+  ParticipantTrashEntry,
   ReferralAnalyticsRow,
   RegistrationCreationResult,
   RegistrationInput,
@@ -79,6 +81,10 @@ export interface RegistrationRepository {
   getCounts(): Promise<{ pending: number; active: number }>
   listNationParticipation(): Promise<NationParticipationRow[]>
   listForAdmin(): Promise<AdminParticipantRecord[]>
+  listParticipantTrash(): Promise<ParticipantTrashEntry[]>
+  moveParticipantToTrash(participantId: string, actorEmail: string, reason?: string): Promise<ParticipantTrashEntry | null>
+  restoreParticipantFromTrash(participantId: string, actorEmail: string): Promise<ParticipantTrashEntry | null>
+  purgeExpiredParticipantTrash(limit?: number): Promise<number>
   unsubscribeMarketing(token: string): Promise<boolean>
   resubscribeMarketing(token: string): Promise<boolean>
   recordReferralClick(input: { referrerSoccerverseUsername: string; landingPath?: string; userAgent?: string }): Promise<void>
@@ -114,6 +120,21 @@ interface AdminParticipantRow extends ParticipantRow {
   updated_at: string | null
 }
 
+interface ParticipantTrashRow {
+  participant_id: string
+  email: string
+  display_name: string
+  league_type: LeagueType
+  current_status: ParticipantStatus
+  previous_status: ParticipantStatus
+  deleted_at: string
+  delete_after: string
+  deleted_by: string
+  reason: string | null
+  restored_at: string | null
+  restored_by: string | null
+}
+
 interface MemoryPasswordResetRecord {
   participantId: string
   tokenHash: string
@@ -127,12 +148,27 @@ interface MemoryReferralClickRecord {
   createdAt: string
 }
 
+interface MemoryTrashRecord {
+  participantId: string
+  previousStatus: ParticipantStatus
+  deletedAt: string
+  deleteAfter: string
+  deletedBy: string
+  reason?: string
+  restoredAt?: string
+  restoredBy?: string
+}
+
 function deriveLeagueType(soccerverseUsername?: string): LeagueType {
   return soccerverseUsername?.trim() ? 'veteran' : 'rookie'
 }
 
 function expiryIso(hoursFromNow: number): string {
   return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString()
+}
+
+function deleteAfterIso(daysFromNow = 90): string {
+  return new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000).toISOString()
 }
 
 function normalizeEmail(email: string) {
@@ -206,6 +242,23 @@ function mapAdminParticipantRow(row: AdminParticipantRow): AdminParticipantRecor
   }
 }
 
+function mapParticipantTrashRow(row: ParticipantTrashRow): ParticipantTrashEntry {
+  return {
+    participantId: row.participant_id,
+    email: row.email,
+    displayName: row.display_name,
+    leagueType: row.league_type,
+    currentStatus: row.current_status,
+    previousStatus: row.previous_status,
+    deletedAt: row.deleted_at,
+    deleteAfter: row.delete_after,
+    deletedBy: row.deleted_by,
+    reason: row.reason ?? undefined,
+    restoredAt: row.restored_at ?? undefined,
+    restoredBy: row.restored_by ?? undefined,
+  }
+}
+
 function rankNationParticipation(rows: NationParticipationRow[]) {
   return rows.sort(
     (left, right) =>
@@ -222,6 +275,7 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
   private readonly passwordHashes = new Map<string, string>()
   private readonly passwordResetByTokenHash = new Map<string, MemoryPasswordResetRecord>()
   private readonly referralClicks: MemoryReferralClickRecord[] = []
+  private readonly trash = new Map<string, MemoryTrashRecord>()
 
   constructor(private readonly leaderboardCache?: LeaderboardCache) {}
 
@@ -229,6 +283,23 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
     return {
       ...record,
       hasPassword: this.passwordHashes.has(record.participantId),
+    }
+  }
+
+  private trashEntry(record: RegistrationRecord, trash: MemoryTrashRecord): ParticipantTrashEntry {
+    return {
+      participantId: record.participantId,
+      email: record.email,
+      displayName: record.displayName,
+      leagueType: record.leagueType,
+      currentStatus: record.status,
+      previousStatus: trash.previousStatus,
+      deletedAt: trash.deletedAt,
+      deleteAfter: trash.deleteAfter,
+      deletedBy: trash.deletedBy,
+      reason: trash.reason,
+      restoredAt: trash.restoredAt,
+      restoredBy: trash.restoredBy,
     }
   }
 
@@ -533,6 +604,87 @@ export class MemoryRegistrationRepository implements RegistrationRepository {
         createdAt: record.createdAt,
       }))
       .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? '') || left.email.localeCompare(right.email))
+  }
+
+  async listParticipantTrash() {
+    await this.purgeExpiredParticipantTrash()
+    const entries: ParticipantTrashEntry[] = []
+    for (const trash of this.trash.values()) {
+      if (trash.restoredAt) {
+        continue
+      }
+      const record = [...this.byEmail.values()].find((candidate) => candidate.participantId === trash.participantId)
+      if (record) {
+        entries.push(this.trashEntry(record, trash))
+      }
+    }
+    return entries.sort((left, right) => right.deletedAt.localeCompare(left.deletedAt) || left.email.localeCompare(right.email))
+  }
+
+  async moveParticipantToTrash(participantId: string, actorEmail: string, reason?: string) {
+    const record = [...this.byEmail.values()].find((candidate) => candidate.participantId === participantId)
+    if (!record) {
+      return null
+    }
+
+    const existing = this.trash.get(participantId)
+    if (existing && !existing.restoredAt) {
+      return this.trashEntry(record, existing)
+    }
+
+    const now = new Date().toISOString()
+    const trash: MemoryTrashRecord = {
+      participantId,
+      previousStatus: record.status === 'withdrawn' ? 'active' : record.status,
+      deletedAt: now,
+      deleteAfter: deleteAfterIso(),
+      deletedBy: actorEmail,
+      reason: reason?.trim() || undefined,
+    }
+    const nextRecord: RegistrationRecord = this.attachPasswordState({ ...record, status: 'withdrawn' })
+    this.byEmail.set(nextRecord.email, nextRecord)
+    this.trash.set(participantId, trash)
+    this.leaderboardCache?.invalidate()
+    return this.trashEntry(nextRecord, trash)
+  }
+
+  async restoreParticipantFromTrash(participantId: string, actorEmail: string) {
+    const record = [...this.byEmail.values()].find((candidate) => candidate.participantId === participantId)
+    const trash = this.trash.get(participantId)
+    if (!record || !trash || trash.restoredAt) {
+      return null
+    }
+
+    const restoredTrash = {
+      ...trash,
+      restoredAt: new Date().toISOString(),
+      restoredBy: actorEmail,
+    }
+    const nextRecord: RegistrationRecord = this.attachPasswordState({ ...record, status: trash.previousStatus })
+    this.byEmail.set(nextRecord.email, nextRecord)
+    this.trash.set(participantId, restoredTrash)
+    this.leaderboardCache?.invalidate()
+    return this.trashEntry(nextRecord, restoredTrash)
+  }
+
+  async purgeExpiredParticipantTrash(limit = 50) {
+    const expired = [...this.trash.values()]
+      .filter((entry) => !entry.restoredAt && new Date(entry.deleteAfter).getTime() <= Date.now())
+      .sort((left, right) => left.deleteAfter.localeCompare(right.deleteAfter))
+      .slice(0, Math.max(0, limit))
+
+    for (const entry of expired) {
+      const record = [...this.byEmail.values()].find((candidate) => candidate.participantId === entry.participantId)
+      if (record) {
+        this.byEmail.delete(record.email)
+      }
+      this.passwordHashes.delete(entry.participantId)
+      this.trash.delete(entry.participantId)
+    }
+    if (expired.length) {
+      this.leaderboardCache?.invalidate()
+    }
+    return expired.length
   }
 
   async listNationParticipation() {
@@ -1669,6 +1821,192 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       `,
     )
     return result.rows.map(mapAdminParticipantRow)
+  }
+
+  async listParticipantTrash() {
+    await this.purgeExpiredParticipantTrash()
+    const result = await this.pool.query<ParticipantTrashRow>(
+      `
+        SELECT
+          p.participant_id,
+          p.email,
+          p.display_name,
+          p.league_type,
+          p.status AS current_status,
+          t.previous_status,
+          t.deleted_at,
+          t.delete_after,
+          t.deleted_by,
+          t.reason,
+          t.restored_at,
+          t.restored_by
+        FROM participant_account_trash t
+        JOIN participants p ON p.participant_id = t.participant_id
+        WHERE t.restored_at IS NULL
+        ORDER BY t.deleted_at DESC, p.email ASC
+      `,
+    )
+    return result.rows.map(mapParticipantTrashRow)
+  }
+
+  async moveParticipantToTrash(participantId: string, actorEmail: string, reason?: string) {
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      const existing = await client.query<{ status: ParticipantStatus }>(
+        'SELECT status FROM participants WHERE participant_id = $1 FOR UPDATE',
+        [participantId],
+      )
+      const participant = existing.rows[0]
+      if (!participant) {
+        await client.query('ROLLBACK')
+        return null
+      }
+
+      const previousStatus = participant.status === 'withdrawn' ? 'active' : participant.status
+      await client.query(
+        `
+          INSERT INTO participant_account_trash (participant_id, previous_status, deleted_by, reason)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (participant_id) WHERE restored_at IS NULL
+          DO UPDATE SET
+            deleted_by = EXCLUDED.deleted_by,
+            reason = COALESCE(EXCLUDED.reason, participant_account_trash.reason),
+            updated_at = NOW()
+        `,
+        [participantId, previousStatus, actorEmail, reason?.trim() || null],
+      )
+      await client.query("UPDATE participants SET status = 'withdrawn', updated_at = NOW() WHERE participant_id = $1", [participantId])
+      const entry = await client.query<ParticipantTrashRow>(
+        `
+          SELECT
+            p.participant_id,
+            p.email,
+            p.display_name,
+            p.league_type,
+            p.status AS current_status,
+            t.previous_status,
+            t.deleted_at,
+            t.delete_after,
+            t.deleted_by,
+            t.reason,
+            t.restored_at,
+            t.restored_by
+          FROM participant_account_trash t
+          JOIN participants p ON p.participant_id = t.participant_id
+          WHERE t.participant_id = $1
+            AND t.restored_at IS NULL
+        `,
+        [participantId],
+      )
+      await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
+      return entry.rows[0] ? mapParticipantTrashRow(entry.rows[0]) : null
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async restoreParticipantFromTrash(participantId: string, actorEmail: string) {
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      const existing = await client.query<ParticipantTrashRow>(
+        `
+          SELECT
+            p.participant_id,
+            p.email,
+            p.display_name,
+            p.league_type,
+            p.status AS current_status,
+            t.previous_status,
+            t.deleted_at,
+            t.delete_after,
+            t.deleted_by,
+            t.reason,
+            t.restored_at,
+            t.restored_by
+          FROM participant_account_trash t
+          JOIN participants p ON p.participant_id = t.participant_id
+          WHERE t.participant_id = $1
+            AND t.restored_at IS NULL
+          FOR UPDATE
+        `,
+        [participantId],
+      )
+      const trash = existing.rows[0]
+      if (!trash) {
+        await client.query('ROLLBACK')
+        return null
+      }
+
+      await client.query('UPDATE participants SET status = $2, updated_at = NOW() WHERE participant_id = $1', [
+        participantId,
+        trash.previous_status,
+      ])
+      await client.query(
+        'UPDATE participant_account_trash SET restored_at = NOW(), restored_by = $2, updated_at = NOW() WHERE participant_id = $1 AND restored_at IS NULL',
+        [participantId, actorEmail],
+      )
+      const restored = await client.query<ParticipantTrashRow>(
+        `
+          SELECT
+            p.participant_id,
+            p.email,
+            p.display_name,
+            p.league_type,
+            p.status AS current_status,
+            t.previous_status,
+            t.deleted_at,
+            t.delete_after,
+            t.deleted_by,
+            t.reason,
+            t.restored_at,
+            t.restored_by
+          FROM participant_account_trash t
+          JOIN participants p ON p.participant_id = t.participant_id
+          WHERE t.participant_id = $1
+          ORDER BY t.updated_at DESC
+          LIMIT 1
+        `,
+        [participantId],
+      )
+      await client.query('COMMIT')
+      this.leaderboardCache?.invalidate()
+      return restored.rows[0] ? mapParticipantTrashRow(restored.rows[0]) : null
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async purgeExpiredParticipantTrash(limit = 50) {
+    const result = await this.pool.query<{ participant_id: string }>(
+      `
+        DELETE FROM participants p
+        USING (
+          SELECT participant_id
+          FROM participant_account_trash
+          WHERE restored_at IS NULL
+            AND delete_after <= NOW()
+          ORDER BY delete_after ASC
+          LIMIT $1
+        ) expired
+        WHERE p.participant_id = expired.participant_id
+        RETURNING p.participant_id
+      `,
+      [Math.max(0, limit)],
+    )
+    const deleted = result.rowCount ?? 0
+    if (deleted > 0) {
+      this.leaderboardCache?.invalidate()
+    }
+    return deleted
   }
 
   async listNationParticipation() {

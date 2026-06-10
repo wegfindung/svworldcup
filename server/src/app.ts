@@ -20,6 +20,7 @@ import { bootstrapDefaultEmailCampaigns } from './services/bootstrapEmailCampaig
 import { bootstrapInitialTeamPools } from './services/bootstrapTeamPools.js'
 import { startEmailMarketingScheduler } from './services/emailMarketingScheduler.js'
 import { startSnapshotWorker } from './services/snapshotWorker.js'
+import { startParticipantTrashPurgeScheduler } from './services/participantTrashPurge.js'
 import {
   createAdminRepository,
   createAuditRepository,
@@ -116,6 +117,7 @@ export function createApp() {
     logger.error({ err: error }, 'Failed to bootstrap default email campaigns')
   })
   startEmailMarketingScheduler(emailMarketingRepository)
+  startParticipantTrashPurgeScheduler(registrationRepository)
   // Drain the durable veteran-influence-snapshot queue off the request path (no-op under test).
   startSnapshotWorker({ jobRepository: snapshotJobRepository, snapshotRepository: participantInfluenceSnapshotRepository })
 

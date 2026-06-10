@@ -31,6 +31,7 @@ import type {
   ParticipantRiskCase,
   ParticipantRiskInquiryEmail,
   ParticipantRiskCaseStatus,
+  ParticipantTrashEntry,
   PublicFixtureResult,
   PublicParticipantProfile,
   NationParticipationRow,
@@ -696,6 +697,27 @@ export function sendAdminRiskInquiryEmail(caseId: string, participantId: string)
       body: JSON.stringify({}),
     },
   )
+}
+
+export function fetchAdminParticipantTrash() {
+  return getJson<{ items: ParticipantTrashEntry[] }>('/api/admin/participant-trash', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function moveAdminParticipantToTrash(participantId: string, reason?: string) {
+  return getJson<{ item: ParticipantTrashEntry }>(`/api/admin/participants/${encodeURIComponent(participantId)}/trash`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function restoreAdminParticipantFromTrash(participantId: string) {
+  return getJson<{ item: ParticipantTrashEntry }>(`/api/admin/participants/${encodeURIComponent(participantId)}/restore`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
 }
 
 export function fetchAdminReferralAnalytics() {

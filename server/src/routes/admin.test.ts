@@ -214,3 +214,56 @@ describe('POST /api/admin/risk-cases/:caseId/members/:participantId/inquiry-emai
     })
   })
 })
+
+describe('participant account trash admin routes', () => {
+  it('moves a participant to trash and restores the previous account status', async () => {
+    const { app, audit, registrations } = setup()
+    const { record } = await registrations.createPending(
+      {
+        email: 'trashable@example.com',
+        displayName: 'Trashable Manager',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'trashable-token',
+    )
+    await registrations.verifyByPlainToken('trashable-token')
+
+    const trashResponse = await adminRequest(request(app).post(`/api/admin/participants/${record.participantId}/trash`)).send({
+      reason: 'multi-account cleanup',
+    })
+
+    expect(trashResponse.status).toBe(200)
+    expect(trashResponse.body.item).toMatchObject({
+      participantId: record.participantId,
+      email: 'trashable@example.com',
+      previousStatus: 'active',
+      currentStatus: 'withdrawn',
+      deletedBy: 'admin@example.com',
+      reason: 'multi-account cleanup',
+    })
+    expect(new Date(trashResponse.body.item.deleteAfter).getTime()).toBeGreaterThan(Date.now() + 89 * 24 * 60 * 60 * 1000)
+    expect((await registrations.getByParticipantId(record.participantId))?.status).toBe('withdrawn')
+
+    const listResponse = await adminRequest(request(app).get('/api/admin/participant-trash')).send()
+    expect(listResponse.status).toBe(200)
+    expect(listResponse.body.items).toHaveLength(1)
+    expect(listResponse.body.items[0]).toMatchObject({ participantId: record.participantId, currentStatus: 'withdrawn' })
+
+    const restoreResponse = await adminRequest(request(app).post(`/api/admin/participants/${record.participantId}/restore`)).send({})
+    expect(restoreResponse.status).toBe(200)
+    expect(restoreResponse.body.item).toMatchObject({
+      participantId: record.participantId,
+      previousStatus: 'active',
+      currentStatus: 'active',
+      restoredBy: 'admin@example.com',
+    })
+    expect((await registrations.getByParticipantId(record.participantId))?.status).toBe('active')
+
+    const afterRestoreList = await adminRequest(request(app).get('/api/admin/participant-trash')).send()
+    expect(afterRestoreList.body.items).toHaveLength(0)
+
+    const entries = await audit.list()
+    expect(entries.map((entry) => entry.actionKey)).toEqual(['admin.participant_trash', 'admin.participant_restore'])
+  })
+})
