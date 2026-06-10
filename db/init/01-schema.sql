@@ -347,6 +347,15 @@ CREATE TABLE IF NOT EXISTS participant_risk_case_members (
 CREATE INDEX IF NOT EXISTS participant_risk_case_members_participant_idx
     ON participant_risk_case_members (participant_id);
 
+CREATE TABLE IF NOT EXISTS participant_risk_inquiry_emails (
+    participant_id UUID PRIMARY KEY REFERENCES participants(participant_id) ON DELETE CASCADE,
+    first_sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    first_sent_by TEXT NOT NULL,
+    last_sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_sent_by TEXT NOT NULL,
+    sent_count INTEGER NOT NULL DEFAULT 1 CHECK (sent_count >= 1)
+);
+
 CREATE TABLE IF NOT EXISTS email_campaigns (
     campaign_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     kind TEXT NOT NULL CHECK (kind IN ('newsletter', 'autoresponder')),

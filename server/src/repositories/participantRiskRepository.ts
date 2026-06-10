@@ -3,6 +3,7 @@ import { Pool, type PoolClient } from 'pg'
 import type {
   ParticipantRiskCase,
   ParticipantRiskCaseMember,
+  ParticipantRiskInquiryEmail,
   ParticipantRiskCaseStatus,
   ParticipantRiskSignalInput,
   ParticipantRiskSummary,
@@ -15,6 +16,7 @@ export interface ParticipantRiskRepository {
   listCases(): Promise<ParticipantRiskCase[]>
   summarizeParticipants(participantIds: string[]): Promise<Record<string, ParticipantRiskSummary>>
   updateCaseStatus(caseId: string, status: ParticipantRiskCaseStatus, note?: string): Promise<ParticipantRiskCase | null>
+  markInquiryEmailSent(participantId: string, actorEmail: string): Promise<ParticipantRiskInquiryEmail>
 }
 
 type StoredSignal = ParticipantRiskSignalInput & {
@@ -54,6 +56,7 @@ export class MemoryParticipantRiskRepository implements ParticipantRiskRepositor
   storageKind: 'memory' = 'memory'
   private readonly signals: StoredSignal[] = []
   private readonly cases = new Map<string, ParticipantRiskCase>()
+  private readonly inquiries = new Map<string, ParticipantRiskInquiryEmail>()
 
   async recordSignal(input: ParticipantRiskSignalInput) {
     this.signals.push({
@@ -164,7 +167,10 @@ export class MemoryParticipantRiskRepository implements ParticipantRiskRepositor
         Number(activeStatuses(right.status)) - Number(activeStatuses(left.status)) ||
         right.score - left.score ||
         right.lastSeenAt.localeCompare(left.lastSeenAt),
-    )
+    ).map((riskCase) => ({
+      ...riskCase,
+      members: riskCase.members.map((member) => this.attachInquiry(member)),
+    }))
   }
 
   async summarizeParticipants(participantIds: string[]) {
@@ -193,7 +199,36 @@ export class MemoryParticipantRiskRepository implements ParticipantRiskRepositor
     }
     const updated = { ...riskCase, status, updatedAt: new Date().toISOString() }
     this.cases.set(updated.caseKey, updated)
-    return updated
+    return {
+      ...updated,
+      members: updated.members.map((member) => this.attachInquiry(member)),
+    }
+  }
+
+  async markInquiryEmailSent(participantId: string, actorEmail: string) {
+    const now = new Date().toISOString()
+    const existing = this.inquiries.get(participantId)
+    const inquiry = {
+      participantId,
+      sentAt: now,
+      sentBy: actorEmail,
+      sentCount: (existing?.sentCount ?? 0) + 1,
+    }
+    this.inquiries.set(participantId, inquiry)
+    return inquiry
+  }
+
+  private attachInquiry(member: ParticipantRiskCaseMember): ParticipantRiskCaseMember {
+    const inquiry = this.inquiries.get(member.participantId)
+    if (!inquiry) {
+      return member
+    }
+    return {
+      ...member,
+      inquiryEmailSentAt: inquiry.sentAt,
+      inquiryEmailSentBy: inquiry.sentBy,
+      inquiryEmailSentCount: inquiry.sentCount,
+    }
   }
 
   private upsertCase(input: {
@@ -295,6 +330,16 @@ interface MemberRow {
   member_score: number
   reason_keys: string[]
   last_signal_at: string | null
+  inquiry_email_sent_at?: string | null
+  inquiry_email_sent_by?: string | null
+  inquiry_email_sent_count?: number | null
+}
+
+interface InquiryEmailRow {
+  participant_id: string
+  sent_at: string
+  sent_by: string
+  sent_count: number
 }
 
 interface SignalRow {
@@ -338,6 +383,9 @@ function mapMember(row: MemberRow): ParticipantRiskCaseMember {
     memberScore: row.member_score,
     reasonKeys: row.reason_keys ?? [],
     lastSignalAt: row.last_signal_at ?? undefined,
+    inquiryEmailSentAt: row.inquiry_email_sent_at ?? undefined,
+    inquiryEmailSentBy: row.inquiry_email_sent_by ?? undefined,
+    inquiryEmailSentCount: row.inquiry_email_sent_count ?? undefined,
   }
 }
 
@@ -557,9 +605,13 @@ export class PostgresParticipantRiskRepository implements ParticipantRiskReposit
           p.secondary_team_code,
           m.member_score,
           m.reason_keys,
-          m.last_signal_at
+          m.last_signal_at,
+          i.last_sent_at AS inquiry_email_sent_at,
+          i.last_sent_by AS inquiry_email_sent_by,
+          i.sent_count AS inquiry_email_sent_count
         FROM participant_risk_case_members m
         JOIN participants p ON p.participant_id = m.participant_id
+        LEFT JOIN participant_risk_inquiry_emails i ON i.participant_id = p.participant_id
         WHERE m.case_id = ANY($1::uuid[])
         ORDER BY m.member_score DESC, p.created_at ASC
       `,
@@ -634,15 +686,42 @@ export class PostgresParticipantRiskRepository implements ParticipantRiskReposit
       `
         SELECT
           p.participant_id, p.email, p.display_name, p.league_type, p.status, p.primary_team_code,
-          p.secondary_team_code, m.member_score, m.reason_keys, m.last_signal_at
+          p.secondary_team_code, m.member_score, m.reason_keys, m.last_signal_at,
+          i.last_sent_at AS inquiry_email_sent_at,
+          i.last_sent_by AS inquiry_email_sent_by,
+          i.sent_count AS inquiry_email_sent_count
         FROM participant_risk_case_members m
         JOIN participants p ON p.participant_id = m.participant_id
+        LEFT JOIN participant_risk_inquiry_emails i ON i.participant_id = p.participant_id
         WHERE m.case_id = $1
         ORDER BY m.member_score DESC, p.created_at ASC
       `,
       [caseId],
     )
     return mapCase(row, members.rows.map(mapMember))
+  }
+
+  async markInquiryEmailSent(participantId: string, actorEmail: string) {
+    const result = await this.pool.query<InquiryEmailRow>(
+      `
+        INSERT INTO participant_risk_inquiry_emails (participant_id, first_sent_by, last_sent_by)
+        VALUES ($1, $2, $2)
+        ON CONFLICT (participant_id)
+        DO UPDATE SET
+          last_sent_at = NOW(),
+          last_sent_by = EXCLUDED.last_sent_by,
+          sent_count = participant_risk_inquiry_emails.sent_count + 1
+        RETURNING participant_id, last_sent_at AS sent_at, last_sent_by AS sent_by, sent_count
+      `,
+      [participantId, actorEmail],
+    )
+    const row = result.rows[0]
+    return {
+      participantId: row.participant_id,
+      sentAt: row.sent_at,
+      sentBy: row.sent_by,
+      sentCount: row.sent_count,
+    }
   }
 
   private async latestSignal(participantId: string) {

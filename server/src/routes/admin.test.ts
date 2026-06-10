@@ -1,8 +1,9 @@
 import express from 'express'
 import request from 'supertest'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { adminSessionCookieName } from '../config/auth.js'
 import { createCsrfToken } from '../lib/csrf.js'
+import { sendMultiAccountInquiryMail } from '../lib/mailer.js'
 import { errorHandler } from '../middleware/errorHandler.js'
 import type { AdminRepository } from '../repositories/adminRepository.js'
 import { MemoryAuditRepository } from '../repositories/auditRepository.js'
@@ -19,6 +20,11 @@ import { MemorySnapshotJobRepository } from '../repositories/snapshotJobReposito
 import { MemorySquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { createAdminRouter } from './admin.js'
+
+vi.mock('../lib/mailer.js', () => ({
+  sendVerificationMail: vi.fn(async () => ({ accepted: ['test@example.com'], rejected: [] })),
+  sendMultiAccountInquiryMail: vi.fn(async (input: { recipient: string }) => ({ accepted: [input.recipient], rejected: [] })),
+}))
 
 const adminSessionToken = 'admin-test-session'
 
@@ -53,6 +59,7 @@ function setup() {
   const snapshotRepository = new MemoryParticipantInfluenceSnapshotRepository()
   const scoring = new MemoryScoringRepository(config, registrations, squads, snapshotRepository)
   const audit = new MemoryAuditRepository()
+  const participantRisk = new MemoryParticipantRiskRepository()
 
   const app = express()
   app.use(express.json())
@@ -69,14 +76,14 @@ function setup() {
       audit,
       new MemoryEmailMarketingRepository(),
       new MemorySnapshotJobRepository(),
-      new MemoryParticipantRiskRepository(),
+      participantRisk,
       squads,
       new MemoryLandingAnalyticsRepository(),
     ),
   )
   app.use(errorHandler)
 
-  return { app, audit, registrations }
+  return { app, audit, registrations, participantRisk }
 }
 
 describe('POST /api/admin/participants/:participantId/soccerverse-username', () => {
@@ -117,6 +124,92 @@ describe('POST /api/admin/participants/:participantId/soccerverse-username', () 
       detail: {
         mode: 'link',
         to: 'Libertaerx',
+      },
+    })
+  })
+})
+
+describe('POST /api/admin/risk-cases/:caseId/members/:participantId/inquiry-email', () => {
+  it('sends the multi-account inquiry email and marks the member as tagged', async () => {
+    const { app, audit, registrations, participantRisk } = setup()
+    vi.mocked(sendMultiAccountInquiryMail).mockClear()
+
+    const first = await registrations.createPending(
+      {
+        email: 'friend.one@example.com',
+        displayName: 'Friend One',
+        primaryTeamCode: 'FRA',
+        marketingOptIn: false,
+      },
+      'friend-one-token',
+    )
+    const second = await registrations.createPending(
+      {
+        email: 'friend.two@example.com',
+        displayName: 'Friend Two',
+        primaryTeamCode: 'GER',
+        marketingOptIn: false,
+      },
+      'friend-two-token',
+    )
+    const firstProfile = await registrations.verifyByPlainToken('friend-one-token')
+    const secondProfile = await registrations.verifyByPlainToken('friend-two-token')
+
+    if (!firstProfile || !secondProfile) {
+      throw new Error('Expected verified test profiles.')
+    }
+
+    await participantRisk.recordSignal({
+      participant: firstProfile,
+      eventType: 'registration',
+      emailCanonicalHash: 'shared-canonical-email',
+    })
+    await participantRisk.recordSignal({
+      participant: secondProfile,
+      eventType: 'registration',
+      emailCanonicalHash: 'shared-canonical-email',
+    })
+    await participantRisk.refreshCasesForParticipant(second.record.participantId)
+
+    const riskCase = (await participantRisk.listCases())[0]
+    if (!riskCase) {
+      throw new Error('Expected a risk case.')
+    }
+    expect(riskCase.members.map((member) => member.participantId).sort()).toEqual(
+      [first.record.participantId, second.record.participantId].sort(),
+    )
+
+    const response = await adminRequest(
+      request(app).post(`/api/admin/risk-cases/${riskCase.caseId}/members/${first.record.participantId}/inquiry-email`),
+    ).send({})
+
+    expect(response.status).toBe(200)
+    expect(sendMultiAccountInquiryMail).toHaveBeenCalledWith({
+      recipient: firstProfile.email,
+      displayName: firstProfile.displayName,
+    })
+    expect(response.body.inquiry).toMatchObject({
+      participantId: first.record.participantId,
+      sentBy: 'admin@example.com',
+      sentCount: 1,
+    })
+    expect(
+      response.body.item.members.find((member: { participantId: string }) => member.participantId === first.record.participantId),
+    ).toMatchObject({
+      inquiryEmailSentBy: 'admin@example.com',
+      inquiryEmailSentCount: 1,
+    })
+
+    const entries = await audit.list()
+    expect(entries.at(-1)).toMatchObject({
+      actorEmail: 'admin@example.com',
+      actionKey: 'admin.risk_inquiry_email_sent',
+      entityType: 'participant_risk_case',
+      entityId: riskCase.caseId,
+      detail: {
+        participantId: first.record.participantId,
+        email: firstProfile.email,
+        sentCount: 1,
       },
     })
   })

@@ -29,6 +29,7 @@ import type {
   SwapResultSummary,
   ParticipantScoreRow,
   ParticipantRiskCase,
+  ParticipantRiskInquiryEmail,
   ParticipantRiskCaseStatus,
   PublicFixtureResult,
   PublicParticipantProfile,
@@ -685,6 +686,16 @@ export function updateAdminRiskCaseStatus(caseId: string, status: ParticipantRis
     method: 'POST',
     body: JSON.stringify({ status, note }),
   })
+}
+
+export function sendAdminRiskInquiryEmail(caseId: string, participantId: string) {
+  return getJson<{ item: ParticipantRiskCase; inquiry: ParticipantRiskInquiryEmail }>(
+    `/api/admin/risk-cases/${encodeURIComponent(caseId)}/members/${encodeURIComponent(participantId)}/inquiry-email`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  )
 }
 
 export function fetchAdminReferralAnalytics() {

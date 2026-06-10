@@ -112,6 +112,16 @@ export interface ParticipantRiskCaseMember {
   memberScore: number
   reasonKeys: string[]
   lastSignalAt?: string
+  inquiryEmailSentAt?: string
+  inquiryEmailSentBy?: string
+  inquiryEmailSentCount?: number
+}
+
+export interface ParticipantRiskInquiryEmail {
+  participantId: string
+  sentAt: string
+  sentBy: string
+  sentCount: number
 }
 
 export interface ParticipantRiskCase {

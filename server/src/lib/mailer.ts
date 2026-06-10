@@ -24,6 +24,7 @@ function buildTransport() {
 }
 
 const transport = buildTransport()
+const emailLogoPath = '/brand/logo-email.png'
 
 interface AppMailInput {
   to: string
@@ -221,6 +222,10 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#39;')
 }
 
+function publicAssetUrl(path: string) {
+  return `${env.PUBLIC_WEB_URL.replace(/\/+$/, '')}${path}`
+}
+
 export async function sendAppMail(input: AppMailInput) {
   return await transport.sendMail({
     from: env.SMTP_FROM,
@@ -284,4 +289,58 @@ export async function sendPasswordResetMail(recipient: string, resetUrl: string,
   })
 
   return result
+}
+
+export async function sendMultiAccountInquiryMail(input: { recipient: string; displayName: string }) {
+  const safeDisplayName = escapeHtml(input.displayName.trim() || 'manager')
+  const logoUrl = escapeHtml(publicAssetUrl(emailLogoPath))
+  const subject = 'Important: The Grand Tournament multi-account rule'
+  const text = [
+    `Hi ${input.displayName.trim() || 'manager'},`,
+    '',
+    'We are reviewing possible multi-account signals for The Grand Tournament.',
+    '',
+    'Did you know that multi-accounting is forbidden?',
+    'Do you know anyone who used the same device or connection to register for the tournament?',
+    '',
+    'If you registered together with friends or family, or if you did not know this rule, please reply to this email and tell us what happened.',
+    'If more than one account belongs to you or was created for you, please tell us which account should stay active and which account or accounts should be deleted.',
+    '',
+    'No automatic action has been taken from this email alone. We are asking for clarification so we can keep the tournament fair.',
+    '',
+    'Please reply within 48 hours.',
+    '',
+    'The Grand Tournament Team',
+  ].join('\n')
+
+  const html = `
+    <div style="margin:0;padding:28px;background:#07100e;color:#f2efe7;font-family:Arial,sans-serif;line-height:1.55;">
+      <div style="max-width:620px;margin:0 auto;border:1px solid rgba(242,239,231,0.16);border-radius:18px;padding:28px;background:#101815;">
+        <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Please reply if you registered with friends or family, or if you did not know the multi-account rule.</div>
+        <p style="margin:0 0 24px;text-align:center;"><img src="${logoUrl}" alt="The Grand Tournament" width="220" style="display:inline-block;width:220px;max-width:70%;height:auto;"></p>
+        <h1 style="margin:0 0 18px;font-size:24px;line-height:1.2;color:#f2efe7;">Multi-account clarification</h1>
+        <p style="margin:0 0 18px;color:#c6d3ce;">Hi ${safeDisplayName},</p>
+        <p style="margin:0 0 18px;color:#c6d3ce;">We are reviewing possible multi-account signals for The Grand Tournament.</p>
+        <div style="margin:0 0 18px;padding:16px;border-radius:14px;background:rgba(34,189,147,0.10);border:1px solid rgba(34,189,147,0.25);">
+          <p style="margin:0 0 10px;color:#f2efe7;font-weight:700;">Did you know that multi-accounting is forbidden?</p>
+          <p style="margin:0;color:#f2efe7;font-weight:700;">Do you know anyone who used the same device or connection to register for the tournament?</p>
+        </div>
+        <p style="margin:0 0 18px;color:#c6d3ce;">If you registered together with friends or family, or if you did not know this rule, please reply to this email and tell us what happened.</p>
+        <p style="margin:0 0 18px;color:#c6d3ce;">If more than one account belongs to you or was created for you, please tell us which account should stay active and which account or accounts should be deleted.</p>
+        <p style="margin:0 0 18px;color:#c6d3ce;">No automatic action has been taken from this email alone. We are asking for clarification so we can keep the tournament fair.</p>
+        <p style="margin:0 0 18px;color:#c6d3ce;">Please reply within 48 hours.</p>
+        <p style="margin:0;color:#c6d3ce;">The Grand Tournament Team</p>
+      </div>
+    </div>
+  `
+
+  return await sendAppMail({
+    to: input.recipient,
+    subject,
+    text,
+    html,
+    headers: {
+      'X-Grand-Tournament-Mail-Type': 'multi-account-inquiry',
+    },
+  })
 }

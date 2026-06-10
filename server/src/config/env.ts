@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import { z } from 'zod'
 
 dotenv.config()
+dotenv.config({ path: '../.env' })
 
 const optionalString = z.preprocess((value) => {
   if (typeof value !== 'string') {
@@ -51,11 +52,17 @@ const envSchema = z.object({
   // or above this duration is logged at warn with its truncated SQL. Tunable per deploy.
   DB_SLOW_QUERY_MS: z.coerce.number().int().positive().default(500),
   SMTP_HOST: optionalString,
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: booleanFromString,
+  SMTP_PORT: optionalPositiveInt,
+  SMTP_SECURE: optionalBooleanFromString,
   SMTP_USER: optionalString,
   SMTP_PASSWORD: optionalString,
-  SMTP_FROM: z.string().default('The Grand Tournament <mailer@example.com>'),
+  SMTP_FROM: optionalString,
+  SSMTP_HOST: optionalString,
+  SSMTP_PORT: optionalPositiveInt,
+  SSMTP_SECURE: optionalBooleanFromString,
+  SSMTP_USER: optionalString,
+  SSMTP_PASSWORD: optionalString,
+  SSMTP_FROM: optionalString,
   SV_SERVICES_API_URL: z.string().url().default('https://services.soccerverse.com/api'),
   COMMUNITY_PACK_URL: z.string().url().default('https://elrincondeldt.com/sv/rincon_v2.json'),
   ADMIN_BOOTSTRAP_EMAILS: z.string().default(''),
@@ -102,7 +109,12 @@ function parseInstant(raw?: string): Date | null {
 
 export const env = {
   ...parsed,
-  SMTP_SECURE: parsed.SMTP_SECURE ?? false,
+  SMTP_HOST: parsed.SMTP_HOST ?? parsed.SSMTP_HOST,
+  SMTP_PORT: parsed.SMTP_PORT ?? parsed.SSMTP_PORT ?? 587,
+  SMTP_SECURE: parsed.SMTP_SECURE ?? parsed.SSMTP_SECURE ?? false,
+  SMTP_USER: parsed.SMTP_USER ?? parsed.SSMTP_USER,
+  SMTP_PASSWORD: parsed.SMTP_PASSWORD ?? parsed.SSMTP_PASSWORD,
+  SMTP_FROM: parsed.SMTP_FROM ?? parsed.SSMTP_FROM ?? 'Soccerverse Community Event <support@svtool.info>',
   ADMIN_BOOTSTRAP_EMAILS: parseAdminEmails(parsed.ADMIN_BOOTSTRAP_EMAILS),
   TOURNAMENT_KICKOFF_AT: parseInstant(parsed.TOURNAMENT_KICKOFF_AT),
   REGISTRATION_CLOSE_AT: parseInstant(parsed.REGISTRATION_CLOSE_AT),

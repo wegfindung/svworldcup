@@ -6,7 +6,7 @@ import { isKnownTeamCode, teams } from '../data/worldCupSeed.js'
 import { isKnownNationCode } from '../data/soccerverseNations.js'
 import { clearCookie, createCookie } from '../lib/cookies.js'
 import { createCsrfToken, createRequireCookieCsrf } from '../lib/csrf.js'
-import { sendVerificationMail } from '../lib/mailer.js'
+import { sendMultiAccountInquiryMail, sendVerificationMail } from '../lib/mailer.js'
 import { generatePlainToken } from '../lib/tokens.js'
 import { createRequireAdmin } from '../middleware/adminAuth.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
@@ -430,6 +430,50 @@ export function createAdminRouter(
       detail: { status: parsed.status, note: parsed.note },
     })
     res.json({ item: updated })
+  })
+
+  router.post('/risk-cases/:caseId/members/:participantId/inquiry-email', async (req, res) => {
+    const caseId = String(req.params.caseId ?? '').trim()
+    const participantId = String(req.params.participantId ?? '').trim()
+    const riskCases = await participantRiskRepository.listCases()
+    const riskCase = riskCases.find((candidate) => candidate.caseId === caseId)
+    const member = riskCase?.members.find((candidate) => candidate.participantId === participantId)
+
+    if (!riskCase || !member) {
+      return res.status(404).json({ error: 'Risk case member not found.' })
+    }
+
+    const delivery = await sendMultiAccountInquiryMail({
+      recipient: member.email,
+      displayName: member.displayName,
+    })
+    const inquiry = await participantRiskRepository.markInquiryEmailSent(participantId, res.locals.admin.email)
+    const refreshedCase = (await participantRiskRepository.listCases()).find((candidate) => candidate.caseId === caseId) ?? riskCase
+
+    await auditRepository.record({
+      actorEmail: res.locals.admin.email,
+      actionKey: 'admin.risk_inquiry_email_sent',
+      entityType: 'participant_risk_case',
+      entityId: caseId,
+      detail: {
+        participantId,
+        email: member.email,
+        score: riskCase.score,
+        reasonKeys: [...new Set([...riskCase.reasonKeys, ...member.reasonKeys])],
+        accepted: delivery.accepted,
+        rejected: delivery.rejected,
+        sentCount: inquiry.sentCount,
+      },
+    })
+
+    res.json({
+      item: refreshedCase,
+      inquiry,
+      mailer: {
+        accepted: delivery.accepted,
+        rejected: delivery.rejected,
+      },
+    })
   })
 
   const participantLeagueSchema = z.object({

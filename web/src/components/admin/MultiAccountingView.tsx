@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
-import { fetchAdminRiskCases, updateAdminRiskCaseStatus } from '../../lib/api'
-import type { ParticipantRiskCase, ParticipantRiskCaseStatus } from '../../lib/types'
+import { fetchAdminRiskCases, sendAdminRiskInquiryEmail, updateAdminRiskCaseStatus } from '../../lib/api'
+import type { ParticipantRiskCase, ParticipantRiskCaseMember, ParticipantRiskCaseStatus } from '../../lib/types'
 
 const statusOptions: ParticipantRiskCaseStatus[] = ['open', 'reviewing', 'confirmed', 'dismissed']
 
@@ -161,13 +161,16 @@ export function MultiAccountingView() {
   const [cases, setCases] = useState<ParticipantRiskCase[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
+  const [inquiryBusyKey, setInquiryBusyKey] = useState<string | null>(null)
   const [manualSelection, setManualSelection] = useState<{ focusId: string; participantId: string } | null>(null)
   const selectedParticipantId = manualSelection?.focusId === focusedParticipantId ? manualSelection.participantId : focusedParticipantId
 
   async function loadCases() {
     setLoadState('loading')
     setError(null)
+    setMessage(null)
     try {
       const response = await fetchAdminRiskCases()
       setCases(response.items)
@@ -181,6 +184,7 @@ export function MultiAccountingView() {
   async function handleStatus(caseId: string, status: ParticipantRiskCaseStatus) {
     setStatusBusyId(caseId)
     setError(null)
+    setMessage(null)
     try {
       const response = await updateAdminRiskCaseStatus(caseId, status)
       setCases((current) => current.map((riskCase) => (riskCase.caseId === caseId ? response.item : riskCase)))
@@ -188,6 +192,22 @@ export function MultiAccountingView() {
       setError(statusError instanceof Error ? statusError.message : 'Could not update review status.')
     } finally {
       setStatusBusyId(null)
+    }
+  }
+
+  async function handleInquiryEmail(riskCase: ParticipantRiskCase, member: ParticipantRiskCaseMember) {
+    const busyKey = `${riskCase.caseId}:${member.participantId}`
+    setInquiryBusyKey(busyKey)
+    setError(null)
+    setMessage(null)
+    try {
+      const response = await sendAdminRiskInquiryEmail(riskCase.caseId, member.participantId)
+      setCases((current) => current.map((item) => (item.caseId === response.item.caseId ? response.item : item)))
+      setMessage(`Inquiry email sent to ${member.displayName}.`)
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : 'Could not send inquiry email.')
+    } finally {
+      setInquiryBusyKey(null)
     }
   }
 
@@ -397,6 +417,12 @@ export function MultiAccountingView() {
         </div>
       ) : null}
 
+      {message ? (
+        <div className="mt-5 rounded-[1.3rem] border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-4 py-3 text-sm text-[var(--color-paper)]">
+          {message}
+        </div>
+      ) : null}
+
       <div className="mt-5 space-y-3">
         {loadState === 'loading' && cases.length === 0 ? (
           <>
@@ -452,10 +478,10 @@ export function MultiAccountingView() {
               </div>
 
               <div className="mt-4 overflow-x-auto rounded-[0.95rem] border border-white/8">
-                <table className="min-w-[760px] w-full border-collapse text-left text-sm">
+                <table className="min-w-[920px] w-full border-collapse text-left text-sm">
                   <thead className="border-b border-white/8 bg-black/20">
                     <tr>
-                      {['Participant', 'League', 'State', 'Signal', 'Last seen'].map((heading) => (
+                      {['Participant', 'League', 'State', 'Signal', 'Last seen', 'Inquiry'].map((heading) => (
                         <th key={heading} className="mono px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
                           {heading}
                         </th>
@@ -501,6 +527,28 @@ export function MultiAccountingView() {
                           </div>
                         </td>
                         <td className="px-3 py-3 align-top text-xs text-[var(--color-muted)]">{formatAdminDate(member.lastSignalAt)}</td>
+                        <td className="px-3 py-3 align-top">
+                          {member.inquiryEmailSentAt ? (
+                            <div className="min-w-[9rem]">
+                              <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                                inquiry sent
+                              </span>
+                              <p className="mt-2 text-xs text-[var(--color-muted)]">
+                                {formatAdminDate(member.inquiryEmailSentAt)}
+                                {member.inquiryEmailSentCount && member.inquiryEmailSentCount > 1 ? ` (${member.inquiryEmailSentCount}x)` : ''}
+                              </p>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void handleInquiryEmail(riskCase, member)}
+                              disabled={inquiryBusyKey === `${riskCase.caseId}:${member.participantId}`}
+                              className="rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/16 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                            >
+                              {inquiryBusyKey === `${riskCase.caseId}:${member.participantId}` ? 'Sending...' : 'Tag + send'}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

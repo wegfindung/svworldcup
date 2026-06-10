@@ -65,7 +65,7 @@ Expected production env highlights:
 - `SHARE_SNAPSHOT_SECRET`
 - `CSRF_TOKEN_SECRET`
 - `COMMUNITY_PACK_URL`
-- SMTP variables
+- SMTP variables (`SMTP_*` or `SSMTP_*`; production currently uses `SSMTP_FROM="Soccerverse Community Event <support@svtool.info>"` so replies reach support)
 - `DB_NAME` / `DB_USER` / `DB_PASS` for the bundled Compose PostgreSQL service
 
 Optional tuning (safe defaults apply when unset; `RATE_LIMIT_TRUST_PROXY` defaults on in production):

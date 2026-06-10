@@ -16,11 +16,6 @@ for (const line of envLines) {
 const requiredKeys = [
   'PUBLIC_WEB_URL',
   'SESSION_SECRET',
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_USER',
-  'SMTP_PASSWORD',
-  'SMTP_FROM',
   'ADMIN_BOOTSTRAP_EMAILS',
   'ADMIN_BOOTSTRAP_PASSWORD',
   'ADMIN_API_TOKEN',
@@ -32,10 +27,15 @@ const requiredKeys = [
 ]
 
 const dbKeys = ['DB_NAME', 'DB_USER', 'DB_PASS']
+const smtpKeys = ['HOST', 'PORT', 'USER', 'PASSWORD', 'FROM']
 
 function hasValue(key: string) {
   const value = fileEnv.get(key) ?? process.env[key]
   return typeof value === 'string' && value.trim() !== ''
+}
+
+function hasSmtpValue(name: string) {
+  return hasValue(`SMTP_${name}`) || hasValue(`SSMTP_${name}`)
 }
 
 function isPlaceholder(key: string) {
@@ -43,26 +43,38 @@ function isPlaceholder(key: string) {
   return /replace-with|example\.com/i.test(value)
 }
 
+function isSmtpPlaceholder(name: string) {
+  const keys = [`SMTP_${name}`, `SSMTP_${name}`]
+  return keys.some((key) => hasValue(key) && isPlaceholder(key))
+}
+
 const missingRequired = requiredKeys.filter((key) => !hasValue(key))
+const missingSmtp = smtpKeys.filter((key) => !hasSmtpValue(key)).map((key) => `SMTP_${key}/SSMTP_${key}`)
 const missingDb = dbKeys.filter((key) => !hasValue(key))
 const placeholderRequired = [...requiredKeys, ...dbKeys].filter((key) => hasValue(key) && isPlaceholder(key))
+const placeholderSmtp = smtpKeys.filter(isSmtpPlaceholder).map((key) => `SMTP_${key}/SSMTP_${key}`)
 
 console.log(`Deploy readiness summary for ${envPath}:`)
 for (const key of requiredKeys) {
   console.log(`- ${key}: ${hasValue(key) ? (isPlaceholder(key) ? 'placeholder' : 'present') : 'missing'}`)
 }
 
+for (const key of smtpKeys) {
+  console.log(`- SMTP_${key}/SSMTP_${key}: ${hasSmtpValue(key) ? (isSmtpPlaceholder(key) ? 'placeholder' : 'present') : 'missing'}`)
+}
+
 for (const key of dbKeys) {
   console.log(`- ${key}: ${hasValue(key) ? (isPlaceholder(key) ? 'placeholder' : 'present') : 'missing'}`)
 }
 
-if (missingRequired.length > 0 || missingDb.length > 0 || placeholderRequired.length > 0) {
-  const missing = [...missingRequired, ...missingDb]
+if (missingRequired.length > 0 || missingSmtp.length > 0 || missingDb.length > 0 || placeholderRequired.length > 0 || placeholderSmtp.length > 0) {
+  const missing = [...missingRequired, ...missingSmtp, ...missingDb]
   if (missing.length > 0) {
     console.error(`Missing deployment env keys: ${missing.join(', ')}`)
   }
-  if (placeholderRequired.length > 0) {
-    console.error(`Placeholder deployment env values: ${placeholderRequired.join(', ')}`)
+  const placeholders = [...placeholderRequired, ...placeholderSmtp]
+  if (placeholders.length > 0) {
+    console.error(`Placeholder deployment env values: ${placeholders.join(', ')}`)
   }
   process.exitCode = 1
 } else {
