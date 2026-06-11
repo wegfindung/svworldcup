@@ -25,6 +25,9 @@ export interface MatchImportRouterDeps {
   scoringRepository: ScoringRepository
   auditRepository: AuditRepository
   snapshotJobRepository: SnapshotJobRepository
+  // Optional community-pack name lookup for resolution aliases (production wires
+  // getCommunityPlayerName; tests omit it to stay offline). See JsonMatchStatsImporter.
+  packNameLookup?: (playerId: number) => Promise<string | undefined>
 }
 
 // A fixture's data is submitted as either JSON or CSV/TSV (Fix 12). CSV/TSV is a pure
@@ -145,7 +148,7 @@ function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImport
 // Mounted under /api/admin/match-import, inheriting admin authentication from the admin router.
 export function createMatchImportRouter(deps: MatchImportRouterDeps) {
   const router = Router()
-  const importer = new JsonMatchStatsImporter(deps.matchMappingRepository, deps.teamPoolRepository)
+  const importer = new JsonMatchStatsImporter(deps.matchMappingRepository, deps.teamPoolRepository, deps.packNameLookup)
 
   // Fix 7: parse + auto-resolve without persisting anything. The admin uses the returned
   // resolution to resolve or skip every outstanding row before calling /upload.

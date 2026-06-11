@@ -150,6 +150,25 @@ Common to both:
 - Resolution order: the persisted name-to-player mapping table first, then the reviewer
   skip list (a hit drops the row from the import), then auto-match against the target team's
   curated player pool, then leave explicitly unresolved.
+- Pool auto-match considers up to two names per pool player: the stored display name
+  (snapshotted from the community datapack at curation time — older pack versions were
+  abbreviated, e.g. "C. Montes") and, when reachable, the player's **current community-pack
+  name** (full real names, e.g. "César Montes Castro"), fetched in-memory at import time.
+  The pack lookup is an enrichment only: if the pack is unavailable, resolution degrades to
+  the stored names — never fails the import.
+- Pool auto-match has two tiers over those candidate names. First an exact normalized-name
+  match. If that finds nothing, a conservative **name-form match** bridges the remaining
+  form gaps between provider data ("César Montes", "Luis Chávez") and abbreviated
+  ("C. Montes") or extended ("Luis Chávez Magallón", "Julián Quiñones Quiñones",
+  "César Montes Castro") stored or pack names: a candidate fits when its initial+surname
+  form matches the source name (matching first-letter initial and identical trailing
+  surname tokens, either direction), or when one name's token list is a strict prefix of
+  the other's. Either tier resolves ONLY when exactly one pool player fits — two or more
+  candidates leave the row explicitly unresolved for the admin.
+- A name-form match can in principle pick a same-surname, same-initial namesake; the
+  resolve stage shows every resolved player (name and portrait) before anything persists,
+  and the two-admin confirmation still gates promotion — a wrong match is corrected
+  inline, which also writes the persistent mapping.
 - The review UI shows the resolved player per row, with display name and portrait, so an
   admin can visually verify the mapping and change it inline.
 - A correction in the review UI writes back to the mapping table, so a name never needs

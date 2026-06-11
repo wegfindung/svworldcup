@@ -19,6 +19,7 @@ import type { MatchMappingRepository } from '../repositories/matchMappingReposit
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import { LeagueChangeError, NationUpdateError, SoccerverseLinkError } from '../repositories/registrationRepository.js'
 import { clearParticipantBoostCache } from '../services/participantBoost.js'
+import { getCommunityPlayerName } from '../services/communityPack.js'
 import type { EmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
 import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 import type { ParticipantRiskRepository } from '../repositories/participantRiskRepository.js'
@@ -267,6 +268,7 @@ export function createAdminRouter(
       scoringRepository,
       auditRepository,
       snapshotJobRepository,
+      packNameLookup: getCommunityPlayerName,
     }),
   )
 
