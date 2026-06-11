@@ -15,21 +15,17 @@ export interface CsvMatchOptions {
   sourceUrl: string
 }
 
-// Fix B (future — blocked on the SV team confirming the official data-feed format):
-// the official Soccerverse feed (wcup.soccerverse.io/downloads/matches/<id>.csv) is a
-// DIFFERENT column set from this manual-paste contract. Example observed so far:
-//   fixture_id,kickoff,round,team,player,position,minutes,goals,assists,shots,
-//   shots_on_target,passes,key_passes,tackles,saves,yellow_cards,red_cards,rating
-// Differences vs. this parser: `player` not `name`; a `position` column and NO
-// `lineupStatus`; several extra stat columns; an in-file `fixture_id`. When the format is
-// confirmed: add a SEPARATE parser (e.g. matchImportFeedCsv.ts) that maps the feed columns
-// into MatchImportJson, and keep THIS parser for the manual CSV/TSV paste contract. The
-// feed fetch is server-side, host-allowlisted to wcup.soccerverse.io.
+// Fix B (done): the official provider feed CSV is a different column set from this
+// manual-paste contract and is parsed by matchImportFeedCsv.ts; the upload route
+// auto-detects which parser applies from the header row (`player` column = feed).
+// THIS parser stays the manual CSV/TSV paste contract.
 
 // The required per-player columns. A header row naming these is mandatory; order is free.
 const REQUIRED_COLUMNS = ['name', 'team', 'lineupstatus', 'minutes', 'goals', 'assists', 'rating']
 
-function resolveRowTeamName(value: string, options: CsvMatchOptions): string {
+// Shared with the feed parser: map a row's team cell (name or 3-letter code) to the
+// fixture's canonical team name, rejecting any team that is not one of the fixture's two.
+export function resolveRowTeamName(value: string, options: CsvMatchOptions): string {
   const upper = value.trim().toUpperCase()
   if (upper === options.homeTeamCode) return options.homeTeamName
   if (upper === options.awayTeamCode) return options.awayTeamName

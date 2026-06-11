@@ -142,6 +142,33 @@ describe('match import routes', () => {
     expect(upload.body.batch.sourceUrl).toBe('https://sofascore.com/csv')
   })
 
+  it('auto-detects the provider feed CSV on the same csv input path', async () => {
+    const { app } = await setup()
+    // Provider feed shape: `player` column, extra stat columns, full-squad rows where
+    // no-shows have empty minutes. The two no-show rows must be dropped at parse.
+    const text = [
+      'fixture_id,kickoff,round,team,player,position,minutes,goals,assists,shots,shots_on_target,passes,key_passes,tackles,saves,yellow_cards,red_cards,rating',
+      '99,2026-06-13T22:00:00+00:00,Group Stage - 1,Brazil,Vinicius Junior,F,90,1,,3,2,40,2,,,0,0,8.40',
+      '99,2026-06-13T22:00:00+00:00,Group Stage - 1,Brazil,Rodrygo,F,,,,,,,,,,0,0,',
+      '99,2026-06-13T22:00:00+00:00,Group Stage - 1,Morocco,Achraf Hakimi,D,90,,,1,,55,1,3,,0,0,7.00',
+      '99,2026-06-13T22:00:00+00:00,Group Stage - 1,Morocco,Bench Player,M,,,,,,,,,,0,0,',
+    ].join('\n')
+    const parse = await request(app)
+      .post('/match-import/parse')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({
+        fixtureId: BRA_MAR_FIXTURE,
+        input: { format: 'csv', text, homeGoals: 1, awayGoals: 0, sourceUrl: 'https://feed.example/m/99.csv' },
+      })
+    expect(parse.status).toBe(200)
+    expect(parse.body.resolution.rows).toHaveLength(2)
+    const names = parse.body.resolution.rows.map((row: { sourceName: string }) => row.sourceName)
+    expect(names).toEqual(['Vinicius Junior', 'Achraf Hakimi'])
+    expect(
+      parse.body.resolution.rows.every((row: { resolution: { status: string } }) => row.resolution.status === 'resolved'),
+    ).toBe(true)
+  })
+
   it('rejects an upload with an unresolved row and no override (Fix 7)', async () => {
     const { app } = await setup()
     const body = uploadBody()

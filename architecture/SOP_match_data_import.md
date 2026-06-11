@@ -96,6 +96,21 @@ fixture; multi-screenshot stitching happens outside the platform.
   fails loudly rather than mis-mapping silently. The match-level fields (final score, source
   URL) are not in the paste; the admin supplies them in form fields, and the home and away
   teams come from the selected fixture.
+- **Provider feed CSV.** The official tournament data feed (one CSV per fixture, downloaded
+  from the provider) is accepted as-is through the same CSV upload path and is auto-detected
+  by its header: a `player` column instead of `name`. Its column set is `fixture_id, kickoff,
+  round, team, player, position, minutes, goals, assists, shots, shots_on_target, passes,
+  key_passes, tackles, saves, yellow_cards, red_cards, rating`; columns beyond the shared
+  per-player fields are ignored. The file lists each side's full matchday squad, so rows with
+  an empty `minutes` cell (players who did not play) are dropped at parse and never enter the
+  batch. Empty `goals`/`assists`/`rating` cells on a played row read as zero. The feed carries
+  no lineup-status column, so starter vs substitute is derived per team — the eleven
+  most-played rows are marked starters, the rest used substitutes. The derivation is
+  display/validation only: scoring ignores lineup status (promotion writes
+  `in_official_squad = true` on every row), and a reviewer can correct any row's status in
+  review. Match-level fields work exactly like the manual CSV path: final score and source
+  URL come from the form fields, the two teams from the selected fixture; the feed's own
+  `fixture_id`/`kickoff`/`round` columns are ignored.
 
 Common to both:
 
