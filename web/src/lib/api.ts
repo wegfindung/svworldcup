@@ -34,6 +34,7 @@ import type {
   ParticipantTrashEntry,
   PublicFixtureResult,
   PublicParticipantProfile,
+  PublicSquadUsagePayload,
   NationParticipationRow,
   NationScoreRow,
   ReferralAnalyticsRow,
@@ -642,6 +643,10 @@ export function createSignedShareSnapshot(payload: ShareSnapshotPayload) {
 
 export function fetchPublicProfile(slug: string) {
   return getCachedJson<{ item: PublicParticipantProfile }>(`/api/public/profiles/${encodeURIComponent(slug)}`)
+}
+
+export function fetchSquadUsage() {
+  return getCachedJson<PublicSquadUsagePayload>('/api/public/squad-usage')
 }
 
 export function fetchAdminOverview(signal?: AbortSignal) {

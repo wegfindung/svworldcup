@@ -95,6 +95,7 @@ function createEmptySquad(participantId: string): ParticipantSquad {
 export interface SquadRepository {
   storageKind: 'memory' | 'postgres'
   getOrCreate(participantId: string): Promise<ParticipantSquad>
+  getLockedSquad(participantId: string): Promise<ParticipantSquad | null>
   setBudget(participantId: string, budgetLimit: number): Promise<ParticipantSquad>
   assignPlayer(participantId: string, input: AssignPlayerInput): Promise<ParticipantSquad>
   removePlayer(participantId: string, slotKey: string): Promise<ParticipantSquad>
@@ -129,6 +130,11 @@ export class MemorySquadRepository implements SquadRepository {
     const squad = createEmptySquad(participantId)
     this.squads.set(participantId, squad)
     return squad
+  }
+
+  async getLockedSquad(participantId: string) {
+    const squad = this.squads.get(participantId)
+    return squad?.isLocked ? squad : null
   }
 
   async assignPlayer(participantId: string, input: AssignPlayerInput) {
@@ -493,6 +499,17 @@ export class PostgresSquadRepository implements SquadRepository {
       lockedAt: squad.locked_at,
       slots: buildSlotState(assignedPlayers),
     }
+  }
+
+  async getLockedSquad(participantId: string) {
+    const result = await this.pool.query<{ is_locked: boolean }>(
+      'SELECT is_locked FROM squads WHERE participant_id = $1',
+      [participantId],
+    )
+    if (!result.rows[0]?.is_locked) {
+      return null
+    }
+    return this.getOrCreate(participantId)
   }
 
   async assignPlayer(participantId: string, input: AssignPlayerInput) {
