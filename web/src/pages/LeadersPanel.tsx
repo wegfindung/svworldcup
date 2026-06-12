@@ -11,8 +11,8 @@ type Metric = 'goals' | 'assists' | 'cleanSheets' | 'average'
 
 const metrics: Metric[] = ['goals', 'assists', 'cleanSheets', 'average']
 const PAGE_SIZE = 50
-// Average rating needs a minimum sample so a single strong game doesn't top the board.
-const MIN_AVG_APPEARANCES = 2
+// Clean-sheet-earning positions: GK and DEF always, a MID only with a defensive-midfielder code.
+const DM_POSITIONS = ['DML', 'DMR', 'DMC', 'DM']
 
 function formatRating(value: number) {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -30,8 +30,19 @@ function metricValue(player: PlayerPointsPlayer, metric: Metric) {
   return player.averageRating
 }
 
+// The clean-sheet board only lists players whose position can earn clean-sheet points (GK/DEF, or a
+// defensive-midfield MID) — a forward on a shut-out team is excluded.
+function earnsCleanSheetPosition(player: PlayerPointsPlayer) {
+  return (
+    player.positionClasses.includes('GK') ||
+    player.positionClasses.includes('DEF') ||
+    (player.positionClasses.includes('MID') && player.positions.some((code) => DM_POSITIONS.includes(code)))
+  )
+}
+
 function qualifies(player: PlayerPointsPlayer, metric: Metric) {
-  if (metric === 'average') return player.appearances >= MIN_AVG_APPEARANCES
+  if (metric === 'average') return player.averageRating > 0
+  if (metric === 'cleanSheets') return player.cleanSheets > 0 && earnsCleanSheetPosition(player)
   return metricValue(player, metric) > 0
 }
 
@@ -140,9 +151,6 @@ export function LeadersPanel({ locale }: { locale: LocaleCode }) {
             ))}
           </div>
         </div>
-        {metric === 'average' ? (
-          <p className="mono mt-3 text-[11px] uppercase tracking-[0.14em] text-[var(--color-muted)]">{leadersCopy.avgMinNote}</p>
-        ) : null}
       </section>
 
       {loadState === 'loading' ? (

@@ -735,6 +735,7 @@ const englishMessages = {
   },
   playerPoints: {
     searchPlaceholder: 'Search player, team, or ID',
+    perGameLabel: 'Per game',
     rankedAs: 'Ranked by points earned as {position}',
     statPlayers: 'players ranked',
     statFixtures: 'fixtures counted',
@@ -5054,6 +5055,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: 'Buscar jugador, equipo o ID',
+      perGameLabel: 'Por partido',
       rankedAs: 'Clasificados por puntos como {position}',
       statPlayers: 'jugadores clasificados',
       statFixtures: 'partidos contados',
@@ -5217,6 +5219,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: 'Cerca giocatore, squadra o ID',
+      perGameLabel: 'A partita',
       rankedAs: 'In classifica per punti come {position}',
       statPlayers: 'giocatori in classifica',
       statFixtures: 'partite conteggiate',
@@ -5380,6 +5383,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: 'Spieler, Team oder ID suchen',
+      perGameLabel: 'Pro Spiel',
       rankedAs: 'Sortiert nach Punkten als {position}',
       statPlayers: 'Spieler im Ranking',
       statFixtures: 'gezählte Spiele',
@@ -5543,6 +5547,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: 'Rechercher un joueur, une équipe ou un ID',
+      perGameLabel: 'Par match',
       rankedAs: 'Classés par points en tant que {position}',
       statPlayers: 'joueurs classés',
       statFixtures: 'matchs comptabilisés',
@@ -5707,6 +5712,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: 'Procurar jogador, equipa ou ID',
+      perGameLabel: 'Por jogo',
       rankedAs: 'Classificados por pontos como {position}',
       statPlayers: 'jogadores classificados',
       statFixtures: 'jogos contabilizados',
@@ -5871,6 +5877,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: 'Поиск игрока, команды или ID',
+      perGameLabel: 'За матч',
       rankedAs: 'Ранжировано по очкам на позиции {position}',
       statPlayers: 'игроков в рейтинге',
       statFixtures: 'учтено матчей',
@@ -6034,6 +6041,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: '搜索球员、球队或 ID',
+      perGameLabel: '场均',
       rankedAs: '按作为 {position} 获得的积分排名',
       statPlayers: '上榜球员',
       statFixtures: '已统计比赛',
@@ -6194,6 +6202,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
     playerPoints: {
       searchPlaceholder: '選手・チーム・IDで検索',
+      perGameLabel: '試合平均',
       rankedAs: '{position} としての獲得ポイント順',
       statPlayers: 'ランキング選手数',
       statFixtures: '集計試合数',

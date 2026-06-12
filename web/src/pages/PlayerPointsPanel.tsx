@@ -40,9 +40,18 @@ function totalForPosition(player: PlayerPointsPlayer, position: SlotClass) {
   return player.basePoints + cleanSheetForPosition(player, position)
 }
 
-function PlayerPointsRow({ player, rank, position, copy }: { player: PlayerPointsPlayer; rank: number; position: SlotClass; copy: PointsCopy }) {
+type PointsMode = 'total' | 'perGame'
+
+// The value a player is ranked/shown by: the position total, or that total divided by appearances.
+function valueForMode(player: PlayerPointsPlayer, position: SlotClass, mode: PointsMode) {
+  const total = totalForPosition(player, position)
+  return mode === 'perGame' ? (player.appearances > 0 ? total / player.appearances : 0) : total
+}
+
+function PlayerPointsRow({ player, rank, position, mode, copy }: { player: PlayerPointsPlayer; rank: number; position: SlotClass; mode: PointsMode; copy: PointsCopy }) {
   const cleanSheet = cleanSheetForPosition(player, position)
   const total = player.basePoints + cleanSheet
+  const value = valueForMode(player, position, mode)
 
   return (
     <article className="grid gap-4 rounded-[1rem] border border-white/8 bg-black/18 p-4 transition hover:border-[var(--color-accent)]/28 hover:bg-white/5 lg:grid-cols-[minmax(0,1.4fr)_minmax(11rem,0.7fr)_minmax(9rem,0.5fr)] lg:items-center">
@@ -69,13 +78,19 @@ function PlayerPointsRow({ player, rank, position, copy }: { player: PlayerPoint
 
       <div>
         <div className="flex items-end gap-2">
-          <p className="text-3xl font-black leading-none text-[var(--color-accent)]">{formatPoints(total)}</p>
-          <p className="mono pb-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.totalLabel}</p>
+          <p className="text-3xl font-black leading-none text-[var(--color-accent)]">{formatPoints(value)}</p>
+          <p className="mono pb-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{mode === 'perGame' ? copy.perGameLabel : copy.totalLabel}</p>
         </div>
-        <p className="mono mt-1.5 text-[11px] text-[var(--color-muted)]">
-          {formatPoints(player.basePoints)} {copy.baseLabel}
-          {cleanSheet > 0 ? <span className="text-[var(--color-accent)]"> · +{formatPoints(cleanSheet)} {copy.cleanSheetLabel}</span> : null}
-        </p>
+        {mode === 'perGame' ? (
+          <p className="mono mt-1.5 text-[11px] text-[var(--color-muted)]">
+            {formatPoints(total)} · {player.appearances} {copy.appsLabel}
+          </p>
+        ) : (
+          <p className="mono mt-1.5 text-[11px] text-[var(--color-muted)]">
+            {formatPoints(player.basePoints)} {copy.baseLabel}
+            {cleanSheet > 0 ? <span className="text-[var(--color-accent)]"> · +{formatPoints(cleanSheet)} {copy.cleanSheetLabel}</span> : null}
+          </p>
+        )}
       </div>
 
       <div className="flex gap-2 text-[11px] text-[var(--color-muted)]">
@@ -100,6 +115,7 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [payload, setPayload] = useState<PlayerPointsPayload | null>(null)
   const [position, setPosition] = useState<SlotClass>('GK')
+  const [mode, setMode] = useState<PointsMode>('total')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
 
@@ -135,11 +151,11 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
       )
       .sort(
         (left, right) =>
-          totalForPosition(right, position) - totalForPosition(left, position) ||
+          valueForMode(right, position, mode) - valueForMode(left, position, mode) ||
           right.basePoints - left.basePoints ||
           left.displayName.localeCompare(right.displayName),
       )
-  }, [payload?.items, position, query])
+  }, [payload?.items, position, query, mode])
 
   const totalPages = Math.max(1, Math.ceil(ranked.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -156,6 +172,11 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
     setPage(1)
   }
 
+  function selectMode(next: PointsMode) {
+    setMode(next)
+    setPage(1)
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)] lg:items-end">
@@ -169,7 +190,7 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
       </div>
 
       <section className="glass-panel rounded-[1.15rem] p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(12rem,1fr)_auto] lg:items-center">
+        <div className="grid gap-3 lg:grid-cols-[minmax(10rem,1fr)_auto_auto] lg:items-center">
           <label className="block">
             <span className="sr-only">{copy.searchPlaceholder}</span>
             <input
@@ -179,6 +200,23 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
               className="w-full rounded-full border border-white/10 bg-black/24 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]/55"
             />
           </label>
+          <div className="flex flex-wrap gap-1 rounded-full border border-white/8 bg-black/18 p-1">
+            {(['total', 'perGame'] as PointsMode[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => selectMode(option)}
+                className={[
+                  'rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition',
+                  mode === option
+                    ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                    : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white',
+                ].join(' ')}
+              >
+                {option === 'perGame' ? copy.perGameLabel : copy.totalLabel}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-wrap gap-1 rounded-full border border-white/8 bg-black/18 p-1">
             {positions.map((filter) => (
               <button
@@ -228,6 +266,7 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
                 player={player}
                 rank={(currentPage - 1) * PAGE_SIZE + index + 1}
                 position={position}
+                mode={mode}
                 copy={copy}
               />
             ))}
