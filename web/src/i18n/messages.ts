@@ -537,6 +537,7 @@ const englishMessages = {
   },
   results: {
     heroEyebrow: 'match centre',
+    jumpTo: 'Jump to',
     heroTitle: 'Every result on the board.',
     heroBody: 'Final scores are derived from the scoring entries that also drive the public tables.',
     final: 'Final',
@@ -1196,6 +1197,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: 'centro de partidos',
+    jumpTo: 'Saltar a',
     heroTitle: 'Todos los resultados en el tablero.',
     heroBody: 'Los marcadores finales vienen de las entradas de scoring que también alimentan las tablas públicas.',
     final: 'Final',
@@ -1743,6 +1745,7 @@ const italianMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: 'centro partite',
+    jumpTo: 'Vai a',
     heroTitle: 'Tutti i risultati sul tabellone.',
     heroBody: 'I punteggi finali derivano dalle entry di scoring che alimentano anche le classifiche pubbliche.',
     final: 'Finale',
@@ -2289,6 +2292,7 @@ const germanMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: 'match-centre',
+    jumpTo: 'Springe zu',
     heroTitle: 'Alle Ergebnisse auf dem Board.',
     heroBody: 'Finale Scores entstehen aus den Scoring-Einträgen, die auch die öffentlichen Tabellen antreiben.',
     final: 'Final',
@@ -2833,6 +2837,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: 'centre de matchs',
+    jumpTo: 'Aller à',
     heroTitle: 'Tous les résultats sur le board.',
     heroBody: 'Les scores finaux viennent des entrées de scoring qui alimentent aussi les classements publics.',
     final: 'Final',
@@ -3377,6 +3382,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: 'centro de jogos',
+    jumpTo: 'Ir para',
     heroTitle: 'Todos os resultados no quadro.',
     heroBody: 'Os resultados finais vêm das entradas de scoring que também alimentam as tabelas públicas.',
     final: 'Final',
@@ -3922,6 +3928,7 @@ const russianMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: 'центр матчей',
+    jumpTo: 'Перейти к',
     heroTitle: 'Все результаты на табло.',
     heroBody: 'Итоговые счета берутся из записей скоринга, которые также двигают публичные таблицы.',
     final: 'Завершен',
@@ -4469,6 +4476,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: '比赛中心',
+    jumpTo: '跳转到',
     heroTitle: '所有赛果都在这里。',
     heroBody: '最终比分来自 scoring entries，它们也会驱动公开榜单。',
     final: '结束',
@@ -4867,6 +4875,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
   },
   results: {
     heroEyebrow: '試合センター',
+    jumpTo: 'ジャンプ',
     heroTitle: 'すべての結果を一覧で確認。',
     heroBody: '最終スコアは公開順位表にも反映されるスコア入力から算出されます。',
     final: '確定',
