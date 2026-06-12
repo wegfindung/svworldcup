@@ -4,6 +4,7 @@ import { fixtureKickoffEpoch } from '../data/competitionWindow.js'
 import { STARTING_BUDGET, getScoreMultiplierForBudget } from '../data/formation.js'
 import { isMidCleanSheetEligible } from '../data/positionClasses.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
+import { scoreEntryComponents } from '../lib/matchScoring.js'
 import { buildFixtureRoundMap } from '../lib/tournamentRounds.js'
 import type {
   FixtureSeed,
@@ -15,7 +16,6 @@ import type {
   ParticipantScoreFixtureDetail,
   ParticipantScorePlayerDetail,
   ParticipantScoreRow,
-  PerformanceCurveAnchor,
   RoundLineupSlot,
   ScoringConfig,
   SlotClass,
@@ -96,32 +96,6 @@ export interface ScoringRepository {
   withFixtureLock<T>(fixtureId: string, fn: (executor?: Queryable) => Promise<T>): Promise<T | null>
 }
 
-function derivePerformancePoints(rating: number | undefined, curve: PerformanceCurveAnchor[]) {
-  if (rating === undefined || Number.isNaN(rating)) {
-    return 0
-  }
-  if (curve.length === 0) {
-    return 0
-  }
-  if (rating < curve[0].rating) {
-    return 0
-  }
-  const lastIndex = curve.length - 1
-  if (rating >= curve[lastIndex].rating) {
-    return curve[lastIndex].points
-  }
-  for (let i = 0; i < lastIndex; i += 1) {
-    const lower = curve[i]
-    const upper = curve[i + 1]
-    if (rating >= lower.rating && rating <= upper.rating) {
-      const span = upper.rating - lower.rating
-      const t = span === 0 ? 0 : (rating - lower.rating) / span
-      return lower.points + t * (upper.points - lower.points)
-    }
-  }
-  return 0
-}
-
 function toTimestamp(value: string) {
   const timestamp = new Date(value).getTime()
   return Number.isFinite(timestamp) ? timestamp : Number.MAX_SAFE_INTEGER
@@ -129,23 +103,6 @@ function toTimestamp(value: string) {
 
 function scoreEntry(entry: MatchEntryRecord, scoring: ScoringConfig) {
   return scoreEntryComponents(entry, scoring).total
-}
-
-function scoreEntryComponents(entry: MatchEntryRecord, scoring: ScoringConfig) {
-  const goals = entry.goals * scoring.goal
-  const assists = entry.assists * scoring.assist
-  const appearance = entry.minutes > 0 ? scoring.appearance : 0
-  const minutes = entry.minutes >= 60 ? scoring.minutes : 0
-  const performance = derivePerformancePoints(entry.rating, scoring.performanceCurve)
-
-  return {
-    goals,
-    assists,
-    appearance,
-    minutes,
-    performance,
-    total: goals + assists + appearance + minutes + performance,
-  }
 }
 
 function createEmptyBreakdown(): ParticipantScoreBreakdown {

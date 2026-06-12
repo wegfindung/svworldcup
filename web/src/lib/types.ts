@@ -32,6 +32,11 @@ export interface PublicFixtureResult extends FixtureSeed {
   awayPlayers: PublicFixturePlayerResult[]
 }
 
+export interface CleanSheetByPosition {
+  slotClass: SlotClass
+  points: number
+}
+
 export interface PublicFixturePlayerResult {
   playerId: number
   displayName: string
@@ -43,6 +48,16 @@ export interface PublicFixturePlayerResult {
   cleanSheetEligible: boolean
   rating?: number
   sourceNote?: string
+  positions: string[]
+  positionMain?: string
+  goalPoints: number
+  assistPoints: number
+  appearancePoints: number
+  minutePoints: number
+  performancePoints: number
+  basePoints: number
+  cleanSheetByPosition: CleanSheetByPosition[]
+  earnsCleanSheet: boolean
 }
 
 export interface PerformanceCurveAnchor {

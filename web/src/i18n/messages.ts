@@ -556,6 +556,15 @@ const englishMessages = {
     unavailableBody:
       'Match results will appear here as soon as scoring starts.',
     finalSuffix: 'final',
+    positionsLabel: 'Positions',
+    basePointsLabel: 'Base',
+    scoringFactors: 'Match points (base)',
+    totalIfPlacedAs: 'Total if placed in slot',
+    matchTotal: 'Match total',
+    personalScoreNote:
+      'Base points only. Your own score also applies your budget multiplier and any ownership boost, and counts half for a reserve — so it differs from this figure.',
+    viewOnSoccerverse: 'View on Soccerverse',
+    close: 'Close',
   },
   tables: {
     heroEyebrow: 'public standings',
@@ -1133,6 +1142,15 @@ const spanishMessages: DeepPartial<AppMessages> = {
     unavailableTitle: 'Aún no hay resultados',
     unavailableBody: 'Los resultados aparecerán aquí cuando empiece el scoring.',
     finalSuffix: 'final',
+    positionsLabel: 'Posiciones',
+    basePointsLabel: 'Base',
+    scoringFactors: 'Puntos del partido (base)',
+    totalIfPlacedAs: 'Total según el slot',
+    matchTotal: 'Total del partido',
+    personalScoreNote:
+      'Solo puntos base. Tu propia puntuación también aplica tu multiplicador de presupuesto y cualquier boost de ownership, y cuenta la mitad para un reserva — por lo que difiere de esta cifra.',
+    viewOnSoccerverse: 'Ver en Soccerverse',
+    close: 'Cerrar',
   },
   tables: {
     heroEyebrow: 'clasificaciones públicas',
@@ -1670,6 +1688,15 @@ const italianMessages: DeepPartial<AppMessages> = {
     unavailableTitle: 'Nessun risultato per ora',
     unavailableBody: 'I risultati appariranno qui appena inizierà lo scoring.',
     finalSuffix: 'finale',
+    positionsLabel: 'Posizioni',
+    basePointsLabel: 'Base',
+    scoringFactors: 'Punti partita (base)',
+    totalIfPlacedAs: 'Totale in base allo slot',
+    matchTotal: 'Totale partita',
+    personalScoreNote:
+      'Solo punti base. Il tuo punteggio applica anche il tuo moltiplicatore budget e qualsiasi ownership boost, e vale la metà per una riserva — quindi differisce da questa cifra.',
+    viewOnSoccerverse: 'Vedi su Soccerverse',
+    close: 'Chiudi',
   },
   tables: {
     heroEyebrow: 'classifiche pubbliche',
@@ -2206,6 +2233,15 @@ const germanMessages: DeepPartial<AppMessages> = {
     unavailableTitle: 'Noch keine Ergebnisse',
     unavailableBody: 'Ergebnisse erscheinen hier, sobald das Scoring startet.',
     finalSuffix: 'final',
+    positionsLabel: 'Positionen',
+    basePointsLabel: 'Basis',
+    scoringFactors: 'Matchpunkte (Basis)',
+    totalIfPlacedAs: 'Gesamt je nach Slot',
+    matchTotal: 'Match-Gesamt',
+    personalScoreNote:
+      'Nur Basispunkte. Dein eigener Score wendet außerdem deinen Budgetmultiplikator und jeden Ownership-Boost an und zählt für einen Reservespieler nur halb — daher weicht er von diesem Wert ab.',
+    viewOnSoccerverse: 'Auf Soccerverse ansehen',
+    close: 'Schließen',
   },
   tables: {
     heroEyebrow: 'öffentliche standings',
@@ -2740,6 +2776,15 @@ const frenchMessages: DeepPartial<AppMessages> = {
     unavailableTitle: 'Aucun résultat pour le moment',
     unavailableBody: 'Les résultats apparaîtront ici dès que le scoring commencera.',
     finalSuffix: 'final',
+    positionsLabel: 'Positions',
+    basePointsLabel: 'Base',
+    scoringFactors: 'Points du match (base)',
+    totalIfPlacedAs: 'Total selon le slot',
+    matchTotal: 'Total du match',
+    personalScoreNote:
+      'Points de base uniquement. Ton propre score applique aussi ton multiplicateur budget et tout ownership boost, et compte pour moitié pour un remplaçant — il diffère donc de ce chiffre.',
+    viewOnSoccerverse: 'Voir sur Soccerverse',
+    close: 'Fermer',
   },
   tables: {
     heroEyebrow: 'classements publics',
@@ -3274,6 +3319,15 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     unavailableTitle: 'Ainda sem resultados',
     unavailableBody: 'Os resultados aparecerão aqui assim que o scoring começar.',
     finalSuffix: 'final',
+    positionsLabel: 'Posições',
+    basePointsLabel: 'Base',
+    scoringFactors: 'Pontos do jogo (base)',
+    totalIfPlacedAs: 'Total consoante o slot',
+    matchTotal: 'Total do jogo',
+    personalScoreNote:
+      'Apenas pontos base. A tua própria pontuação também aplica o teu multiplicador de orçamento e qualquer ownership boost, e conta metade para um suplente — por isso difere deste valor.',
+    viewOnSoccerverse: 'Ver no Soccerverse',
+    close: 'Fechar',
   },
   tables: {
     heroEyebrow: 'classificações públicas',
@@ -3809,6 +3863,15 @@ const russianMessages: DeepPartial<AppMessages> = {
     unavailableTitle: 'Результатов пока нет',
     unavailableBody: 'Результаты появятся здесь, как только начнется скоринг.',
     finalSuffix: 'завершен',
+    positionsLabel: 'Позиции',
+    basePointsLabel: 'База',
+    scoringFactors: 'Очки за матч (база)',
+    totalIfPlacedAs: 'Итог в зависимости от слота',
+    matchTotal: 'Итог за матч',
+    personalScoreNote:
+      'Только базовые очки. В твоем личном счете также применяется множитель бюджета и любой ownership boost, а за запасного засчитывается половина — поэтому он отличается от этого значения.',
+    viewOnSoccerverse: 'Открыть в Soccerverse',
+    close: 'Закрыть',
   },
   tables: {
     heroEyebrow: 'публичные таблицы',
@@ -4346,6 +4409,15 @@ const chineseMessages: DeepPartial<AppMessages> = {
     unavailableTitle: '暂无赛果',
     unavailableBody: 'scoring 开始后，赛果会显示在这里。',
     finalSuffix: '结束',
+    positionsLabel: '位置',
+    basePointsLabel: '基础',
+    scoringFactors: '比赛得分（基础）',
+    totalIfPlacedAs: '按所在位置计的总分',
+    matchTotal: '比赛总分',
+    personalScoreNote:
+      '仅为基础分。你自己的得分还会应用你的预算倍数和任何 ownership boost，替补只计一半 — 因此与此数值不同。',
+    viewOnSoccerverse: '在 Soccerverse 查看',
+    close: '关闭',
   },
   tables: {
     heroEyebrow: '公开排名',
@@ -4741,6 +4813,15 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     unavailableTitle: '結果はまだありません',
     unavailableBody: 'スコアリングが始まると、ここに結果が表示されます。',
     finalSuffix: '確定',
+    positionsLabel: 'ポジション',
+    basePointsLabel: '基礎',
+    scoringFactors: '試合ポイント（基礎）',
+    totalIfPlacedAs: 'スロット別の合計',
+    matchTotal: '試合合計',
+    personalScoreNote:
+      '基礎ポイントのみです。あなた自身のスコアは予算倍率と所有ボーナスも反映し、リザーブは半分として計算されます — そのためこの数値とは異なります。',
+    viewOnSoccerverse: 'Soccerverse で見る',
+    close: '閉じる',
   },
   tables: {
     heroEyebrow: '公開順位表',
