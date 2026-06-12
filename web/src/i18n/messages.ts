@@ -580,6 +580,7 @@ const englishMessages = {
   },
   tables: {
     heroEyebrow: 'public standings',
+    backToTop: 'Back to top',
     heroTitle: 'Rookie and veteran tables in one place.',
     heroBody:
       'Every active participant can appear here, even before the first points land. Scores update as match data is entered, and ties are resolved by earlier registration.',
@@ -1232,6 +1233,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: 'clasificaciones públicas',
+    backToTop: 'Volver arriba',
     heroTitle: 'Tablas Rookie y Veteran en un solo lugar.',
     heroBody: 'Cada participante activo puede aparecer aquí, incluso antes de sumar puntos. Las puntuaciones se actualizan cuando se introduce data de partidos y los empates se resuelven por registro anterior.',
     compactTitle: 'Clasificaciones',
@@ -1780,6 +1782,7 @@ const italianMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: 'classifiche pubbliche',
+    backToTop: 'Torna su',
     heroTitle: 'Classifiche Rookie e Veteran in un unico posto.',
     heroBody: 'Ogni partecipante attivo può apparire qui anche prima dei primi punti. I punteggi si aggiornano quando vengono inseriti i dati partita e i pari merito sono risolti dalla registrazione precedente.',
     compactTitle: 'Classifiche',
@@ -2327,6 +2330,7 @@ const germanMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: 'öffentliche standings',
+    backToTop: 'Nach oben',
     heroTitle: 'Rookie- und Veteran-Tabellen an einem Ort.',
     heroBody: 'Jeder aktive Teilnehmer kann hier erscheinen, auch bevor die ersten Punkte landen. Scores aktualisieren sich, sobald Matchdaten eingetragen werden, und Gleichstände werden über frühere Registrierung gelöst.',
     compactTitle: 'Tabellen',
@@ -2872,6 +2876,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: 'classements publics',
+    backToTop: 'Retour en haut',
     heroTitle: 'Classements Rookie et Veteran au même endroit.',
     heroBody: 'Chaque participant actif peut apparaître ici, même avant les premiers points. Les scores se mettent à jour avec les données match, et les égalités sont départagées par l’inscription la plus ancienne.',
     compactTitle: 'Classements',
@@ -3417,6 +3422,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: 'classificações públicas',
+    backToTop: 'Voltar ao topo',
     heroTitle: 'Tabelas Rookie e Veteran num só lugar.',
     heroBody: 'Cada participante ativo pode aparecer aqui, mesmo antes dos primeiros pontos. As pontuações atualizam quando dados de jogos são inseridos, e empates são resolvidos pelo registo mais antigo.',
     compactTitle: 'Classificações',
@@ -3963,6 +3969,7 @@ const russianMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: 'публичные таблицы',
+    backToTop: 'Наверх',
     heroTitle: 'Rookie и Veteran таблицы в одном месте.',
     heroBody: 'Каждый активный участник может появиться здесь даже до первых очков. Очки обновляются при вводе данных матчей, а ничьи решаются по более ранней регистрации.',
     compactTitle: 'Таблицы',
@@ -4511,6 +4518,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: '公开排名',
+    backToTop: '返回顶部',
     heroTitle: 'Rookie 和 Veteran 榜单集中展示。',
     heroBody: '每个 active 参赛者都可能显示在这里，即使尚未得分。录入比赛数据后分数会更新，平分时按更早注册排名靠前。',
     compactTitle: '排名',
@@ -4917,6 +4925,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
   },
   tables: {
     heroEyebrow: '公開順位表',
+    backToTop: 'トップへ戻る',
     heroTitle: 'Rookie と Veteran の順位を一か所で。',
     heroBody:
       '有効な参加者は、初ポイント前でもここに表示されます。試合データが入力されるとスコアが更新され、同点は登録が早い順で解決されます。',
