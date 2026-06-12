@@ -318,6 +318,31 @@ participant-facing read surface, distinct from the per-fixture scoring snapshot 
 - **Prize-pool payout:** each paying nation's pool is split **equally among its top 10 managers**, paid **as if every nation had 10 managers**. If a nation has **fewer than 10** qualifying managers, the leftover share **spills to the next ranked nation(s)**, with a **minimum payout of 10 SVV**. The exact wording mirrors the prize-distribution graphic on the Prizes page: *"Prize distribution equally among top 10 managers of each winning nation. If <10 managers, the budget spills to next ranked nation(s) (min 10 SVV payout)."*
 - A participant contributes their **full** total score to both their primary and their optional secondary nation (the contribution is not halved or split between the two).
 
+#### Nations table in-money indicator (display)
+
+The public Nations table (`web/src/pages/TablesPage.tsx` → `NationTable`) renders a live "in the money"
+badge per nation, derived at render time from the current ranked rows by a single downward pass of the
+payout walk above (`web/src/lib/nationPayouts.ts → computeNationPayouts`). It is a *display* of the
+canonical rule, not a new rule — the pool stays the canonical **$1,500** ($750/$450/$300), in SVV.
+
+- **The walk, one pass down the ranked table.** Each top-3 nation has its own pot ($750/$450/$300) and
+  pays its **top ≤10 managers** at the pot's per-manager rate (75 / 45 / 30 SVV). A top-3 nation with
+  fewer than 10 managers leaves its unused share — `pot − (paidManagers × rate)` — in a running
+  **leftover pool**. Nations ranked 4+ have **no own pot**: they are funded only from the leftover,
+  paying 10 SVV per manager (top ≤10) until the pool can no longer fund a 10 SVV payment, after which
+  every lower nation receives nothing.
+- **Three states per nation:** **full** (all its eligible top-≤10 managers paid — always true for the
+  top 3, and for any lower nation the leftover fully covers), **partial** (the leftover ran out
+  mid-nation, so only its top *X* managers are paid), **none** (no payout — no badge). The badge label
+  reflects the state (`tables.inTheMoney` / `tables.partiallyInTheMoney`); a tooltip shows the exact SVV
+  to the nation and the per-manager amount.
+- **Top-10 manager cap.** Inside an expanded nation, the per-manager money badge appears only on the
+  paid managers (`contributorIndex < paidManagers`), which is `≤ 10` by construction — a nation with 10+
+  managers badges only its top 10.
+- **Never statically cached.** The walk reads the live `rows` (full ranked list, *not* the search-filtered
+  subset, so a search box cannot change who is in the money). A score-driven rank shift moves a nation in
+  or out of the money on the next render with no separate invalidation.
+
 ## Prize Pool
 
 The event has a total prize pool of **$5,000 in Soccerverse Vouchers (SVV)**. **Entry is free — there
