@@ -425,7 +425,7 @@ function ParticipantTable({
                       <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">{copy.base} <span className="text-white/85 font-medium">{formatScore(row.baseScore)}</span></p>
                       <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">{copy.budget} <span className="text-[var(--color-accent)] font-semibold">{formatMultiplier(row.scoreMultiplier)}</span></p>
                       {row.bonusPercent > 0 ? (
-                        <p className="text-xs text-[var(--color-accent)] font-semibold mt-0.5">+{row.bonusPercent}% boost</p>
+                        <p className="text-xs text-[var(--color-accent)] font-semibold mt-0.5">+{row.bonusPercent.toLocaleString(undefined, { maximumFractionDigits: 1 })}% boost</p>
                       ) : null}
                       
                       <button
