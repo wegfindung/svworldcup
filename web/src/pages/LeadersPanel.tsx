@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { TeamFlag } from '../components/TeamFlag'
 import { getMessages } from '../i18n/messages'
 import { fetchPlayerPoints } from '../lib/api'
+import { earnsCleanSheetPosition } from '../lib/playerStats'
+import { toPlayerSeed, type PlayerStatsSeed } from '../lib/playerStatsSeed'
 import type { LocaleCode, PlayerPointsPayload, PlayerPointsPlayer } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
@@ -11,8 +14,6 @@ type Metric = 'goals' | 'assists' | 'cleanSheets' | 'average'
 
 const metrics: Metric[] = ['goals', 'assists', 'cleanSheets', 'average']
 const PAGE_SIZE = 50
-// Clean-sheet-earning positions: GK and DEF always, a MID only with a defensive-midfielder code.
-const DM_POSITIONS = ['DML', 'DMR', 'DMC', 'DM']
 
 function formatRating(value: number) {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -31,18 +32,10 @@ function metricValue(player: PlayerPointsPlayer, metric: Metric) {
 }
 
 // The clean-sheet board only lists players whose position can earn clean-sheet points (GK/DEF, or a
-// defensive-midfield MID) — a forward on a shut-out team is excluded.
-function earnsCleanSheetPosition(player: PlayerPointsPlayer) {
-  return (
-    player.positionClasses.includes('GK') ||
-    player.positionClasses.includes('DEF') ||
-    (player.positionClasses.includes('MID') && player.positions.some((code) => DM_POSITIONS.includes(code)))
-  )
-}
-
+// defensive-midfield MID) — a forward on a shut-out team is excluded (shared helper in lib/playerStats).
 function qualifies(player: PlayerPointsPlayer, metric: Metric) {
   if (metric === 'average') return player.averageRating > 0
-  if (metric === 'cleanSheets') return player.cleanSheets > 0 && earnsCleanSheetPosition(player)
+  if (metric === 'cleanSheets') return player.cleanSheets > 0 && earnsCleanSheetPosition(player.positionClasses, player.positions)
   return metricValue(player, metric) > 0
 }
 
@@ -54,6 +47,7 @@ export function LeadersPanel({ locale }: { locale: LocaleCode }) {
   const [metric, setMetric] = useState<Metric>('goals')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
+  const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
 
   useEffect(() => {
     let active = true
@@ -186,20 +180,26 @@ export function LeadersPanel({ locale }: { locale: LocaleCode }) {
                   <span className="mono grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-xs text-[var(--color-muted)]">
                     {(currentPage - 1) * PAGE_SIZE + index + 1}
                   </span>
-                  <PlayerPortrait
-                    src={player.imageUrl ?? '/placeholders/player.svg'}
-                    alt={player.displayName}
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 shrink-0 rounded-lg border border-white/10 object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{player.displayName}</p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-muted)]">
-                      <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
-                      <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setModalSeed(toPlayerSeed(player))}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <PlayerPortrait
+                      src={player.imageUrl ?? '/placeholders/player.svg'}
+                      alt={player.displayName}
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 shrink-0 rounded-lg border border-white/10 object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-muted)]">
+                        <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+                        <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
+                      </div>
                     </div>
-                  </div>
+                  </button>
                   <div className="shrink-0 text-right">
                     <span className="text-2xl font-black leading-none text-[var(--color-accent)]">
                       {metric === 'average' ? formatRating(value) : value}
@@ -236,6 +236,8 @@ export function LeadersPanel({ locale }: { locale: LocaleCode }) {
           ) : null}
         </>
       ) : null}
+
+      {modalSeed ? <PlayerStatsModal seed={modalSeed} locale={locale} onClose={() => setModalSeed(null)} /> : null}
     </div>
   )
 }

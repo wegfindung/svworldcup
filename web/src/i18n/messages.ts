@@ -764,6 +764,11 @@ const englishMessages = {
     averageUnit: 'rating',
     avgMinNote: 'Players with at least 2 appearances.',
   },
+  playerModal: {
+    value: 'Value',
+    tournamentTotals: 'Tournament totals',
+    noMatchData: 'No match data yet.',
+  },
 }
 
 export type AppMessages = typeof englishMessages
@@ -5053,6 +5058,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       averageUnit: 'media',
       avgMinNote: 'Jugadores con al menos 2 partidos.',
     },
+    playerModal: {
+      value: 'Valor',
+      tournamentTotals: 'Totales del torneo',
+      noMatchData: 'Aún sin datos de partidos.',
+    },
     playerPoints: {
       searchPlaceholder: 'Buscar jugador, equipo o ID',
       perGameLabel: 'Por partido',
@@ -5216,6 +5226,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       cleanSheetsUnit: 'PI',
       averageUnit: 'media',
       avgMinNote: 'Giocatori con almeno 2 presenze.',
+    },
+    playerModal: {
+      value: 'Valore',
+      tournamentTotals: 'Totali del torneo',
+      noMatchData: 'Ancora nessun dato delle partite.',
     },
     playerPoints: {
       searchPlaceholder: 'Cerca giocatore, squadra o ID',
@@ -5381,6 +5396,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       averageUnit: 'Note',
       avgMinNote: 'Spieler mit mindestens 2 Einsätzen.',
     },
+    playerModal: {
+      value: 'Wert',
+      tournamentTotals: 'Turnier-Gesamtwerte',
+      noMatchData: 'Noch keine Spieldaten.',
+    },
     playerPoints: {
       searchPlaceholder: 'Spieler, Team oder ID suchen',
       perGameLabel: 'Pro Spiel',
@@ -5544,6 +5564,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       cleanSheetsUnit: 'CI',
       averageUnit: 'note',
       avgMinNote: 'Joueurs avec au moins 2 matchs.',
+    },
+    playerModal: {
+      value: 'Valeur',
+      tournamentTotals: 'Totaux du tournoi',
+      noMatchData: 'Pas encore de données de match.',
     },
     playerPoints: {
       searchPlaceholder: 'Rechercher un joueur, une équipe ou un ID',
@@ -5710,6 +5735,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       averageUnit: 'média',
       avgMinNote: 'Jogadores com pelo menos 2 jogos.',
     },
+    playerModal: {
+      value: 'Valor',
+      tournamentTotals: 'Totais do torneio',
+      noMatchData: 'Ainda sem dados de jogos.',
+    },
     playerPoints: {
       searchPlaceholder: 'Procurar jogador, equipa ou ID',
       perGameLabel: 'Por jogo',
@@ -5875,6 +5905,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       averageUnit: 'оценка',
       avgMinNote: 'Игроки минимум с 2 матчами.',
     },
+    playerModal: {
+      value: 'Стоимость',
+      tournamentTotals: 'Итоги турнира',
+      noMatchData: 'Пока нет данных о матчах.',
+    },
     playerPoints: {
       searchPlaceholder: 'Поиск игрока, команды или ID',
       perGameLabel: 'За матч',
@@ -6039,6 +6074,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       averageUnit: '评分',
       avgMinNote: '至少出场 2 次的球员。',
     },
+    playerModal: {
+      value: '身价',
+      tournamentTotals: '赛事总计',
+      noMatchData: '暂无比赛数据。',
+    },
     playerPoints: {
       searchPlaceholder: '搜索球员、球队或 ID',
       perGameLabel: '场均',
@@ -6199,6 +6239,11 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       cleanSheetsUnit: '無失点',
       averageUnit: '評価',
       avgMinNote: '2試合以上出場の選手。',
+    },
+    playerModal: {
+      value: '価値',
+      tournamentTotals: '大会通算',
+      noMatchData: 'まだ試合データがありません。',
     },
     playerPoints: {
       searchPlaceholder: '選手・チーム・IDで検索',

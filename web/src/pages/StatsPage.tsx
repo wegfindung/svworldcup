@@ -43,7 +43,7 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
         </div>
       </section>
 
-      {active === 'usage' ? <UsageStatsPanel /> : active === 'points' ? <PlayerPointsPanel locale={locale} /> : <LeadersPanel locale={locale} />}
+      {active === 'usage' ? <UsageStatsPanel locale={locale} /> : active === 'points' ? <PlayerPointsPanel locale={locale} /> : <LeadersPanel locale={locale} />}
     </div>
   )
 }

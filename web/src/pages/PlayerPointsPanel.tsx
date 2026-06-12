@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { StatTile } from '../components/StatTile'
 import { TeamFlag } from '../components/TeamFlag'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { fetchPlayerPoints } from '../lib/api'
+import { toPlayerSeed, type PlayerStatsSeed } from '../lib/playerStatsSeed'
 import type { LocaleCode, PlayerPointsPayload, PlayerPointsPlayer, SlotClass } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
@@ -48,7 +50,7 @@ function valueForMode(player: PlayerPointsPlayer, position: SlotClass, mode: Poi
   return mode === 'perGame' ? (player.appearances > 0 ? total / player.appearances : 0) : total
 }
 
-function PlayerPointsRow({ player, rank, position, mode, copy }: { player: PlayerPointsPlayer; rank: number; position: SlotClass; mode: PointsMode; copy: PointsCopy }) {
+function PlayerPointsRow({ player, rank, position, mode, copy, onSelect }: { player: PlayerPointsPlayer; rank: number; position: SlotClass; mode: PointsMode; copy: PointsCopy; onSelect: () => void }) {
   const cleanSheet = cleanSheetForPosition(player, position)
   const total = player.basePoints + cleanSheet
   const value = valueForMode(player, position, mode)
@@ -59,21 +61,23 @@ function PlayerPointsRow({ player, rank, position, mode, copy }: { player: Playe
         <span className="mono grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-xs text-[var(--color-muted)]">
           #{rank}
         </span>
-        <PlayerPortrait
-          src={player.imageUrl ?? '/placeholders/player.svg'}
-          alt={player.displayName}
-          width={52}
-          height={52}
-          className="h-12 w-12 rounded-xl border border-white/10 object-cover"
-        />
-        <div className="min-w-0">
-          <p className="truncate text-base font-semibold text-white">{player.displayName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
-            <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
-            <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
-            <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
+        <button type="button" onClick={onSelect} className="flex min-w-0 items-center gap-3 text-left">
+          <PlayerPortrait
+            src={player.imageUrl ?? '/placeholders/player.svg'}
+            alt={player.displayName}
+            width={52}
+            height={52}
+            className="h-12 w-12 rounded-xl border border-white/10 object-cover"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
+              <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+              <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
+              <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
+            </div>
           </div>
-        </div>
+        </button>
       </div>
 
       <div>
@@ -118,6 +122,7 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
   const [mode, setMode] = useState<PointsMode>('total')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
+  const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
 
   useEffect(() => {
     let active = true
@@ -268,6 +273,7 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
                 position={position}
                 mode={mode}
                 copy={copy}
+                onSelect={() => setModalSeed(toPlayerSeed(player))}
               />
             ))}
           </section>
@@ -299,6 +305,8 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
           ) : null}
         </>
       ) : null}
+
+      {modalSeed ? <PlayerStatsModal seed={modalSeed} locale={locale} onClose={() => setModalSeed(null)} /> : null}
     </div>
   )
 }

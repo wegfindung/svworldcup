@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { StatTile } from '../components/StatTile'
 import { TeamFlag } from '../components/TeamFlag'
 import { fetchSquadUsage } from '../lib/api'
-import type { PublicSquadUsagePayload, PublicSquadUsagePlayer, SlotClass } from '../lib/types'
+import { toPlayerSeed, type PlayerStatsSeed } from '../lib/playerStatsSeed'
+import type { LocaleCode, PublicSquadUsagePayload, PublicSquadUsagePlayer, SlotClass } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
 type PositionFilter = 'ALL' | SlotClass
@@ -54,7 +56,7 @@ function UsageBar({ value }: { value: number }) {
   )
 }
 
-function PlayerUsageRow({ player, rank }: { player: PublicSquadUsagePlayer; rank: number }) {
+function PlayerUsageRow({ player, rank, onSelect }: { player: PublicSquadUsagePlayer; rank: number; onSelect: () => void }) {
   const previewManagers = player.managers.slice(0, 4)
   const hiddenManagerCount = Math.max(0, player.managers.length - previewManagers.length)
 
@@ -78,21 +80,23 @@ function PlayerUsageRow({ player, rank }: { player: PublicSquadUsagePlayer; rank
             ],
           }}
         >
-          <PlayerPortrait
-            src={player.imageUrl ?? '/placeholders/player.svg'}
-            alt={player.displayName}
-            width={52}
-            height={52}
-            className="h-12 w-12 rounded-xl border border-white/10 object-cover"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-white">{player.displayName}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
-              <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
-              <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
-              <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
+          <button type="button" onClick={onSelect} className="flex min-w-0 items-center gap-3 text-left">
+            <PlayerPortrait
+              src={player.imageUrl ?? '/placeholders/player.svg'}
+              alt={player.displayName}
+              width={52}
+              height={52}
+              className="h-12 w-12 rounded-xl border border-white/10 object-cover"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
+                <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+                <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
+                <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
+              </div>
             </div>
-          </div>
+          </button>
         </PlayerTooltip>
       </div>
 
@@ -139,13 +143,14 @@ function PlayerUsageRow({ player, rank }: { player: PublicSquadUsagePlayer; rank
 
 // The Usage tab of the Stats page (StatsPage renders the shared hero + tab bar around it). Body copy here
 // is still English-only — localizing it is a tracked follow-up.
-export function UsageStatsPanel() {
+export function UsageStatsPanel({ locale }: { locale: LocaleCode }) {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [payload, setPayload] = useState<PublicSquadUsagePayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
   const [sortKey, setSortKey] = useState<SortKey>('presence')
+  const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
 
   useEffect(() => {
     let active = true
@@ -260,10 +265,12 @@ export function UsageStatsPanel() {
       {loadState === 'ready' && filteredPlayers.length > 0 ? (
         <section className="grid gap-3">
           {filteredPlayers.map((player, index) => (
-            <PlayerUsageRow key={player.playerId} player={player} rank={index + 1} />
+            <PlayerUsageRow key={player.playerId} player={player} rank={index + 1} onSelect={() => setModalSeed(toPlayerSeed(player))} />
           ))}
         </section>
       ) : null}
+
+      {modalSeed ? <PlayerStatsModal seed={modalSeed} locale={locale} onClose={() => setModalSeed(null)} /> : null}
     </div>
   )
 }

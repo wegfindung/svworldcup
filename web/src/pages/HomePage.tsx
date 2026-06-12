@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { ScoringCalculator } from '../components/ScoringCalculator'
 import { TeamFlag } from '../components/TeamFlag'
@@ -10,6 +11,7 @@ import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOption
 import { prizeLeagues, prizeTotalWithUnit } from '../data/prizePool'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { fetchPlayerPoints, fetchSquadUsage, recordLandingPageVisit } from '../lib/api'
+import type { PlayerStatsSeed } from '../lib/playerStatsSeed'
 import { withReferral } from '../lib/referral'
 import { readParticipantReady } from '../lib/participantReady'
 import type { FixtureSeed, LocaleCode, PlayerPointsPayload, PublicSquadUsagePayload, ScoringConfig, TeamSeed } from '../lib/types'
@@ -263,7 +265,7 @@ function formatSpotlightPoints(value: number) {
 
 type SpotlightRow = { playerId: number; name: string; imageUrl?: string; value: string; unit: string }
 
-function SpotlightTeamCard({ name, teamCode, tag, rows, emptyLabel }: { name: string; teamCode: string; tag: string; rows: SpotlightRow[]; emptyLabel: string }) {
+function SpotlightTeamCard({ name, teamCode, tag, rows, emptyLabel, onSelectPlayer }: { name: string; teamCode: string; tag: string; rows: SpotlightRow[]; emptyLabel: string; onSelectPlayer: (seed: PlayerStatsSeed) => void }) {
   return (
     <div className="rounded-[1rem] border border-white/8 bg-black/18 p-3.5">
       <div className="flex items-center justify-between gap-2">
@@ -279,15 +281,21 @@ function SpotlightTeamCard({ name, teamCode, tag, rows, emptyLabel }: { name: st
         <ol className="mt-3 space-y-2">
           {rows.map((row, index) => (
             <li key={row.playerId} className="flex items-center gap-2.5">
-              <span className="mono w-4 shrink-0 text-[11px] text-[var(--color-muted)]">{index + 1}</span>
-              <PlayerPortrait
-                src={row.imageUrl ?? '/placeholders/player.svg'}
-                alt={row.name}
-                width={28}
-                height={28}
-                className="h-7 w-7 shrink-0 rounded-lg border border-white/10 object-cover"
-              />
-              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white">{row.name}</span>
+              <button
+                type="button"
+                onClick={() => onSelectPlayer({ playerId: row.playerId, displayName: row.name, teamCode, imageUrl: row.imageUrl })}
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+              >
+                <span className="mono w-4 shrink-0 text-[11px] text-[var(--color-muted)]">{index + 1}</span>
+                <PlayerPortrait
+                  src={row.imageUrl ?? '/placeholders/player.svg'}
+                  alt={row.name}
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 rounded-lg border border-white/10 object-cover"
+                />
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white transition hover:text-[var(--color-accent)]">{row.name}</span>
+              </button>
               <span className="mono shrink-0 text-xs font-bold text-[var(--color-accent)]">
                 {row.value}
                 <span className="ml-1 text-[9px] font-normal text-[var(--color-muted)]">{row.unit}</span>
@@ -310,14 +318,17 @@ function NextMatchSpotlightCard({
   copy,
   match,
   referrerSoccerverseUsername,
+  locale,
 }: {
   copy: HomeCopy['spotlight']
   match?: NextMatchInfo
   referrerSoccerverseUsername: string
+  locale: LocaleCode
 }) {
   const [usage, setUsage] = useState<PublicSquadUsagePayload | null>(null)
   const [points, setPoints] = useState<PlayerPointsPayload | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
 
   useEffect(() => {
     let active = true
@@ -395,6 +406,7 @@ function NextMatchSpotlightCard({
                 tag={copy.picksTag}
                 rows={pickRows(column.teamCode)}
                 emptyLabel={copy.empty}
+                onSelectPlayer={setModalSeed}
               />
             ))}
           </div>
@@ -408,12 +420,15 @@ function NextMatchSpotlightCard({
                   tag={copy.pointsTag}
                   rows={column.rows}
                   emptyLabel={copy.empty}
+                  onSelectPlayer={setModalSeed}
                 />
               ))}
             </div>
           ) : null}
         </div>
       )}
+
+      {modalSeed ? <PlayerStatsModal seed={modalSeed} locale={locale} onClose={() => setModalSeed(null)} /> : null}
     </div>
   )
 }
@@ -862,7 +877,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
           </div>
         </div>
 
-        <NextMatchSpotlightCard copy={homeCopy.spotlight} match={nextSlot.matches[0]} referrerSoccerverseUsername={referrerSoccerverseUsername} />
+        <NextMatchSpotlightCard copy={homeCopy.spotlight} match={nextSlot.matches[0]} referrerSoccerverseUsername={referrerSoccerverseUsername} locale={locale} />
       </section>
 
       <LandingPrizeSection copy={copy.prizes} referrerSoccerverseUsername={referrerSoccerverseUsername} />
