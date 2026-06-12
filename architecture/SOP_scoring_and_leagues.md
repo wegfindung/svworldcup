@@ -126,6 +126,26 @@ applies their budget multiplier and any ownership boost, and halves for a reserv
 is intentionally not equal to any individual manager's banked total. This is the same per-participant
 divergence the import engine refuses to collapse into one number (`SOP_match_data_import.md` "Rating").
 
+## Stats — Player Points Leaderboard
+
+The public Stats page (`/stats`) has two tabs: **Usage** (revealed-squad pick rate) and **Points**
+(`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
+`/api/public/player-points`). The Points tab ranks every player who has a promoted match entry by the base
+points they have produced **in a chosen position**:
+
+- Per player, the squad-independent base components (goal/assist/appearance/minutes/performance) are summed
+  across all promoted entries using the shared `lib/matchScoring.ts` helpers, so the figures match the
+  Results page and the scoring engine exactly.
+- The clean sheet is accumulated **per eligible slot class** (`cleanSheetByPosition`). Selecting a position
+  tab (GK/DEF/MID/FWD) ranks the players eligible for it by `base + that position's clean sheet`. This is
+  the same fold the Results page applies to a goalkeeper, generalised: once the position is fixed the clean
+  sheet is deterministic. A versatile player appears under each position they qualify for, with a different
+  total in each.
+- The list is paginated at 50 players per page and supports a name / team / ID search.
+- These are **base points only** — a participant's personal score additionally applies their budget
+  multiplier, ownership boost, and reserve half-weight, so the figures here are not any manager's banked
+  total (the same caveat as the Results page and the import engine).
+
 ## Leaderboard Read Cache
 
 Public leaderboard reads (`/leaderboards/rookie|veteran|nations`) and `/profiles/:slug` are served

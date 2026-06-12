@@ -35,6 +35,7 @@ import type {
   PublicFixtureResult,
   PublicParticipantProfile,
   PublicSquadUsagePayload,
+  PlayerPointsPayload,
   NationParticipationRow,
   NationScoreRow,
   ReferralAnalyticsRow,
@@ -647,6 +648,10 @@ export function fetchPublicProfile(slug: string) {
 
 export function fetchSquadUsage() {
   return getCachedJson<PublicSquadUsagePayload>('/api/public/squad-usage')
+}
+
+export function fetchPlayerPoints() {
+  return getCachedJson<PlayerPointsPayload>('/api/public/player-points')
 }
 
 export function fetchAdminOverview(signal?: AbortSignal) {

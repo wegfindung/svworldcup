@@ -16,6 +16,7 @@ import { buildRequestRiskSignal } from '../lib/riskSignals.js'
 import { handleShareCardImage } from './share.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
 import { buildPublicFixtureResults } from '../services/matchResults.js'
+import { buildPlayerPointsLeaderboard } from '../services/playerPointsLeaderboard.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
 const playerSearchSchema = z.object({
@@ -210,6 +211,19 @@ export function createPublicRouter({
         pendingFixtures: items.filter((item) => item.status === 'pending').length,
       },
     })
+  })
+
+  router.get('/player-points', async (_req, res) => {
+    const currentFixtures = await fixtureRepository.listFixtures()
+    const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
+    const playersByTeam = new Map<string, Awaited<ReturnType<typeof teamPoolRepository.listByTeam>>>()
+    const [entries, scoring] = await Promise.all([
+      scoringRepository.listMatchEntries(),
+      configRepository.getScoringConfig(),
+      Promise.all(teamCodes.map(async (teamCode) => playersByTeam.set(teamCode, await teamPoolRepository.listByTeam(teamCode)))),
+    ])
+    const { items, summary } = buildPlayerPointsLeaderboard(playersByTeam, entries, scoring)
+    res.json({ items, summary })
   })
 
   router.get('/squad-usage', async (_req, res) => {

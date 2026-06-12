@@ -15,7 +15,7 @@ const englishMessages = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Results' },
       { to: '/tables', label: 'Tables' },
-      { to: '/squad-usage', label: 'Usage' },
+      { to: '/stats', label: 'Stats' },
     ],
     important: {
       label: 'Guide',
@@ -716,6 +716,31 @@ const englishMessages = {
     message:
       'Live tournament data could not be loaded — showing default information, so some details may be out of date.',
   },
+  stats: {
+    eyebrow: 'stats',
+    title: 'Tournament stats',
+    body: 'Player usage across revealed squads, and the players who have produced the most base points in each position.',
+    tabUsage: 'Usage',
+    tabPoints: 'Points',
+  },
+  playerPoints: {
+    searchPlaceholder: 'Search player, team, or ID',
+    rankedAs: 'Ranked by points earned as {position}',
+    statPlayers: 'players ranked',
+    statFixtures: 'fixtures counted',
+    totalLabel: 'Total',
+    baseLabel: 'base',
+    cleanSheetLabel: 'clean sheet',
+    appsLabel: 'apps',
+    previous: 'Previous',
+    next: 'Next',
+    pageStatus: 'Page {page} of {totalPages}',
+    note: 'Base points only — a manager’s personal score also applies their budget multiplier, ownership boost, and reserve half-weight.',
+    emptyTitle: 'No points yet',
+    emptyBody: 'When match results are promoted, the top base-point producers appear here.',
+    errorTitle: 'Points unavailable',
+    errorBody: 'The player points table could not be loaded.',
+  },
 }
 
 export type AppMessages = typeof englishMessages
@@ -727,7 +752,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Constructor' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tablas' },
-      { to: '/squad-usage', label: 'Uso' },
+      { to: '/stats', label: 'Estadísticas' },
     ],
     important: {
       label: 'Guía',
@@ -1274,7 +1299,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Costruttore' },
       { to: '/results', label: 'Risultati' },
       { to: '/tables', label: 'Classifiche' },
-      { to: '/squad-usage', label: 'Utilizzo' },
+      { to: '/stats', label: 'Statistiche' },
     ],
     important: {
       label: 'Guida',
@@ -1821,7 +1846,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Aufstellung' },
       { to: '/results', label: 'Ergebnisse' },
       { to: '/tables', label: 'Tabellen' },
-      { to: '/squad-usage', label: 'Nutzung' },
+      { to: '/stats', label: 'Statistiken' },
     ],
     important: {
       label: 'Infos',
@@ -2367,7 +2392,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Composition' },
       { to: '/results', label: 'Résultats' },
       { to: '/tables', label: 'Classements' },
-      { to: '/squad-usage', label: 'Usage' },
+      { to: '/stats', label: 'Statistiques' },
     ],
     important: {
       label: 'Guide',
@@ -2911,7 +2936,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Construtor' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tabelas' },
-      { to: '/squad-usage', label: 'Uso' },
+      { to: '/stats', label: 'Estatísticas' },
     ],
     important: {
       label: 'Guia',
@@ -3455,7 +3480,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Конструктор' },
       { to: '/results', label: 'Результаты' },
       { to: '/tables', label: 'Таблицы' },
-      { to: '/squad-usage', label: 'Использование' },
+      { to: '/stats', label: 'Статистика' },
     ],
     important: {
       label: 'Гид',
@@ -4000,7 +4025,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: '阵容' },
       { to: '/results', label: '赛果' },
       { to: '/tables', label: '榜单' },
-      { to: '/squad-usage', label: '使用率' },
+      { to: '/stats', label: '数据' },
     ],
     important: {
       label: '指南',
@@ -4547,7 +4572,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'ビルダー' },
       { to: '/results', label: '結果' },
       { to: '/tables', label: '順位表' },
-      { to: '/squad-usage', label: '起用率' },
+      { to: '/stats', label: 'スタッツ' },
     ],
     important: {
       label: 'ガイド',
@@ -4986,6 +5011,31 @@ function mergeMessages<T>(base: T, override: DeepPartial<T> | undefined): T {
 const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
   en: {},
   es: {
+    stats: {
+      eyebrow: 'estadísticas',
+      title: 'Estadísticas del torneo',
+      body: 'Uso de jugadores en las plantillas reveladas y los jugadores que han generado más puntos base en cada posición.',
+      tabUsage: 'Uso',
+      tabPoints: 'Puntos',
+    },
+    playerPoints: {
+      searchPlaceholder: 'Buscar jugador, equipo o ID',
+      rankedAs: 'Clasificados por puntos como {position}',
+      statPlayers: 'jugadores clasificados',
+      statFixtures: 'partidos contados',
+      totalLabel: 'Total',
+      baseLabel: 'base',
+      cleanSheetLabel: 'portería a cero',
+      appsLabel: 'part.',
+      previous: 'Anterior',
+      next: 'Siguiente',
+      pageStatus: 'Página {page} de {totalPages}',
+      note: 'Solo puntos base — la puntuación personal de un mánager también aplica su multiplicador de presupuesto, el bonus de propiedad y la mitad de peso de los suplentes.',
+      emptyTitle: 'Aún no hay puntos',
+      emptyBody: 'Cuando se publiquen los resultados de los partidos, aquí aparecerán los que más puntos base generan.',
+      errorTitle: 'Puntos no disponibles',
+      errorBody: 'No se pudo cargar la tabla de puntos de jugadores.',
+    },
     nav: { logoAlt: 'Evento comunitario The Grand Tournament' },
     home: {
       hero: {
@@ -5102,6 +5152,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   it: {
+    stats: {
+      eyebrow: 'statistiche',
+      title: 'Statistiche del torneo',
+      body: 'Utilizzo dei giocatori nelle rose svelate e i giocatori che hanno prodotto più punti base in ogni posizione.',
+      tabUsage: 'Utilizzo',
+      tabPoints: 'Punti',
+    },
+    playerPoints: {
+      searchPlaceholder: 'Cerca giocatore, squadra o ID',
+      rankedAs: 'In classifica per punti come {position}',
+      statPlayers: 'giocatori in classifica',
+      statFixtures: 'partite conteggiate',
+      totalLabel: 'Totale',
+      baseLabel: 'base',
+      cleanSheetLabel: 'porta inviolata',
+      appsLabel: 'pres.',
+      previous: 'Precedente',
+      next: 'Successivo',
+      pageStatus: 'Pagina {page} di {totalPages}',
+      note: 'Solo punti base — il punteggio personale di un manager applica anche il moltiplicatore di budget, il bonus di proprietà e il dimezzamento per le riserve.',
+      emptyTitle: 'Ancora nessun punto',
+      emptyBody: 'Quando i risultati delle partite vengono pubblicati, qui compaiono i migliori per punti base.',
+      errorTitle: 'Punti non disponibili',
+      errorBody: 'Impossibile caricare la tabella dei punti dei giocatori.',
+    },
     nav: { logoAlt: 'Evento community The Grand Tournament' },
     home: {
       hero: {
@@ -5218,6 +5293,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   de: {
+    stats: {
+      eyebrow: 'statistiken',
+      title: 'Turnierstatistiken',
+      body: 'Spielereinsatz in den enthüllten Kadern und die Spieler mit den meisten Basispunkten je Position.',
+      tabUsage: 'Nutzung',
+      tabPoints: 'Punkte',
+    },
+    playerPoints: {
+      searchPlaceholder: 'Spieler, Team oder ID suchen',
+      rankedAs: 'Sortiert nach Punkten als {position}',
+      statPlayers: 'Spieler im Ranking',
+      statFixtures: 'gezählte Spiele',
+      totalLabel: 'Gesamt',
+      baseLabel: 'Basis',
+      cleanSheetLabel: 'zu null',
+      appsLabel: 'Eins.',
+      previous: 'Zurück',
+      next: 'Weiter',
+      pageStatus: 'Seite {page} von {totalPages}',
+      note: 'Nur Basispunkte — die persönliche Wertung eines Managers berücksichtigt zusätzlich den Budget-Multiplikator, den Besitz-Bonus und die Halbwertung für Reservisten.',
+      emptyTitle: 'Noch keine Punkte',
+      emptyBody: 'Sobald Spielergebnisse freigegeben sind, erscheinen hier die Spieler mit den meisten Basispunkten.',
+      errorTitle: 'Punkte nicht verfügbar',
+      errorBody: 'Die Spieler-Punktetabelle konnte nicht geladen werden.',
+    },
     nav: { logoAlt: 'The Grand Tournament Community-Event' },
     home: {
       hero: {
@@ -5334,6 +5434,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   fr: {
+    stats: {
+      eyebrow: 'statistiques',
+      title: 'Statistiques du tournoi',
+      body: 'Utilisation des joueurs dans les effectifs révélés et les joueurs ayant produit le plus de points de base à chaque poste.',
+      tabUsage: 'Usage',
+      tabPoints: 'Points',
+    },
+    playerPoints: {
+      searchPlaceholder: 'Rechercher un joueur, une équipe ou un ID',
+      rankedAs: 'Classés par points en tant que {position}',
+      statPlayers: 'joueurs classés',
+      statFixtures: 'matchs comptabilisés',
+      totalLabel: 'Total',
+      baseLabel: 'base',
+      cleanSheetLabel: 'cage inviolée',
+      appsLabel: 'matchs',
+      previous: 'Précédent',
+      next: 'Suivant',
+      pageStatus: 'Page {page} sur {totalPages}',
+      note: 'Points de base uniquement — le score personnel d’un manager applique aussi son multiplicateur de budget, le bonus de possession et la demi-pondération des remplaçants.',
+      emptyTitle: 'Pas encore de points',
+      emptyBody: 'Une fois les résultats des matchs publiés, les meilleurs producteurs de points de base apparaîtront ici.',
+      errorTitle: 'Points indisponibles',
+      errorBody: 'Le tableau des points des joueurs n’a pas pu être chargé.',
+    },
     nav: { logoAlt: 'Événement communautaire The Grand Tournament' },
     home: {
       hero: {
@@ -5451,6 +5576,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   pt: {
+    stats: {
+      eyebrow: 'estatísticas',
+      title: 'Estatísticas do torneio',
+      body: 'Utilização de jogadores nas equipas reveladas e os jogadores que geraram mais pontos base em cada posição.',
+      tabUsage: 'Uso',
+      tabPoints: 'Pontos',
+    },
+    playerPoints: {
+      searchPlaceholder: 'Procurar jogador, equipa ou ID',
+      rankedAs: 'Classificados por pontos como {position}',
+      statPlayers: 'jogadores classificados',
+      statFixtures: 'jogos contabilizados',
+      totalLabel: 'Total',
+      baseLabel: 'base',
+      cleanSheetLabel: 'baliza a zero',
+      appsLabel: 'jogos',
+      previous: 'Anterior',
+      next: 'Seguinte',
+      pageStatus: 'Página {page} de {totalPages}',
+      note: 'Apenas pontos base — a pontuação pessoal de um manager também aplica o multiplicador de orçamento, o bónus de propriedade e a metade do peso dos suplentes.',
+      emptyTitle: 'Ainda sem pontos',
+      emptyBody: 'Quando os resultados dos jogos forem publicados, os que mais pontos base geram aparecem aqui.',
+      errorTitle: 'Pontos indisponíveis',
+      errorBody: 'Não foi possível carregar a tabela de pontos dos jogadores.',
+    },
     nav: { logoAlt: 'Evento comunitário The Grand Tournament' },
     home: {
       hero: {
@@ -5568,6 +5718,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   ru: {
+    stats: {
+      eyebrow: 'статистика',
+      title: 'Статистика турнира',
+      body: 'Использование игроков в раскрытых составах и игроки, набравшие больше всего базовых очков на каждой позиции.',
+      tabUsage: 'Использование',
+      tabPoints: 'Очки',
+    },
+    playerPoints: {
+      searchPlaceholder: 'Поиск игрока, команды или ID',
+      rankedAs: 'Ранжировано по очкам на позиции {position}',
+      statPlayers: 'игроков в рейтинге',
+      statFixtures: 'учтено матчей',
+      totalLabel: 'Итого',
+      baseLabel: 'база',
+      cleanSheetLabel: 'сухой матч',
+      appsLabel: 'матчи',
+      previous: 'Назад',
+      next: 'Вперёд',
+      pageStatus: 'Страница {page} из {totalPages}',
+      note: 'Только базовые очки — личный счёт менеджера также учитывает множитель бюджета, бонус владения и половинный вес запасных.',
+      emptyTitle: 'Пока нет очков',
+      emptyBody: 'Когда результаты матчей будут опубликованы, здесь появятся игроки с наибольшим числом базовых очков.',
+      errorTitle: 'Очки недоступны',
+      errorBody: 'Не удалось загрузить таблицу очков игроков.',
+    },
     nav: { logoAlt: 'Комьюнити-событие The Grand Tournament' },
     home: {
       hero: {
@@ -5684,6 +5859,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   zh: {
+    stats: {
+      eyebrow: '数据',
+      title: '赛事数据',
+      body: '已公开阵容中的球员使用情况，以及每个位置上获得最多基础积分的球员。',
+      tabUsage: '使用率',
+      tabPoints: '积分',
+    },
+    playerPoints: {
+      searchPlaceholder: '搜索球员、球队或 ID',
+      rankedAs: '按作为 {position} 获得的积分排名',
+      statPlayers: '上榜球员',
+      statFixtures: '已统计比赛',
+      totalLabel: '总计',
+      baseLabel: '基础',
+      cleanSheetLabel: '零封',
+      appsLabel: '出场',
+      previous: '上一页',
+      next: '下一页',
+      pageStatus: '第 {page} / {totalPages} 页',
+      note: '仅为基础积分——经理的个人得分还会应用其预算倍数、持股加成以及替补的半数权重。',
+      emptyTitle: '暂无积分',
+      emptyBody: '比赛结果公布后，基础积分最高的球员将显示在此处。',
+      errorTitle: '积分不可用',
+      errorBody: '无法加载球员积分表。',
+    },
     nav: { logoAlt: 'The Grand Tournament 社区活动' },
     home: {
       hero: {
@@ -5797,6 +5997,31 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     },
   },
   ja: {
+    stats: {
+      eyebrow: 'スタッツ',
+      title: '大会スタッツ',
+      body: '公開されたスカッドでの選手起用状況と、各ポジションで最も多くの基礎ポイントを獲得した選手。',
+      tabUsage: '起用率',
+      tabPoints: 'ポイント',
+    },
+    playerPoints: {
+      searchPlaceholder: '選手・チーム・IDで検索',
+      rankedAs: '{position} としての獲得ポイント順',
+      statPlayers: 'ランキング選手数',
+      statFixtures: '集計試合数',
+      totalLabel: '合計',
+      baseLabel: '基礎',
+      cleanSheetLabel: '無失点',
+      appsLabel: '出場',
+      previous: '前へ',
+      next: '次へ',
+      pageStatus: '{totalPages} ページ中 {page} ページ目',
+      note: '基礎ポイントのみ — マネージャーの個人スコアには予算倍率・保有ボーナス・控えの半減も適用されます。',
+      emptyTitle: 'まだポイントはありません',
+      emptyBody: '試合結果が反映されると、基礎ポイントの多い選手がここに表示されます。',
+      errorTitle: 'ポイントを表示できません',
+      errorBody: '選手ポイント表を読み込めませんでした。',
+    },
     prizes: {
       eyebrow: '賞金プール',
       landingTitle: '賞金プール',
