@@ -108,6 +108,14 @@ splits the scoring into the squad-independent part and the position-dependent pa
   `DML`/`DMR`/`DMC`/`DM` position, FWD `0`), and a per-position total (`base + that class's clean sheet`).
   A versatile player (e.g. eligible at DEF and a DM-MID) shows one line per eligible class; a single-class
   player shows one line.
+- **Goalkeeper fold (display exception):** a goalkeeper qualifies for exactly one slot class (GK), so the
+  clean sheet is not slot-ambiguous — it is deterministic. For a single-class GK the clean sheet is folded
+  **into** the base figure (`base + GK clean sheet`) on both the results row and the player card, instead
+  of being shown as a separate by-position line. The row's "Base" number therefore reads as the keeper's
+  full per-match score, and the modal lists the clean sheet as one more factor in the base breakdown.
+  Outfield players are unaffected (their clean sheet varies by slot class and stays separate). The CS badge
+  still appears on the keeper's row. This is the convention the per-position base-points views follow too:
+  once a position is fixed, its clean sheet is deterministic and folds into that position's base figure.
 - **Clean-sheet badge:** the row's CS badge appears only when the player would earn clean-sheet points in
   at least one eligible class — i.e. `clean_sheet_eligible` AND some eligible class pays more than `0`. A
   forward (or a non-DM central midfielder with no other eligible class) who kept a clean sheet shows no

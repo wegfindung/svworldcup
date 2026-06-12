@@ -66,6 +66,20 @@ function formatPoints(value: number) {
   })
 }
 
+// A goalkeeper qualifies for exactly one slot class (GK), so their clean sheet is deterministic — there is
+// no slot-class to disambiguate. For a single-class GK we fold the clean sheet into the displayed base
+// figure (see SOP_scoring_and_leagues "Public Match Results Page"). Returns null for anyone who is not a
+// single-class GK, leaving outfield rows to keep base and clean sheet separate. cleanSheetPoints is already
+// 0 when the keeper conceded (the by-position entry encodes eligibility), so the fold is a no-op then.
+function goalkeeperFold(player: PublicFixturePlayerResult) {
+  const classes = player.cleanSheetByPosition
+  if (classes.length !== 1 || classes[0].slotClass !== 'GK') {
+    return null
+  }
+  const cleanSheetPoints = classes[0].points
+  return { cleanSheetPoints, base: player.basePoints + cleanSheetPoints }
+}
+
 // Click-through player card for one match performance. Shows the squad-independent base points broken
 // down by scoring factor, then a total per slot class the player qualifies for (the clean sheet is the
 // only position-dependent component — see SOP_scoring_and_leagues "Public Match Results Page"). The
@@ -92,6 +106,7 @@ function PlayerMatchCardModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const fold = goalkeeperFold(player)
   const factors: Array<[string, number]> = [
     [factorCopy.goals, player.goalPoints],
     [factorCopy.assists, player.assistPoints],
@@ -99,9 +114,16 @@ function PlayerMatchCardModal({
     [factorCopy.minutes, player.minutePoints],
     [factorCopy.performance, player.performancePoints],
   ]
+  // For a keeper the clean sheet is folded into the base breakdown as one more factor (only when earned).
+  if (fold && fold.cleanSheetPoints > 0) {
+    factors.push([factorCopy.cleanSheet, fold.cleanSheetPoints])
+  }
+  const displayBase = fold ? fold.base : player.basePoints
   const nationName = teamName(player.teamCode)
   const positionsText = player.positions.length ? player.positions.join(' · ') : player.positionMain ?? ''
-  const showByPosition = player.cleanSheetEligible && player.cleanSheetByPosition.length > 0
+  // The "if placed in slot" section is for outfield players whose clean sheet varies by class; a keeper's
+  // is already folded into the base figure above.
+  const showByPosition = !fold && player.cleanSheetEligible && player.cleanSheetByPosition.length > 0
   const profileUrl = `https://play.soccerverse.com/player/${player.playerId}`
 
   const stats: Array<[string, string]> = [
@@ -163,7 +185,7 @@ function PlayerMatchCardModal({
           ))}
           <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/10 pt-2 text-sm">
             <span className="font-semibold text-white">{copy.basePointsLabel}</span>
-            <span className="mono font-bold text-white">{formatPoints(player.basePoints)}</span>
+            <span className="mono font-bold text-white">{formatPoints(displayBase)}</span>
           </div>
         </div>
 
@@ -187,7 +209,7 @@ function PlayerMatchCardModal({
               ))}
             </div>
           </>
-        ) : (
+        ) : fold ? null : (
           <div className="mt-5 flex items-center justify-between gap-3 rounded-[0.7rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 px-3 py-2.5 text-sm">
             <span className="font-semibold text-white">{copy.matchTotal}</span>
             <span className="mono text-lg font-bold text-[var(--color-accent)]">{formatPoints(player.basePoints)}</span>
@@ -221,6 +243,7 @@ function PlayerMatchCardModal({
 
 function PlayerDetailRow({ copy, factorCopy, player }: { copy: ResultsCopy; factorCopy: FactorCopy; player: PublicFixturePlayerResult }) {
   const [cardOpen, setCardOpen] = useState(false)
+  const displayBase = goalkeeperFold(player)?.base ?? player.basePoints
   const ratingColor = player.rating !== undefined
     ? player.rating >= 7.0
       ? 'text-[var(--color-sand)] border-[var(--color-sand)]/20 bg-[var(--color-sand)]/5'
@@ -293,7 +316,7 @@ function PlayerDetailRow({ copy, factorCopy, player }: { copy: ResultsCopy; fact
           title={copy.personalScoreNote}
         >
           <span className="mono text-[8px] uppercase tracking-wider text-[var(--color-muted)]">{copy.basePointsLabel}</span>
-          <span className="mono ml-1.5 text-xs font-bold text-white">{formatPoints(player.basePoints)}</span>
+          <span className="mono ml-1.5 text-xs font-bold text-white">{formatPoints(displayBase)}</span>
         </div>
       </div>
 
