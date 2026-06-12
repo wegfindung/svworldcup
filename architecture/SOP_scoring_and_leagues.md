@@ -128,8 +128,8 @@ divergence the import engine refuses to collapse into one number (`SOP_match_dat
 
 ## Stats — Player Points Leaderboard
 
-The public Stats page (`/stats`) has four tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
-and **Budgets** (each described below). The **Points** tab
+The public Stats page (`/stats`) has five tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
+**Value**, and **Budgets** (each described below). The **Points** tab
 (`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
 `/api/public/player-points`) ranks every player who has a promoted match entry by the base
 points they have produced **in a chosen position**:
@@ -153,6 +153,29 @@ counts the matches the player's team kept a clean sheet while they featured (`en
 average rating is the mean of their match ratings over rated appearances, shown only for players with at
 least 2 appearances. All four boards derive from the same `/player-points` payload (extended with
 `cleanSheets` and `averageRating` per row).
+
+## Stats — Player Value Leaderboard
+
+The **Value** tab (`/stats/value`) ranks players by **points produced per unit of budget cost** — who gives
+the most bang per buck. It is a pure client-side view (`pages/ValueStatsPanel.tsx`, helpers in
+`lib/playerValue.ts`) computed from the **same `/player-points` payload** as the Points/Leaders tabs: no new
+endpoint, service, or query. Each row's `capCost` (the salary-table price already carried on the payload)
+divides the position total.
+
+- **Metric.** Value = `positionTotal ÷ capCost × 100,000`, i.e. base points earned per 100k of budget cost
+  (`valuePerCost`). `positionTotal` is `base + that position's clean sheet` — the exact figure the Points tab
+  ranks, so switching position (GK/DEF/MID/FWD) re-ranks the same way, just normalised by cost.
+- **Total vs per-match.** The same toggle as Points. **Total** value divides the position total by cost;
+  **per-match** value divides `positionTotal ÷ appearances` by cost. A `capCost` of 0 yields a value of 0 so
+  a malformed row can never top the board.
+- **Why cheap players lead.** `capCost` (`data/salaryTable.ts`) grows roughly exponentially with rating
+  (rating 60 ≈ 1.5k, rating 99 ≈ 1.84M) while points scale ~linearly, so the board is intentionally
+  dominated by low-priced over-performers — the point of a value board. **No minimum-appearances floor**
+  (matches the Points tab): a one-game cheap player can rank, by design.
+- **Same shell as Points.** Name/team/ID search, 50-per-page pagination, and click-to-open `PlayerStatsModal`
+  are carried over. The cost is shown compact in the row sub-line (`1.3k` / `886k` / `1.8M`, `formatCost`).
+- **Base points only**, same caveat as Points/Leaders: a manager's personal score additionally applies the
+  budget multiplier, ownership boost, and reserve half-weight, so these figures are not any manager's total.
 
 ## Stats — Budget Stats
 
