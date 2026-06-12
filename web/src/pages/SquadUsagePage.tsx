@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
@@ -15,6 +15,13 @@ type PositionFilter = 'ALL' | SlotClass
 type SortKey = 'presence' | 'starters' | 'subs' | 'rating'
 
 const positionFilters: PositionFilter[] = ['ALL', 'GK', 'DEF', 'MID', 'FWD']
+
+const sortOptions: Array<{ key: SortKey; label: string }> = [
+  { key: 'presence', label: 'Presence' },
+  { key: 'starters', label: 'Starter count' },
+  { key: 'subs', label: 'Sub count' },
+  { key: 'rating', label: 'Rating' },
+]
 
 function formatNumber(value: number) {
   return value.toLocaleString(undefined, {
@@ -151,6 +158,19 @@ export function UsageStatsPanel({ locale }: { locale: LocaleCode }) {
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
   const [sortKey, setSortKey] = useState<SortKey>('presence')
   const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
+  const sortRef = useRef<HTMLDetailsElement>(null)
+
+  // The sort control is a native <details> dropdown; close it when a pointer lands outside it.
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      const node = sortRef.current
+      if (node?.open && !node.contains(event.target as Node)) {
+        node.removeAttribute('open')
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -198,7 +218,7 @@ export function UsageStatsPanel({ locale }: { locale: LocaleCode }) {
         </div>
       </div>
 
-      <section className="glass-panel rounded-[1.15rem] p-4">
+      <section className="glass-panel allow-dropdown-overflow relative z-20 rounded-[1.15rem] p-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(12rem,1fr)_auto_auto] lg:items-center">
           <label className="block">
             <span className="sr-only">Search players</span>
@@ -228,17 +248,35 @@ export function UsageStatsPanel({ locale }: { locale: LocaleCode }) {
             ))}
           </div>
 
-          <select
-            value={sortKey}
-            onChange={(event) => setSortKey(event.target.value as SortKey)}
-            style={{ colorScheme: 'dark' }}
-            className="rounded-full border border-white/10 bg-black/24 px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-[var(--color-accent)]/55"
-          >
-            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="presence">Presence</option>
-            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="starters">Starter count</option>
-            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="subs">Sub count</option>
-            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="rating">Rating</option>
-          </select>
+          <details ref={sortRef} className="nav-disclosure group relative">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-black/24 py-2.5 pl-4 pr-4 text-sm font-semibold text-white transition hover:border-[var(--color-accent)]/45">
+              <span className="text-[var(--color-muted)]">Sort:</span>
+              <span>{sortOptions.find((option) => option.key === sortKey)?.label ?? ''}</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true" className="ml-1.5 h-3.5 w-3.5 text-[var(--color-accent)] transition group-open:rotate-180">
+                <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </summary>
+            <div className="absolute right-0 top-[calc(100%+0.55rem)] z-30 grid min-w-44 gap-1 rounded-[1rem] border border-white/10 bg-[rgba(7,16,14,0.98)] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_28px_70px_-38px_rgba(0,0,0,0.96)]">
+              {sortOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={(event) => {
+                    setSortKey(option.key)
+                    event.currentTarget.closest('details')?.removeAttribute('open')
+                  }}
+                  className={[
+                    'rounded-[0.75rem] px-3 py-2 text-left text-sm font-semibold',
+                    sortKey === option.key
+                      ? 'bg-white/10 text-white'
+                      : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white active:scale-[0.98]',
+                  ].join(' ')}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </details>
         </div>
       </section>
 
