@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { StatTile } from '../components/StatTile'
 import { TeamFlag } from '../components/TeamFlag'
 import { fetchSquadUsage } from '../lib/api'
-import type { PublicSquadUsagePayload, PublicSquadUsagePlayer, SlotClass } from '../lib/types'
+import { toPlayerSeed, type PlayerStatsSeed } from '../lib/playerStatsSeed'
+import type { LocaleCode, PublicSquadUsagePayload, PublicSquadUsagePlayer, SlotClass } from '../lib/types'
 
 type LoadState = 'loading' | 'ready' | 'error'
 type PositionFilter = 'ALL' | SlotClass
@@ -54,7 +56,7 @@ function UsageBar({ value }: { value: number }) {
   )
 }
 
-function PlayerUsageRow({ player, rank }: { player: PublicSquadUsagePlayer; rank: number }) {
+function PlayerUsageRow({ player, rank, onSelect }: { player: PublicSquadUsagePlayer; rank: number; onSelect: () => void }) {
   const previewManagers = player.managers.slice(0, 4)
   const hiddenManagerCount = Math.max(0, player.managers.length - previewManagers.length)
 
@@ -78,21 +80,23 @@ function PlayerUsageRow({ player, rank }: { player: PublicSquadUsagePlayer; rank
             ],
           }}
         >
-          <PlayerPortrait
-            src={player.imageUrl ?? '/placeholders/player.svg'}
-            alt={player.displayName}
-            width={52}
-            height={52}
-            className="h-12 w-12 rounded-xl border border-white/10 object-cover"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-white">{player.displayName}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
-              <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
-              <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
-              <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
+          <button type="button" onClick={onSelect} className="flex min-w-0 items-center gap-3 text-left">
+            <PlayerPortrait
+              src={player.imageUrl ?? '/placeholders/player.svg'}
+              alt={player.displayName}
+              width={52}
+              height={52}
+              className="h-12 w-12 rounded-xl border border-white/10 object-cover"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
+                <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+                <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
+                <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
+              </div>
             </div>
-          </div>
+          </button>
         </PlayerTooltip>
       </div>
 
@@ -137,13 +141,16 @@ function PlayerUsageRow({ player, rank }: { player: PublicSquadUsagePlayer; rank
   )
 }
 
-export function SquadUsagePage() {
+// The Usage tab of the Stats page (StatsPage renders the shared hero + tab bar around it). Body copy here
+// is still English-only — localizing it is a tracked follow-up.
+export function UsageStatsPanel({ locale }: { locale: LocaleCode }) {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [payload, setPayload] = useState<PublicSquadUsagePayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
   const [sortKey, setSortKey] = useState<SortKey>('presence')
+  const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
 
   useEffect(() => {
     let active = true
@@ -180,22 +187,16 @@ export function SquadUsagePage() {
   }, [payload?.items, positionFilter, query, sortKey])
 
   return (
-    <div className="space-y-4 pb-10">
-      <section className="hero-card rounded-[1.25rem] px-5 py-6 sm:px-6">
-        <p className="eyebrow">squad usage</p>
-        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)] lg:items-end">
-          <div>
-            <h2 className="section-title max-w-[12ch]">Player presence</h2>
-            <p className="mt-4 max-w-[66ch] text-base leading-relaxed text-[var(--color-muted)]">
-              A live read of revealed active squads: who appears most often, who starts, and which managers selected each player.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <StatTile label="visible squads" value={formatNumber(payload?.summary.visibleSquadCount ?? 0)} tone="accent" />
-            <StatTile label="unique players" value={formatNumber(payload?.summary.uniquePlayerCount ?? 0)} tone="sand" />
-          </div>
+    <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)] lg:items-end">
+        <p className="max-w-[66ch] text-sm leading-relaxed text-[var(--color-muted)]">
+          A live read of revealed active squads: who appears most often, who starts, and which managers selected each player.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile label="visible squads" value={formatNumber(payload?.summary.visibleSquadCount ?? 0)} tone="accent" />
+          <StatTile label="unique players" value={formatNumber(payload?.summary.uniquePlayerCount ?? 0)} tone="sand" />
         </div>
-      </section>
+      </div>
 
       <section className="glass-panel rounded-[1.15rem] p-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(12rem,1fr)_auto_auto] lg:items-center">
@@ -230,12 +231,13 @@ export function SquadUsagePage() {
           <select
             value={sortKey}
             onChange={(event) => setSortKey(event.target.value as SortKey)}
+            style={{ colorScheme: 'dark' }}
             className="rounded-full border border-white/10 bg-black/24 px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-[var(--color-accent)]/55"
           >
-            <option value="presence">Presence</option>
-            <option value="starters">Starter count</option>
-            <option value="subs">Sub count</option>
-            <option value="rating">Rating</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="presence">Presence</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="starters">Starter count</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="subs">Sub count</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="rating">Rating</option>
           </select>
         </div>
       </section>
@@ -263,10 +265,12 @@ export function SquadUsagePage() {
       {loadState === 'ready' && filteredPlayers.length > 0 ? (
         <section className="grid gap-3">
           {filteredPlayers.map((player, index) => (
-            <PlayerUsageRow key={player.playerId} player={player} rank={index + 1} />
+            <PlayerUsageRow key={player.playerId} player={player} rank={index + 1} onSelect={() => setModalSeed(toPlayerSeed(player))} />
           ))}
         </section>
       ) : null}
+
+      {modalSeed ? <PlayerStatsModal seed={modalSeed} locale={locale} onClose={() => setModalSeed(null)} /> : null}
     </div>
   )
 }

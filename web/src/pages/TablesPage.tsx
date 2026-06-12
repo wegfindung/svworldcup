@@ -7,6 +7,7 @@ import { eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { computeNationPayouts, type NationPayout } from '../lib/nationPayouts'
 import { publicProfileSlug } from '../lib/profileSlug'
 import type {
   FixtureSeed,
@@ -79,8 +80,6 @@ interface TablesTabItem {
 }
 
 const PAID_PARTICIPANT_RANK_LIMIT = 10
-const PAID_NATION_RANK_LIMIT = 3
-const PAID_NATION_MANAGER_LIMIT = 10
 
 function boardErrorCopy(copy: TablesCopy, kind: BoardErrorKind): TablesError {
   return kind === 'unavailable'
@@ -116,12 +115,29 @@ function BreakdownPill({ label, count, points }: { label: string; count?: number
   )
 }
 
-function MoneyBadge({ label }: { label: string }) {
+function MoneyBadge({ label, title, variant = 'full' }: { label: string; title?: string; variant?: 'full' | 'partial' }) {
+  const variantStyles =
+    variant === 'partial'
+      ? 'border-dashed border-[var(--color-sand)]/30 bg-[var(--color-sand)]/8 text-[var(--color-sand)]/85'
+      : 'border-[var(--color-sand)]/40 bg-[var(--color-sand)]/15 text-[var(--color-sand)] shadow-[0_0_8px_rgba(217,173,93,0.08)] hover:shadow-[0_0_12px_rgba(217,173,93,0.25)] hover:border-[var(--color-sand)]/60'
   return (
-    <span className="mono inline-flex shrink-0 rounded-full border border-[var(--color-sand)]/40 bg-[var(--color-sand)]/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-sand)] shadow-[0_0_8px_rgba(217,173,93,0.08)] hover:shadow-[0_0_12px_rgba(217,173,93,0.25)] hover:border-[var(--color-sand)]/60 transition duration-300">
+    <span
+      title={title}
+      className={`mono inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] transition duration-300 ${variantStyles}`}
+    >
       {label}
     </span>
   )
+}
+
+// Builds the badge tooltip from a nation's computed payout (exact SVV + per-manager amount).
+function nationPayoutTooltip(copy: TablesCopy, payout: NationPayout) {
+  const template = payout.status === 'partial' ? copy.payoutTooltipPartial : copy.payoutTooltip
+  return template
+    .replace('{amount}', String(payout.amount))
+    .replace('{perManager}', String(payout.perManager))
+    .replace('{paid}', String(payout.paidManagers))
+    .replace('{managers}', String(payout.managerCount))
 }
 
 function teamName(teamCode: string) {
@@ -457,6 +473,9 @@ function NationTable({
   const [openTeamCodes, setOpenTeamCodes] = useState<Set<string>>(new Set())
   const normalizedSearch = normalizeSearchTerm(searchTerm)
   const filteredRows = normalizedSearch ? rows.filter((row) => nationRowMatchesSearch(row, normalizedSearch)) : rows
+  // Recomputed from the live ranked rows (never the filtered subset) so a score-driven rank shift
+  // moves a nation in/out of the money on the next render — see SOP "Nations table in-money indicator".
+  const payouts = useMemo(() => computeNationPayouts(rows), [rows])
 
   function toggleTeam(teamCode: string) {
     setOpenTeamCodes((current) => {
@@ -485,7 +504,7 @@ function NationTable({
           <div className="space-y-3.5">
             {filteredRows.map((row) => {
               const isOpen = openTeamCodes.has(row.teamCode)
-              const isPaidNation = row.rank <= PAID_NATION_RANK_LIMIT
+              const payout = payouts.get(row.teamCode)
               const rankColor = row.rank === 1
                 ? 'text-[var(--color-sand)] font-black text-base shadow-[0_0_8px_rgba(217,173,93,0.2)] border-[var(--color-sand)]/30'
                 : row.rank === 2
@@ -506,7 +525,13 @@ function NationTable({
                         <div className="min-w-0">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <p className="truncate text-sm font-bold text-white">{nationName(row.teamCode)}</p>
-                            {isPaidNation ? <MoneyBadge label={copy.inTheMoney} /> : null}
+                            {payout && payout.status !== 'none' ? (
+                              <MoneyBadge
+                                label={payout.status === 'partial' ? copy.partiallyInTheMoney : copy.inTheMoney}
+                                variant={payout.status === 'partial' ? 'partial' : 'full'}
+                                title={nationPayoutTooltip(copy, payout)}
+                              />
+                            ) : null}
                           </div>
                           <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
                             {row.teamCode} - {row.participantCount} {copy.managersSuffix}
@@ -548,7 +573,9 @@ function NationTable({
                               >
                                 {contributor.displayName}
                               </button>
-                              {isPaidNation && contributorIndex < PAID_NATION_MANAGER_LIMIT ? <MoneyBadge label={copy.inTheMoney} /> : null}
+                              {payout && contributorIndex < payout.paidManagers ? (
+                                <MoneyBadge label={copy.inTheMoney} title={`${payout.perManager} SVV`} />
+                              ) : null}
                             </p>
                             
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[var(--color-muted)] bg-black/10 px-2 py-1 rounded border border-white/4 w-fit">

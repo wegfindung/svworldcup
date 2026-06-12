@@ -500,6 +500,49 @@ export interface PublicSquadUsagePayload {
   items: PublicSquadUsagePlayer[]
 }
 
+// Accumulated clean-sheet points a player has earned if placed in this slot class (the only
+// position-dependent component — folds into that position's total).
+export interface PlayerPointsCleanSheet {
+  slotClass: SlotClass
+  points: number
+}
+
+export interface PlayerPointsPlayer {
+  playerId: number
+  displayName: string
+  teamCode: string
+  nationalityCode: string
+  imageUrl?: string
+  rating: number
+  capCost: number
+  positionMain?: string
+  positions: string[]
+  positionClasses: SlotClass[]
+  appearances: number
+  minutes: number
+  goals: number
+  assists: number
+  cleanSheets: number
+  averageRating: number
+  goalPoints: number
+  assistPoints: number
+  appearancePoints: number
+  minutePoints: number
+  performancePoints: number
+  basePoints: number
+  cleanSheetByPosition: PlayerPointsCleanSheet[]
+}
+
+export interface PlayerPointsSummary {
+  fixturesCounted: number
+  playersRanked: number
+}
+
+export interface PlayerPointsPayload {
+  summary: PlayerPointsSummary
+  items: PlayerPointsPlayer[]
+}
+
 export type EmailCampaignKind = 'newsletter' | 'autoresponder'
 export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
 export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'
