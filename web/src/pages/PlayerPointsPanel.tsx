@@ -158,13 +158,27 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-        <StatTile label={copy.statPlayers} value={formatNumber(payload?.summary.playersRanked ?? 0)} tone="accent" />
-        <StatTile label={copy.statFixtures} value={formatNumber(payload?.summary.fixturesCounted ?? 0)} tone="sand" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)] lg:items-end">
+        <p className="mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+          {copy.rankedAs.replace('{position}', position)}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile label={copy.statPlayers} value={formatNumber(payload?.summary.playersRanked ?? 0)} tone="accent" />
+          <StatTile label={copy.statFixtures} value={formatNumber(payload?.summary.fixturesCounted ?? 0)} tone="sand" />
+        </div>
       </div>
 
       <section className="glass-panel rounded-[1.15rem] p-4">
-        <div className="grid gap-3 lg:grid-cols-[auto_minmax(12rem,1fr)] lg:items-center">
+        <div className="grid gap-3 lg:grid-cols-[minmax(12rem,1fr)_auto] lg:items-center">
+          <label className="block">
+            <span className="sr-only">{copy.searchPlaceholder}</span>
+            <input
+              value={query}
+              onChange={(event) => search(event.target.value)}
+              placeholder={copy.searchPlaceholder}
+              className="w-full rounded-full border border-white/10 bg-black/24 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]/55"
+            />
+          </label>
           <div className="flex flex-wrap gap-1 rounded-full border border-white/8 bg-black/18 p-1">
             {positions.map((filter) => (
               <button
@@ -182,19 +196,7 @@ export function PlayerPointsPanel({ locale }: { locale: LocaleCode }) {
               </button>
             ))}
           </div>
-          <label className="block">
-            <span className="sr-only">{copy.searchPlaceholder}</span>
-            <input
-              value={query}
-              onChange={(event) => search(event.target.value)}
-              placeholder={copy.searchPlaceholder}
-              className="w-full rounded-full border border-white/10 bg-black/24 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]/55"
-            />
-          </label>
         </div>
-        <p className="mono mt-3 text-[11px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          {copy.rankedAs.replace('{position}', position)}
-        </p>
       </section>
 
       {loadState === 'loading' ? (

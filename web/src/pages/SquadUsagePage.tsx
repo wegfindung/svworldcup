@@ -183,12 +183,14 @@ export function UsageStatsPanel() {
 
   return (
     <div className="space-y-4">
-      <p className="max-w-[66ch] text-sm leading-relaxed text-[var(--color-muted)]">
-        A live read of revealed active squads: who appears most often, who starts, and which managers selected each player.
-      </p>
-      <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-        <StatTile label="visible squads" value={formatNumber(payload?.summary.visibleSquadCount ?? 0)} tone="accent" />
-        <StatTile label="unique players" value={formatNumber(payload?.summary.uniquePlayerCount ?? 0)} tone="sand" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)] lg:items-end">
+        <p className="max-w-[66ch] text-sm leading-relaxed text-[var(--color-muted)]">
+          A live read of revealed active squads: who appears most often, who starts, and which managers selected each player.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile label="visible squads" value={formatNumber(payload?.summary.visibleSquadCount ?? 0)} tone="accent" />
+          <StatTile label="unique players" value={formatNumber(payload?.summary.uniquePlayerCount ?? 0)} tone="sand" />
+        </div>
       </div>
 
       <section className="glass-panel rounded-[1.15rem] p-4">
@@ -224,12 +226,13 @@ export function UsageStatsPanel() {
           <select
             value={sortKey}
             onChange={(event) => setSortKey(event.target.value as SortKey)}
+            style={{ colorScheme: 'dark' }}
             className="rounded-full border border-white/10 bg-black/24 px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-[var(--color-accent)]/55"
           >
-            <option value="presence">Presence</option>
-            <option value="starters">Starter count</option>
-            <option value="subs">Sub count</option>
-            <option value="rating">Rating</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="presence">Presence</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="starters">Starter count</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="subs">Sub count</option>
+            <option className="bg-[var(--color-ink)] text-[var(--color-paper)]" value="rating">Rating</option>
           </select>
         </div>
       </section>
