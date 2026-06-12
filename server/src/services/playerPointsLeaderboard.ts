@@ -27,6 +27,10 @@ export interface PlayerPointsRow {
   minutes: number
   goals: number
   assists: number
+  // Number of matches this player kept a clean sheet (entry.cleanSheetEligible), and the mean of their
+  // match ratings over the appearances that carried a rating (0 when none). Drives the Stats > Leaders boards.
+  cleanSheets: number
+  averageRating: number
   // Squad-independent base-point breakdown, summed; clean sheet excluded (it is in cleanSheetByPosition).
   goalPoints: number
   assistPoints: number
@@ -67,6 +71,7 @@ export function buildPlayerPointsLeaderboard(
   }
 
   const rows = new Map<number, PlayerPointsRow>()
+  const ratingAccumulators = new Map<number, { sum: number; count: number }>()
   const fixtures = new Set<string>()
 
   for (const entry of entries) {
@@ -95,6 +100,8 @@ export function buildPlayerPointsLeaderboard(
         minutes: 0,
         goals: 0,
         assists: 0,
+        cleanSheets: 0,
+        averageRating: 0,
         goalPoints: 0,
         assistPoints: 0,
         appearancePoints: 0,
@@ -110,6 +117,13 @@ export function buildPlayerPointsLeaderboard(
     row.minutes += entry.minutes
     row.goals += entry.goals
     row.assists += entry.assists
+    row.cleanSheets += entry.cleanSheetEligible ? 1 : 0
+    if (entry.rating !== undefined && !Number.isNaN(entry.rating)) {
+      const accumulator = ratingAccumulators.get(entry.playerId) ?? { sum: 0, count: 0 }
+      accumulator.sum += entry.rating
+      accumulator.count += 1
+      ratingAccumulators.set(entry.playerId, accumulator)
+    }
     row.goalPoints += components.goals
     row.assistPoints += components.assists
     row.appearancePoints += components.appearance
@@ -121,6 +135,11 @@ export function buildPlayerPointsLeaderboard(
         ? cleanSheetPointsForClass(scoring, cleanSheet.slotClass, player.positions)
         : 0
     }
+  }
+
+  for (const row of rows.values()) {
+    const accumulator = ratingAccumulators.get(row.playerId)
+    row.averageRating = accumulator && accumulator.count > 0 ? accumulator.sum / accumulator.count : 0
   }
 
   const items = [...rows.values()].sort(

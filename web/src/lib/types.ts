@@ -522,6 +522,8 @@ export interface PlayerPointsPlayer {
   minutes: number
   goals: number
   assists: number
+  cleanSheets: number
+  averageRating: number
   goalPoints: number
   assistPoints: number
   appearancePoints: number

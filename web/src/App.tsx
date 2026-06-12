@@ -393,6 +393,7 @@ function App() {
               <Route path="/results" element={<ResultsPage locale={locale} />} />
               <Route path="/stats" element={<StatsPage locale={locale} active="usage" />} />
               <Route path="/stats/points" element={<StatsPage locale={locale} active="points" />} />
+              <Route path="/stats/leaders" element={<StatsPage locale={locale} active="leaders" />} />
               <Route path="/squad-usage" element={<Navigate to="/stats" replace />} />
               <Route path="/prizes" element={<PrizesPage locale={locale} />} />
               <Route path="/rules" element={<RulesPage locale={locale} />} />

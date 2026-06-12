@@ -75,16 +75,16 @@ describe('buildPlayerPointsLeaderboard', () => {
 
     const byId = new Map(items.map((row) => [row.playerId, row]))
 
-    // GK: 2×(appearance 1 + minute 1 + perf 0) base = 4; GK clean sheet 4×2 = 8.
-    expect(byId.get(1)).toMatchObject({ basePoints: 4, appearances: 2, minutes: 180, cleanSheetByPosition: [{ slotClass: 'GK', points: 8 }] })
+    // GK: 2×(appearance 1 + minute 1 + perf 0) base = 4; GK clean sheet 4×2 = 8; 2 clean sheets; avg rating 5.
+    expect(byId.get(1)).toMatchObject({ basePoints: 4, appearances: 2, minutes: 180, cleanSheets: 2, averageRating: 5, cleanSheetByPosition: [{ slotClass: 'GK', points: 8 }] })
     // DEF: goal 5 + appearance 1 + minute 1 + perf 1 = 8; DEF clean sheet 3.
     expect(byId.get(2)).toMatchObject({ basePoints: 8, cleanSheetByPosition: [{ slotClass: 'DEF', points: 3 }] })
     // DM-MID: assist 3 + appearance 1 + minute 1 + perf 0.5 = 5.5; MID clean sheet 1.
     expect(byId.get(3)).toMatchObject({ basePoints: 5.5, cleanSheetByPosition: [{ slotClass: 'MID', points: 1 }] })
     // Non-DM MID: appearance 1 + minute 1 = 2; MID clean sheet 0.
     expect(byId.get(4)).toMatchObject({ basePoints: 2, cleanSheetByPosition: [{ slotClass: 'MID', points: 0 }] })
-    // FWD: 2 goals 10 + appearance 1 + minute 1 + perf 1.5 = 13.5; FWD clean sheet 0.
-    expect(byId.get(5)).toMatchObject({ basePoints: 13.5, cleanSheetByPosition: [{ slotClass: 'FWD', points: 0 }] })
+    // FWD: 2 goals 10 + appearance 1 + minute 1 + perf 1.5 = 13.5; FWD clean sheet 0; 1 clean-sheet match; avg 9.5.
+    expect(byId.get(5)).toMatchObject({ basePoints: 13.5, goals: 2, cleanSheets: 1, averageRating: 9.5, cleanSheetByPosition: [{ slotClass: 'FWD', points: 0 }] })
     // Versatile: base 2; DEF clean sheet 3 and MID clean sheet 1 (DMC present) — appears under both.
     expect(byId.get(6)).toMatchObject({
       basePoints: 2,

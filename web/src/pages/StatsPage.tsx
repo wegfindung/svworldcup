@@ -1,19 +1,22 @@
 import { Link } from 'react-router-dom'
 import { getMessages } from '../i18n/messages'
 import type { LocaleCode } from '../lib/types'
+import { LeadersPanel } from './LeadersPanel'
 import { PlayerPointsPanel } from './PlayerPointsPanel'
 import { UsageStatsPanel } from './SquadUsagePage'
 
-type StatsTab = 'usage' | 'points'
+type StatsTab = 'usage' | 'points' | 'leaders'
 
 // The public Stats surface. One nav entry, two tabs: Usage (revealed-squad pick rate) and Points (most base
 // points produced per position). Each tab is its own self-fetching panel; this page only owns the shared
 // hero + the tab switcher (routed, so each tab is linkable: /stats and /stats/points).
 export function StatsPage({ locale, active }: { locale: LocaleCode; active: StatsTab }) {
-  const copy = getMessages(locale).stats
+  const messages = getMessages(locale)
+  const copy = messages.stats
   const tabs: Array<{ key: StatsTab; label: string; to: string }> = [
     { key: 'usage', label: copy.tabUsage, to: '/stats' },
     { key: 'points', label: copy.tabPoints, to: '/stats/points' },
+    { key: 'leaders', label: messages.leaders.tab, to: '/stats/leaders' },
   ]
 
   return (
@@ -40,7 +43,7 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
         </div>
       </section>
 
-      {active === 'usage' ? <UsageStatsPanel /> : <PlayerPointsPanel locale={locale} />}
+      {active === 'usage' ? <UsageStatsPanel /> : active === 'points' ? <PlayerPointsPanel locale={locale} /> : <LeadersPanel locale={locale} />}
     </div>
   )
 }

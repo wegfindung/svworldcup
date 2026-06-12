@@ -146,6 +146,13 @@ points they have produced **in a chosen position**:
   multiplier, ownership boost, and reserve half-weight, so the figures here are not any manager's banked
   total (the same caveat as the Results page and the import engine).
 
+The **Leaders** tab (`/stats/leaders`) ranks the same per-player aggregates by a single metric — most goals,
+most assists, most clean sheets, or highest average match rating — each paginated 50 per page. Clean sheets
+counts the matches the player's team kept a clean sheet while they featured (`entry.cleanSheetEligible`);
+average rating is the mean of their match ratings over rated appearances, shown only for players with at
+least 2 appearances. All four boards derive from the same `/player-points` payload (extended with
+`cleanSheets` and `averageRating` per row).
+
 ## Leaderboard Read Cache
 
 Public leaderboard reads (`/leaderboards/rookie|veteran|nations`) and `/profiles/:slug` are served
