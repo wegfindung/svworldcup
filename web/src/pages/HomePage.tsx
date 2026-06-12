@@ -261,10 +261,51 @@ function formatSpotlightPoints(value: number) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
-// Replaces the old next-game card: a small info card spotlighting the next match's two nations. Per team it
-// shows the top 3 point providers once that team has recorded games (from /player-points), otherwise the
-// top 3 picks from revealed squads (from /squad-usage). Both feeds are public, cached, and fetched
-// non-blocking, so the landing renders immediately and the card fills in.
+type SpotlightRow = { playerId: number; name: string; imageUrl?: string; value: string; unit: string }
+
+function SpotlightTeamCard({ name, teamCode, tag, rows, emptyLabel }: { name: string; teamCode: string; tag: string; rows: SpotlightRow[]; emptyLabel: string }) {
+  return (
+    <div className="rounded-[1rem] border border-white/8 bg-black/18 p-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <TeamFlag teamCode={teamCode} label={name} size="sm" />
+          <p className="truncate text-sm font-bold text-white">{name}</p>
+        </div>
+        <span className="mono shrink-0 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
+          {tag}
+        </span>
+      </div>
+      {rows.length > 0 ? (
+        <ol className="mt-3 space-y-2">
+          {rows.map((row, index) => (
+            <li key={row.playerId} className="flex items-center gap-2.5">
+              <span className="mono w-4 shrink-0 text-[11px] text-[var(--color-muted)]">{index + 1}</span>
+              <PlayerPortrait
+                src={row.imageUrl ?? '/placeholders/player.svg'}
+                alt={row.name}
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0 rounded-lg border border-white/10 object-cover"
+              />
+              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white">{row.name}</span>
+              <span className="mono shrink-0 text-xs font-bold text-[var(--color-accent)]">
+                {row.value}
+                <span className="ml-1 text-[9px] font-normal text-[var(--color-muted)]">{row.unit}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">{emptyLabel}</p>
+      )}
+    </div>
+  )
+}
+
+// Replaces the old next-game card: a small info card spotlighting the next match's two nations. Each nation
+// always shows its top 5 picks from revealed squads (/squad-usage); below that, a top-5 points card per
+// nation appears once that team has recorded games (/player-points). Both feeds are public, cached, and
+// fetched non-blocking, so the landing renders immediately and the card fills in.
 function NextMatchSpotlightCard({
   copy,
   match,
@@ -299,22 +340,26 @@ function NextMatchSpotlightCard({
       ]
     : []
 
-  function topForTeam(teamCode: string) {
-    const teamPoints = (points?.items ?? []).filter((player) => player.teamCode === teamCode)
-    if (teamPoints.length > 0) {
-      const rows = [...teamPoints]
-        .sort((left, right) => right.basePoints - left.basePoints || left.displayName.localeCompare(right.displayName))
-        .slice(0, 3)
-        .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: formatSpotlightPoints(player.basePoints), unit: copy.pointsUnit }))
-      return { tag: copy.pointsTag, rows }
-    }
-    const teamUsage = (usage?.items ?? []).filter((player) => player.teamCode === teamCode)
-    const rows = [...teamUsage]
+  function pickRows(teamCode: string): SpotlightRow[] {
+    return (usage?.items ?? [])
+      .filter((player) => player.teamCode === teamCode)
       .sort((left, right) => right.usageCount - left.usageCount || right.starterCount - left.starterCount || left.displayName.localeCompare(right.displayName))
-      .slice(0, 3)
+      .slice(0, 5)
       .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: String(player.usageCount), unit: copy.picksUnit }))
-    return { tag: copy.picksTag, rows }
   }
+
+  function pointRows(teamCode: string): SpotlightRow[] {
+    return (points?.items ?? [])
+      .filter((player) => player.teamCode === teamCode)
+      .sort((left, right) => right.basePoints - left.basePoints || left.displayName.localeCompare(right.displayName))
+      .slice(0, 5)
+      .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: formatSpotlightPoints(player.basePoints), unit: copy.pointsUnit }))
+  }
+
+  // A nation's points card only appears once that team has match entries.
+  const pointColumns = columns
+    .map((column) => ({ ...column, rows: pointRows(column.teamCode) }))
+    .filter((column) => column.rows.length > 0)
 
   return (
     <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
@@ -334,52 +379,39 @@ function NextMatchSpotlightCard({
       {!loaded ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 2 }).map((_, index) => (
-            <div key={index} className="skeleton h-40 rounded-[1rem]" />
+            <div key={index} className="skeleton h-44 rounded-[1rem]" />
           ))}
         </div>
       ) : columns.length === 0 ? (
         <div className="surface-row mt-5 rounded-[0.95rem] p-3 text-sm leading-relaxed text-[var(--color-muted)]">{copy.empty}</div>
       ) : (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {columns.map((column) => {
-            const top = topForTeam(column.teamCode)
-            return (
-              <div key={column.teamCode} className="rounded-[1rem] border border-white/8 bg-black/18 p-3.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <TeamFlag teamCode={column.teamCode} label={column.name} size="sm" />
-                    <p className="truncate text-sm font-bold text-white">{column.name}</p>
-                  </div>
-                  <span className="mono shrink-0 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
-                    {top.tag}
-                  </span>
-                </div>
-                {top.rows.length > 0 ? (
-                  <ol className="mt-3 space-y-2">
-                    {top.rows.map((row, index) => (
-                      <li key={row.playerId} className="flex items-center gap-2.5">
-                        <span className="mono w-4 shrink-0 text-[11px] text-[var(--color-muted)]">{index + 1}</span>
-                        <PlayerPortrait
-                          src={row.imageUrl ?? '/placeholders/player.svg'}
-                          alt={row.name}
-                          width={28}
-                          height={28}
-                          className="h-7 w-7 shrink-0 rounded-lg border border-white/10 object-cover"
-                        />
-                        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white">{row.name}</span>
-                        <span className="mono shrink-0 text-xs font-bold text-[var(--color-accent)]">
-                          {row.value}
-                          <span className="ml-1 text-[9px] font-normal text-[var(--color-muted)]">{row.unit}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">{copy.empty}</p>
-                )}
-              </div>
-            )
-          })}
+        <div className="mt-5 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {columns.map((column) => (
+              <SpotlightTeamCard
+                key={`picks-${column.teamCode}`}
+                name={column.name}
+                teamCode={column.teamCode}
+                tag={copy.picksTag}
+                rows={pickRows(column.teamCode)}
+                emptyLabel={copy.empty}
+              />
+            ))}
+          </div>
+          {pointColumns.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {pointColumns.map((column) => (
+                <SpotlightTeamCard
+                  key={`points-${column.teamCode}`}
+                  name={column.name}
+                  teamCode={column.teamCode}
+                  tag={copy.pointsTag}
+                  rows={column.rows}
+                  emptyLabel={copy.empty}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </div>
