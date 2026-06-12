@@ -9,10 +9,10 @@ import { getMessages, type AppMessages } from '../i18n/messages'
 import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
 import { prizeLeagues, prizeTotalWithUnit } from '../data/prizePool'
 import { useBootstrap } from '../hooks/useBootstrap'
-import { recordLandingPageVisit } from '../lib/api'
+import { fetchPlayerPoints, fetchSquadUsage, recordLandingPageVisit } from '../lib/api'
 import { withReferral } from '../lib/referral'
 import { readParticipantReady } from '../lib/participantReady'
-import type { FixtureSeed, LocaleCode, ScoringConfig, TeamSeed } from '../lib/types'
+import type { FixtureSeed, LocaleCode, PlayerPointsPayload, PublicSquadUsagePayload, ScoringConfig, TeamSeed } from '../lib/types'
 
 type HomeCopy = AppMessages['home']
 
@@ -80,6 +80,7 @@ function getNextKickoffSlot(fixtures: FixtureSeed[], teams: TeamSeed[], now = ne
   const kickoffDate = nextMatch ? new Date(nextMatch.kickoffMs) : null
 
   return {
+    kickoffMs: nextMatch ? nextMatch.kickoffMs : null,
     day:
       kickoffDate?.toLocaleDateString('en-GB', {
         weekday: 'long',
@@ -107,7 +108,15 @@ function formatCountdownParts(targetMs: number, nowMs: number) {
   return { days, hours, minutes, seconds }
 }
 
-function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['countdown']; locale: LocaleCode; startMs: number }) {
+type NextMatchInfo = {
+  homeTeamCode: string
+  awayTeamCode: string
+  homeName: string
+  awayName: string
+  groupKey: string
+}
+
+function NextMatchCountdownCard({ copy, locale, startMs, match }: { copy: HomeCopy['countdown']; locale: LocaleCode; startMs: number; match?: NextMatchInfo }) {
   const [nowMs, setNowMs] = useState(() => Date.now())
   const parts = formatCountdownParts(startMs, nowMs)
   const startDate = useMemo(
@@ -147,6 +156,15 @@ function CompetitionCountdownCard({ copy, locale, startMs }: { copy: HomeCopy['c
         </div>
         <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{startDate}</span>
       </div>
+      {match ? (
+        <div className="mt-4 flex items-center justify-center gap-2.5 rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
+          <TeamFlag teamCode={match.homeTeamCode} label={match.homeName} size="sm" />
+          <span className="min-w-0 truncate text-sm font-semibold text-white">{match.homeName}</span>
+          <span className="mono shrink-0 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">vs</span>
+          <span className="min-w-0 truncate text-sm font-semibold text-white">{match.awayName}</span>
+          <TeamFlag teamCode={match.awayTeamCode} label={match.awayName} size="sm" />
+        </div>
+      ) : null}
       <div className="mt-4 grid grid-cols-4 gap-2">
         {[
           [copy.days, parts.days],
@@ -239,19 +257,64 @@ function SquadBlueprint({ copy }: { copy: HomeCopy['squadBlueprint'] }) {
   )
 }
 
-function NextKickoffCard({
+function formatSpotlightPoints(value: number) {
+  return value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+}
+
+// Replaces the old next-game card: a small info card spotlighting the next match's two nations. Per team it
+// shows the top 3 point providers once that team has recorded games (from /player-points), otherwise the
+// top 3 picks from revealed squads (from /squad-usage). Both feeds are public, cached, and fetched
+// non-blocking, so the landing renders immediately and the card fills in.
+function NextMatchSpotlightCard({
   copy,
-  fixtures,
+  match,
   referrerSoccerverseUsername,
-  teams,
 }: {
-  copy: HomeCopy['nextKickoff']
-  fixtures: FixtureSeed[]
+  copy: HomeCopy['spotlight']
+  match?: NextMatchInfo
   referrerSoccerverseUsername: string
-  teams: TeamSeed[]
 }) {
-  const nextKickoff = getNextKickoffSlot(fixtures, teams)
-  const hasMatches = nextKickoff.matches.length > 0
+  const [usage, setUsage] = useState<PublicSquadUsagePayload | null>(null)
+  const [points, setPoints] = useState<PlayerPointsPayload | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    void Promise.all([fetchSquadUsage().catch(() => null), fetchPlayerPoints().catch(() => null)]).then(([usageData, pointsData]) => {
+      if (active) {
+        setUsage(usageData)
+        setPoints(pointsData)
+        setLoaded(true)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const columns = match
+    ? [
+        { teamCode: match.homeTeamCode, name: match.homeName },
+        { teamCode: match.awayTeamCode, name: match.awayName },
+      ]
+    : []
+
+  function topForTeam(teamCode: string) {
+    const teamPoints = (points?.items ?? []).filter((player) => player.teamCode === teamCode)
+    if (teamPoints.length > 0) {
+      const rows = [...teamPoints]
+        .sort((left, right) => right.basePoints - left.basePoints || left.displayName.localeCompare(right.displayName))
+        .slice(0, 3)
+        .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: formatSpotlightPoints(player.basePoints), unit: copy.pointsUnit }))
+      return { tag: copy.pointsTag, rows }
+    }
+    const teamUsage = (usage?.items ?? []).filter((player) => player.teamCode === teamCode)
+    const rows = [...teamUsage]
+      .sort((left, right) => right.usageCount - left.usageCount || right.starterCount - left.starterCount || left.displayName.localeCompare(right.displayName))
+      .slice(0, 3)
+      .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: String(player.usageCount), unit: copy.picksUnit }))
+    return { tag: copy.picksTag, rows }
+  }
 
   return (
     <div className="glass-panel rounded-[1.25rem] p-4 sm:p-5">
@@ -260,46 +323,65 @@ function NextKickoffCard({
           <p className="eyebrow">{copy.eyebrow}</p>
           <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem]">{copy.title}</h3>
         </div>
-        <span className="mono text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{copy.timezone}</span>
+        <Link
+          to={withReferral('/stats', referrerSoccerverseUsername)}
+          className="mono shrink-0 text-[10px] uppercase tracking-[0.18em] text-[var(--color-accent)] underline-offset-4 hover:underline"
+        >
+          {copy.cta} →
+        </Link>
       </div>
 
-      <div className="mt-5 rounded-[1rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 p-4">
-        <p className="mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)]">{nextKickoff.day || copy.fallbackDay}</p>
-        <p className="mono mt-2 text-3xl text-white">{nextKickoff.time || copy.fallbackTime}</p>
-      </div>
-
-      <div className="mt-4 space-y-2.5">
-        {hasMatches ? nextKickoff.matches.map((match, index) => (
-          <div
-            key={`${match.fixtureId}-${index}`}
-            className="surface-row rounded-[0.95rem] p-3 transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/20"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="inline-flex rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                {copy.groupPrefix} {match.groupKey}
-              </span>
-              <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
-                <TeamFlag teamCode={match.homeTeamCode} label={match.homeName} size="sm" />
-                <p className="min-w-0 text-sm font-semibold text-white sm:text-base">
-                  <span>{match.homeName}</span> <span className="text-[var(--color-muted)]">{copy.versus}</span> <span>{match.awayName}</span>
-                </p>
-                <TeamFlag teamCode={match.awayTeamCode} label={match.awayName} size="sm" />
+      {!loaded ? (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div key={index} className="skeleton h-40 rounded-[1rem]" />
+          ))}
+        </div>
+      ) : columns.length === 0 ? (
+        <div className="surface-row mt-5 rounded-[0.95rem] p-3 text-sm leading-relaxed text-[var(--color-muted)]">{copy.empty}</div>
+      ) : (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {columns.map((column) => {
+            const top = topForTeam(column.teamCode)
+            return (
+              <div key={column.teamCode} className="rounded-[1rem] border border-white/8 bg-black/18 p-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <TeamFlag teamCode={column.teamCode} label={column.name} size="sm" />
+                    <p className="truncate text-sm font-bold text-white">{column.name}</p>
+                  </div>
+                  <span className="mono shrink-0 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                    {top.tag}
+                  </span>
+                </div>
+                {top.rows.length > 0 ? (
+                  <ol className="mt-3 space-y-2">
+                    {top.rows.map((row, index) => (
+                      <li key={row.playerId} className="flex items-center gap-2.5">
+                        <span className="mono w-4 shrink-0 text-[11px] text-[var(--color-muted)]">{index + 1}</span>
+                        <PlayerPortrait
+                          src={row.imageUrl ?? '/placeholders/player.svg'}
+                          alt={row.name}
+                          width={28}
+                          height={28}
+                          className="h-7 w-7 shrink-0 rounded-lg border border-white/10 object-cover"
+                        />
+                        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white">{row.name}</span>
+                        <span className="mono shrink-0 text-xs font-bold text-[var(--color-accent)]">
+                          {row.value}
+                          <span className="ml-1 text-[9px] font-normal text-[var(--color-muted)]">{row.unit}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">{copy.empty}</p>
+                )}
               </div>
-            </div>
-          </div>
-        )) : (
-          <div className="surface-row rounded-[0.95rem] p-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            {copy.empty}
-          </div>
-        )}
-      </div>
-
-      <Link
-        to={withReferral('/results', referrerSoccerverseUsername)}
-        className="mt-5 inline-flex items-center rounded-full border border-white/12 bg-black/20 px-5 py-3 text-sm font-semibold text-white hover:-translate-y-[2px] hover:bg-white/7 active:scale-[0.98]"
-      >
-        {copy.cta}
-      </Link>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -539,6 +621,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const fixtures = bootstrap?.fixtures ?? emptyFixtures
   const fixtureCount = bootstrap?.fixtures.length ?? 104
   const competitionStartMs = useMemo(() => getCompetitionStartMs(fixtures), [fixtures])
+  const nextSlot = useMemo(() => getNextKickoffSlot(fixtures, teams), [fixtures, teams])
 
   useEffect(() => {
     const landingPath = `${location.pathname}${location.search}`
@@ -632,7 +715,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
         </div>
 
         <div className="landing-side-stack">
-          <CompetitionCountdownCard copy={homeCopy.countdown} locale={locale} startMs={competitionStartMs} />
+          <NextMatchCountdownCard copy={homeCopy.countdown} locale={locale} startMs={nextSlot.kickoffMs ?? competitionStartMs} match={nextSlot.matches[0]} />
           <div className="data-strip">
             <div>
               <p className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{homeCopy.dataStrip.teams}</p>
@@ -747,7 +830,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
           </div>
         </div>
 
-        <NextKickoffCard copy={homeCopy.nextKickoff} fixtures={fixtures} referrerSoccerverseUsername={referrerSoccerverseUsername} teams={teams} />
+        <NextMatchSpotlightCard copy={homeCopy.spotlight} match={nextSlot.matches[0]} referrerSoccerverseUsername={referrerSoccerverseUsername} />
       </section>
 
       <LandingPrizeSection copy={copy.prizes} referrerSoccerverseUsername={referrerSoccerverseUsername} />

@@ -32,7 +32,12 @@ Provide a secure The Grand Tournament event platform with:
 
 ## Core Features
 
-1. Landing page and conversion funnel.
+1. Landing page and conversion funnel. Once the tournament is under way the landing carries two live
+   surfaces: a **countdown to the next match's kickoff** (the soonest fixture ≥ now, with that match's two
+   nations shown) and a **next-match spotlight card** that, for each of those two nations, lists the top 3
+   **point providers** if that team has recorded games (from `/player-points`) or otherwise the top 3
+   **picks** from revealed squads (from `/squad-usage`). Both feeds are public, cached, and fetched
+   non-blocking; the picks columns stay empty until squads are revealed.
 2. Registration with double opt-in email verification.
 3. Participant session creation after verification.
 4. Squad builder with fixed `4-3-3` plus four locked substitutes.
