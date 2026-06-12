@@ -68,4 +68,29 @@ describe('JsonMatchStatsImporter.resolveMatch', () => {
       importer.resolveMatch({ fixtureId: 'not-a-fixture', json: baseJson() }),
     ).rejects.toBeInstanceOf(MatchImportValidationError)
   })
+
+  it('resolves via the current community-pack name when the stored name is stale', async () => {
+    const mapping = new MemoryMatchMappingRepository()
+    const pools = new MemoryTeamPoolRepository()
+    // Stored snapshot is a form the source name cannot reach ("V. José da Silva"),
+    // but the pack's current full name matches exactly.
+    await pools.replaceTeamPlayers('BRA', [svPlayer(10, 'V. José da Silva')])
+    await pools.replaceTeamPlayers('MAR', [svPlayer(20, 'Achraf Hakimi')])
+    const packNames = new Map([[10, 'Vinicius Junior']])
+    const importer = new JsonMatchStatsImporter(mapping, pools, async (playerId) => packNames.get(playerId))
+    const result = await importer.resolveMatch({ fixtureId: BRA_MAR_FIXTURE, json: baseJson() })
+    expect(result.rows[0].resolution).toEqual({ status: 'resolved', playerId: 10 })
+  })
+
+  it('degrades to stored names when the pack lookup throws', async () => {
+    const mapping = new MemoryMatchMappingRepository()
+    const pools = new MemoryTeamPoolRepository()
+    await pools.replaceTeamPlayers('BRA', [svPlayer(10, 'Vinicius Junior')])
+    await pools.replaceTeamPlayers('MAR', [svPlayer(20, 'Achraf Hakimi')])
+    const importer = new JsonMatchStatsImporter(mapping, pools, async () => {
+      throw new Error('pack down')
+    })
+    const result = await importer.resolveMatch({ fixtureId: BRA_MAR_FIXTURE, json: baseJson() })
+    expect(result.rows[0].resolution).toEqual({ status: 'resolved', playerId: 10 })
+  })
 })

@@ -1,4 +1,6 @@
-import type { FixtureSeed, MatchEntryRecord, TeamPoolPlayer } from '../domain/types.js'
+import { scoringDefaults } from '../data/scoringDefaults.js'
+import { cleanSheetPointsForClass, scoreEntryComponents } from '../lib/matchScoring.js'
+import type { FixtureSeed, MatchEntryRecord, ScoringConfig, SlotClass, TeamPoolPlayer } from '../domain/types.js'
 
 export interface PublicFixtureResult {
   fixtureId: string
@@ -15,6 +17,13 @@ export interface PublicFixtureResult {
   awayPlayers: PublicFixturePlayerResult[]
 }
 
+// Clean-sheet points the player would earn if placed in this slot class (the only position-dependent
+// scoring component — see SOP_scoring_and_leagues "Public Match Results Page").
+export interface CleanSheetByPosition {
+  slotClass: SlotClass
+  points: number
+}
+
 export interface PublicFixturePlayerResult {
   playerId: number
   displayName: string
@@ -26,6 +35,22 @@ export interface PublicFixturePlayerResult {
   cleanSheetEligible: boolean
   rating?: number
   sourceNote?: string
+  // Soccerverse position codes + primary, for the player card.
+  positions: string[]
+  positionMain?: string
+  // Squad-independent base points (goal/assist/appearance/minutes/performance), computed identically
+  // to the scoring engine. The clean sheet is excluded — it is position-dependent (cleanSheetByPosition).
+  goalPoints: number
+  assistPoints: number
+  appearancePoints: number
+  minutePoints: number
+  performancePoints: number
+  basePoints: number
+  // One entry per slot class the player qualifies for, with the clean-sheet points that class earns
+  // (0 unless the team kept a clean sheet AND the class pays — GK/DEF always, MID only with a DM code).
+  cleanSheetByPosition: CleanSheetByPosition[]
+  // True when the player would earn clean-sheet points in at least one eligible class — drives the badge.
+  earnsCleanSheet: boolean
 }
 
 function sortPlayerResults(players: PublicFixturePlayerResult[]) {
@@ -43,6 +68,9 @@ export function buildPublicFixtureResults(
   fixtures: FixtureSeed[],
   playersByTeam: Map<string, TeamPoolPlayer[]>,
   entries: MatchEntryRecord[],
+  // Defaults to the team-locked rubric so existing 3-arg callers keep working; the route passes the
+  // live config so a scoring-config change propagates to the public point figures too.
+  scoring: ScoringConfig = scoringDefaults,
 ): PublicFixtureResult[] {
   const playerTeamCodes = new Map<number, string>()
   const playersById = new Map<number, TeamPoolPlayer>()
@@ -78,6 +106,15 @@ export function buildPublicFixtureResults(
       goalsByTeam.set(teamCode, (goalsByTeam.get(teamCode) ?? 0) + entry.goals)
 
       const player = playersById.get(entry.playerId)
+      const positions = player?.positions ?? []
+      const positionClasses = player?.positionClasses ?? []
+      const components = scoreEntryComponents(entry, scoring)
+      const cleanSheetByPosition: CleanSheetByPosition[] = positionClasses.map((slotClass) => ({
+        slotClass,
+        points: entry.cleanSheetEligible ? cleanSheetPointsForClass(scoring, slotClass, positions) : 0,
+      }))
+      const earnsCleanSheet = entry.cleanSheetEligible && cleanSheetByPosition.some((position) => position.points > 0)
+
       const playerResult: PublicFixturePlayerResult = {
         playerId: entry.playerId,
         displayName: player?.displayName ?? `Player ${entry.playerId}`,
@@ -89,6 +126,16 @@ export function buildPublicFixtureResults(
         cleanSheetEligible: entry.cleanSheetEligible,
         rating: entry.rating,
         sourceNote: entry.sourceNote,
+        positions,
+        positionMain: player?.positionMain,
+        goalPoints: components.goals,
+        assistPoints: components.assists,
+        appearancePoints: components.appearance,
+        minutePoints: components.minutes,
+        performancePoints: components.performance,
+        basePoints: components.total,
+        cleanSheetByPosition,
+        earnsCleanSheet,
       }
       if (teamCode === fixture.homeTeamCode) {
         homePlayers.push(playerResult)

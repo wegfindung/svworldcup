@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { EmptyState } from '../components/EmptyState'
-import { PlayerTooltip } from '../components/PlayerTooltip'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { getMessages, type AppMessages } from '../i18n/messages'
@@ -9,6 +9,7 @@ import type { LocaleCode, PublicFixturePlayerResult, PublicFixtureResult } from 
 
 type LoadState = 'loading' | 'ready' | 'error'
 type ResultsCopy = AppMessages['results']
+type FactorCopy = AppMessages['scoringCalculator']['components']
 type ErrorCopy = {
   title: string
   body: string
@@ -58,31 +59,183 @@ function formatPlayerList(players: PublicFixturePlayerResult[], stat: 'goals' | 
     .join(', ')
 }
 
-function PlayerDetailRow({ copy, player }: { copy: ResultsCopy; player: PublicFixturePlayerResult }) {
+function formatPoints(value: number) {
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+  })
+}
+
+// Click-through player card for one match performance. Shows the squad-independent base points broken
+// down by scoring factor, then a total per slot class the player qualifies for (the clean sheet is the
+// only position-dependent component — see SOP_scoring_and_leagues "Public Match Results Page"). The
+// budget multiplier, ownership boost, and reserve half-weight are per-manager, so the figures here are
+// base points only, called out in the note.
+function PlayerMatchCardModal({
+  copy,
+  factorCopy,
+  player,
+  onClose,
+}: {
+  copy: ResultsCopy
+  factorCopy: FactorCopy
+  player: PublicFixturePlayerResult
+  onClose: () => void
+}) {
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const factors: Array<[string, number]> = [
+    [factorCopy.goals, player.goalPoints],
+    [factorCopy.assists, player.assistPoints],
+    [factorCopy.appearance, player.appearancePoints],
+    [factorCopy.minutes, player.minutePoints],
+    [factorCopy.performance, player.performancePoints],
+  ]
+  const nationName = teamName(player.teamCode)
+  const positionsText = player.positions.length ? player.positions.join(' · ') : player.positionMain ?? ''
+  const showByPosition = player.cleanSheetEligible && player.cleanSheetByPosition.length > 0
+  const profileUrl = `https://play.soccerverse.com/player/${player.playerId}`
+
+  const stats: Array<[string, string]> = [
+    ['Min', `${player.minutes}'`],
+    ['G', String(player.goals)],
+    ['A', String(player.assists)],
+    [copy.rating, player.rating !== undefined ? formatPoints(player.rating) : '–'],
+  ]
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={player.displayName}
+        onClick={(event) => event.stopPropagation()}
+        className="glass-panel max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[1.25rem] p-6"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[0.85rem] border border-white/10 bg-white/5">
+            {player.imageUrl ? (
+              <img src={player.imageUrl} alt={player.displayName} width={64} height={64} className="h-full w-full object-cover" />
+            ) : (
+              <div className="grid h-full w-full place-items-center text-sm font-bold text-[var(--color-muted)]">
+                {player.displayName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-lg font-bold text-white">{player.displayName}</p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <TeamFlag teamCode={player.teamCode} label={nationName} size="sm" />
+              <span className="truncate text-xs text-[var(--color-muted)]">{nationName}</span>
+            </div>
+            {positionsText ? (
+              <p className="mono mt-1.5 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+                {copy.positionsLabel}: {positionsText}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-4 gap-2">
+          {stats.map(([label, value]) => (
+            <div key={label} className="rounded-[0.7rem] border border-white/8 bg-black/25 px-2 py-2 text-center">
+              <p className="mono text-[9px] uppercase tracking-wider text-[var(--color-muted)]">{label}</p>
+              <p className="mono mt-1 text-sm font-bold text-white">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="mono mt-5 text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.scoringFactors}</p>
+        <div className="mt-2 grid gap-1.5">
+          {factors.map(([label, value]) => (
+            <div key={label} className="flex items-center justify-between gap-3 text-xs">
+              <span className="text-[var(--color-muted)]">{label}</span>
+              <span className="mono text-white">{formatPoints(value)}</span>
+            </div>
+          ))}
+          <div className="mt-1 flex items-center justify-between gap-3 border-t border-white/10 pt-2 text-sm">
+            <span className="font-semibold text-white">{copy.basePointsLabel}</span>
+            <span className="mono font-bold text-white">{formatPoints(player.basePoints)}</span>
+          </div>
+        </div>
+
+        {showByPosition ? (
+          <>
+            <p className="mono mt-5 text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{copy.totalIfPlacedAs}</p>
+            <div className="mt-2 grid gap-1.5">
+              {player.cleanSheetByPosition.map((position) => (
+                <div
+                  key={position.slotClass}
+                  className="flex items-center justify-between gap-3 rounded-[0.7rem] border border-white/8 bg-black/25 px-3 py-2 text-sm"
+                >
+                  <span className="text-white">
+                    <span className="font-bold">{position.slotClass}</span>{' '}
+                    <span className="text-[11px] text-[var(--color-muted)]">
+                      ({factorCopy.cleanSheet} +{formatPoints(position.points)})
+                    </span>
+                  </span>
+                  <span className="mono font-bold text-[var(--color-accent)]">{formatPoints(player.basePoints + position.points)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="mt-5 flex items-center justify-between gap-3 rounded-[0.7rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 px-3 py-2.5 text-sm">
+            <span className="font-semibold text-white">{copy.matchTotal}</span>
+            <span className="mono text-lg font-bold text-[var(--color-accent)]">{formatPoints(player.basePoints)}</span>
+          </div>
+        )}
+
+        <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-muted)]">{copy.personalScoreNote}</p>
+
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <a
+            href={profileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold text-[var(--color-accent)] underline-offset-4 hover:underline"
+          >
+            {copy.viewOnSoccerverse} ↗
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-[var(--color-accent)] px-5 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+          >
+            {copy.close}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function PlayerDetailRow({ copy, factorCopy, player }: { copy: ResultsCopy; factorCopy: FactorCopy; player: PublicFixturePlayerResult }) {
+  const [cardOpen, setCardOpen] = useState(false)
   const ratingColor = player.rating !== undefined
-    ? player.rating >= 7.0 
-      ? 'text-[var(--color-sand)] border-[var(--color-sand)]/20 bg-[var(--color-sand)]/5' 
-      : player.rating >= 6.0 
+    ? player.rating >= 7.0
+      ? 'text-[var(--color-sand)] border-[var(--color-sand)]/20 bg-[var(--color-sand)]/5'
+      : player.rating >= 6.0
         ? 'text-[var(--color-accent)] border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5'
         : 'text-[var(--color-paper)] border-white/10'
     : ''
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-[0.85rem] border border-white/6 hover:border-white/12 transition duration-300 bg-black/20 px-3.5 py-2.5">
-      <PlayerTooltip
-        as="div"
-        className="flex items-center gap-3 min-w-0"
-        info={{
-          name: player.displayName,
-          nationCode: player.teamCode,
-          imageUrl: player.imageUrl,
-          meta: [
-            { label: 'Min', value: `${player.minutes}'` },
-            { label: 'G', value: String(player.goals) },
-            { label: 'A', value: String(player.assists) },
-            ...(player.rating !== undefined ? [{ label: 'Rating', value: String(player.rating) }] : []),
-          ],
-        }}
+      <button
+        type="button"
+        onClick={() => setCardOpen(true)}
+        className="flex min-w-0 items-center gap-3 text-left"
+        aria-label={`${player.displayName} — ${copy.matchDetails}`}
       >
         <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5 relative">
           {player.imageUrl ? (
@@ -115,30 +268,41 @@ function PlayerDetailRow({ copy, player }: { copy: ResultsCopy; player: PublicFi
             )}
           </p>
         </div>
-      </PlayerTooltip>
-      
-      <div className="flex shrink-0 flex-wrap justify-end gap-1.5 text-[10px]">
-        {player.goals > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">
-            G {player.goals}
-          </span>
-        )}
-        {player.assists > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-sand)]/25 bg-[var(--color-sand)]/10 px-2 py-1 text-[9px] font-bold text-[var(--color-sand)]">
-            A {player.assists}
-          </span>
-        )}
-        {player.cleanSheetEligible && (
-          <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[9px] font-bold text-[var(--color-accent)]">
-            CS
-          </span>
-        )}
+      </button>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap justify-end gap-1.5 text-[10px]">
+          {player.goals > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">
+              G {player.goals}
+            </span>
+          )}
+          {player.assists > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-sand)]/25 bg-[var(--color-sand)]/10 px-2 py-1 text-[9px] font-bold text-[var(--color-sand)]">
+              A {player.assists}
+            </span>
+          )}
+          {player.earnsCleanSheet && (
+            <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2 py-1 text-[9px] font-bold text-[var(--color-accent)]">
+              CS
+            </span>
+          )}
+        </div>
+        <div
+          className="rounded-[0.5rem] border border-white/12 bg-white/5 px-2 py-1 text-right"
+          title={copy.personalScoreNote}
+        >
+          <span className="mono text-[8px] uppercase tracking-wider text-[var(--color-muted)]">{copy.basePointsLabel}</span>
+          <span className="mono ml-1.5 text-xs font-bold text-white">{formatPoints(player.basePoints)}</span>
+        </div>
       </div>
+
+      {cardOpen ? <PlayerMatchCardModal copy={copy} factorCopy={factorCopy} player={player} onClose={() => setCardOpen(false)} /> : null}
     </div>
   )
 }
 
-function TeamPlayerDetails({ copy, title, teamCode, players }: { copy: ResultsCopy; title: string; teamCode: string; players: PublicFixturePlayerResult[] }) {
+function TeamPlayerDetails({ copy, factorCopy, title, teamCode, players }: { copy: ResultsCopy; factorCopy: FactorCopy; title: string; teamCode: string; players: PublicFixturePlayerResult[] }) {
   return (
     <div className="min-w-0">
       <div className="mb-3 flex items-center gap-2">
@@ -147,7 +311,7 @@ function TeamPlayerDetails({ copy, title, teamCode, players }: { copy: ResultsCo
       </div>
       <div className="grid gap-1.5">
         {players.length ? (
-          players.map((player) => <PlayerDetailRow key={player.playerId} copy={copy} player={player} />)
+          players.map((player) => <PlayerDetailRow key={player.playerId} copy={copy} factorCopy={factorCopy} player={player} />)
         ) : (
           <p className="rounded-[0.85rem] border border-white/6 bg-black/20 px-3.5 py-3 text-xs text-[var(--color-muted)]">
             {copy.noStats}
@@ -160,12 +324,14 @@ function TeamPlayerDetails({ copy, title, teamCode, players }: { copy: ResultsCo
 
 function ResultCard({
   copy,
+  factorCopy,
   locale,
   result,
   isOpen,
   onToggle,
 }: {
   copy: ResultsCopy
+  factorCopy: FactorCopy
   locale: LocaleCode
   result: PublicFixtureResult
   isOpen: boolean
@@ -275,8 +441,8 @@ function ResultCard({
 
       {isOpen ? (
         <div className="mt-4 grid gap-4 border-t border-white/8 pt-4 md:grid-cols-2">
-          <TeamPlayerDetails copy={copy} title={homeName} teamCode={result.homeTeamCode} players={result.homePlayers} />
-          <TeamPlayerDetails copy={copy} title={awayName} teamCode={result.awayTeamCode} players={result.awayPlayers} />
+          <TeamPlayerDetails copy={copy} factorCopy={factorCopy} title={homeName} teamCode={result.homeTeamCode} players={result.homePlayers} />
+          <TeamPlayerDetails copy={copy} factorCopy={factorCopy} title={awayName} teamCode={result.awayTeamCode} players={result.awayPlayers} />
         </div>
       ) : null}
     </article>
@@ -288,7 +454,9 @@ interface ResultsPageProps {
 }
 
 export function ResultsPage({ locale }: ResultsPageProps) {
-  const copy = getMessages(locale).results
+  const messages = getMessages(locale)
+  const copy = messages.results
+  const factorCopy = messages.scoringCalculator.components
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [results, setResults] = useState<PublicFixtureResult[]>([])
   const [error, setError] = useState<ErrorCopy | null>(null)
@@ -407,6 +575,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
                   <ResultCard
                     key={result.fixtureId}
                     copy={copy}
+                    factorCopy={factorCopy}
                     locale={locale}
                     result={result}
                     isOpen={openFixtureIds.has(result.fixtureId)}

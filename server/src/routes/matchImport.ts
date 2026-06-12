@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { fixtures, teams } from '../data/worldCupSeed.js'
 import { parseMatchImportCsv } from '../lib/matchImportCsv.js'
+import { isFeedCsv, parseMatchImportFeedCsv } from '../lib/matchImportFeedCsv.js'
 import { MatchImportValidationError } from '../lib/matchImportError.js'
 import { assertMatchImportSemantics, assertStarterCap, parseMatchImportJson } from '../lib/matchImportJson.js'
 import { finalizeSubmission } from '../lib/matchImportSubmission.js'
@@ -24,6 +25,9 @@ export interface MatchImportRouterDeps {
   scoringRepository: ScoringRepository
   auditRepository: AuditRepository
   snapshotJobRepository: SnapshotJobRepository
+  // Optional community-pack name lookup for resolution aliases (production wires
+  // getCommunityPlayerName; tests omit it to stay offline). See JsonMatchStatsImporter.
+  packNameLookup?: (playerId: number) => Promise<string | undefined>
 }
 
 // A fixture's data is submitted as either JSON or CSV/TSV (Fix 12). CSV/TSV is a pure
@@ -42,10 +46,10 @@ const csvInputSchema = z.object({
   awayGoals: z.coerce.number().int().min(0).max(99),
   sourceUrl: z.string().trim().url().max(500),
 })
-// Fix B (future): a third input mode will be added here — e.g. a 'feed-url' variant where
-// the server fetches the CSV from wcup.soccerverse.io (host hard-allowlisted) and parses it
-// via a dedicated feed parser. Blocked until the SV team confirms the feed format; see the
-// note in lib/matchImportCsv.ts.
+// Fix B: the 'csv' input mode covers BOTH the manual paste contract and the official
+// provider feed CSV — buildMatchImportJson auto-detects which parser applies from the
+// header row. A possible later addition is a 'feed-url' variant where the server fetches
+// the CSV itself (host hard-allowlisted); the parser it would need exists already.
 const matchInputSchema = z.discriminatedUnion('format', [jsonInputSchema, csvInputSchema])
 
 const parseSchema = z.object({
@@ -126,7 +130,10 @@ function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImport
   if (!homeTeam || !awayTeam) {
     throw new MatchImportValidationError('The selected fixture has unknown teams.')
   }
-  return parseMatchImportCsv(input.text, {
+  // Auto-detect the provider feed format (a `player` header column instead of `name`);
+  // everything else goes through the manual CSV/TSV paste parser.
+  const parseCsv = isFeedCsv(input.text) ? parseMatchImportFeedCsv : parseMatchImportCsv
+  return parseCsv(input.text, {
     homeTeamCode: fixture.homeTeamCode,
     awayTeamCode: fixture.awayTeamCode,
     homeTeamName: homeTeam.nameEn,
@@ -141,7 +148,7 @@ function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImport
 // Mounted under /api/admin/match-import, inheriting admin authentication from the admin router.
 export function createMatchImportRouter(deps: MatchImportRouterDeps) {
   const router = Router()
-  const importer = new JsonMatchStatsImporter(deps.matchMappingRepository, deps.teamPoolRepository)
+  const importer = new JsonMatchStatsImporter(deps.matchMappingRepository, deps.teamPoolRepository, deps.packNameLookup)
 
   // Fix 7: parse + auto-resolve without persisting anything. The admin uses the returned
   // resolution to resolve or skip every outstanding row before calling /upload.

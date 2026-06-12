@@ -90,6 +90,34 @@ Each participant selects a salary budget when building their squad. The chosen b
 - The ownership boost is sourced from `participant_influence_snapshot` rows. The `bonusPercent` field on a slot is `0` when no snapshot row exists for that `(participant_id, fixture_id, player_id)` — unlinked Rookies always, linked participants for fixtures not yet promoted, linked participants with zero net post-cutoff buys.
 - **Individual ranking tiebreak:** within the Rookie and Veteran tables, participants level on `totalScore` are ordered by **earliest registration** (`registeredAt`, i.e. `created_at`), then by display name — implemented in `rankParticipants` (`scoringRepository.ts`). A manager who registered earlier outranks a later registrant on the same score, even with an identical squad.
 
+## Public Match Results Page
+
+The public results page (`/match-results`, `services/matchResults.ts → buildPublicFixtureResults`) shows
+each promoted player's match performance. It has no squad context, so it cannot show a single per-player
+total — a player's banked points depend on the slot class the participant placed them in, the budget
+multiplier, the ownership boost, and the reserve half-weight, none of which exist here. The page therefore
+splits the scoring into the squad-independent part and the position-dependent part:
+
+- **Base points** (squad-independent, one figure per player): goal, assist, appearance, minutes, and
+  performance points, computed from the entry exactly as the scoring engine does (shared helpers in
+  `lib/matchScoring.ts`). This is the headline number on each player row.
+- **Clean sheet by position** (the only position-dependent component): shown only when the entry's
+  `clean_sheet_eligible` flag is set, and only for the slot classes the player actually qualifies for
+  (`world_cup_players.positions` → `getPositionClasses`). Each eligible class is paired with the
+  clean-sheet points it would earn under the standard rule (GK `4`, DEF `3`, MID `1` only with a
+  `DML`/`DMR`/`DMC`/`DM` position, FWD `0`), and a per-position total (`base + that class's clean sheet`).
+  A versatile player (e.g. eligible at DEF and a DM-MID) shows one line per eligible class; a single-class
+  player shows one line.
+- **Clean-sheet badge:** the row's CS badge appears only when the player would earn clean-sheet points in
+  at least one eligible class — i.e. `clean_sheet_eligible` AND some eligible class pays more than `0`. A
+  forward (or a non-DM central midfielder with no other eligible class) who kept a clean sheet shows no
+  badge, because the clean sheet earns them nothing.
+
+These figures are **base points only**. The page makes clear that a participant's own score additionally
+applies their budget multiplier and any ownership boost, and halves for a reserve — so the public number
+is intentionally not equal to any individual manager's banked total. This is the same per-participant
+divergence the import engine refuses to collapse into one number (`SOP_match_data_import.md` "Rating").
+
 ## Leaderboard Read Cache
 
 Public leaderboard reads (`/leaderboards/rookie|veteran|nations`) and `/profiles/:slug` are served

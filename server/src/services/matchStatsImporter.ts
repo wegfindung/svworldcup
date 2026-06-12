@@ -24,10 +24,36 @@ export interface MatchStatsImporter {
 export class JsonMatchStatsImporter implements MatchStatsImporter {
   source: 'json' = 'json'
 
+  // packNameLookup resolves a pool player's CURRENT community-pack name (full real names;
+  // the stored display name is a curation-time snapshot and older pack versions were
+  // abbreviated). Injected so tests stay offline; production wires getCommunityPlayerName.
   constructor(
     private readonly mappingRepository: MatchMappingRepository,
     private readonly teamPoolRepository: TeamPoolRepository,
+    private readonly packNameLookup?: (playerId: number) => Promise<string | undefined>,
   ) {}
+
+  // Best-effort enrichment: a pack failure must never fail an import — resolution just
+  // degrades to the stored display names.
+  private async loadPackNames(teamPool: { playerId: number }[]): Promise<Map<number, string> | undefined> {
+    if (!this.packNameLookup) {
+      return undefined
+    }
+    try {
+      const entries = await Promise.all(
+        teamPool.map(async (player) => [player.playerId, await this.packNameLookup?.(player.playerId)] as const),
+      )
+      const names = new Map<number, string>()
+      for (const [playerId, name] of entries) {
+        if (name) {
+          names.set(playerId, name)
+        }
+      }
+      return names
+    } catch {
+      return undefined
+    }
+  }
 
   // Parse-time resolution only: nothing is persisted. Every player is auto-resolved against
   // the D9 memory + curated pool; rows that stay unresolved are returned for the admin to
@@ -67,10 +93,12 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
     // D9: load each team's resolution memory and curated pool once.
     const contextByTeam = new Map<string, PlayerResolutionContext>()
     for (const teamCode of fixtureCodes) {
+      const teamPool = await this.teamPoolRepository.listByTeam(teamCode)
       contextByTeam.set(teamCode, {
         mapEntries: await this.mappingRepository.listPlayerMap(teamCode),
         skipNames: await this.mappingRepository.listSkipNames(teamCode),
-        teamPool: await this.teamPoolRepository.listByTeam(teamCode),
+        teamPool,
+        packNamesByPlayerId: await this.loadPackNames(teamPool),
       })
     }
 

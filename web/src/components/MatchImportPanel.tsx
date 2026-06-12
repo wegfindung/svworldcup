@@ -377,10 +377,10 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           </div>
         ) : null}
 
-        {/* Fix B (future): a third toggle option — a feed-URL mode — will be added here,
-            paired with a third `format` value. The server then fetches + parses the official
-            SV feed CSV. Blocked until the SV team confirms the feed format; see the note in
-            server/src/lib/matchImportCsv.ts. */}
+        {/* Fix B: the CSV path accepts BOTH the manual paste contract and the official
+            provider feed file — the server auto-detects the format from the header row
+            (server/src/lib/matchImportFeedCsv.ts). A possible later addition is a feed-URL
+            mode where the server fetches the CSV itself. */}
         <div className="mt-4 flex items-center gap-2">
           {(['json', 'csv'] as const).map((value) => (
             <button
@@ -399,7 +399,7 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           ))}
           <InfoTip
             label="About the input formats"
-            content="JSON carries its own match block (teams and score); the source URL can come from the JSON or the field below. CSV/TSV is a pure player-rows table with a header row — you enter the score and source URL in the fields above the paste box."
+            content="JSON carries its own match block (teams and score); the source URL can come from the JSON or the field below. CSV/TSV is a pure player-rows table with a header row — you enter the score and source URL in the fields above the paste box. The official provider feed file (one CSV per fixture) is accepted as-is: squad players without minutes are dropped automatically and starters are derived from minutes played."
           />
         </div>
 
@@ -475,7 +475,7 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
             />
             {csvFileName
               ? `Loaded "${csvFileName}" — drop another file, or edit it in the box below.`
-              : 'Drag a CSV/TSV file here, or click to browse. You can also paste directly below.'}
+              : 'Drag a CSV/TSV file here, or click to browse. The provider feed file works as-is. You can also paste directly below.'}
           </div>
         ) : null}
 
