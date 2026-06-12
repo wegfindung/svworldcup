@@ -32,6 +32,7 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m
 const ResultsPage = lazy(() => import('./pages/ResultsPage').then((module) => ({ default: module.ResultsPage })))
 const RulesPage = lazy(() => import('./pages/RulesPage').then((module) => ({ default: module.RulesPage })))
 const ShareComposerPage = lazy(() => import('./pages/ShareComposerPage').then((module) => ({ default: module.ShareComposerPage })))
+const SquadUsagePage = lazy(() => import('./pages/SquadUsagePage').then((module) => ({ default: module.SquadUsagePage })))
 const TablesPage = lazy(() => import('./pages/TablesPage').then((module) => ({ default: module.TablesPage })))
 const TournamentClosedPage = lazy(() =>
   import('./pages/TournamentClosedPage').then((module) => ({ default: module.TournamentClosedPage })),
@@ -390,6 +391,7 @@ function App() {
               <Route path="/login" element={<PlayerLoginPage locale={locale} referrerSoccerverseUsername={referrerSoccerverseUsername} />} />
               <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
               <Route path="/results" element={<ResultsPage locale={locale} />} />
+              <Route path="/squad-usage" element={<SquadUsagePage />} />
               <Route path="/prizes" element={<PrizesPage locale={locale} />} />
               <Route path="/rules" element={<RulesPage locale={locale} />} />
               <Route path="/help" element={<HelpPage locale={locale} />} />

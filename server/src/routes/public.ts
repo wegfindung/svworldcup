@@ -6,11 +6,12 @@ import { getSoccerverseCountryId } from '../data/teamCountryMap.js'
 import { defaultLocale, isKnownTeamCode, supportedLocales, teams } from '../data/worldCupSeed.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { FixtureRepository } from '../repositories/fixtureRepository.js'
-import type { RegistrationRepository } from '../repositories/registrationRepository.js'
+import { publicProfileSlug, type RegistrationRepository } from '../repositories/registrationRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
 import type { LandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
+import type { PublicSquadUsagePlayer, TeamPoolPlayer } from '../domain/types.js'
 import { buildRequestRiskSignal } from '../lib/riskSignals.js'
 import { handleShareCardImage } from './share.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
@@ -84,6 +85,46 @@ function renderEmailPreferencesPage(input: { token: string; status: 'unsubscribe
     </main>
   </body>
 </html>`
+}
+
+function presenceRate(usageCount: number, visibleSquadCount: number) {
+  return visibleSquadCount > 0 ? Math.round((usageCount / visibleSquadCount) * 10_000) / 100 : 0
+}
+
+function remapEffectiveSquad(
+  squad: Awaited<ReturnType<SquadRepository['getLockedSquad']>>,
+  roundSlots: Awaited<ReturnType<SquadRepository['listRoundLineupSlots']>>,
+) {
+  if (!squad || roundSlots.length === 0) {
+    return squad
+  }
+
+  const maxRound = Math.max(...roundSlots.map((slot) => slot.roundKey))
+  const playerBySlotKey = new Map(roundSlots.filter((slot) => slot.roundKey === maxRound).map((slot) => [slot.slotKey, slot.playerId]))
+  const playerById = new Map(squad.slots.filter((slot) => slot.player).map((slot) => [slot.player!.playerId, slot.player!]))
+
+  return {
+    ...squad,
+    slots: squad.slots.map((slot) => {
+      const playerId = playerBySlotKey.get(slot.key)
+      return playerId === undefined ? slot : { ...slot, player: playerById.get(playerId) ?? slot.player }
+    }),
+  }
+}
+
+function buildEmptyUsagePlayer(player: TeamPoolPlayer): Omit<PublicSquadUsagePlayer, 'usageCount' | 'starterCount' | 'subCount' | 'presenceRate' | 'managers'> {
+  return {
+    playerId: player.playerId,
+    displayName: player.displayName,
+    teamCode: player.teamCode,
+    nationalityCode: player.nationalityCode,
+    imageUrl: player.imageUrl,
+    rating: player.rating,
+    capCost: player.capCost,
+    positionMain: player.positionMain,
+    positions: player.positions,
+    positionClasses: player.positionClasses,
+  }
 }
 
 interface Dependencies {
@@ -167,6 +208,101 @@ export function createPublicRouter({
         finalFixtures: items.filter((item) => item.status === 'final').length,
         pendingFixtures: items.filter((item) => item.status === 'pending').length,
       },
+    })
+  })
+
+  router.get('/squad-usage', async (_req, res) => {
+    const [eventControls, participants] = await Promise.all([
+      configRepository.getEventControls(),
+      registrationRepository.listForAdmin(),
+    ])
+    const visibleParticipants = participants.filter(
+      (participant) => participant.status === 'active' && (participant.revealSquad || eventControls.globalRevealSquads),
+    )
+    const usage = new Map<
+      number,
+      {
+        player: ReturnType<typeof buildEmptyUsagePlayer>
+        usageCount: number
+        starterCount: number
+        subCount: number
+        managers: PublicSquadUsagePlayer['managers']
+      }
+    >()
+    let visibleSquadCount = 0
+
+    for (const participant of visibleParticipants) {
+      const lockedSquad = await squadRepository.getLockedSquad(participant.participantId)
+      const squad = remapEffectiveSquad(
+        lockedSquad,
+        lockedSquad ? await squadRepository.listRoundLineupSlots(participant.participantId) : [],
+      )
+      if (!squad) {
+        continue
+      }
+
+      const selectedSlots = squad.slots.filter((slot) => slot.player)
+      if (selectedSlots.length === 0) {
+        continue
+      }
+      visibleSquadCount += 1
+
+      for (const slot of selectedSlots) {
+        const player = slot.player!
+        const current = usage.get(player.playerId) ?? {
+          player: buildEmptyUsagePlayer(player),
+          usageCount: 0,
+          starterCount: 0,
+          subCount: 0,
+          managers: [],
+        }
+        current.usageCount += 1
+        if (slot.slotGroup === 'starter') {
+          current.starterCount += 1
+        } else {
+          current.subCount += 1
+        }
+        current.managers.push({
+          participantId: participant.participantId,
+          displayName: participant.displayName,
+          leagueType: participant.leagueType,
+          profilePath: `/profiles/${publicProfileSlug(participant.displayName, participant.participantId)}`,
+          slotKey: slot.key,
+          slotGroup: slot.slotGroup,
+          slotClass: slot.slotClass,
+        })
+        usage.set(player.playerId, current)
+      }
+    }
+
+    const items: PublicSquadUsagePlayer[] = [...usage.values()]
+      .map((entry) => ({
+        ...entry.player,
+        usageCount: entry.usageCount,
+        starterCount: entry.starterCount,
+        subCount: entry.subCount,
+        presenceRate: presenceRate(entry.usageCount, visibleSquadCount),
+        managers: entry.managers.sort((left, right) => left.displayName.localeCompare(right.displayName)),
+      }))
+      .sort(
+        (left, right) =>
+          right.usageCount - left.usageCount ||
+          right.starterCount - left.starterCount ||
+          right.rating - left.rating ||
+          left.displayName.localeCompare(right.displayName),
+      )
+
+    res.json({
+      summary: {
+        visibleSquadCount,
+        visibleManagerCount: visibleParticipants.length,
+        totalSelections: items.reduce((sum, item) => sum + item.usageCount, 0),
+        uniquePlayerCount: items.length,
+        averageSelectionsPerPlayer: items.length
+          ? Math.round((items.reduce((sum, item) => sum + item.usageCount, 0) / items.length) * 100) / 100
+          : 0,
+      },
+      items,
     })
   })
 

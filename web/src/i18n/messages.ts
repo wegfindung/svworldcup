@@ -15,6 +15,7 @@ const englishMessages = {
       { to: '/builder', label: 'Builder' },
       { to: '/results', label: 'Results' },
       { to: '/tables', label: 'Tables' },
+      { to: '/squad-usage', label: 'Usage' },
     ],
     important: {
       label: 'Guide',
@@ -717,6 +718,7 @@ const spanishMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Constructor' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tablas' },
+      { to: '/squad-usage', label: 'Uso' },
     ],
     important: {
       label: 'Guía',
@@ -1254,6 +1256,7 @@ const italianMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Costruttore' },
       { to: '/results', label: 'Risultati' },
       { to: '/tables', label: 'Classifiche' },
+      { to: '/squad-usage', label: 'Utilizzo' },
     ],
     important: {
       label: 'Guida',
@@ -1791,6 +1794,7 @@ const germanMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Aufstellung' },
       { to: '/results', label: 'Ergebnisse' },
       { to: '/tables', label: 'Tabellen' },
+      { to: '/squad-usage', label: 'Nutzung' },
     ],
     important: {
       label: 'Infos',
@@ -2327,6 +2331,7 @@ const frenchMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Composition' },
       { to: '/results', label: 'Résultats' },
       { to: '/tables', label: 'Classements' },
+      { to: '/squad-usage', label: 'Usage' },
     ],
     important: {
       label: 'Guide',
@@ -2861,6 +2866,7 @@ const portugueseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Construtor' },
       { to: '/results', label: 'Resultados' },
       { to: '/tables', label: 'Tabelas' },
+      { to: '/squad-usage', label: 'Uso' },
     ],
     important: {
       label: 'Guia',
@@ -3395,6 +3401,7 @@ const russianMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'Конструктор' },
       { to: '/results', label: 'Результаты' },
       { to: '/tables', label: 'Таблицы' },
+      { to: '/squad-usage', label: 'Использование' },
     ],
     important: {
       label: 'Гид',
@@ -3930,6 +3937,7 @@ const chineseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: '阵容' },
       { to: '/results', label: '赛果' },
       { to: '/tables', label: '榜单' },
+      { to: '/squad-usage', label: '使用率' },
     ],
     important: {
       label: '指南',
@@ -4467,6 +4475,7 @@ const japaneseMessages: DeepPartial<AppMessages> = {
       { to: '/builder', label: 'ビルダー' },
       { to: '/results', label: '結果' },
       { to: '/tables', label: '順位表' },
+      { to: '/squad-usage', label: '起用率' },
     ],
     important: {
       label: 'ガイド',

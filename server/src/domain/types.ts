@@ -790,3 +790,44 @@ export interface PublicParticipantProfile {
   // Public swap history, present when the squad is revealed (empty if no swaps made).
   swaps?: SwapRecord[]
 }
+
+export interface PublicSquadUsageManager {
+  participantId: string
+  displayName: string
+  leagueType: LeagueType
+  profilePath: string
+  slotKey: string
+  slotGroup: SlotGroup
+  slotClass: SlotClass
+}
+
+export interface PublicSquadUsagePlayer {
+  playerId: number
+  displayName: string
+  teamCode: string
+  nationalityCode: string
+  imageUrl?: string
+  rating: number
+  capCost: number
+  positionMain?: string
+  positions: string[]
+  positionClasses: SlotClass[]
+  usageCount: number
+  starterCount: number
+  subCount: number
+  presenceRate: number
+  managers: PublicSquadUsageManager[]
+}
+
+export interface PublicSquadUsageSummary {
+  visibleSquadCount: number
+  visibleManagerCount: number
+  totalSelections: number
+  uniquePlayerCount: number
+  averageSelectionsPerPlayer: number
+}
+
+export interface PublicSquadUsagePayload {
+  summary: PublicSquadUsageSummary
+  items: PublicSquadUsagePlayer[]
+}
