@@ -36,6 +36,14 @@ function stageEyebrow(groupKey: string, copy: ResultsCopy) {
   return /^[A-L]$/.test(groupKey) ? copy.groupStage : copy.knockoutStage
 }
 
+// Compact label for the jump-bar tabs: the bare letter for groups A–L, short codes for knockout rounds.
+function stageTabLabel(groupKey: string) {
+  if (/^[A-L]$/.test(groupKey)) return groupKey
+  if (groupKey === 'FINAL') return 'Final'
+  if (groupKey === '3P') return '3rd'
+  return groupKey
+}
+
 // Fixtures are stored as UTC; render in the viewer's browser timezone + locale so a fan in
 // Stockholm, São Paulo, or Sydney each sees the kickoff in their own wall-clock.
 function formatKickoff(result: PublicFixtureResult, locale: LocaleCode) {
@@ -484,6 +492,12 @@ export function ResultsPage({ locale }: ResultsPageProps) {
   const [results, setResults] = useState<PublicFixtureResult[]>([])
   const [error, setError] = useState<ErrorCopy | null>(null)
   const [openFixtureIds, setOpenFixtureIds] = useState<Set<string>>(new Set())
+  const [activeGroup, setActiveGroup] = useState<string | null>(null)
+
+  function jumpToGroup(groupKey: string) {
+    setActiveGroup(groupKey)
+    document.getElementById(`results-group-${groupKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   function toggleFixtureDetails(fixtureId: string) {
     setOpenFixtureIds((current) => {
@@ -566,6 +580,37 @@ export function ResultsPage({ locale }: ResultsPageProps) {
         </div>
       </section>
 
+      {loadState === 'ready' && groupedResults.length > 1 ? (
+        <nav
+          aria-label={copy.jumpTo}
+          className="sticky top-3 z-30 rounded-[1rem] border border-white/10 bg-[rgba(7,16,14,0.92)] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_50px_-30px_rgba(0,0,0,0.92)] backdrop-blur-md"
+        >
+          <div className="flex items-center gap-2">
+            <span className="mono shrink-0 px-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{copy.jumpTo}</span>
+            <div className="flex flex-1 gap-1 overflow-x-auto">
+              {groupedResults.map(([groupKey]) => {
+                const isActive = (activeGroup ?? groupedResults[0][0]) === groupKey
+                return (
+                  <button
+                    key={groupKey}
+                    type="button"
+                    onClick={() => jumpToGroup(groupKey)}
+                    className={[
+                      'shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition',
+                      isActive
+                        ? 'bg-[var(--color-accent)] text-[var(--color-ink)]'
+                        : 'text-[var(--color-muted)] hover:bg-white/7 hover:text-white',
+                    ].join(' ')}
+                  >
+                    {stageTabLabel(groupKey)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </nav>
+      ) : null}
+
       {loadState === 'loading' ? (
         <section className="grid gap-3 lg:grid-cols-2">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -583,7 +628,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
       {loadState === 'ready' ? (
         <section className="grid gap-4 xl:grid-cols-2">
           {groupedResults.map(([groupKey, groupResults]) => (
-            <div key={groupKey} className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12 hover:shadow-[0_12px_40px_-24px_rgba(0,0,0,0.85)]">
+            <div key={groupKey} id={`results-group-${groupKey}`} className="glass-panel scroll-mt-24 rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12 hover:shadow-[0_12px_40px_-24px_rgba(0,0,0,0.85)]">
               <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/5 pb-3">
                 <div>
                   <p className="eyebrow text-[10px]">{stageEyebrow(groupKey, copy)}</p>

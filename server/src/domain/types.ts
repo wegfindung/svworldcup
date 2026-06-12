@@ -704,9 +704,26 @@ export interface ParticipantScoreRow {
   baseScore: number
   bonusPercent: number
   scoreMultiplier: number
+  // The locked squad's chosen salary-budget tier (drives scoreMultiplier). Carried on the row so the
+  // Budgets stats can group managers by tier off the same cached rows — see SOP "Stats — Budget Stats".
+  budgetLimit: number
   breakdown: ParticipantScoreBreakdown
   fixtures: ParticipantScoreFixtureDetail[]
   rank: number
+}
+
+// One salary-budget tier's public aggregate for the Stats → Budgets tab. `managerCount` = locked squads on
+// the tier (popularity); `averageScore` = mean final totalScore across them (multiplier already applied).
+export interface BudgetStatRow {
+  budgetLimit: number
+  scoreMultiplier: number
+  managerCount: number
+  averageScore: number
+}
+
+export interface BudgetStatsPayload {
+  summary: { lockedManagerCount: number; tierCount: number }
+  items: BudgetStatRow[]
 }
 
 export interface ParticipantScoreBreakdown {

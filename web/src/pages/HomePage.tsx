@@ -11,7 +11,7 @@ import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOption
 import { prizeLeagues, prizeTotalWithUnit } from '../data/prizePool'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { fetchPlayerPoints, fetchSquadUsage, recordLandingPageVisit } from '../lib/api'
-import type { PlayerStatsSeed } from '../lib/playerStatsSeed'
+import { toPlayerSeed, type PlayerStatsSeed } from '../lib/playerStatsSeed'
 import { withReferral } from '../lib/referral'
 import { readParticipantReady } from '../lib/participantReady'
 import type { FixtureSeed, LocaleCode, PlayerPointsPayload, PublicSquadUsagePayload, ScoringConfig, TeamSeed } from '../lib/types'
@@ -263,7 +263,7 @@ function formatSpotlightPoints(value: number) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
-type SpotlightRow = { playerId: number; name: string; imageUrl?: string; value: string; unit: string }
+type SpotlightRow = { playerId: number; name: string; imageUrl?: string; value: string; unit: string; seed: PlayerStatsSeed }
 
 function SpotlightTeamCard({ name, teamCode, tag, rows, emptyLabel, onSelectPlayer }: { name: string; teamCode: string; tag: string; rows: SpotlightRow[]; emptyLabel: string; onSelectPlayer: (seed: PlayerStatsSeed) => void }) {
   return (
@@ -283,7 +283,7 @@ function SpotlightTeamCard({ name, teamCode, tag, rows, emptyLabel, onSelectPlay
             <li key={row.playerId} className="flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => onSelectPlayer({ playerId: row.playerId, displayName: row.name, teamCode, imageUrl: row.imageUrl })}
+                onClick={() => onSelectPlayer(row.seed)}
                 className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
               >
                 <span className="mono w-4 shrink-0 text-[11px] text-[var(--color-muted)]">{index + 1}</span>
@@ -356,7 +356,7 @@ function NextMatchSpotlightCard({
       .filter((player) => player.teamCode === teamCode)
       .sort((left, right) => right.usageCount - left.usageCount || right.starterCount - left.starterCount || left.displayName.localeCompare(right.displayName))
       .slice(0, 5)
-      .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: String(player.usageCount), unit: copy.picksUnit }))
+      .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: String(player.usageCount), unit: copy.picksUnit, seed: toPlayerSeed(player) }))
   }
 
   function pointRows(teamCode: string): SpotlightRow[] {
@@ -364,7 +364,7 @@ function NextMatchSpotlightCard({
       .filter((player) => player.teamCode === teamCode)
       .sort((left, right) => right.basePoints - left.basePoints || left.displayName.localeCompare(right.displayName))
       .slice(0, 5)
-      .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: formatSpotlightPoints(player.basePoints), unit: copy.pointsUnit }))
+      .map((player) => ({ playerId: player.playerId, name: player.displayName, imageUrl: player.imageUrl, value: formatSpotlightPoints(player.basePoints), unit: copy.pointsUnit, seed: toPlayerSeed(player) }))
   }
 
   // A nation's points card only appears once that team has match entries.

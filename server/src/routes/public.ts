@@ -399,6 +399,10 @@ export function createPublicRouter({
     res.json({ items })
   })
 
+  router.get('/budget-stats', async (_req, res) => {
+    res.json(await scoringRepository.getBudgetStats())
+  })
+
   router.get('/nation-participation', async (_req, res) => {
     const items = await registrationRepository.listNationParticipation()
     res.json({ items })

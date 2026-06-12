@@ -543,6 +543,20 @@ export interface PlayerPointsPayload {
   items: PlayerPointsPlayer[]
 }
 
+// Stats → Budgets tab: one row per salary-budget tier. managerCount = locked squads on the tier;
+// averageScore = mean final totalScore (budget multiplier already applied) across them.
+export interface BudgetStatRow {
+  budgetLimit: number
+  scoreMultiplier: number
+  managerCount: number
+  averageScore: number
+}
+
+export interface BudgetStatsPayload {
+  summary: { lockedManagerCount: number; tierCount: number }
+  items: BudgetStatRow[]
+}
+
 export type EmailCampaignKind = 'newsletter' | 'autoresponder'
 export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
 export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'
