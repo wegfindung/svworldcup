@@ -6,7 +6,9 @@ import { isMidCleanSheetEligible } from '../data/positionClasses.js'
 import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import { scoreEntryComponents } from '../lib/matchScoring.js'
 import { buildFixtureRoundMap } from '../lib/tournamentRounds.js'
+import { buildBudgetStats } from '../services/budgetStats.js'
 import type {
+  BudgetStatsPayload,
   FixtureSeed,
   LeagueType,
   MatchEntryInput,
@@ -86,6 +88,7 @@ export interface ScoringRepository {
   listMatchEntries(fixtureId?: string): Promise<MatchEntryRecord[]>
   getLeagueLeaderboard(leagueType: LeagueType): Promise<ParticipantScoreRow[]>
   getNationLeaderboard(): Promise<NationScoreRow[]>
+  getBudgetStats(): Promise<BudgetStatsPayload>
   // Force a leaderboard cache invalidation (used after a suppressed multi-row promotion completes).
   invalidateLeaderboard(): void
   // Runs fn while holding a fixture-scoped advisory lock so two concurrent promotions of the same
@@ -364,6 +367,7 @@ function calculateParticipantRows(
       baseScore,
       bonusPercent,
       scoreMultiplier,
+      budgetLimit: participant.budgetLimit,
       totalScore,
       breakdown,
       fixtures: sortFixtureDetails([...fixtureDetailsById.values()]),
@@ -497,6 +501,11 @@ export class MemoryScoringRepository implements ScoringRepository {
   async getNationLeaderboard() {
     const rows = await this.getCachedRows(() => this.calculateAllRows())
     return buildNationLeaderboard(rankParticipants(rows))
+  }
+
+  async getBudgetStats() {
+    const rows = await this.getCachedRows(() => this.calculateAllRows())
+    return buildBudgetStats(rows)
   }
 
   private async listMemoryParticipants(): Promise<ScoreParticipant[]> {
@@ -732,6 +741,10 @@ export class PostgresScoringRepository implements ScoringRepository {
 
   async getNationLeaderboard() {
     return buildNationLeaderboard(rankParticipants(await this.getCachedRows(() => this.calculateRows())))
+  }
+
+  async getBudgetStats() {
+    return buildBudgetStats(await this.getCachedRows(() => this.calculateRows()))
   }
 
   private async calculateRows() {

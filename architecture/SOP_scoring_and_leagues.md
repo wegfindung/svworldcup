@@ -128,9 +128,10 @@ divergence the import engine refuses to collapse into one number (`SOP_match_dat
 
 ## Stats — Player Points Leaderboard
 
-The public Stats page (`/stats`) has two tabs: **Usage** (revealed-squad pick rate) and **Points**
+The public Stats page (`/stats`) has four tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
+and **Budgets** (each described below). The **Points** tab
 (`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
-`/api/public/player-points`). The Points tab ranks every player who has a promoted match entry by the base
+`/api/public/player-points`) ranks every player who has a promoted match entry by the base
 points they have produced **in a chosen position**:
 
 - Per player, the squad-independent base components (goal/assist/appearance/minutes/performance) are summed
@@ -152,6 +153,31 @@ counts the matches the player's team kept a clean sheet while they featured (`en
 average rating is the mean of their match ratings over rated appearances, shown only for players with at
 least 2 appearances. All four boards derive from the same `/player-points` payload (extended with
 `cleanSheets` and `averageRating` per row).
+
+## Stats — Budget Stats
+
+The **Budgets** tab (`/stats/budgets`, `services/budgetStats.ts → buildBudgetStats`, served by
+`/api/public/budget-stats`) aggregates locked squads by their chosen salary-budget tier (see "Salary
+Budget Multiplier"). One payload feeds two tables — both read the same per-tier rows:
+
+- **Most popular budget.** The count of locked squads that selected each tier, with the tier's share of
+  all locked managers. Sorted by manager count descending.
+- **Average points per budget.** The mean **final** `totalScore` (budget multiplier already applied — the
+  points that actually count on the leaderboards) across the locked managers on each tier. Sorted by
+  average descending. Using the final score, not the pre-multiplier base, is deliberate: the table is meant
+  to show which budget strategy is *winning*, so it must reflect the multiplier handicap each tier chose.
+
+- **Population: locked squads only** — the same set the league leaderboards score (`calculateRows`), so a
+  manager appears on exactly the one tier their locked squad committed to. Unlocked/abandoned squads do not
+  count. Every locked manager has a tier (default `3,000,000`), so the popularity counts are complete,
+  including zero-point squads.
+- **Anonymous aggregate.** The payload is per-tier counts and averages only — no participant identity — so
+  it is **not** gated by the squad-reveal flags (it exposes no individual squad). A tier holding a single
+  manager makes that manager's average equal their exact total, but every participant total is already
+  public by name on the league boards, so no new information leaks.
+- **No extra computation.** Derived from the same cached participant rows as the leaderboards
+  (`getCachedRows`); `budgetLimit` is carried on each row so the grouping needs no second query or scoring
+  pass.
 
 ## Leaderboard Read Cache
 
