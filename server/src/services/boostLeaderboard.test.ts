@@ -46,11 +46,24 @@ describe('buildBoostLeaderboard', () => {
       pool,
     )
 
-    expect(payload.items.map((row) => row.playerId)).toEqual([1, 2]) // 320 shares > 140
+    // Player 1 = min(200,100)+min(120,100) = 200 ; player 2 = 90+50 = 140.
+    expect(payload.items.map((row) => row.playerId)).toEqual([1, 2])
     const top = payload.items[0]
-    expect(top).toMatchObject({ playerId: 1, totalNetShares: 320, managerCount: 2, combinedBonusPercent: 20 })
+    expect(top).toMatchObject({ playerId: 1, totalNetShares: 200, managerCount: 2, combinedBonusPercent: 20 })
     expect(payload.items[1]).toMatchObject({ playerId: 2, totalNetShares: 140, managerCount: 2, combinedBonusPercent: 14 })
-    expect(payload.summary).toEqual({ playersBoosted: 2, competitorsBoosting: 3, totalNetShares: 460 })
+    expect(payload.summary).toEqual({ playersBoosted: 2, competitorsBoosting: 3, totalNetShares: 340 })
+  })
+
+  it('caps each competitor at 100 shares so a whale holding for other purposes does not dwarf the board', () => {
+    const payload = buildBoostLeaderboard(
+      [
+        snap('whale', 1, 80_000, 10, '2026-06-13T10:00:00Z'),
+        snap('p2', 1, 60, 6, '2026-06-13T10:00:00Z'),
+      ],
+      pool,
+    )
+    // 80,000 shares contribute only 100 (the +10% cap); 60 + 100 = 160.
+    expect(payload.items[0]).toMatchObject({ playerId: 1, totalNetShares: 160, managerCount: 2, combinedBonusPercent: 16 })
   })
 
   it('keeps only the latest snapshot per competitor-per-player (current standing, not cumulative)', () => {

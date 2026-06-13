@@ -5,6 +5,12 @@ import type {
   TeamPoolPlayer,
 } from '../domain/types.js'
 
+// A competitor's boost maxes at +10%, which bonusPercentFromNet reaches at 100 net shares (floor(net/10),
+// capped at 10). Shares beyond 100 buy no more boost — they're held for other (trading) reasons — so we cap
+// each competitor's contribution here. Without this a single 80k-share holder would dwarf the board for a
+// player who is, for boost purposes, only +10% to them. Keep in sync with bonusPercentFromNet.
+const BOOST_SHARE_CAP = 100
+
 // The public Stats › Boosts board: which players the field has spent the most ownership boost on, summed
 // across every competitor. Built from the frozen per-fixture influence snapshots — the only persisted
 // per-player boost (a live combined figure would be one Soccerverse call per competitor × drafted player).
@@ -41,7 +47,8 @@ export function buildBoostLeaderboard(
     }
     boostingCompetitors.add(snapshot.participantId)
     const aggregate = byPlayer.get(snapshot.playerId) ?? { totalNetShares: 0, combinedBonusPercent: 0, managers: new Set<string>() }
-    aggregate.totalNetShares += snapshot.netShares
+    // Only the boost-contributing shares count toward "boost spent" — capped at the +10% max.
+    aggregate.totalNetShares += Math.min(snapshot.netShares, BOOST_SHARE_CAP)
     aggregate.combinedBonusPercent += snapshot.bonusPercent
     aggregate.managers.add(snapshot.participantId)
     byPlayer.set(snapshot.playerId, aggregate)

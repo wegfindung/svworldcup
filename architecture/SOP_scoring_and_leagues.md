@@ -220,9 +220,11 @@ buildBoostLeaderboard`, served by `/api/public/boost-leaderboard`).
   player. So the board reflects boost **as captured at each fixture's kickoff**, and a player appears only once
   their team has played a snapshotted fixture (sparse early, same freeze the scoring uses).
 - **Aggregation.** Take the **latest** snapshot per `(participant, player)` as that competitor's current
-  standing, drop zero-boost rows, then per player sum `netShares` (the rank key — literal "boost spent"),
-  count distinct competitors, and sum each competitor's capped `bonusPercent` (the effective scoring boost,
-  each ≤10%). Sorted by total net shares desc.
+  standing, drop zero-boost rows, then per player sum `min(netShares, 100)` (the rank key — boost-contributing
+  shares, **capped at 100 per competitor** because the boost maxes at +10% there; without the cap an 80k-share
+  holding bought for trading would dwarf the board), count distinct competitors, and sum each competitor's
+  capped `bonusPercent` (the effective scoring boost, each ≤10%). Sorted by total shares desc. The cap mirrors
+  `bonusPercentFromNet` — keep them in sync (`BOOST_SHARE_CAP`).
 - **Anonymous aggregate**, like Budget Stats — per-player totals only, never a participant id, so it is **not**
   reveal-gated (it names no squad). It does expose a per-player competitor *count*, but Soccerverse ownership
   is already public. It covers **all** competitors (Tommy's ask), not just revealed squads.

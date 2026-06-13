@@ -837,7 +837,7 @@ const englishMessages = {
     previous: 'Previous',
     next: 'Next',
     pageStatus: 'Page {page} of {totalPages}',
-    note: 'Boost is captured at each fixture’s kickoff (the same freeze the scoring uses), so a player appears once their team has played. Anonymous totals — net influence shares spent, each competitor’s bonus capped at +10%.',
+    note: 'Boost is captured at each fixture’s kickoff (the same freeze the scoring uses), so a player appears once their team has played. Anonymous totals — boost shares spent, capped at 100 per competitor (the +10% max); shares held beyond that, e.g. for trading, don’t count.',
     emptyTitle: 'No boosts yet',
     emptyBody: 'Once teams play and snapshots are captured, the most-boosted players appear here.',
     errorTitle: 'Boosts unavailable',
