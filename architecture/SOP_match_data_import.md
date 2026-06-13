@@ -131,6 +131,13 @@ Common to both:
   instead every player row's team is validated against the fixture's two teams.
 - Knockout fixture rows must show the real qualified teams before their stats are imported,
   or the team cross-check and player resolution fail.
+- Team names are matched through a shared normalizer (`lib/normalizeName.ts`, used by
+  `lib/teamLookup.ts → resolveTeamCode`): diacritic- and case-insensitive, punctuation
+  collapsed to spaces, and **`&` treated as `and`** — so `Bosnia & Herzegovina` and
+  `Bosnia and Herzegovina` resolve to the same team, in either direction (the normalizer runs
+  on both the canonical seed name and the source name). A short alias table in `teamLookup.ts`
+  covers source-name variants the normalizer can't bridge on its own (`Türkiye`/`Turkey` → TUR,
+  `DR Congo` → COD, `USA`).
 
 ## Source URL
 

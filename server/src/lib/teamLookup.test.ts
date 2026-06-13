@@ -17,6 +17,13 @@ describe('resolveTeamCode', () => {
     expect(resolveTeamCode('USA')).toBe('USA')
   })
 
+  it('treats "&" and "and" as equivalent in either direction', () => {
+    // Canonical seed name is "Bosnia and Herzegovina"; a source CSV using "&" must still resolve.
+    expect(resolveTeamCode('Bosnia & Herzegovina')).toBe('BIH')
+    expect(resolveTeamCode('Bosnia and Herzegovina')).toBe('BIH')
+    expect(resolveTeamCode('  bosnia   &   herzegovina ')).toBe('BIH')
+  })
+
   it('returns null for unknown names', () => {
     expect(resolveTeamCode('Atlantis')).toBeNull()
   })
