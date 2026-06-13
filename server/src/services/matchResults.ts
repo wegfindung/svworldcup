@@ -1,6 +1,13 @@
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { cleanSheetPointsForClass, scoreEntryComponents } from '../lib/matchScoring.js'
-import type { FixtureSeed, MatchEntryRecord, ScoringConfig, SlotClass, TeamPoolPlayer } from '../domain/types.js'
+import type {
+  FixtureScoreOverrides,
+  FixtureSeed,
+  MatchEntryRecord,
+  ScoringConfig,
+  SlotClass,
+  TeamPoolPlayer,
+} from '../domain/types.js'
 
 export interface PublicFixtureResult {
   fixtureId: string
@@ -71,6 +78,10 @@ export function buildPublicFixtureResults(
   // Defaults to the team-locked rubric so existing 3-arg callers keep working; the route passes the
   // live config so a scoring-config change propagates to the public point figures too.
   scoring: ScoringConfig = scoringDefaults,
+  // Per-fixture true scoreline, keyed by fixtureId. When a final fixture has an override it replaces
+  // the derived per-player goal sum for display (own-goal / skipped-scorer correction); scoring is
+  // untouched. Defaults to none so existing callers keep working. See SOP "Official Scoreline Override".
+  scoreOverrides: FixtureScoreOverrides = {},
 ): PublicFixtureResult[] {
   const playerTeamCodes = new Map<number, string>()
   const playersById = new Map<number, TeamPoolPlayer>()
@@ -146,6 +157,12 @@ export function buildPublicFixtureResults(
 
     const status = fixtureEntries.length > 0 ? 'final' : 'pending'
 
+    // An override is the admin-entered true scoreline; it wins over the per-player goal sum, which
+    // under-counts own goals and skipped scorers. Player goal figures are unchanged either way.
+    const override = scoreOverrides[fixture.fixtureId]
+    const homeGoalSum = goalsByTeam.get(fixture.homeTeamCode) ?? 0
+    const awayGoalSum = goalsByTeam.get(fixture.awayTeamCode) ?? 0
+
     return {
       fixtureId: fixture.fixtureId,
       groupKey: fixture.groupKey,
@@ -153,8 +170,8 @@ export function buildPublicFixtureResults(
       kickoffTimeUtc: fixture.kickoffTimeUtc,
       homeTeamCode: fixture.homeTeamCode,
       awayTeamCode: fixture.awayTeamCode,
-      homeGoals: status === 'final' ? goalsByTeam.get(fixture.homeTeamCode) ?? 0 : null,
-      awayGoals: status === 'final' ? goalsByTeam.get(fixture.awayTeamCode) ?? 0 : null,
+      homeGoals: status === 'final' ? override?.home ?? homeGoalSum : null,
+      awayGoals: status === 'final' ? override?.away ?? awayGoalSum : null,
       status,
       entryCount: fixtureEntries.length,
       homePlayers: sortPlayerResults(homePlayers),

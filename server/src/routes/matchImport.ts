@@ -12,6 +12,7 @@ import { JsonMatchStatsImporter } from '../services/matchStatsImporter.js'
 import { logger } from '../lib/logger.js'
 import type { MatchImportJson } from '../domain/types.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
+import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
@@ -25,6 +26,8 @@ export interface MatchImportRouterDeps {
   scoringRepository: ScoringRepository
   auditRepository: AuditRepository
   snapshotJobRepository: SnapshotJobRepository
+  // Stores the per-fixture public-scoreline override (auto-captured on promote + manual set/clear).
+  configRepository: ConfigRepository
   // Optional community-pack name lookup for resolution aliases (production wires
   // getCommunityPlayerName; tests omit it to stay offline). See JsonMatchStatsImporter.
   packNameLookup?: (playerId: number) => Promise<string | undefined>
@@ -100,6 +103,13 @@ const resolveRowSchema = z.object({
 const skipNameSchema = z.object({
   teamCode: z.string().trim().min(3).max(3),
   sourceName: z.string().trim().min(1).max(120),
+})
+
+// Manual public-scoreline override for a fixture (display-only correction; see SOP "Official
+// Scoreline Override"). Same goal range as the import score fields.
+const officialScoreSchema = z.object({
+  homeGoals: z.coerce.number().int().min(0).max(99),
+  awayGoals: z.coerce.number().int().min(0).max(99),
 })
 
 type MatchInput = z.infer<typeof matchInputSchema>
@@ -255,6 +265,21 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
       } catch (error) {
         logger.warn({ fixtureId: batch.fixtureId, err: error }, 'failed to enqueue veteran influence snapshot job')
       }
+
+      // Capture the admin-entered final score as the public-display scoreline override, so the
+      // results page shows the true score even when an own goal or skipped scorer makes the
+      // per-player goal sum read low. The pending batch (which held the score) is gone after
+      // promotion, so this copy is what survives. Best-effort + post-commit like the snapshot
+      // enqueue: a failure only leaves the fixture on the derived sum (fixable via the manual
+      // set control) and must never fail the response. See SOP "Official Scoreline Override".
+      try {
+        await deps.configRepository.setFixtureScoreOverride(batch.fixtureId, {
+          home: batch.homeGoals,
+          away: batch.awayGoals,
+        })
+      } catch (error) {
+        logger.warn({ fixtureId: batch.fixtureId, err: error }, 'failed to capture fixture scoreline override')
+      }
     }
 
     // When promoted, the pending batch no longer exists — the confirmed rows are in
@@ -358,6 +383,50 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
       entityType: 'team',
       entityId: parsed.teamCode,
       detail: { normalizedSourceName },
+    })
+
+    res.status(204).end()
+  })
+
+  // Official scoreline overrides (display-only correction for own goals / skipped scorers; see
+  // SOP "Official Scoreline Override"). The map is the current set of fixtures whose results page
+  // shows an admin-set score instead of the per-player goal sum.
+  router.get('/official-scores', async (_req, res) => {
+    const overrides = await deps.configRepository.getFixtureScoreOverrides()
+    res.json({ overrides })
+  })
+
+  router.put('/fixtures/:fixtureId/official-score', async (req, res) => {
+    const adminEmail = res.locals.admin.email as string
+    const fixtureId = String(req.params.fixtureId)
+    if (!fixtures.some((fixture) => fixture.fixtureId === fixtureId)) {
+      return res.status(404).json({ error: 'Unknown fixture.' })
+    }
+    const { homeGoals, awayGoals } = officialScoreSchema.parse(req.body)
+    await deps.configRepository.setFixtureScoreOverride(fixtureId, { home: homeGoals, away: awayGoals })
+
+    await deps.auditRepository.record({
+      actorEmail: adminEmail,
+      actionKey: 'match_import.official_score_set',
+      entityType: 'fixture',
+      entityId: fixtureId,
+      detail: { homeGoals, awayGoals },
+    })
+
+    res.json({ fixtureId, score: { home: homeGoals, away: awayGoals } })
+  })
+
+  router.delete('/fixtures/:fixtureId/official-score', async (req, res) => {
+    const adminEmail = res.locals.admin.email as string
+    const fixtureId = String(req.params.fixtureId)
+    await deps.configRepository.clearFixtureScoreOverride(fixtureId)
+
+    await deps.auditRepository.record({
+      actorEmail: adminEmail,
+      actionKey: 'match_import.official_score_clear',
+      entityType: 'fixture',
+      entityId: fixtureId,
+      detail: {},
     })
 
     res.status(204).end()

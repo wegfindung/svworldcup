@@ -268,6 +268,7 @@ export function createAdminRouter(
       scoringRepository,
       auditRepository,
       snapshotJobRepository,
+      configRepository,
       packNameLookup: getCommunityPlayerName,
     }),
   )

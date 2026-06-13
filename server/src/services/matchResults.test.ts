@@ -78,6 +78,30 @@ describe('buildPublicFixtureResults', () => {
     })
   })
 
+  it('prefers a fixture score override over the per-player goal sum (own-goal / skipped-scorer fix)', () => {
+    const playersByTeam = new Map([
+      ['FRA', [player(10, 'FRA'), player(11, 'FRA')]],
+      ['SEN', [player(20, 'SEN')]],
+    ])
+    const entries = [entry('fixture-1', 10, 2), entry('fixture-1', 11, 1), entry('fixture-1', 20, 1)]
+
+    // The per-player goals sum to 3-1, but the real result was 4-1 (a SEN own goal credited to
+    // no FRA player). The override carries the true scoreline.
+    const results = buildPublicFixtureResults(fixtures, playersByTeam, entries, undefined, {
+      'fixture-1': { home: 4, away: 1 },
+    })
+    expect(results[0]).toMatchObject({ fixtureId: 'fixture-1', homeGoals: 4, awayGoals: 1, status: 'final' })
+    // Player goals are untouched — only one team total is corrected for display.
+    const homeGoalSum = (results[0] as any).homePlayers.reduce((sum: number, p: any) => sum + p.goals, 0)
+    expect(homeGoalSum).toBe(3)
+
+    // An override is ignored for a pending fixture (no entries) — the score stays null.
+    const pending = buildPublicFixtureResults(fixtures, playersByTeam, entries, undefined, {
+      'fixture-2': { home: 5, away: 5 },
+    })
+    expect(pending[1]).toMatchObject({ fixtureId: 'fixture-2', homeGoals: null, awayGoals: null, status: 'pending' })
+  })
+
   it('includes player-level match details for scorers and assists', () => {
     const results = buildPublicFixtureResults(
       fixtures,

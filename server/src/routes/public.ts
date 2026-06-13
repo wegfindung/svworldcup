@@ -200,12 +200,13 @@ export function createPublicRouter({
     const currentFixtures = await fixtureRepository.listFixtures()
     const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
     const playersByTeam = new Map<string, Awaited<ReturnType<typeof teamPoolRepository.listByTeam>>>()
-    const [entries, scoring] = await Promise.all([
+    const [entries, scoring, scoreOverrides] = await Promise.all([
       scoringRepository.listMatchEntries(),
       configRepository.getScoringConfig(),
+      configRepository.getFixtureScoreOverrides(),
       Promise.all(teamCodes.map(async (teamCode) => playersByTeam.set(teamCode, await teamPoolRepository.listByTeam(teamCode)))),
     ])
-    const items = buildPublicFixtureResults(currentFixtures, playersByTeam, entries, scoring)
+    const items = buildPublicFixtureResults(currentFixtures, playersByTeam, entries, scoring, scoreOverrides)
 
     res.json({
       items,

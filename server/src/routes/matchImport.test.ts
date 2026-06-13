@@ -45,18 +45,20 @@ async function setup() {
   await teamPoolRepository.replaceTeamPlayers('MAR', [svPlayer(20, 'Achraf Hakimi')])
 
   const participantInfluenceSnapshotRepository = new MemoryParticipantInfluenceSnapshotRepository()
+  const configRepository = new MemoryConfigRepository()
   const deps = {
     matchImportRepository: new MemoryMatchImportRepository(),
     matchMappingRepository: new MemoryMatchMappingRepository(),
     teamPoolRepository,
     scoringRepository: new MemoryScoringRepository(
-      new MemoryConfigRepository(),
+      configRepository,
       new MemoryRegistrationRepository(),
       new MemorySquadRepository(teamPoolRepository),
       participantInfluenceSnapshotRepository,
     ),
     auditRepository: new MemoryAuditRepository(),
     snapshotJobRepository: new MemorySnapshotJobRepository(),
+    configRepository,
   }
 
   const app = express()
@@ -455,5 +457,40 @@ describe('match import routes — edit, resolve, skip-list, re-submission, disca
 
     const auditActions = (await deps.auditRepository.list()).map((entry) => entry.actionKey)
     expect(auditActions).toContain('match_import.discard')
+  })
+
+  it('sets, lists, and clears a manual official-score override (audited)', async () => {
+    const { app, deps } = await setup()
+    const fixtureId = '2026-06-13-d-usa-par'
+
+    const set = await request(app)
+      .put(`/match-import/fixtures/${fixtureId}/official-score`)
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({ homeGoals: 4, awayGoals: 1 })
+    expect(set.status).toBe(200)
+    expect(set.body).toEqual({ fixtureId, score: { home: 4, away: 1 } })
+    expect(await deps.configRepository.getFixtureScoreOverrides()).toEqual({ [fixtureId]: { home: 4, away: 1 } })
+
+    const list = await request(app).get('/match-import/official-scores').set('x-test-admin-email', 'importer@example.com')
+    expect(list.body.overrides).toEqual({ [fixtureId]: { home: 4, away: 1 } })
+
+    const clear = await request(app)
+      .delete(`/match-import/fixtures/${fixtureId}/official-score`)
+      .set('x-test-admin-email', 'importer@example.com')
+    expect(clear.status).toBe(204)
+    expect(await deps.configRepository.getFixtureScoreOverrides()).toEqual({})
+
+    const auditActions = (await deps.auditRepository.list()).map((entry) => entry.actionKey)
+    expect(auditActions).toContain('match_import.official_score_set')
+    expect(auditActions).toContain('match_import.official_score_clear')
+  })
+
+  it('rejects a manual official-score override for an unknown fixture', async () => {
+    const { app } = await setup()
+    const set = await request(app)
+      .put('/match-import/fixtures/not-a-real-fixture/official-score')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({ homeGoals: 4, awayGoals: 1 })
+    expect(set.status).toBe(404)
   })
 })

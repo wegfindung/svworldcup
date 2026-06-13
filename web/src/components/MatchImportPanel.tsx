@@ -4,7 +4,14 @@ import { InfoTip } from './InfoTip'
 import { MatchImportResolveStage } from './MatchImportResolveStage'
 import { MatchImportReview } from './MatchImportReview'
 import { TeamFlag } from './TeamFlag'
-import { fetchMatchImportBatches, parseMatchImport, uploadMatchImport } from '../lib/api'
+import {
+  clearOfficialScore,
+  fetchMatchImportBatches,
+  fetchOfficialScores,
+  parseMatchImport,
+  setOfficialScore,
+  uploadMatchImport,
+} from '../lib/api'
 import type {
   FixtureSeed,
   MatchImportInput,
@@ -65,6 +72,12 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const csvFileInputRef = useRef<HTMLInputElement>(null)
+  // Official scoreline overrides (display-only correction for own goals / skipped scorers).
+  const [scoreOverrides, setScoreOverrides] = useState<Record<string, { home: number; away: number }>>({})
+  const [scoreEditorFixtureId, setScoreEditorFixtureId] = useState<string | null>(null)
+  const [scoreHome, setScoreHome] = useState('')
+  const [scoreAway, setScoreAway] = useState('')
+  const [scoreBusy, setScoreBusy] = useState(false)
 
   const teamByCode = useMemo(() => {
     const map = new Map<string, TeamSeed>()
@@ -97,10 +110,70 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
         // A mount-time load failure is non-blocking — the "Refresh pending imports"
         // button stays available and surfaces errors.
       })
+    void fetchOfficialScores()
+      .then((response) => {
+        if (active) {
+          setScoreOverrides(response.overrides)
+        }
+      })
+      .catch(() => {
+        // Non-blocking: the per-fixture editor still works; it just won't preload current values.
+      })
     return () => {
       active = false
     }
   }, [])
+
+  function openScoreEditor(fixtureId: string) {
+    const current = scoreOverrides[fixtureId]
+    setScoreEditorFixtureId(fixtureId)
+    setScoreHome(current ? String(current.home) : '')
+    setScoreAway(current ? String(current.away) : '')
+    setError(null)
+    setMessage(null)
+  }
+
+  async function handleSaveScore(fixtureId: string) {
+    const home = Number(scoreHome)
+    const away = Number(scoreAway)
+    if (!Number.isInteger(home) || !Number.isInteger(away) || home < 0 || away < 0) {
+      setError('Enter the official score as whole numbers.')
+      return
+    }
+    setScoreBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await setOfficialScore(fixtureId, home, away)
+      setScoreOverrides((current) => ({ ...current, [fixtureId]: { home, away } }))
+      setScoreEditorFixtureId(null)
+      setMessage(`Official score set to ${home}–${away}. The public results page now shows it.`)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not save the official score.')
+    } finally {
+      setScoreBusy(false)
+    }
+  }
+
+  async function handleClearScore(fixtureId: string) {
+    setScoreBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await clearOfficialScore(fixtureId)
+      setScoreOverrides((current) => {
+        const next = { ...current }
+        delete next[fixtureId]
+        return next
+      })
+      setScoreEditorFixtureId(null)
+      setMessage('Official score cleared. The results page reverts to the summed scorers.')
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not clear the official score.')
+    } finally {
+      setScoreBusy(false)
+    }
+  }
 
   function resolveSides(batch: PendingMatchBatch): { home: TeamSeed; away: TeamSeed } {
     const fixture = fixtures.find((item) => item.fixtureId === batch.fixtureId)
@@ -554,56 +627,125 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
             const home = teamSeedFor(teamByCode, fixture.homeTeamCode)
             const away = teamSeedFor(teamByCode, fixture.awayTeamCode)
             const batch = batchByFixture.get(fixture.fixtureId)
+            const override = scoreOverrides[fixture.fixtureId]
+            const editing = scoreEditorFixtureId === fixture.fixtureId
             return (
               <div
                 key={fixture.fixtureId}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-3"
+                className="flex flex-col gap-3 rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-3"
               >
-                <div className="flex items-center gap-3">
-                  <TeamFlag teamCode={home.code} label={home.nameEn} size="sm" />
-                  <span className="text-sm font-medium text-white">{home.nameEn}</span>
-                  <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">vs</span>
-                  <span className="text-sm font-medium text-white">{away.nameEn}</span>
-                  <TeamFlag teamCode={away.code} label={away.nameEn} size="sm" />
-                  <span className="mono ml-1 rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                    {fixture.kickoffDate}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  {batch ? (
-                    <>
-                      <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-accent)]">
-                        v{batch.dataVersion} · {validConfirmerCount(batch)}/2
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <TeamFlag teamCode={home.code} label={home.nameEn} size="sm" />
+                    <span className="text-sm font-medium text-white">{home.nameEn}</span>
+                    <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">vs</span>
+                    <span className="text-sm font-medium text-white">{away.nameEn}</span>
+                    <TeamFlag teamCode={away.code} label={away.nameEn} size="sm" />
+                    <span className="mono ml-1 rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                      {fixture.kickoffDate}
+                    </span>
+                    {override ? (
+                      <span className="mono rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-emerald-200">
+                        score {override.home}–{override.away}
                       </span>
-                      <InfoTip
-                        label="About the batch status"
-                        content="v = data version (bumps on every edit). N/2 = distinct admin confirmations on the current version. Two are needed before the fixture is promoted to the scoring tables."
-                      />
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => (editing ? setScoreEditorFixtureId(null) : openScoreEditor(fixture.fixtureId))}
+                      className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                    >
+                      Official score
+                    </button>
+                    {batch ? (
+                      <>
+                        <span className="mono rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                          v{batch.dataVersion} · {validConfirmerCount(batch)}/2
+                        </span>
+                        <InfoTip
+                          label="About the batch status"
+                          content="v = data version (bumps on every edit). N/2 = distinct admin confirmations on the current version. Two are needed before the fixture is promoted to the scoring tables."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleStartUpload(fixture.fixtureId)}
+                          className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                        >
+                          Re-upload
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewBatch(batch)}
+                          className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
+                        >
+                          Review
+                        </button>
+                      </>
+                    ) : (
                       <button
                         type="button"
                         onClick={() => handleStartUpload(fixture.fixtureId)}
                         className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                       >
-                        Re-upload
+                        Upload
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setReviewBatch(batch)}
-                        className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] active:scale-[0.98]"
-                      >
-                        Review
-                      </button>
-                    </>
-                  ) : (
+                    )}
+                  </div>
+                </div>
+
+                {editing ? (
+                  <div className="flex flex-wrap items-center gap-3 rounded-[1.1rem] border border-white/8 bg-black/20 px-3 py-3">
+                    <span className="max-w-[42ch] text-xs leading-relaxed text-[var(--color-muted)]">
+                      Public results-page score. Set this when an own goal or skipped scorer makes the
+                      auto-summed score read low. Leave it to auto-capture the imported score on promote.
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        value={scoreHome}
+                        onChange={(event) => setScoreHome(event.target.value)}
+                        aria-label={`${home.nameEn} goals`}
+                        className="h-10 w-16 rounded-[0.8rem] border border-white/10 bg-black/15 px-2 text-center text-sm text-white outline-none focus:border-[var(--color-accent)]"
+                      />
+                      <span className="text-sm text-[var(--color-muted)]">–</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={scoreAway}
+                        onChange={(event) => setScoreAway(event.target.value)}
+                        aria-label={`${away.nameEn} goals`}
+                        className="h-10 w-16 rounded-[0.8rem] border border-white/10 bg-black/15 px-2 text-center text-sm text-white outline-none focus:border-[var(--color-accent)]"
+                      />
+                    </div>
                     <button
                       type="button"
-                      onClick={() => handleStartUpload(fixture.fixtureId)}
+                      disabled={scoreBusy}
+                      onClick={() => void handleSaveScore(fixture.fixtureId)}
+                      className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                    >
+                      {scoreBusy ? 'Saving…' : 'Save'}
+                    </button>
+                    {override ? (
+                      <button
+                        type="button"
+                        disabled={scoreBusy}
+                        onClick={() => void handleClearScore(fixture.fixtureId)}
+                        className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                      >
+                        Clear
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setScoreEditorFixtureId(null)}
                       className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                     >
-                      Upload
+                      Cancel
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : null}
               </div>
             )
           })

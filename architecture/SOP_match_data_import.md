@@ -49,7 +49,11 @@ Out of scope:
 - The pending batch stores the fixture-level final score (home and away goals) alongside
   the source URL. The score is a fixture-level fact, not per-player, so it lives on the
   batch and is not propagated to `admin_match_entries`. It serves the review-UI result
-  display and the clean-sheet judgement, both of which happen in the pending stage.
+  display and the clean-sheet judgement, both of which happen in the pending stage. On
+  promotion the same score is additionally captured as a public-display override (see
+  "Official Scoreline Override"); that copy survives the batch delete so the results page can
+  show the true scoreline even when an own goal or skipped scorer makes the per-player goal
+  sum read low.
 - The scoring engine continues to read `admin_match_entries` directly and is otherwise
   unaffected.
 - Promotion is a plain upsert keyed by `(fixture_id, player_id)`.
@@ -218,6 +222,33 @@ Common to both:
   — both decisions live in the scoring engine via the slot-class weight and the MID DM-eligibility
   predicate (`SOP_scoring_and_leagues.md`).
 
+## Official Scoreline Override
+
+- The public results page derives a fixture's scoreline from the **sum of promoted players'
+  goals** per team. That sum is correct only when every goal is credited to a promoted player
+  on the scoring team. An **own goal** (credited to no player) or a **skipped/unresolved
+  scorer** makes it read low — e.g. a real 4–1 with one own goal shows as 3–1.
+- The fix is a per-fixture **scoreline override**: the true home/away goals, stored as a
+  display-only correction that the results page prefers over the derived sum. It does **not**
+  touch scoring — no player banks goal-points for an opponent's own goal, and a skipped real
+  scorer must still be resolved so they bank their own goal points (the override corrects the
+  scoreline, not the missing resolution).
+- Storage reuses the existing `tournament_config` key-value table — no schema change. A single
+  `fixture_score_overrides` key holds a `{ fixtureId: { home, away } }` JSONB map. Reads return
+  the whole map; writes merge or delete one fixture's entry atomically (`value_json || …` /
+  `value_json - key`).
+- The override is set two ways:
+  - **Automatically on promotion.** After a fixture promotes, the confirm route writes the
+    admin-entered final score (already captured on the pending batch) into the override map.
+    A normal import therefore needs no extra step — the displayed scoreline matches the typed
+    score even with an own goal. The write is post-commit and best-effort (same pattern as the
+    influence-snapshot enqueue): a failure only leaves the fixture on the derived sum, fixable
+    via the manual control, and never fails the promotion.
+  - **Manually.** An admin set/clear control writes or removes one fixture's override directly,
+    independent of import. This back-fills a fixture promoted before this rule existed and
+    corrects a wrong score. Setting validates the fixture exists and non-negative goal counts;
+    clearing reverts the fixture to the derived sum. Both are audited.
+
 ## Confirmation Rules
 
 - Promotion requires two distinct admin confirmations on the fixture's current data state.
@@ -293,6 +324,8 @@ Every import-path admin write produces an audit log entry in the same operation:
 - player-name mapping corrections
 - skip-list changes
 - pending batch discard
+- official-scoreline override set / clear (the auto-capture on promotion is covered by the
+  `match_import.promote` audit row; a manual set or clear is audited separately)
 
 Retrofitting audit coverage onto pre-existing un-audited admin writes is out of scope for
 this work.

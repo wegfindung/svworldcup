@@ -243,6 +243,18 @@ export interface EventControls {
   globalRevealSquads: boolean
 }
 
+// A fixture's true final score, stored as a display-only correction to the public results page.
+// The page otherwise derives the scoreline by summing promoted players' goals, which under-counts
+// own goals and skipped scorers. See SOP_match_data_import.md "Official Scoreline Override".
+export interface FixtureScoreOverride {
+  home: number
+  away: number
+}
+
+// Map keyed by fixtureId. Persisted as one JSONB value under the tournament_config
+// `fixture_score_overrides` key — no schema change.
+export type FixtureScoreOverrides = Record<string, FixtureScoreOverride>
+
 export interface PublicBootstrapPayload {
   supportedLocales: SupportedLocale[]
   defaultLocale: SupportedLocale
