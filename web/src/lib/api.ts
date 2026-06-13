@@ -965,3 +965,26 @@ export function removeMatchImportSkipName(teamCode: string, sourceName: string) 
     { method: 'DELETE', headers: {} },
   )
 }
+
+// Official scoreline overrides: a display-only correction for the public results page when an
+// own goal or skipped scorer makes the per-player goal sum read low. Keyed by fixtureId.
+export function fetchOfficialScores() {
+  return getJson<{ overrides: Record<string, { home: number; away: number }> }>(
+    '/api/admin/match-import/official-scores',
+    { method: 'GET', headers: {} },
+  )
+}
+
+export function setOfficialScore(fixtureId: string, homeGoals: number, awayGoals: number) {
+  return getJson<{ fixtureId: string; score: { home: number; away: number } }>(
+    `/api/admin/match-import/fixtures/${encodeURIComponent(fixtureId)}/official-score`,
+    { method: 'PUT', body: JSON.stringify({ homeGoals, awayGoals }) },
+  )
+}
+
+export function clearOfficialScore(fixtureId: string) {
+  return getJson<void>(
+    `/api/admin/match-import/fixtures/${encodeURIComponent(fixtureId)}/official-score`,
+    { method: 'DELETE', headers: {} },
+  )
+}

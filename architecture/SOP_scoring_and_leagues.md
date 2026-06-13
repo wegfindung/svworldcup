@@ -121,6 +121,21 @@ splits the scoring into the squad-independent part and the position-dependent pa
   forward (or a non-DM central midfielder with no other eligible class) who kept a clean sheet shows no
   badge, because the clean sheet earns them nothing.
 
+**Fixture scoreline.** Each fixture's displayed score defaults to the **sum of its promoted players'
+goals** per team. That sum under-counts whenever a goal belongs to no promoted player row on the
+benefiting team — an **own goal** (credited to nobody) or a **skipped/unresolved scorer**. To correct the
+displayed score without corrupting per-player scoring (no player may bank fantasy goal-points for an
+opponent's own goal), the true scoreline is stored as a **per-fixture override** and, when present, replaces
+the derived sum for display only. Overrides live in `tournament_config` under the `fixture_score_overrides`
+key (a `{ fixtureId: { home, away } }` map — no schema change); `buildPublicFixtureResults` takes them as an
+argument and prefers an override over the goal sum for a `final` fixture. The override is written two ways:
+**automatically** with the admin-entered final score when a fixture promotes (so a normal import is correct
+without extra steps), and **manually** via the admin set/clear control (`SOP_match_data_import.md` "Official
+Scoreline Override") to back-fill an already-promoted fixture or fix a mistake. An override is a **display
+correction only** — it does not award points and does not substitute for resolving a real scorer; a skipped
+scorer must still be resolved so they bank their own goal points, even though the override already makes the
+scoreline read correctly.
+
 These figures are **base points only**. The page makes clear that a participant's own score additionally
 applies their budget multiplier and any ownership boost, and halves for a reserve — so the public number
 is intentionally not equal to any individual manager's banked total. This is the same per-participant

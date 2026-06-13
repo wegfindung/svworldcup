@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { EmptyState } from '../components/EmptyState'
+import { InfoTip } from '../components/InfoTip'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { getMessages, type AppMessages } from '../i18n/messages'
@@ -65,6 +66,17 @@ function formatPlayerList(players: PublicFixturePlayerResult[], stat: 'goals' | 
   return contributors
     .map((player) => `${player.displayName}${player[stat] > 1 ? ` (${player[stat]})` : ''}`)
     .join(', ')
+}
+
+// Goals in the displayed scoreline that no listed player accounts for — an own goal, or a scorer
+// not in any national pool (their row is skipped at import). The scoreline comes from the official
+// override (SOP "Official Scoreline Override"); the player goals are the credited ones. Never negative.
+function uncreditedGoals(displayed: number | null, players: PublicFixturePlayerResult[]) {
+  if (displayed == null) {
+    return 0
+  }
+  const credited = players.reduce((sum, player) => sum + player.goals, 0)
+  return Math.max(0, displayed - credited)
 }
 
 function formatPoints(value: number) {
@@ -373,6 +385,8 @@ function ResultCard({
   const awayWon = isFinal && (result.awayGoals ?? 0) > (result.homeGoals ?? 0)
   const homeName = teamName(result.homeTeamCode)
   const awayName = teamName(result.awayTeamCode)
+  const homeUncredited = isFinal ? uncreditedGoals(result.homeGoals, result.homePlayers) : 0
+  const awayUncredited = isFinal ? uncreditedGoals(result.awayGoals, result.awayPlayers) : 0
 
   return (
     <article className="border border-white/8 hover:border-[var(--color-accent)]/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] group hover:shadow-[0_12px_40px_-20px_rgba(34,189,147,0.15)]">
@@ -453,6 +467,24 @@ function ResultCard({
               <span className="text-[var(--color-sand)] font-semibold">{result.awayTeamCode}</span> {formatPlayerList(result.awayPlayers, 'assists', copy)}
             </div>
           </div>
+          {homeUncredited > 0 || awayUncredited > 0 ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/5 pt-2 mt-1">
+              {homeUncredited > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-[var(--color-accent)] font-semibold">{result.homeTeamCode}</span>
+                  <span>+{homeUncredited} {copy.uncreditedGoalNote}</span>
+                  <InfoTip label={copy.uncreditedGoalAria} content={copy.uncreditedGoalHint} />
+                </span>
+              ) : null}
+              {awayUncredited > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-[var(--color-accent)] font-semibold">{result.awayTeamCode}</span>
+                  <span>+{awayUncredited} {copy.uncreditedGoalNote}</span>
+                  <InfoTip label={copy.uncreditedGoalAria} content={copy.uncreditedGoalHint} />
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

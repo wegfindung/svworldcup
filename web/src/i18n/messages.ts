@@ -557,6 +557,10 @@ const englishMessages = {
     scorers: 'Scorers:',
     assists: 'Assists:',
     none: 'None',
+    uncreditedGoalNote: 'not credited to a listed player',
+    uncreditedGoalHint:
+      'An own goal, or a goal not credited to a listed player. It counts in the score but earns no fantasy points.',
+    uncreditedGoalAria: 'About uncredited goals',
     playerEntries: 'player entries',
     hideDetails: 'Hide details',
     matchDetails: 'Match details',
@@ -1280,6 +1284,10 @@ const spanishMessages: DeepPartial<AppMessages> = {
     scorers: 'Goleadores:',
     assists: 'Asistencias:',
     none: 'Ninguno',
+    uncreditedGoalNote: 'no atribuido a un jugador listado',
+    uncreditedGoalHint:
+      'Un gol en propia puerta, u otro gol no atribuido a ningún jugador listado. Cuenta en el marcador pero no otorga puntos de fantasy.',
+    uncreditedGoalAria: 'Sobre los goles no atribuidos',
     playerEntries: 'entradas de jugadores',
     hideDetails: 'Ocultar detalles',
     matchDetails: 'Detalles',
@@ -1829,6 +1837,10 @@ const italianMessages: DeepPartial<AppMessages> = {
     scorers: 'Marcatori:',
     assists: 'Assist:',
     none: 'Nessuno',
+    uncreditedGoalNote: 'non attribuito a un giocatore in elenco',
+    uncreditedGoalHint:
+      'Un autogol, o un altro gol non attribuito a nessun giocatore in elenco. Conta nel punteggio ma non assegna punti fantasy.',
+    uncreditedGoalAria: 'Informazioni sui gol non attribuiti',
     playerEntries: 'entry giocatori',
     hideDetails: 'Nascondi dettagli',
     matchDetails: 'Dettagli partita',
@@ -2377,6 +2389,10 @@ const germanMessages: DeepPartial<AppMessages> = {
     scorers: 'Torschützen:',
     assists: 'Assists:',
     none: 'Keine',
+    uncreditedGoalNote: 'keinem gelisteten Spieler zugeordnet',
+    uncreditedGoalHint:
+      'Ein Eigentor oder ein anderes Tor, das keinem gelisteten Spieler zugeordnet ist. Es zählt zum Ergebnis, bringt aber keine Fantasy-Punkte.',
+    uncreditedGoalAria: 'Über nicht zugeordnete Tore',
     playerEntries: 'Spieler-Einträge',
     hideDetails: 'Details ausblenden',
     matchDetails: 'Spieldetails',
@@ -2923,6 +2939,10 @@ const frenchMessages: DeepPartial<AppMessages> = {
     scorers: 'Buteurs :',
     assists: 'Passes :',
     none: 'Aucun',
+    uncreditedGoalNote: 'non attribué à un joueur listé',
+    uncreditedGoalHint:
+      "Un but contre son camp, ou un autre but non attribué à un joueur listé. Il compte au score mais ne rapporte aucun point fantasy.",
+    uncreditedGoalAria: 'À propos des buts non attribués',
     playerEntries: 'entrées joueurs',
     hideDetails: 'Masquer détails',
     matchDetails: 'Détails match',
@@ -3469,6 +3489,10 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     scorers: 'Marcadores:',
     assists: 'Assistências:',
     none: 'Nenhum',
+    uncreditedGoalNote: 'não atribuído a um jogador listado',
+    uncreditedGoalHint:
+      'Um golo na própria baliza, ou outro golo não atribuído a nenhum jogador listado. Conta no resultado mas não dá pontos de fantasy.',
+    uncreditedGoalAria: 'Sobre os golos não atribuídos',
     playerEntries: 'entradas de jogadores',
     hideDetails: 'Ocultar detalhes',
     matchDetails: 'Detalhes do jogo',
@@ -4016,6 +4040,10 @@ const russianMessages: DeepPartial<AppMessages> = {
     scorers: 'Голы:',
     assists: 'Ассисты:',
     none: 'Нет',
+    uncreditedGoalNote: 'не засчитан игроку из списка',
+    uncreditedGoalHint:
+      'Автогол или другой гол, не засчитанный игроку из списка. Он учитывается в счёте, но не приносит фэнтези-очков.',
+    uncreditedGoalAria: 'О неучтённых голах',
     playerEntries: 'записей игроков',
     hideDetails: 'Скрыть детали',
     matchDetails: 'Детали матча',
@@ -4565,6 +4593,10 @@ const chineseMessages: DeepPartial<AppMessages> = {
     scorers: '进球：',
     assists: '助攻：',
     none: '无',
+    uncreditedGoalNote: '未计入任何列出的球员',
+    uncreditedGoalHint:
+      '乌龙球，或其他未归属于任何列出球员的进球。它计入比分，但不产生 fantasy 积分。',
+    uncreditedGoalAria: '关于未归属的进球',
     playerEntries: '球员记录',
     hideDetails: '隐藏详情',
     matchDetails: '比赛详情',
@@ -4972,6 +5004,10 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     scorers: '得点者:',
     assists: 'アシスト:',
     none: 'なし',
+    uncreditedGoalNote: '記載選手に計上されない',
+    uncreditedGoalHint:
+      'オウンゴール、または記載選手に計上されないその他の得点です。スコアには加算されますが、ファンタジーのポイントにはなりません。',
+    uncreditedGoalAria: '計上されない得点について',
     playerEntries: '選手入力',
     hideDetails: '詳細を隠す',
     matchDetails: '詳細',
@@ -5280,7 +5316,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Jugadores destacados de Soccerverse',
         lede:
-          'Un juego de fútbol fantasy gratuito para el Mundial 2026. Elige un equipo de jugadores reales del torneo, bloquéalo antes del pitido inicial y escala las clasificaciones a medida que se juegan los partidos. No hace falta experiencia, y no necesitas una cuenta de Soccerverse para participar.',
+          'Un juego de fútbol fantasy gratuito para el torneo de 2026. Elige un equipo de jugadores reales del torneo, bloquéalo antes del pitido inicial y escala las clasificaciones a medida que se juegan los partidos. No hace falta experiencia, y no necesitas una cuenta de Soccerverse para participar.',
         freeNote: 'Entrada gratuita · Sin cuota de inscripción · No se requiere cuenta de Soccerverse',
         newHereLabel: '¿Nuevo por aquí?',
         howToCta: 'Cómo jugar',
@@ -5537,7 +5573,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Giocatori Soccerverse in evidenza',
         lede:
-          'Un gioco di fantacalcio gratuito per il Mondiale 2026. Scegli una squadra di veri giocatori del torneo, bloccala prima del calcio d’inizio e scala le classifiche mentre si giocano le partite. Non serve esperienza, e non ti serve un account Soccerverse per partecipare.',
+          'Un gioco di fantacalcio gratuito per il torneo del 2026. Scegli una squadra di veri giocatori del torneo, bloccala prima del calcio d’inizio e scala le classifiche mentre si giocano le partite. Non serve esperienza, e non ti serve un account Soccerverse per partecipare.',
         freeNote: 'Iscrizione gratuita · Nessuna quota d’ingresso · Nessun account Soccerverse richiesto',
         newHereLabel: 'Nuovo qui?',
         howToCta: 'Come si gioca',
@@ -5794,7 +5830,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Hervorgehobene Soccerverse-Spieler',
         lede:
-          'Ein kostenloses Fantasy-Football-Spiel zur WM 2026. Stelle ein Team aus echten Turnierspielern zusammen, fixiere es vor dem Anpfiff und klettere die Bestenlisten hinauf, während die Spiele laufen. Keine Erfahrung nötig – und du brauchst kein Soccerverse-Konto, um mitzumachen.',
+          'Ein kostenloses Fantasy-Football-Spiel zum Turnier 2026. Stelle ein Team aus echten Turnierspielern zusammen, fixiere es vor dem Anpfiff und klettere die Bestenlisten hinauf, während die Spiele laufen. Keine Erfahrung nötig – und du brauchst kein Soccerverse-Konto, um mitzumachen.',
         freeNote: 'Kostenlose Teilnahme · Keine Teilnahmegebühr · Kein Soccerverse-Konto erforderlich',
         newHereLabel: 'Neu hier?',
         howToCta: 'So wird gespielt',
@@ -6051,7 +6087,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Joueurs Soccerverse en avant',
         lede:
-          'Un jeu de football fantasy gratuit pour la Coupe du monde 2026. Choisis une équipe de vrais joueurs du tournoi, verrouille-la avant le coup d’envoi et grimpe les classements au fil des matchs. Aucune expérience requise — et tu n’as pas besoin d’un compte Soccerverse pour participer.',
+          'Un jeu de football fantasy gratuit pour le tournoi 2026. Choisis une équipe de vrais joueurs du tournoi, verrouille-la avant le coup d’envoi et grimpe les classements au fil des matchs. Aucune expérience requise — et tu n’as pas besoin d’un compte Soccerverse pour participer.',
         freeNote: 'Participation gratuite · Aucun frais d’inscription · Aucun compte Soccerverse requis',
         newHereLabel: 'Nouveau ici ?',
         howToCta: 'Comment jouer',
@@ -6309,7 +6345,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Jogadores Soccerverse em destaque',
         lede:
-          'Um jogo de fantasy football gratuito para o Mundial 2026. Escolhe uma equipa de jogadores reais do torneio, bloqueia-a antes do apito inicial e sobe nas classificações à medida que os jogos decorrem. Não é preciso experiência — e não precisas de uma conta Soccerverse para participar.',
+          'Um jogo de fantasy football gratuito para o torneio de 2026. Escolhe uma equipa de jogadores reais do torneio, bloqueia-a antes do apito inicial e sobe nas classificações à medida que os jogos decorrem. Não é preciso experiência — e não precisas de uma conta Soccerverse para participar.',
         freeNote: 'Entrada gratuita · Sem taxa de inscrição · Não é necessária conta Soccerverse',
         newHereLabel: 'Novo por aqui?',
         howToCta: 'Como jogar',
@@ -6824,7 +6860,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: '精选 Soccerverse 球员',
         lede:
-          '一款面向 2026 世界杯的免费梦幻足球游戏。挑选一支由真实参赛球员组成的球队，在开球前锁定阵容，随着比赛进行在排行榜上攀升。无需经验，也无需 Soccerverse 账号即可参加。',
+          '一款面向 2026 年赛事的免费梦幻足球游戏。挑选一支由真实参赛球员组成的球队，在开球前锁定阵容，随着比赛进行在排行榜上攀升。无需经验，也无需 Soccerverse 账号即可参加。',
         freeNote: '免费参加 · 无报名费 · 无需 Soccerverse 账号',
         newHereLabel: '初次来到？',
         howToCta: '玩法介绍',
@@ -7090,7 +7126,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     home: {
       hero: {
         lede:
-          '2026年ワールドカップ向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でチームを組み、キックオフ前にロックして、試合が進むにつれてリーダーボードを駆け上がりましょう。経験は不要で、参加に Soccerverse アカウントは必要ありません。',
+          '2026年の大会向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でチームを組み、キックオフ前にロックして、試合が進むにつれてリーダーボードを駆け上がりましょう。経験は不要で、参加に Soccerverse アカウントは必要ありません。',
         freeNote: '参加無料 · 参加費なし · Soccerverse アカウント不要',
         newHereLabel: 'はじめての方へ',
         howToCta: '遊び方',

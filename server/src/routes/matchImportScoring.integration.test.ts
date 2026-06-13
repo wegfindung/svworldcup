@@ -14,6 +14,7 @@ import { MemorySquadRepository } from '../repositories/squadRepository.js'
 import { MemoryTeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import { MemoryParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 import { MemorySnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
+import { scoringDefaults } from '../data/scoringDefaults.js'
 import { buildPublicFixtureResults } from '../services/matchResults.js'
 import { createMatchImportRouter } from './matchImport.js'
 import type { ParticipantSquad, SoccerversePlayerRecord } from '../domain/types.js'
@@ -21,10 +22,11 @@ import type { ParticipantSquad, SoccerversePlayerRecord } from '../domain/types.
 // End-to-end pipeline check with the REAL provider feed file for the opening fixture:
 // upload (CSV auto-detect) -> two-admin confirm -> promote -> admin_match_entries ->
 // public /match-results derivation -> participant leaderboard points. The public match
-// score is SUMMED FROM PROMOTED PLAYER GOALS (matchResults.ts), not the admin-entered
-// final score — so it reads 2-0 here because both scorers (Quiñones, Jiménez) are
-// resolved against the MEX pool. A skipped scorer or an own goal would change the
-// displayed score; that interaction is asserted at the bottom.
+// score defaults to the SUM OF PROMOTED PLAYER GOALS (matchResults.ts) — so it reads 2-0
+// here because both scorers (Quiñones, Jiménez) are resolved against the MEX pool. A skipped
+// scorer or an own goal makes that sum read low; the admin-entered final score is captured as
+// a per-fixture override on promote and corrects the displayed scoreline. Both the raw
+// derivation and the override correction are asserted at the bottom.
 
 const FIXTURE_ID = '2026-06-11-a-mex-rsa'
 const KICKOFF_EPOCH = Date.parse('2026-06-11T19:00:00Z')
@@ -118,8 +120,9 @@ async function setup() {
   }
   await squads.lockSquad(participantId)
 
+  const configRepository = new MemoryConfigRepository()
   const scoringRepository = new MemoryScoringRepository(
-    new MemoryConfigRepository(),
+    configRepository,
     registrations,
     squads,
     new MemoryParticipantInfluenceSnapshotRepository(),
@@ -132,6 +135,7 @@ async function setup() {
     scoringRepository,
     auditRepository: new MemoryAuditRepository(),
     snapshotJobRepository: new MemorySnapshotJobRepository(),
+    configRepository,
   }
 
   const app = express()
@@ -147,7 +151,7 @@ async function setup() {
   app.use('/match-import', createMatchImportRouter(deps))
   app.use(errorHandler)
 
-  return { app, deps, squads, scoringRepository, teamPoolRepository, participantId }
+  return { app, deps, squads, scoringRepository, teamPoolRepository, configRepository, participantId }
 }
 
 // The leaderboard only scores fixtures whose kickoff is AFTER the squad's lock instant.
@@ -298,5 +302,65 @@ describe('real feed CSV: import -> promote -> match results -> leaderboard', () 
     const items = buildPublicFixtureResults(seedFixtures, playersByTeam, await scoringRepository.listMatchEntries())
     const result = items.find((item) => item.fixtureId === FIXTURE_ID)
     expect(result).toMatchObject({ status: 'final', homeGoals: 1, awayGoals: 0 })
+  })
+
+  it('auto-captures the admin-entered score on promote', async () => {
+    const { app, configRepository } = await setup()
+    await importRealFeed(app)
+    // The 2-0 the admin typed in the import form is captured as the fixture's scoreline override.
+    const stored = await configRepository.getFixtureScoreOverrides()
+    expect(stored[FIXTURE_ID]).toEqual({ home: 2, away: 0 })
+  })
+
+  it('shows the true scoreline via the captured override when a goal is uncredited (own-goal/skip case)', async () => {
+    const { app, scoringRepository, teamPoolRepository, configRepository } = await setup()
+    // Skip Quiñones so his goal never reaches a promoted player row — the per-player goal sum is
+    // 1-0, standing in for the real own-goal case (USA 4-1 displaying as 3-1). The admin still
+    // types the true 2-0 in the form.
+    const overrides = [
+      ...[...SKIPPED_MEX, 'Julián Quiñones'].map((sourceName) => ({ sourceName, teamCode: 'MEX', skip: true })),
+      ...SKIPPED_RSA.map((sourceName) => ({ sourceName, teamCode: 'RSA', skip: true })),
+    ]
+    const upload = await request(app)
+      .post('/match-import/upload')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({
+        fixtureId: FIXTURE_ID,
+        input: { format: 'csv', text: REAL_FEED_CSV, homeGoals: 2, awayGoals: 0, sourceUrl: 'https://feed.example/m/1489369.csv' },
+        overrides,
+      })
+    expect(upload.status).toBe(201)
+    const confirm = await request(app)
+      .post(`/match-import/batches/${upload.body.batch.batchId}/confirm`)
+      .set('x-test-admin-email', 'reviewer@example.com')
+      .send({})
+    expect(confirm.body.promotion.promoted).toBe(true)
+
+    const stored = await configRepository.getFixtureScoreOverrides()
+    expect(stored[FIXTURE_ID]).toEqual({ home: 2, away: 0 })
+
+    const playersByTeam = new Map([
+      ['MEX', await teamPoolRepository.listByTeam('MEX')],
+      ['RSA', await teamPoolRepository.listByTeam('RSA')],
+    ])
+    const entries = await scoringRepository.listMatchEntries()
+    // With the override applied (as the public route does) the scoreline reads the true 2-0,
+    // even though only one goal is credited to a promoted player.
+    const corrected = buildPublicFixtureResults(seedFixtures, playersByTeam, entries, scoringDefaults, stored)
+    const correctedResult = corrected.find((item) => item.fixtureId === FIXTURE_ID)
+    expect(correctedResult).toMatchObject({ status: 'final', homeGoals: 2, awayGoals: 0 })
+    const creditedGoals = (correctedResult?.homePlayers ?? []).reduce((sum, player) => sum + player.goals, 0)
+    expect(creditedGoals).toBe(1)
+
+    // Clearing the override reverts to the raw under-counting derivation.
+    await configRepository.clearFixtureScoreOverride(FIXTURE_ID)
+    const reverted = buildPublicFixtureResults(
+      seedFixtures,
+      playersByTeam,
+      entries,
+      scoringDefaults,
+      await configRepository.getFixtureScoreOverrides(),
+    )
+    expect(reverted.find((item) => item.fixtureId === FIXTURE_ID)).toMatchObject({ homeGoals: 1, awayGoals: 0 })
   })
 })
