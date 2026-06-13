@@ -313,8 +313,8 @@ function PlayerDetailRow({ copy, factorCopy, player }: { copy: ResultsCopy; fact
         </div>
       </button>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <div className="flex flex-wrap justify-end gap-1.5 text-[10px]">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex min-w-0 flex-wrap justify-end gap-1.5 text-[10px]">
           {player.goals > 0 && (
             <span className="inline-flex items-center gap-1 rounded-[0.5rem] border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">
               G {player.goals}
@@ -332,7 +332,7 @@ function PlayerDetailRow({ copy, factorCopy, player }: { copy: ResultsCopy; fact
           )}
         </div>
         <div
-          className="rounded-[0.5rem] border border-white/12 bg-white/5 px-2 py-1 text-right"
+          className="shrink-0 whitespace-nowrap rounded-[0.5rem] border border-white/12 bg-white/5 px-2 py-1 text-right"
           title={copy.personalScoreNote}
         >
           <span className="mono text-[8px] uppercase tracking-wider text-[var(--color-muted)]">{copy.basePointsLabel}</span>
