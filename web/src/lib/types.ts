@@ -543,6 +543,35 @@ export interface PlayerPointsPayload {
   items: PlayerPointsPlayer[]
 }
 
+// A revealed competitor named on a boost row's badges (reveal-gated, like Usage).
+export interface BoostLeaderboardManager {
+  displayName: string
+  profilePath: string
+}
+
+// Stats › Boosts — per-player ownership-boost aggregate across all competitors (see SOP "Stats — Boost Leaderboard").
+export interface BoostLeaderboardRow {
+  playerId: number
+  displayName: string
+  teamCode: string
+  nationalityCode: string
+  imageUrl?: string
+  rating: number
+  capCost: number
+  positionMain?: string
+  positions: string[]
+  positionClasses: SlotClass[]
+  totalNetShares: number
+  managerCount: number
+  combinedBonusPercent: number
+  managers: BoostLeaderboardManager[]
+}
+
+export interface BoostLeaderboardPayload {
+  summary: { playersBoosted: number; competitorsBoosting: number; totalNetShares: number }
+  items: BoostLeaderboardRow[]
+}
+
 // Stats → Budgets tab: one row per salary-budget tier. managerCount = locked squads on the tier;
 // averageScore = mean final totalScore (budget multiplier already applied) across them.
 export interface BudgetStatRow {

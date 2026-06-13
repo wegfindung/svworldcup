@@ -110,6 +110,7 @@ describe('public squad usage', () => {
         scoringRepository: new MemoryScoringRepository(config, registrations, squads, new MemoryParticipantInfluenceSnapshotRepository()),
         squadRepository: squads,
         landingAnalyticsRepository: new MemoryLandingAnalyticsRepository(),
+        participantInfluenceSnapshotRepository: new MemoryParticipantInfluenceSnapshotRepository(),
       }),
     )
 

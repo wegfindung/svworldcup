@@ -8,6 +8,7 @@ import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { FixtureRepository } from '../repositories/fixtureRepository.js'
 import { publicProfileSlug, type RegistrationRepository } from '../repositories/registrationRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
+import type { ParticipantInfluenceSnapshotRepository } from '../repositories/participantInfluenceSnapshotRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { SquadRepository } from '../repositories/squadRepository.js'
 import type { LandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
@@ -17,6 +18,7 @@ import { handleShareCardImage } from './share.js'
 import { searchCommunityPlayerIds } from '../services/communityPack.js'
 import { buildPublicFixtureResults } from '../services/matchResults.js'
 import { buildPlayerPointsLeaderboard } from '../services/playerPointsLeaderboard.js'
+import { buildBoostLeaderboard } from '../services/boostLeaderboard.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
 const playerSearchSchema = z.object({
@@ -136,6 +138,7 @@ interface Dependencies {
   scoringRepository: ScoringRepository
   squadRepository: SquadRepository
   landingAnalyticsRepository: LandingAnalyticsRepository
+  participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotRepository
 }
 
 export function createPublicRouter({
@@ -146,6 +149,7 @@ export function createPublicRouter({
   scoringRepository,
   squadRepository,
   landingAnalyticsRepository,
+  participantInfluenceSnapshotRepository,
 }: Dependencies) {
   const router = Router()
 
@@ -401,6 +405,37 @@ export function createPublicRouter({
 
   router.get('/budget-stats', async (_req, res) => {
     res.json(await scoringRepository.getBudgetStats())
+  })
+
+  // Stats › Boosts — players ranked by total ownership boost the field has spent, from the frozen per-fixture
+  // influence snapshots (anonymous aggregate). See SOP_scoring_and_leagues "Stats — Boost Leaderboard".
+  router.get('/boost-leaderboard', async (_req, res) => {
+    const currentFixtures = await fixtureRepository.listFixtures()
+    const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
+    const playersById = new Map<number, TeamPoolPlayer>()
+    const [snapshots, eventControls, participants] = await Promise.all([
+      participantInfluenceSnapshotRepository.listAll(),
+      configRepository.getEventControls(),
+      registrationRepository.listForAdmin(),
+      Promise.all(
+        teamCodes.map(async (teamCode) => {
+          for (const player of await teamPoolRepository.listByTeam(teamCode)) {
+            playersById.set(player.playerId, player)
+          }
+        }),
+      ),
+    ])
+    // Badges name only revealed managers — same reveal gate as the Usage tab.
+    const revealedManagers = new Map<string, { displayName: string; profilePath: string }>()
+    for (const participant of participants) {
+      if (participant.status === 'active' && (participant.revealSquad || eventControls.globalRevealSquads)) {
+        revealedManagers.set(participant.participantId, {
+          displayName: participant.displayName,
+          profilePath: `/profiles/${publicProfileSlug(participant.displayName, participant.participantId)}`,
+        })
+      }
+    }
+    res.json(buildBoostLeaderboard(snapshots, playersById, revealedManagers))
   })
 
   router.get('/nation-participation', async (_req, res) => {

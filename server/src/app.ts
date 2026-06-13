@@ -202,7 +202,7 @@ export function createApp() {
   app.use(
     '/api/public',
     publicApiLimiter,
-    createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, fixtureRepository, scoringRepository, squadRepository, landingAnalyticsRepository }),
+    createPublicRouter({ registrationRepository, configRepository, teamPoolRepository, fixtureRepository, scoringRepository, squadRepository, landingAnalyticsRepository, participantInfluenceSnapshotRepository }),
   )
   app.use(
     '/api/auth',

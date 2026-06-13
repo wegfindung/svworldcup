@@ -419,6 +419,40 @@ export interface ParticipantInfluenceSnapshotRecord {
   snapshotAt: string
 }
 
+// A revealed competitor who boosted the player, for the row's badges (reveal-gated, like Usage). Non-revealed
+// boosters are counted in managerCount but never named here.
+export interface BoostLeaderboardManager {
+  displayName: string
+  profilePath: string
+}
+
+// Stats › Boosts — community ownership-boost aggregate per player, summed across all competitors from the
+// frozen per-fixture influence snapshots (latest per competitor-per-player). Totals are anonymous; the
+// managers array names only revealed boosters.
+export interface BoostLeaderboardRow {
+  playerId: number
+  displayName: string
+  teamCode: string
+  nationalityCode: string
+  imageUrl?: string
+  rating: number
+  capCost: number
+  positionMain?: string
+  positions: string[]
+  positionClasses: SlotClass[]
+  // Σ net influence shares across competitors (the rank key — "boost spent"); the number of competitors
+  // boosting the player; and Σ of each competitor's capped 0–10% bonus (the effective scoring boost).
+  totalNetShares: number
+  managerCount: number
+  combinedBonusPercent: number
+  managers: BoostLeaderboardManager[]
+}
+
+export interface BoostLeaderboardPayload {
+  summary: { playersBoosted: number; competitorsBoosting: number; totalNetShares: number }
+  items: BoostLeaderboardRow[]
+}
+
 export type EmailCampaignKind = 'newsletter' | 'autoresponder'
 export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
 export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'
