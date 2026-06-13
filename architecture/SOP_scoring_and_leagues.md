@@ -128,8 +128,8 @@ divergence the import engine refuses to collapse into one number (`SOP_match_dat
 
 ## Stats — Player Points Leaderboard
 
-The public Stats page (`/stats`) has five tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
-**Value**, and **Budgets** (each described below). The **Points** tab
+The public Stats page (`/stats`) has six tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
+**Value**, **Best XI**, and **Budgets** (each described below). The **Points** tab
 (`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
 `/api/public/player-points`) ranks every player who has a promoted match entry by the base
 points they have produced **in a chosen position**:
@@ -176,6 +176,38 @@ divides the position total.
   are carried over. The cost is shown compact in the row sub-line (`1.3k` / `886k` / `1.8M`, `formatCost`).
 - **Base points only**, same caveat as Points/Leaders: a manager's personal score additionally applies the
   budget multiplier, ownership boost, and reserve half-weight, so these figures are not any manager's total.
+
+## Stats — Best XI
+
+The **Best XI** tab (`/stats/best-xi`, between Value and Budgets) holds two **sub-tabs**, each a budget-tiered
+squad with its own budget dropdown (1.5M…9M). Both are computed **client-side** by one shared near-optimal
+solver (`web/src/lib/squadOptimizer.ts`, formation constants mirrored in `lib/squadFormation.ts`) over
+already-served public payloads — there is **no server endpoint and no DB read**. The solver maximises
+`Σ(value × slot weight)` over a *legal* squad and is parameterised by what "value" means.
+
+**One solver, two objectives.** Both obey every hard rule a real locked squad does: the fixed formation
+(2 GK · 5 DEF · 4 MID · 4 FWD; 11 starters = 1/4/3/3, 4 reserves = 1/1/1/1), the budget cap (Σ `capCost` ≤
+tier), and **max 4 players per nation**. Algorithm: greedy construction → budget repair → bounded local-search
+swaps → a bench-normalisation that places the weakest of each class in the reserve slot. Near-optimal, not
+provably optimal (Tommy's call) — always legal, optimal-or-within-a-hair on real data. A unit test
+(`squadOptimizer.test.ts`) pins a hand-checked case to the true maximum for both objectives.
+
+- **The People's XI** (`buildPeoplesSquads`, from `/squad-usage` — reveal-gated) — the **most-picked legal
+  squad that fits the chosen budget**. Value = a player's total picks (`usageCount`), every slot weighted
+  equally (picks are not halved), so the bench holds the **least-picked of each position**. Total picks shown,
+  no multiplier. Lets a manager pick their own budget and compare the popular squad to their own.
+
+- **Best squad found** (`buildBestSquads`, from `/player-points`) — the **points-maximising** legal squad.
+  Value = `base + that slot class's clean sheet`; reserves bank the **half-weight** (0.5), so the lowest-value
+  pick of each class is benched. **Final score = total × the tier multiplier** (no ownership boost — a
+  hypothetical squad has none); because lower budgets carry higher multipliers, the dropdown surfaces the
+  top-scoring budget. Base points only, same caveat as Points/Value.
+
+**Candidate pool = featured / revealed players only** (those already in `/player-points` or a revealed squad),
+not the full draft pool — so early in the tournament some slots/tiers may not fill, shown as a partial squad
+with a "fills out as matches are played" note (same thin-data caveat as Value). Once the group stage completes
+there are ample players. The nation cap on the People's XI is enforced so it stays a *fieldable* squad; flip
+`enforce` in the solver if pure popularity is ever wanted.
 
 ## Stats — Budget Stats
 

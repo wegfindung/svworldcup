@@ -1,19 +1,20 @@
 import { Link } from 'react-router-dom'
 import { getMessages } from '../i18n/messages'
 import type { LocaleCode } from '../lib/types'
+import { BestXIPanel } from './BestXIPanel'
 import { BudgetStatsPanel } from './BudgetStatsPanel'
 import { LeadersPanel } from './LeadersPanel'
 import { PlayerPointsPanel } from './PlayerPointsPanel'
 import { UsageStatsPanel } from './SquadUsagePage'
 import { ValueStatsPanel } from './ValueStatsPanel'
 
-type StatsTab = 'usage' | 'points' | 'leaders' | 'value' | 'budgets'
+type StatsTab = 'usage' | 'points' | 'leaders' | 'value' | 'bestxi' | 'budgets'
 
-// The public Stats surface. One nav entry, five tabs: Usage (revealed-squad pick rate), Points (most base
+// The public Stats surface. One nav entry, six tabs: Usage (revealed-squad pick rate), Points (most base
 // points produced per position), Leaders (per-metric rankings), Value (most base points per unit of budget
-// cost), and Budgets (how managers spread across the salary-budget tiers). Each tab is its own self-fetching
-// panel; this page only owns the shared hero + the tab switcher (routed, so each tab is linkable: /stats,
-// /stats/points, …).
+// cost), Best XI (consensus People's XI + the points-maximizing squad per budget), and Budgets (how managers
+// spread across the salary-budget tiers). Each tab is its own self-fetching panel; this page only owns the
+// shared hero + the tab switcher (routed, so each tab is linkable: /stats, /stats/points, …).
 export function StatsPage({ locale, active }: { locale: LocaleCode; active: StatsTab }) {
   const messages = getMessages(locale)
   const copy = messages.stats
@@ -22,6 +23,7 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
     { key: 'points', label: copy.tabPoints, to: '/stats/points' },
     { key: 'leaders', label: messages.leaders.tab, to: '/stats/leaders' },
     { key: 'value', label: copy.tabValue, to: '/stats/value' },
+    { key: 'bestxi', label: copy.tabBestXI, to: '/stats/best-xi' },
     { key: 'budgets', label: copy.tabBudgets, to: '/stats/budgets' },
   ]
 
@@ -51,6 +53,8 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
 
       {active === 'usage' ? (
         <UsageStatsPanel locale={locale} />
+      ) : active === 'bestxi' ? (
+        <BestXIPanel locale={locale} />
       ) : active === 'points' ? (
         <PlayerPointsPanel locale={locale} />
       ) : active === 'leaders' ? (

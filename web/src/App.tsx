@@ -392,6 +392,7 @@ function App() {
               <Route path="/builder/share" element={<ShareComposerPage locale={locale} />} />
               <Route path="/results" element={<ResultsPage locale={locale} />} />
               <Route path="/stats" element={<StatsPage locale={locale} active="usage" />} />
+              <Route path="/stats/best-xi" element={<StatsPage locale={locale} active="bestxi" />} />
               <Route path="/stats/points" element={<StatsPage locale={locale} active="points" />} />
               <Route path="/stats/leaders" element={<StatsPage locale={locale} active="leaders" />} />
               <Route path="/stats/value" element={<StatsPage locale={locale} active="value" />} />
