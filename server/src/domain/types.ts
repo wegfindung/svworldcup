@@ -419,6 +419,31 @@ export interface ParticipantInfluenceSnapshotRecord {
   snapshotAt: string
 }
 
+// Stats › Boosts — community ownership-boost aggregate per player, summed across all competitors from the
+// frozen per-fixture influence snapshots (latest per competitor-per-player). Anonymous (no participant ids).
+export interface BoostLeaderboardRow {
+  playerId: number
+  displayName: string
+  teamCode: string
+  nationalityCode: string
+  imageUrl?: string
+  rating: number
+  capCost: number
+  positionMain?: string
+  positions: string[]
+  positionClasses: SlotClass[]
+  // Σ net influence shares across competitors (the rank key — "boost spent"); the number of competitors
+  // boosting the player; and Σ of each competitor's capped 0–10% bonus (the effective scoring boost).
+  totalNetShares: number
+  managerCount: number
+  combinedBonusPercent: number
+}
+
+export interface BoostLeaderboardPayload {
+  summary: { playersBoosted: number; competitorsBoosting: number; totalNetShares: number }
+  items: BoostLeaderboardRow[]
+}
+
 export type EmailCampaignKind = 'newsletter' | 'autoresponder'
 export type EmailCampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'sending' | 'sent'
 export type EmailCampaignTrigger = 'manual' | 'registration_created' | 'registration_verified'

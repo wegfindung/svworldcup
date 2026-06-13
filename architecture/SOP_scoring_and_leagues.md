@@ -128,8 +128,8 @@ divergence the import engine refuses to collapse into one number (`SOP_match_dat
 
 ## Stats — Player Points Leaderboard
 
-The public Stats page (`/stats`) has six tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
-**Value**, **Best XI**, and **Budgets** (each described below). The **Points** tab
+The public Stats page (`/stats`) has seven tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
+**Value**, **Best XI**, **Boosts**, and **Budgets** (each described below). The **Points** tab
 (`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
 `/api/public/player-points`) ranks every player who has a promoted match entry by the base
 points they have produced **in a chosen position**:
@@ -208,6 +208,26 @@ not the full draft pool — so early in the tournament some slots/tiers may not 
 with a "fills out as matches are played" note (same thin-data caveat as Value). Once the group stage completes
 there are ample players. The nation cap on the People's XI is enforced so it stays a *fieldable* squad; flip
 `enforce` in the solver if pure popularity is ever wanted.
+
+## Stats — Boost Leaderboard
+
+The **Boosts** tab (`/stats/boosts`, between Best XI and Budgets) ranks players by the **total ownership boost
+the field has spent on them**, summed across every competitor (`services/boostLeaderboard.ts →
+buildBoostLeaderboard`, served by `/api/public/boost-leaderboard`).
+
+- **Source = the frozen per-fixture influence snapshots** (`participant_influence_snapshot`), the only
+  persisted per-player boost — a live combined figure would be one Soccerverse call per competitor × drafted
+  player. So the board reflects boost **as captured at each fixture's kickoff**, and a player appears only once
+  their team has played a snapshotted fixture (sparse early, same freeze the scoring uses).
+- **Aggregation.** Take the **latest** snapshot per `(participant, player)` as that competitor's current
+  standing, drop zero-boost rows, then per player sum `netShares` (the rank key — literal "boost spent"),
+  count distinct competitors, and sum each competitor's capped `bonusPercent` (the effective scoring boost,
+  each ≤10%). Sorted by total net shares desc.
+- **Anonymous aggregate**, like Budget Stats — per-player totals only, never a participant id, so it is **not**
+  reveal-gated (it names no squad). It does expose a per-player competitor *count*, but Soccerverse ownership
+  is already public. It covers **all** competitors (Tommy's ask), not just revealed squads.
+- **Display.** Net shares is the headline; manager count and combined bonus % ride along as context. Reuses
+  the player pool for display info (name/team/photo), the same `playersById` resolution as `/player-points`.
 
 ## Stats — Budget Stats
 

@@ -107,6 +107,7 @@ describe('public profile reflects swaps', () => {
         scoringRepository: new MemoryScoringRepository(new MemoryConfigRepository(), registrations, squads, new MemoryParticipantInfluenceSnapshotRepository()),
         squadRepository: squads,
         landingAnalyticsRepository: new MemoryLandingAnalyticsRepository(),
+        participantInfluenceSnapshotRepository: new MemoryParticipantInfluenceSnapshotRepository(),
       }),
     )
 
