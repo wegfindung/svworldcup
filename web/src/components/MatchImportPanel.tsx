@@ -7,6 +7,7 @@ import { TeamFlag } from './TeamFlag'
 import {
   clearOfficialScore,
   fetchMatchImportBatches,
+  fetchMatchResults,
   fetchOfficialScores,
   parseMatchImport,
   setOfficialScore,
@@ -72,6 +73,10 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const csvFileInputRef = useRef<HTMLInputElement>(null)
+  // Fixtures whose import has been accepted (promoted to scoring): fixtureId -> promoted entry
+  // count. A promoted fixture has no pending batch left, so without this it looks un-imported.
+  // Sourced from the public results endpoint, where a promoted fixture reads status 'final'.
+  const [acceptedByFixture, setAcceptedByFixture] = useState<Map<string, number>>(new Map())
   // Official scoreline overrides (display-only correction for own goals / skipped scorers).
   const [scoreOverrides, setScoreOverrides] = useState<Record<string, { home: number; away: number }>>({})
   const [scoreEditorFixtureId, setScoreEditorFixtureId] = useState<string | null>(null)
@@ -119,10 +124,36 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
       .catch(() => {
         // Non-blocking: the per-fixture editor still works; it just won't preload current values.
       })
+    void loadAccepted(() => active)
     return () => {
       active = false
     }
   }, [])
+
+  // Mark which fixtures already have an accepted (promoted) import. A promoted fixture reads
+  // status 'final' on the public results endpoint; the count is its promoted player entries.
+  async function loadAccepted(isActive: () => boolean = () => true) {
+    try {
+      const response = await fetchMatchResults()
+      if (!isActive()) {
+        return
+      }
+      // Merge rather than replace: /match-results is client-cached for 30s, so a refresh soon after
+      // a promotion can return stale data. Union-ing never drops a just-promoted fixture (no un-accept
+      // flow exists here); fetched counts still update existing entries.
+      setAcceptedByFixture((current) => {
+        const next = new Map(current)
+        for (const item of response.items) {
+          if (item.status === 'final') {
+            next.set(item.fixtureId, item.entryCount)
+          }
+        }
+        return next
+      })
+    } catch {
+      // Non-blocking: the list still works; accepted fixtures just won't be tinted until refresh.
+    }
+  }
 
   function openScoreEditor(fixtureId: string) {
     const current = scoreOverrides[fixtureId]
@@ -207,6 +238,7 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
       const response = await fetchMatchImportBatches()
       setBatches(response.items)
       setBatchesLoaded(true)
+      await loadAccepted()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not load pending imports.')
     } finally {
@@ -361,6 +393,10 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
           }}
           onBatchRemoved={(reason, promotedRowCount) => {
             setBatches((current) => current.filter((item) => item.batchId !== reviewBatch.batchId))
+            if (reason === 'promoted') {
+              // Mark the fixture accepted immediately so the row tints green without a manual refresh.
+              setAcceptedByFixture((current) => new Map(current).set(reviewBatch.fixtureId, promotedRowCount ?? 0))
+            }
             setReviewBatch(null)
             setMessage(
               reason === 'promoted'
@@ -629,10 +665,15 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
             const batch = batchByFixture.get(fixture.fixtureId)
             const override = scoreOverrides[fixture.fixtureId]
             const editing = scoreEditorFixtureId === fixture.fixtureId
+            const acceptedCount = acceptedByFixture.get(fixture.fixtureId)
+            const isAccepted = acceptedCount !== undefined
             return (
               <div
                 key={fixture.fixtureId}
-                className="flex flex-col gap-3 rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-3"
+                className={[
+                  'flex flex-col gap-3 rounded-[1.4rem] border px-4 py-3',
+                  isAccepted ? 'border-emerald-400/25 bg-emerald-400/8' : 'border-white/8 bg-black/15',
+                ].join(' ')}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -644,6 +685,11 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
                     <span className="mono ml-1 rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
                       {fixture.kickoffDate}
                     </span>
+                    {isAccepted ? (
+                      <span className="mono inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/12 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-emerald-300">
+                        ✓ Imported · {acceptedCount}
+                      </span>
+                    ) : null}
                     {override ? (
                       <span className="mono rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-emerald-200">
                         score {override.home}–{override.away}
@@ -688,7 +734,7 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
                         onClick={() => handleStartUpload(fixture.fixtureId)}
                         className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
                       >
-                        Upload
+                        {isAccepted ? 'Re-upload' : 'Upload'}
                       </button>
                     )}
                   </div>
