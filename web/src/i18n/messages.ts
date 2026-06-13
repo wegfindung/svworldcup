@@ -5316,7 +5316,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Jugadores destacados de Soccerverse',
         lede:
-          'Un juego de fútbol fantasy gratuito para el Mundial 2026. Elige un equipo de jugadores reales del torneo, bloquéalo antes del pitido inicial y escala las clasificaciones a medida que se juegan los partidos. No hace falta experiencia, y no necesitas una cuenta de Soccerverse para participar.',
+          'Un juego de fútbol fantasy gratuito para el torneo de 2026. Elige un equipo de jugadores reales del torneo, bloquéalo antes del pitido inicial y escala las clasificaciones a medida que se juegan los partidos. No hace falta experiencia, y no necesitas una cuenta de Soccerverse para participar.',
         freeNote: 'Entrada gratuita · Sin cuota de inscripción · No se requiere cuenta de Soccerverse',
         newHereLabel: '¿Nuevo por aquí?',
         howToCta: 'Cómo jugar',
@@ -5573,7 +5573,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Giocatori Soccerverse in evidenza',
         lede:
-          'Un gioco di fantacalcio gratuito per il Mondiale 2026. Scegli una squadra di veri giocatori del torneo, bloccala prima del calcio d’inizio e scala le classifiche mentre si giocano le partite. Non serve esperienza, e non ti serve un account Soccerverse per partecipare.',
+          'Un gioco di fantacalcio gratuito per il torneo del 2026. Scegli una squadra di veri giocatori del torneo, bloccala prima del calcio d’inizio e scala le classifiche mentre si giocano le partite. Non serve esperienza, e non ti serve un account Soccerverse per partecipare.',
         freeNote: 'Iscrizione gratuita · Nessuna quota d’ingresso · Nessun account Soccerverse richiesto',
         newHereLabel: 'Nuovo qui?',
         howToCta: 'Come si gioca',
@@ -5830,7 +5830,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Hervorgehobene Soccerverse-Spieler',
         lede:
-          'Ein kostenloses Fantasy-Football-Spiel zur WM 2026. Stelle ein Team aus echten Turnierspielern zusammen, fixiere es vor dem Anpfiff und klettere die Bestenlisten hinauf, während die Spiele laufen. Keine Erfahrung nötig – und du brauchst kein Soccerverse-Konto, um mitzumachen.',
+          'Ein kostenloses Fantasy-Football-Spiel zum Turnier 2026. Stelle ein Team aus echten Turnierspielern zusammen, fixiere es vor dem Anpfiff und klettere die Bestenlisten hinauf, während die Spiele laufen. Keine Erfahrung nötig – und du brauchst kein Soccerverse-Konto, um mitzumachen.',
         freeNote: 'Kostenlose Teilnahme · Keine Teilnahmegebühr · Kein Soccerverse-Konto erforderlich',
         newHereLabel: 'Neu hier?',
         howToCta: 'So wird gespielt',
@@ -6087,7 +6087,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Joueurs Soccerverse en avant',
         lede:
-          'Un jeu de football fantasy gratuit pour la Coupe du monde 2026. Choisis une équipe de vrais joueurs du tournoi, verrouille-la avant le coup d’envoi et grimpe les classements au fil des matchs. Aucune expérience requise — et tu n’as pas besoin d’un compte Soccerverse pour participer.',
+          'Un jeu de football fantasy gratuit pour le tournoi 2026. Choisis une équipe de vrais joueurs du tournoi, verrouille-la avant le coup d’envoi et grimpe les classements au fil des matchs. Aucune expérience requise — et tu n’as pas besoin d’un compte Soccerverse pour participer.',
         freeNote: 'Participation gratuite · Aucun frais d’inscription · Aucun compte Soccerverse requis',
         newHereLabel: 'Nouveau ici ?',
         howToCta: 'Comment jouer',
@@ -6345,7 +6345,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: 'Jogadores Soccerverse em destaque',
         lede:
-          'Um jogo de fantasy football gratuito para o Mundial 2026. Escolhe uma equipa de jogadores reais do torneio, bloqueia-a antes do apito inicial e sobe nas classificações à medida que os jogos decorrem. Não é preciso experiência — e não precisas de uma conta Soccerverse para participar.',
+          'Um jogo de fantasy football gratuito para o torneio de 2026. Escolhe uma equipa de jogadores reais do torneio, bloqueia-a antes do apito inicial e sobe nas classificações à medida que os jogos decorrem. Não é preciso experiência — e não precisas de uma conta Soccerverse para participar.',
         freeNote: 'Entrada gratuita · Sem taxa de inscrição · Não é necessária conta Soccerverse',
         newHereLabel: 'Novo por aqui?',
         howToCta: 'Como jogar',
@@ -6860,7 +6860,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
       hero: {
         playerWallLabel: '精选 Soccerverse 球员',
         lede:
-          '一款面向 2026 世界杯的免费梦幻足球游戏。挑选一支由真实参赛球员组成的球队，在开球前锁定阵容，随着比赛进行在排行榜上攀升。无需经验，也无需 Soccerverse 账号即可参加。',
+          '一款面向 2026 年赛事的免费梦幻足球游戏。挑选一支由真实参赛球员组成的球队，在开球前锁定阵容，随着比赛进行在排行榜上攀升。无需经验，也无需 Soccerverse 账号即可参加。',
         freeNote: '免费参加 · 无报名费 · 无需 Soccerverse 账号',
         newHereLabel: '初次来到？',
         howToCta: '玩法介绍',
@@ -7126,7 +7126,7 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
     home: {
       hero: {
         lede:
-          '2026年ワールドカップ向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でチームを組み、キックオフ前にロックして、試合が進むにつれてリーダーボードを駆け上がりましょう。経験は不要で、参加に Soccerverse アカウントは必要ありません。',
+          '2026年の大会向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でチームを組み、キックオフ前にロックして、試合が進むにつれてリーダーボードを駆け上がりましょう。経験は不要で、参加に Soccerverse アカウントは必要ありません。',
         freeNote: '参加無料 · 参加費なし · Soccerverse アカウント不要',
         newHereLabel: 'はじめての方へ',
         howToCta: '遊び方',

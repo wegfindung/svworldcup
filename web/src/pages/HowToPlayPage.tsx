@@ -77,7 +77,7 @@ const spanishCopy: HowToCopy = {
   eyebrow: 'cómo jugar',
   title: '¿Nuevo por aquí? Todo el juego en cinco pasos.',
   intro:
-    'The Grand Tournament es un juego de fútbol fantasy gratuito para el Mundial 2026. Eliges una plantilla de jugadores reales del torneo, la bloqueas y ganas puntos por lo que esos jugadores hacen realmente en el campo. No necesitas conocer Soccerverse, y no necesitas una cuenta de Soccerverse para participar.',
+    'The Grand Tournament es un juego de fútbol fantasy gratuito para el torneo de 2026. Eliges una plantilla de jugadores reales del torneo, la bloqueas y ganas puntos por lo que esos jugadores hacen realmente en el campo. No necesitas conocer Soccerverse, y no necesitas una cuenta de Soccerverse para participar.',
   freeNote: 'Entrada gratuita · Sin cuota de inscripción · No se requiere cuenta de Soccerverse',
   stepsTitle: 'Cinco pasos para unirte',
   steps: [
@@ -120,7 +120,7 @@ const italianCopy: HowToCopy = {
   eyebrow: 'come si gioca',
   title: 'Nuovo qui? Tutto il gioco in cinque passi.',
   intro:
-    'The Grand Tournament è un gioco di fantacalcio gratuito per il Mondiale 2026. Scegli una rosa di veri giocatori del torneo, la blocchi e guadagni punti da ciò che quei giocatori fanno davvero in campo. Non devi conoscere Soccerverse, e non ti serve un account Soccerverse per partecipare.',
+    'The Grand Tournament è un gioco di fantacalcio gratuito per il torneo del 2026. Scegli una rosa di veri giocatori del torneo, la blocchi e guadagni punti da ciò che quei giocatori fanno davvero in campo. Non devi conoscere Soccerverse, e non ti serve un account Soccerverse per partecipare.',
   freeNote: 'Iscrizione gratuita · Nessuna quota d’ingresso · Nessun account Soccerverse richiesto',
   stepsTitle: 'Cinque passi per partecipare',
   steps: [
@@ -163,7 +163,7 @@ const germanCopy: HowToCopy = {
   eyebrow: 'so wird gespielt',
   title: 'Neu hier? Das ganze Spiel in fünf Schritten.',
   intro:
-    'The Grand Tournament ist ein kostenloses Fantasy-Football-Spiel zur WM 2026. Du stellst einen Kader aus echten Turnierspielern zusammen, fixierst ihn und sammelst Punkte für das, was diese Spieler tatsächlich auf dem Platz leisten. Du musst Soccerverse nicht kennen, und du brauchst kein Soccerverse-Konto, um teilzunehmen.',
+    'The Grand Tournament ist ein kostenloses Fantasy-Football-Spiel zum Turnier 2026. Du stellst einen Kader aus echten Turnierspielern zusammen, fixierst ihn und sammelst Punkte für das, was diese Spieler tatsächlich auf dem Platz leisten. Du musst Soccerverse nicht kennen, und du brauchst kein Soccerverse-Konto, um teilzunehmen.',
   freeNote: 'Kostenlose Teilnahme · Keine Teilnahmegebühr · Kein Soccerverse-Konto erforderlich',
   stepsTitle: 'Fünf Schritte zum Mitmachen',
   steps: [
@@ -206,7 +206,7 @@ const frenchCopy: HowToCopy = {
   eyebrow: 'comment jouer',
   title: 'Nouveau ici ? Tout le jeu en cinq étapes.',
   intro:
-    'The Grand Tournament est un jeu de football fantasy gratuit pour la Coupe du monde 2026. Tu choisis un effectif de vrais joueurs du tournoi, tu le verrouilles et tu gagnes des points selon ce que ces joueurs font réellement sur le terrain. Tu n’as pas besoin de connaître Soccerverse, et tu n’as pas besoin d’un compte Soccerverse pour participer.',
+    'The Grand Tournament est un jeu de football fantasy gratuit pour le tournoi 2026. Tu choisis un effectif de vrais joueurs du tournoi, tu le verrouilles et tu gagnes des points selon ce que ces joueurs font réellement sur le terrain. Tu n’as pas besoin de connaître Soccerverse, et tu n’as pas besoin d’un compte Soccerverse pour participer.',
   freeNote: 'Participation gratuite · Aucun frais d’inscription · Aucun compte Soccerverse requis',
   stepsTitle: 'Cinq étapes pour participer',
   steps: [
@@ -249,7 +249,7 @@ const portugueseCopy: HowToCopy = {
   eyebrow: 'como jogar',
   title: 'Novo por aqui? Todo o jogo em cinco passos.',
   intro:
-    'The Grand Tournament é um jogo de fantasy football gratuito para o Mundial 2026. Escolhes um plantel de jogadores reais do torneio, bloqueia-lo e ganhas pontos pelo que esses jogadores fazem mesmo em campo. Não precisas de conhecer o Soccerverse, e não precisas de uma conta Soccerverse para participar.',
+    'The Grand Tournament é um jogo de fantasy football gratuito para o torneio de 2026. Escolhes um plantel de jogadores reais do torneio, bloqueia-lo e ganhas pontos pelo que esses jogadores fazem mesmo em campo. Não precisas de conhecer o Soccerverse, e não precisas de uma conta Soccerverse para participar.',
   freeNote: 'Entrada gratuita · Sem taxa de inscrição · Não é necessária conta Soccerverse',
   stepsTitle: 'Cinco passos para participar',
   steps: [
@@ -335,7 +335,7 @@ const chineseCopy: HowToCopy = {
   eyebrow: '玩法介绍',
   title: '初次来到？五步了解整个游戏。',
   intro:
-    'The Grand Tournament 是一款面向 2026 世界杯的免费梦幻足球游戏。你挑选一支由真实参赛球员组成的阵容，将其锁定，并根据这些球员在场上的真实表现获得积分。你无需了解 Soccerverse，也无需 Soccerverse 账号即可参加。',
+    'The Grand Tournament 是一款面向 2026 年赛事的免费梦幻足球游戏。你挑选一支由真实参赛球员组成的阵容，将其锁定，并根据这些球员在场上的真实表现获得积分。你无需了解 Soccerverse，也无需 Soccerverse 账号即可参加。',
   freeNote: '免费参加 · 无报名费 · 无需 Soccerverse 账号',
   stepsTitle: '加入的五个步骤',
   steps: [
@@ -378,7 +378,7 @@ const japaneseCopy: HowToCopy = {
   eyebrow: '遊び方',
   title: 'はじめての方へ。ゲームのすべてを5ステップで。',
   intro:
-    'The Grand Tournament は、2026年ワールドカップ向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でスカッドを組み、それをロックして、その選手がピッチで実際に行ったことからポイントを獲得します。Soccerverse を知っている必要はなく、参加に Soccerverse アカウントも必要ありません。',
+    'The Grand Tournament は、2026年の大会向けの無料ファンタジーサッカーゲームです。実際の大会出場選手でスカッドを組み、それをロックして、その選手がピッチで実際に行ったことからポイントを獲得します。Soccerverse を知っている必要はなく、参加に Soccerverse アカウントも必要ありません。',
   freeNote: '参加無料 · 参加費なし · Soccerverse アカウント不要',
   stepsTitle: '参加までの5ステップ',
   steps: [
