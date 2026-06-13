@@ -413,8 +413,10 @@ export function createPublicRouter({
     const currentFixtures = await fixtureRepository.listFixtures()
     const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
     const playersById = new Map<number, TeamPoolPlayer>()
-    const [snapshots] = await Promise.all([
+    const [snapshots, eventControls, participants] = await Promise.all([
       participantInfluenceSnapshotRepository.listAll(),
+      configRepository.getEventControls(),
+      registrationRepository.listForAdmin(),
       Promise.all(
         teamCodes.map(async (teamCode) => {
           for (const player of await teamPoolRepository.listByTeam(teamCode)) {
@@ -423,7 +425,17 @@ export function createPublicRouter({
         }),
       ),
     ])
-    res.json(buildBoostLeaderboard(snapshots, playersById))
+    // Badges name only revealed managers — same reveal gate as the Usage tab.
+    const revealedManagers = new Map<string, { displayName: string; profilePath: string }>()
+    for (const participant of participants) {
+      if (participant.status === 'active' && (participant.revealSquad || eventControls.globalRevealSquads)) {
+        revealedManagers.set(participant.participantId, {
+          displayName: participant.displayName,
+          profilePath: `/profiles/${publicProfileSlug(participant.displayName, participant.participantId)}`,
+        })
+      }
+    }
+    res.json(buildBoostLeaderboard(snapshots, playersById, revealedManagers))
   })
 
   router.get('/nation-participation', async (_req, res) => {

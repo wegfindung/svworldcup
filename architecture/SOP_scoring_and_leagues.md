@@ -225,11 +225,16 @@ buildBoostLeaderboard`, served by `/api/public/boost-leaderboard`).
   holding bought for trading would dwarf the board), count distinct competitors, and sum each competitor's
   capped `bonusPercent` (the effective scoring boost, each ≤10%). Sorted by total shares desc. The cap mirrors
   `bonusPercentFromNet` — keep them in sync (`BOOST_SHARE_CAP`).
-- **Anonymous aggregate**, like Budget Stats — per-player totals only, never a participant id, so it is **not**
-  reveal-gated (it names no squad). It does expose a per-player competitor *count*, but Soccerverse ownership
-  is already public. It covers **all** competitors (Tommy's ask), not just revealed squads.
-- **Display.** Net shares is the headline; manager count and combined bonus % ride along as context. Reuses
-  the player pool for display info (name/team/photo), the same `playersById` resolution as `/player-points`.
+- **Totals are anonymous, badges are reveal-gated.** The per-player totals (net shares, competitor count,
+  combined bonus %) cover **all** competitors with no identity. Each row also carries a `managers` array of
+  **revealed boosters only** (same reveal gate as Usage: `status === 'active' && (revealSquad ||
+  globalRevealSquads)`), sorted biggest-boost-first, for the row's profile-link badges. A non-revealed booster
+  is counted in `managerCount` but never named (naming them would leak one of their hidden picks); the UI shows
+  the named badges plus a "+N" overflow against `managerCount`. Naming a revealed booster leaks nothing new —
+  their pick is already public on Usage.
+- **Display.** Net shares is the headline; competitor count + combined bonus % ride along as context; the
+  badges sit in the third column like Usage. Reuses the player pool for display info (name/team/photo), the
+  same `playersById` resolution as `/player-points`.
 
 ## Stats — Budget Stats
 

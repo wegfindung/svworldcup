@@ -1,4 +1,5 @@
 import type {
+  BoostLeaderboardManager,
   BoostLeaderboardPayload,
   BoostLeaderboardRow,
   ParticipantInfluenceSnapshotRecord,
@@ -22,6 +23,9 @@ const BOOST_SHARE_CAP = 100
 export function buildBoostLeaderboard(
   snapshots: ParticipantInfluenceSnapshotRecord[],
   playersById: Map<number, TeamPoolPlayer>,
+  // Revealed competitors only (participantId → badge). A booster not in this map is counted in managerCount
+  // but never named — naming a non-revealed competitor would leak one of their hidden squad picks.
+  revealedManagers: Map<string, BoostLeaderboardManager> = new Map(),
 ): BoostLeaderboardPayload {
   // Latest snapshot per (participant, player) — most recent capture is the competitor's current boost.
   const latest = new Map<string, ParticipantInfluenceSnapshotRecord>()
@@ -36,7 +40,8 @@ export function buildBoostLeaderboard(
   interface Aggregate {
     totalNetShares: number
     combinedBonusPercent: number
-    managers: Set<string>
+    // One entry per boosting competitor for this player (latest-per-pair guarantees distinct participants).
+    boosters: Array<{ participantId: string; shares: number }>
   }
   const byPlayer = new Map<number, Aggregate>()
   const boostingCompetitors = new Set<string>()
@@ -46,11 +51,12 @@ export function buildBoostLeaderboard(
       continue
     }
     boostingCompetitors.add(snapshot.participantId)
-    const aggregate = byPlayer.get(snapshot.playerId) ?? { totalNetShares: 0, combinedBonusPercent: 0, managers: new Set<string>() }
+    const shares = Math.min(snapshot.netShares, BOOST_SHARE_CAP)
+    const aggregate = byPlayer.get(snapshot.playerId) ?? { totalNetShares: 0, combinedBonusPercent: 0, boosters: [] }
     // Only the boost-contributing shares count toward "boost spent" — capped at the +10% max.
-    aggregate.totalNetShares += Math.min(snapshot.netShares, BOOST_SHARE_CAP)
+    aggregate.totalNetShares += shares
     aggregate.combinedBonusPercent += snapshot.bonusPercent
-    aggregate.managers.add(snapshot.participantId)
+    aggregate.boosters.push({ participantId: snapshot.participantId, shares })
     byPlayer.set(snapshot.playerId, aggregate)
   }
 
@@ -63,6 +69,11 @@ export function buildBoostLeaderboard(
       continue
     }
     totalNetShares += aggregate.totalNetShares
+    // Name only the revealed boosters, biggest boost first; the rest stay anonymous in the count.
+    const managers: BoostLeaderboardManager[] = aggregate.boosters
+      .filter((booster) => revealedManagers.has(booster.participantId))
+      .sort((left, right) => right.shares - left.shares)
+      .map((booster) => revealedManagers.get(booster.participantId)!)
     items.push({
       playerId: player.playerId,
       displayName: player.displayName,
@@ -75,8 +86,9 @@ export function buildBoostLeaderboard(
       positions: player.positions,
       positionClasses: player.positionClasses,
       totalNetShares: aggregate.totalNetShares,
-      managerCount: aggregate.managers.size,
+      managerCount: aggregate.boosters.length,
       combinedBonusPercent: aggregate.combinedBonusPercent,
+      managers,
     })
   }
 

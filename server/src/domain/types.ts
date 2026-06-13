@@ -419,8 +419,16 @@ export interface ParticipantInfluenceSnapshotRecord {
   snapshotAt: string
 }
 
+// A revealed competitor who boosted the player, for the row's badges (reveal-gated, like Usage). Non-revealed
+// boosters are counted in managerCount but never named here.
+export interface BoostLeaderboardManager {
+  displayName: string
+  profilePath: string
+}
+
 // Stats › Boosts — community ownership-boost aggregate per player, summed across all competitors from the
-// frozen per-fixture influence snapshots (latest per competitor-per-player). Anonymous (no participant ids).
+// frozen per-fixture influence snapshots (latest per competitor-per-player). Totals are anonymous; the
+// managers array names only revealed boosters.
 export interface BoostLeaderboardRow {
   playerId: number
   displayName: string
@@ -437,6 +445,7 @@ export interface BoostLeaderboardRow {
   totalNetShares: number
   managerCount: number
   combinedBonusPercent: number
+  managers: BoostLeaderboardManager[]
 }
 
 export interface BoostLeaderboardPayload {

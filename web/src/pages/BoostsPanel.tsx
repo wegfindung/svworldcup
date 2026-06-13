@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
@@ -23,8 +24,11 @@ function roleLabel(player: BoostLeaderboardRow) {
 }
 
 function BoostRow({ player, rank, copy, onSelect }: { player: BoostLeaderboardRow; rank: number; copy: BoostsCopy; onSelect: () => void }) {
+  const previewManagers = player.managers.slice(0, 4)
+  const hiddenManagerCount = Math.max(0, player.managerCount - previewManagers.length)
+
   return (
-    <article className="grid gap-4 rounded-[1rem] border border-white/8 bg-black/18 p-4 transition hover:border-[var(--color-accent)]/28 hover:bg-white/5 lg:grid-cols-[minmax(0,1.4fr)_minmax(11rem,0.7fr)_minmax(9rem,0.5fr)] lg:items-center">
+    <article className="grid gap-4 rounded-[1rem] border border-white/8 bg-black/18 p-4 transition hover:border-[var(--color-accent)]/28 hover:bg-white/5 lg:grid-cols-[minmax(0,1.35fr)_minmax(11rem,0.7fr)_minmax(16rem,1fr)] lg:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span className="mono grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-xs text-[var(--color-muted)]">
           #{rank}
@@ -58,14 +62,28 @@ function BoostRow({ player, rank, copy, onSelect }: { player: BoostLeaderboardRo
         </p>
       </div>
 
-      <div className="flex gap-2 text-[11px] text-[var(--color-muted)]">
-        <span>
-          <span className="font-bold text-white">{player.managerCount}</span> {copy.managersLabel}
-        </span>
-        <span className="text-white/20">|</span>
-        <span>
-          <span className="font-bold text-white">+{formatNumber(player.combinedBonusPercent)}%</span>
-        </span>
+      <div className="min-w-0">
+        <p className="mono mb-2 text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.boostersHeader}</p>
+        {previewManagers.length > 0 || hiddenManagerCount > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {previewManagers.map((manager) => (
+              <Link
+                key={manager.profilePath}
+                to={manager.profilePath}
+                className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:border-[var(--color-accent)]/45 hover:text-[var(--color-accent)]"
+              >
+                {manager.displayName}
+              </Link>
+            ))}
+            {hiddenManagerCount > 0 ? (
+              <span className="rounded-full border border-white/8 px-2.5 py-1 text-[11px] text-[var(--color-muted)]">
+                +{hiddenManagerCount}
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-[11px] text-[var(--color-muted)]">—</p>
+        )}
       </div>
     </article>
   )

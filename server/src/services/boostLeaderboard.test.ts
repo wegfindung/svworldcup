@@ -66,6 +66,26 @@ describe('buildBoostLeaderboard', () => {
     expect(payload.items[0]).toMatchObject({ playerId: 1, totalNetShares: 160, managerCount: 2, combinedBonusPercent: 16 })
   })
 
+  it('names only revealed boosters in the badges, biggest boost first, while counting the rest', () => {
+    const revealed = new Map([
+      ['p1', { displayName: 'Acky', profilePath: '/profiles/acky' }],
+      ['p2', { displayName: 'Bob', profilePath: '/profiles/bob' }],
+      // p3 is deliberately not revealed.
+    ])
+    const payload = buildBoostLeaderboard(
+      [
+        snap('p1', 1, 40, 4, '2026-06-13T10:00:00Z'),
+        snap('p2', 1, 90, 9, '2026-06-13T10:00:00Z'),
+        snap('p3', 1, 100, 10, '2026-06-13T10:00:00Z'),
+      ],
+      pool,
+      revealed,
+    )
+    const row = payload.items[0]
+    expect(row.managerCount).toBe(3) // all three boosters counted
+    expect(row.managers.map((manager) => manager.displayName)).toEqual(['Bob', 'Acky']) // revealed only, by shares desc
+  })
+
   it('keeps only the latest snapshot per competitor-per-player (current standing, not cumulative)', () => {
     const payload = buildBoostLeaderboard(
       [

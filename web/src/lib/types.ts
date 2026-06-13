@@ -543,6 +543,12 @@ export interface PlayerPointsPayload {
   items: PlayerPointsPlayer[]
 }
 
+// A revealed competitor named on a boost row's badges (reveal-gated, like Usage).
+export interface BoostLeaderboardManager {
+  displayName: string
+  profilePath: string
+}
+
 // Stats › Boosts — per-player ownership-boost aggregate across all competitors (see SOP "Stats — Boost Leaderboard").
 export interface BoostLeaderboardRow {
   playerId: number
@@ -558,6 +564,7 @@ export interface BoostLeaderboardRow {
   totalNetShares: number
   managerCount: number
   combinedBonusPercent: number
+  managers: BoostLeaderboardManager[]
 }
 
 export interface BoostLeaderboardPayload {
