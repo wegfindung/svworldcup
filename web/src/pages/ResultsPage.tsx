@@ -79,7 +79,7 @@ const matchDetailPositionAliases: Record<string, string> = {
 }
 
 function playerPositionRank(player: PublicFixturePlayerResult) {
-  const positions = [player.positionMain, ...player.positions].filter((position): position is string => Boolean(position))
+  const positions = player.positionMain ? [player.positionMain] : player.positions
   let bestRank = matchDetailPositionOrder.length
 
   for (const position of positions) {
