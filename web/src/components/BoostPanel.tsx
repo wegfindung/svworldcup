@@ -189,6 +189,8 @@ export function BoostPanel({ copy, locale, showAboutSoccerverse = false }: Boost
         >
           <p>{copy.aboutBody1}</p>
           <p>{copy.aboutBody2}</p>
+          <p>{copy.aboutBody3}</p>
+          <p>{copy.aboutBody4}</p>
         </InfoModal>
       ) : null}
     </div>

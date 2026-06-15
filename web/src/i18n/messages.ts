@@ -498,9 +498,13 @@ const englishMessages = {
       aboutTitle: 'What is Soccerverse?',
       aboutClose: 'Got it',
       aboutBody1:
-        'Soccerverse is an online football game where you can own and trade "influence" in real players and clubs and earn from how they perform. This event is built together with Soccerverse and uses it as its foundation — but you don’t need to play Soccerverse to take part. You can register, build your squad, and compete for prizes without owning a Soccerverse account.',
+        'Soccerverse is an online football management game with a twist: you don’t just manage clubs, you own and trade influence in real players and real clubs. Every player and club you see is backed by genuine football data, and the value of your influence rises and falls with their real-world performances and reputations.',
       aboutBody2:
-        'Prizes are awarded inside Soccerverse, so you need a Soccerverse account to receive your winnings. If you’d rather not keep a prize, you can sell it directly to other Soccerverse users straight away. Linking an account also adds the optional influence boost above on top of your score.',
+        'It’s a living football economy. Goals, transfers, club fortunes, league positions — they all move the market. Hold influence in a striker who tears up the league, and your share grows with him. Spot an undervalued club before it rises, and you’re rewarded for being early.',
+      aboutBody3:
+        'What makes it special is that it’s the only football game that blends genuine ownership with real-world performance. You’re not collecting cards or building a fantasy squad in a vacuum — you’re investing in real footballers and real clubs, and earning from how they actually do.',
+      aboutBody4:
+        'This event is built on Soccerverse as its foundation and is backed by the Soccerverse team, but you don’t need a Soccerverse account to take part. You can register, build your squad, and compete for prizes without owning one. Prizes are paid out inside Soccerverse, so you’ll need an account to receive them — but if you’d rather not stick around, you can sell your winnings directly to other Soccerverse users straight away. Linking your account also unlocks the optional influence boost on top of your score.',
     },
     errors: {
       openBuilder: 'Could not open the protected builder.',
@@ -5408,9 +5412,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: '¿Qué es Soccerverse?',
         aboutClose: 'Entendido',
         aboutBody1:
-          'Soccerverse es un juego de fútbol en línea donde puedes poseer y comerciar "influencia" en jugadores y clubes reales y ganar según su rendimiento. Este evento está creado junto con Soccerverse y lo usa como base, pero no necesitas jugar a Soccerverse para participar. Puedes registrarte, formar tu plantilla y competir por premios sin tener una cuenta de Soccerverse.',
+          'Soccerverse es un juego de gestión de fútbol en línea con un giro: no solo diriges clubes, también posees y comercias influencia en jugadores y clubes reales. Cada jugador y club que ves está respaldado por datos de fútbol auténticos, y el valor de tu influencia sube y baja con sus rendimientos y reputaciones en el mundo real.',
         aboutBody2:
-          'Los premios se otorgan dentro de Soccerverse, así que necesitas una cuenta de Soccerverse para recibir tus ganancias. Si prefieres no quedarte con un premio, puedes venderlo de inmediato directamente a otros usuarios de Soccerverse. Vincular una cuenta también añade a tu puntuación el refuerzo de influencia opcional de arriba.',
+          'Es una economía futbolística viva. Goles, traspasos, la suerte de los clubes, posiciones en la liga: todo mueve el mercado. Si tienes influencia en un delantero que arrasa en la liga, tu participación crece con él. Detecta un club infravalorado antes de que despegue y obtienes recompensa por llegar temprano.',
+        aboutBody3:
+          'Lo que lo hace especial es que es el único juego de fútbol que combina la propiedad genuina con el rendimiento del mundo real. No coleccionas cromos ni montas una plantilla de fantasía en el vacío: inviertes en futbolistas y clubes reales y ganas según cómo les va de verdad.',
+        aboutBody4:
+          'Este evento está construido sobre Soccerverse como base y cuenta con el respaldo del equipo de Soccerverse, pero no necesitas una cuenta de Soccerverse para participar. Puedes registrarte, formar tu plantilla y competir por premios sin tener una. Los premios se pagan dentro de Soccerverse, así que necesitarás una cuenta para recibirlos, pero si prefieres no quedarte, puedes vender tus ganancias de inmediato directamente a otros usuarios de Soccerverse. Vincular tu cuenta también desbloquea el refuerzo de influencia opcional que se suma a tu puntuación.',
       },
     },
     tables: {
@@ -5665,9 +5673,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: 'Cos’è Soccerverse?',
         aboutClose: 'Ho capito',
         aboutBody1:
-          'Soccerverse è un gioco di calcio online in cui puoi possedere e scambiare "influenza" su giocatori e club reali e guadagnare in base al loro rendimento. Questo evento è creato insieme a Soccerverse e lo usa come base, ma non devi giocare a Soccerverse per partecipare. Puoi registrarti, costruire la tua rosa e competere per i premi senza possedere un account Soccerverse.',
+          'Soccerverse è un gioco di management calcistico online con una particolarità: non gestisci soltanto i club, ma possiedi e scambi influenza su giocatori e club reali. Ogni giocatore e club che vedi è basato su dati calcistici autentici, e il valore della tua influenza sale e scende in base ai loro rendimenti e alla loro reputazione nel mondo reale.',
         aboutBody2:
-          'I premi vengono assegnati dentro Soccerverse, quindi ti serve un account Soccerverse per ricevere le tue vincite. Se preferisci non tenere un premio, puoi venderlo subito direttamente ad altri utenti Soccerverse. Collegare un account aggiunge anche al tuo punteggio il bonus influenza opzionale qui sopra.',
+          'È un’economia calcistica viva. Gol, trasferimenti, le fortune dei club, le posizioni in classifica: tutto muove il mercato. Se possiedi influenza su un attaccante che domina il campionato, la tua quota cresce con lui. Individua un club sottovalutato prima che esploda e vieni premiato per esserci arrivato in anticipo.',
+        aboutBody3:
+          'Ciò che lo rende speciale è che è l’unico gioco di calcio che unisce la proprietà autentica al rendimento del mondo reale. Non collezioni figurine né costruisci una rosa fantasy nel vuoto: investi in calciatori e club reali e guadagni in base a come vanno davvero.',
+        aboutBody4:
+          'Questo evento è costruito su Soccerverse come base ed è sostenuto dal team di Soccerverse, ma non ti serve un account Soccerverse per partecipare. Puoi registrarti, costruire la tua rosa e competere per i premi senza possederne uno. I premi vengono pagati dentro Soccerverse, quindi ti servirà un account per riceverli, ma se preferisci non restare puoi vendere le tue vincite subito direttamente ad altri utenti Soccerverse. Collegare il tuo account sblocca anche il bonus influenza opzionale che si aggiunge al tuo punteggio.',
       },
     },
     tables: {
@@ -5922,9 +5934,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: 'Was ist Soccerverse?',
         aboutClose: 'Verstanden',
         aboutBody1:
-          'Soccerverse ist ein Online-Fußballspiel, in dem du "Einfluss" an echten Spielern und Klubs besitzen und handeln und an deren Leistung verdienen kannst. Dieses Event wird gemeinsam mit Soccerverse erstellt und baut darauf auf – aber du musst Soccerverse nicht spielen, um teilzunehmen. Du kannst dich registrieren, deinen Kader zusammenstellen und um Preise mitspielen, ohne ein Soccerverse-Konto zu besitzen.',
+          'Soccerverse ist ein Online-Fußballmanager mit einem Kniff: Du verwaltest nicht nur Klubs, sondern besitzt und handelst Einfluss an echten Spielern und echten Klubs. Jeder Spieler und Klub, den du siehst, basiert auf echten Fußballdaten, und der Wert deines Einflusses steigt und fällt mit ihren Leistungen und ihrem Ruf in der realen Welt.',
         aboutBody2:
-          'Die Preise werden innerhalb von Soccerverse vergeben, daher brauchst du ein Soccerverse-Konto, um deinen Gewinn zu erhalten. Wenn du einen Preis lieber nicht behalten möchtest, kannst du ihn sofort direkt an andere Soccerverse-Nutzer verkaufen. Ein verknüpftes Konto fügt deiner Punktzahl zusätzlich den optionalen Einfluss-Boost von oben hinzu.',
+          'Es ist eine lebendige Fußballwirtschaft. Tore, Transfers, das Schicksal der Klubs, Tabellenplätze – alles bewegt den Markt. Hältst du Einfluss an einem Stürmer, der die Liga aufmischt, wächst dein Anteil mit ihm. Erkenne einen unterbewerteten Klub, bevor er aufsteigt, und du wirst dafür belohnt, früh dabei gewesen zu sein.',
+        aboutBody3:
+          'Das Besondere daran: Es ist das einzige Fußballspiel, das echten Besitz mit realer Leistung verbindet. Du sammelst keine Karten und baust keinen Fantasy-Kader im luftleeren Raum – du investierst in echte Fußballer und echte Klubs und verdienst daran, wie sie tatsächlich abschneiden.',
+        aboutBody4:
+          'Dieses Event baut auf Soccerverse auf und wird vom Soccerverse-Team unterstützt, aber du brauchst kein Soccerverse-Konto, um teilzunehmen. Du kannst dich registrieren, deinen Kader zusammenstellen und um Preise mitspielen, ohne eines zu besitzen. Die Preise werden innerhalb von Soccerverse ausgezahlt, du brauchst also ein Konto, um sie zu erhalten – aber wenn du lieber nicht dabeibleiben möchtest, kannst du deinen Gewinn sofort direkt an andere Soccerverse-Nutzer verkaufen. Ein verknüpftes Konto schaltet außerdem den optionalen Einfluss-Boost frei, der zu deiner Punktzahl hinzukommt.',
       },
     },
     tables: {
@@ -6180,9 +6196,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: 'Qu’est-ce que Soccerverse ?',
         aboutClose: 'Compris',
         aboutBody1:
-          'Soccerverse est un jeu de football en ligne où tu peux posséder et échanger de l’"influence" sur de vrais joueurs et clubs et gagner selon leurs performances. Cet événement est créé avec Soccerverse et s’appuie dessus, mais tu n’as pas besoin de jouer à Soccerverse pour participer. Tu peux t’inscrire, composer ton effectif et concourir pour des prix sans posséder de compte Soccerverse.',
+          'Soccerverse est un jeu de management de football en ligne avec une particularité : tu ne gères pas seulement des clubs, tu possèdes et échanges de l’influence sur de vrais joueurs et de vrais clubs. Chaque joueur et club que tu vois s’appuie sur de vraies données de football, et la valeur de ton influence monte et descend selon leurs performances et leur réputation dans le monde réel.',
         aboutBody2:
-          'Les prix sont attribués au sein de Soccerverse, il te faut donc un compte Soccerverse pour recevoir tes gains. Si tu préfères ne pas garder un prix, tu peux le vendre tout de suite directement à d’autres utilisateurs Soccerverse. Lier un compte ajoute aussi à ton score le bonus d’influence facultatif ci-dessus.',
+          'C’est une économie du football vivante. Les buts, les transferts, le sort des clubs, les classements : tout fait bouger le marché. Détiens de l’influence sur un attaquant qui survole le championnat, et ta part grandit avec lui. Repère un club sous-coté avant qu’il décolle, et tu es récompensé d’avoir misé tôt.',
+        aboutBody3:
+          'Ce qui le rend unique, c’est qu’il est le seul jeu de football à mêler une véritable propriété aux performances du monde réel. Tu ne collectionnes pas des cartes et tu ne montes pas un effectif fantasy dans le vide : tu investis dans de vrais footballeurs et de vrais clubs, et tu gagnes selon leurs résultats réels.',
+        aboutBody4:
+          'Cet événement s’appuie sur Soccerverse comme base et bénéficie du soutien de l’équipe de Soccerverse, mais tu n’as pas besoin d’un compte Soccerverse pour participer. Tu peux t’inscrire, composer ton effectif et concourir pour des prix sans en posséder un. Les prix sont versés au sein de Soccerverse, il te faudra donc un compte pour les recevoir, mais si tu préfères ne pas rester, tu peux vendre tes gains tout de suite directement à d’autres utilisateurs Soccerverse. Lier ton compte débloque aussi le bonus d’influence facultatif qui s’ajoute à ton score.',
       },
     },
     tables: {
@@ -6438,9 +6458,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: 'O que é o Soccerverse?',
         aboutClose: 'Entendido',
         aboutBody1:
-          'O Soccerverse é um jogo de futebol online onde podes possuir e negociar "influência" em jogadores e clubes reais e ganhar com o desempenho deles. Este evento é criado em conjunto com o Soccerverse e usa-o como base — mas não precisas de jogar Soccerverse para participar. Podes registar-te, montar o teu plantel e competir por prémios sem teres uma conta Soccerverse.',
+          'O Soccerverse é um jogo de gestão de futebol online com uma particularidade: não geres apenas clubes, possuis e negoceias influência em jogadores e clubes reais. Cada jogador e clube que vês assenta em dados de futebol autênticos, e o valor da tua influência sobe e desce conforme os seus desempenhos e reputações no mundo real.',
         aboutBody2:
-          'Os prémios são atribuídos dentro do Soccerverse, por isso precisas de uma conta Soccerverse para receber os teus ganhos. Se preferires não ficar com um prémio, podes vendê-lo de imediato diretamente a outros utilizadores do Soccerverse. Associar uma conta também adiciona à tua pontuação o reforço de influência opcional acima.',
+          'É uma economia futebolística viva. Golos, transferências, a sorte dos clubes, posições na liga: tudo move o mercado. Se tens influência num avançado que arrasa na liga, a tua participação cresce com ele. Deteta um clube subvalorizado antes de ele subir e és recompensado por teres chegado cedo.',
+        aboutBody3:
+          'O que o torna especial é que é o único jogo de futebol que combina a propriedade genuína com o desempenho do mundo real. Não colecionas cromos nem montas um plantel de fantasia no vazio: investes em futebolistas e clubes reais e ganhas conforme o que eles realmente fazem.',
+        aboutBody4:
+          'Este evento é construído sobre o Soccerverse como base e conta com o apoio da equipa do Soccerverse, mas não precisas de uma conta Soccerverse para participar. Podes registar-te, montar o teu plantel e competir por prémios sem teres uma. Os prémios são pagos dentro do Soccerverse, por isso vais precisar de uma conta para os receber, mas se preferires não ficar, podes vender os teus ganhos de imediato diretamente a outros utilizadores do Soccerverse. Associar a tua conta também desbloqueia o reforço de influência opcional que se soma à tua pontuação.',
       },
     },
     tables: {
@@ -6695,9 +6719,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: 'Что такое Soccerverse?',
         aboutClose: 'Понятно',
         aboutBody1:
-          'Soccerverse — это онлайн-футбольная игра, где вы можете владеть и торговать «влиянием» в реальных игроках и клубах и зарабатывать на их результатах. Это событие создано вместе с Soccerverse и построено на его основе, но для участия вам не нужно играть в Soccerverse. Вы можете зарегистрироваться, собрать состав и бороться за призы, не имея аккаунта Soccerverse.',
+          'Soccerverse — это онлайн-футбольный менеджер с изюминкой: вы не просто управляете клубами, вы владеете влиянием в реальных игроках и реальных клубах и торгуете им. Каждый игрок и клуб, которых вы видите, основаны на настоящих футбольных данных, а стоимость вашего влияния растёт и падает вместе с их реальными результатами и репутацией.',
         aboutBody2:
-          'Призы выдаются внутри Soccerverse, поэтому для получения выигрыша нужен аккаунт Soccerverse. Если вы не хотите оставлять приз себе, его можно сразу продать напрямую другим пользователям Soccerverse. Привязка аккаунта также добавляет к вашему счёту необязательный бонус влияния, описанный выше.',
+          'Это живая футбольная экономика. Голы, трансферы, судьбы клубов, места в таблице — всё это движет рынком. Держите влияние в нападающем, который рвёт лигу, и ваша доля растёт вместе с ним. Заметьте недооценённый клуб до его взлёта — и вы вознаграждены за то, что были первыми.',
+        aboutBody3:
+          'Особенность игры в том, что это единственная футбольная игра, объединяющая настоящее владение с результатами реального мира. Вы не собираете карточки и не строите фэнтези-состав в вакууме — вы вкладываетесь в реальных футболистов и реальные клубы и зарабатываете на том, как они действительно играют.',
+        aboutBody4:
+          'Это событие построено на основе Soccerverse и поддерживается командой Soccerverse, но для участия вам не нужен аккаунт Soccerverse. Вы можете зарегистрироваться, собрать состав и бороться за призы, не имея его. Призы выплачиваются внутри Soccerverse, поэтому для их получения понадобится аккаунт, но если вы не хотите оставаться, вы можете сразу продать свой выигрыш напрямую другим пользователям Soccerverse. Привязка аккаунта также открывает необязательный бонус влияния, который добавляется к вашему счёту.',
       },
     },
     tables: {
@@ -6949,9 +6977,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: '什么是 Soccerverse？',
         aboutClose: '知道了',
         aboutBody1:
-          'Soccerverse 是一款在线足球游戏，你可以拥有并交易真实球员和俱乐部的"影响力"，并从他们的表现中获利。本活动与 Soccerverse 共同打造并以其为基础——但你无需玩 Soccerverse 即可参加。你可以注册、组建阵容并争夺奖品，无需拥有 Soccerverse 账号。',
+          'Soccerverse 是一款别具一格的在线足球经理游戏：你不只是管理俱乐部，还可以拥有并交易真实球员和真实俱乐部的影响力。你看到的每位球员和俱乐部都以真实的足球数据为依托，你所持影响力的价值会随着他们在现实世界中的表现和声誉而起落。',
         aboutBody2:
-          '奖品在 Soccerverse 内发放，因此你需要一个 Soccerverse 账号来领取奖励。如果你不想保留奖品，可以立即直接卖给其他 Soccerverse 用户。绑定账号还会在你的得分之上额外增加上面提到的可选影响力加成。',
+          '这是一个充满活力的足球经济体。进球、转会、俱乐部的兴衰、联赛排名——一切都在牵动市场。持有一名横扫联赛的前锋的影响力，你的份额便随他水涨船高。在一家被低估的俱乐部崛起之前发现它，你便因抢占先机而获得回报。',
+        aboutBody3:
+          '它的独特之处在于，它是唯一一款将真正的所有权与现实世界表现相结合的足球游戏。你不是在收集卡片，也不是在凭空组建一支幻想阵容——你投资的是真实的球员和真实的俱乐部，并从他们的实际表现中获利。',
+        aboutBody4:
+          '本活动以 Soccerverse 为基础，并得到 Soccerverse 团队的支持，但你无需 Soccerverse 账号即可参加。你可以注册、组建阵容并争夺奖品，无需拥有账号。奖品在 Soccerverse 内发放，因此你需要一个账号来领取；但如果你不想继续留下，也可以立即将奖金直接卖给其他 Soccerverse 用户。绑定账号还会解锁可选的影响力加成，叠加到你的得分之上。',
       },
     },
     tables: {
@@ -7368,9 +7400,13 @@ const translationBackfills: Record<LocaleCode, DeepPartial<AppMessages>> = {
         aboutTitle: 'Soccerverse とは？',
         aboutClose: '了解',
         aboutBody1:
-          'Soccerverse は、実在する選手やクラブの「インフルエンス」を所有・取引し、その活躍に応じて利益を得られるオンラインサッカーゲームです。このイベントは Soccerverse と共同で作られ、それを基盤としていますが、参加するために Soccerverse をプレイする必要はありません。Soccerverse のアカウントがなくても、登録してスカッドを組み、賞品を目指して競えます。',
+          'Soccerverse は一風変わったオンラインサッカーマネジメントゲームです。クラブを運営するだけでなく、実在する選手や実在するクラブの「インフルエンス」を所有・取引できます。表示されるすべての選手とクラブは本物のサッカーデータに裏打ちされており、あなたのインフルエンスの価値は、彼らの現実世界での活躍や評価とともに上下します。',
         aboutBody2:
-          '賞品は Soccerverse 内で授与されるため、賞金を受け取るには Soccerverse のアカウントが必要です。賞品を保有したくない場合は、すぐに他の Soccerverse ユーザーに直接売却できます。アカウントを連携すると、上記の任意のインフルエンスブーストもスコアに加算されます。',
+          'これは生きたサッカー経済です。ゴール、移籍、クラブの浮沈、リーグ順位——そのすべてが市場を動かします。リーグを席巻するストライカーのインフルエンスを保有すれば、あなたの持ち分も彼とともに伸びていきます。過小評価されたクラブが躍進する前に見抜けば、早く動いたことが報われます。',
+        aboutBody3:
+          '特別なのは、本物の所有権と現実世界での活躍を融合させた唯一のサッカーゲームだという点です。カードを集めるのでも、空想のスカッドを真空のなかで組むのでもありません——実在する選手や実在するクラブに投資し、彼らの実際の成績から収益を得ます。',
+        aboutBody4:
+          'このイベントは Soccerverse を基盤としており、Soccerverse チームの支援を受けていますが、参加するために Soccerverse のアカウントは必要ありません。アカウントを持っていなくても、登録してスカッドを組み、賞品を目指して競えます。賞品は Soccerverse 内で支払われるため、受け取るにはアカウントが必要ですが、そのまま続けたくない場合は、賞金をすぐに他の Soccerverse ユーザーに直接売却できます。アカウントを連携すると、スコアに加算される任意のインフルエンスブーストも解放されます。',
       },
       errors: {
         passwordSessionExpired: 'セッションの期限が切れました。再度ログインしてからパスワードを設定してください。',
