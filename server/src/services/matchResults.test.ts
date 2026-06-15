@@ -17,17 +17,23 @@ function player(playerId: number, teamCode: string): TeamPoolPlayer {
   }
 }
 
-function entry(fixtureId: string, playerId: number, goals: number, assists = 0): MatchEntryRecord {
+function entry(
+  fixtureId: string,
+  playerId: number,
+  goals: number,
+  assists = 0,
+  options: { minutes?: number; lineupStatus?: 'starter' | 'substitute' } = {},
+): MatchEntryRecord {
   return {
     entryId: `${fixtureId}-${playerId}`,
     fixtureId,
     playerId,
     inOfficialSquad: true,
-    minutes: 90,
+    minutes: options.minutes ?? 90,
     goals,
     assists,
     cleanSheetEligible: false,
-    lineupStatus: 'starter',
+    lineupStatus: options.lineupStatus ?? 'starter',
     rating: 7,
     sourceNote: 'test',
   }
@@ -141,6 +147,19 @@ describe('buildPublicFixtureResults', () => {
         goals: 1,
       }),
     ])
+  })
+
+  it('derives substitute status for legacy promoted entries that only stored starters', () => {
+    const players = Array.from({ length: 12 }, (_, index) => player(10 + index, 'FRA'))
+    const entries = players.map((seedPlayer, index) =>
+      entry('fixture-1', seedPlayer.playerId, 0, 0, { minutes: index === 0 ? 12 : 90 }),
+    )
+    const results = buildPublicFixtureResults(fixtures, new Map([['FRA', players]]), entries)
+    const homePlayers = (results[0] as any).homePlayers
+
+    expect(homePlayers.filter((result: any) => result.lineupStatus === 'starter')).toHaveLength(11)
+    expect(homePlayers.find((result: any) => result.playerId === 10)).toMatchObject({ lineupStatus: 'substitute' })
+    expect(homePlayers.find((result: any) => result.playerId === 11)).toMatchObject({ lineupStatus: 'starter' })
   })
 })
 

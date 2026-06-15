@@ -73,6 +73,48 @@ function sortPlayerResults(players: PublicFixturePlayerResult[]) {
   )
 }
 
+function buildEffectiveLineupStatusMap(
+  entries: MatchEntryRecord[],
+  playerTeamCodes: Map<number, string>,
+  fixture: FixtureSeed,
+) {
+  const byTeam = new Map<string, Array<{ entry: MatchEntryRecord; index: number }>>()
+
+  entries.forEach((entry, index) => {
+    const teamCode = playerTeamCodes.get(entry.playerId)
+    if (teamCode !== fixture.homeTeamCode && teamCode !== fixture.awayTeamCode) {
+      return
+    }
+    const teamEntries = byTeam.get(teamCode) ?? []
+    teamEntries.push({ entry, index })
+    byTeam.set(teamCode, teamEntries)
+  })
+
+  const statuses = new Map<string, LineupStatus>()
+  for (const teamEntries of byTeam.values()) {
+    const starterCount = teamEntries.filter(({ entry }) => entry.lineupStatus === 'starter').length
+    const hasSubstitutes = teamEntries.some(({ entry }) => entry.lineupStatus === 'substitute')
+
+    if (teamEntries.length > 11 && starterCount > 11 && !hasSubstitutes) {
+      const starterEntryIds = new Set(
+        [...teamEntries]
+          .sort((left, right) => right.entry.minutes - left.entry.minutes || left.index - right.index)
+          .slice(0, 11)
+          .map(({ entry }) => entry.entryId),
+      )
+      for (const { entry } of teamEntries) {
+        statuses.set(entry.entryId, starterEntryIds.has(entry.entryId) ? 'starter' : 'substitute')
+      }
+    } else {
+      for (const { entry } of teamEntries) {
+        statuses.set(entry.entryId, entry.lineupStatus)
+      }
+    }
+  }
+
+  return statuses
+}
+
 export function buildPublicFixtureResults(
   fixtures: FixtureSeed[],
   playersByTeam: Map<string, TeamPoolPlayer[]>,
@@ -103,6 +145,7 @@ export function buildPublicFixtureResults(
 
   return fixtures.map((fixture) => {
     const fixtureEntries = entriesByFixture.get(fixture.fixtureId) ?? []
+    const lineupStatuses = buildEffectiveLineupStatusMap(fixtureEntries, playerTeamCodes, fixture)
     const goalsByTeam = new Map<string, number>([
       [fixture.homeTeamCode, 0],
       [fixture.awayTeamCode, 0],
@@ -137,7 +180,7 @@ export function buildPublicFixtureResults(
         goals: entry.goals,
         assists: entry.assists,
         cleanSheetEligible: entry.cleanSheetEligible,
-        lineupStatus: entry.lineupStatus,
+        lineupStatus: lineupStatuses.get(entry.entryId) ?? entry.lineupStatus,
         rating: entry.rating,
         sourceNote: entry.sourceNote,
         positions,
