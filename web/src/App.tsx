@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { LocaleRail } from './components/LocaleRail'
@@ -78,9 +78,23 @@ function App() {
   })
 
   const [participantReady, setParticipantReady] = useState(() => readParticipantReady())
+  const importantMenuRef = useRef<HTMLDetailsElement>(null)
 
   // Keep the nav in sync with same-tab login/logout (App never unmounts on SPA navigation).
   useEffect(() => subscribeParticipantReady(() => setParticipantReady(readParticipantReady())), [])
+
+  // Native <details> only toggles on its own summary, so the guide dropdown would stay open after a click
+  // elsewhere on the page. Close it on any outside pointer press so it behaves like a normal menu.
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      const menu = importantMenuRef.current
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) {
+        menu.removeAttribute('open')
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem('svworldcup-locale', locale)
@@ -166,7 +180,7 @@ function App() {
                     </NavLink>
                   ))}
 
-                  <details className="nav-disclosure group relative">
+                  <details ref={importantMenuRef} className="nav-disclosure group relative">
                     <summary
                       className={[
                         'flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.12em]',
