@@ -412,6 +412,7 @@ export interface MatchEntryInput {
   goals: number
   assists: number
   cleanSheetEligible: boolean
+  lineupStatus?: LineupStatus
   performancePoints?: number
   // D19: rating is a raw captured fact; performance_points derivation from it is parked.
   rating?: number
@@ -420,6 +421,7 @@ export interface MatchEntryInput {
 
 export interface MatchEntryRecord extends MatchEntryInput {
   entryId: string
+  lineupStatus: LineupStatus
 }
 
 export interface ParticipantInfluenceSnapshotRecord {

@@ -464,6 +464,7 @@ export class MemoryScoringRepository implements ScoringRepository {
       goals: input.goals,
       assists: input.assists,
       cleanSheetEligible: input.cleanSheetEligible,
+      lineupStatus: input.lineupStatus ?? 'starter',
       performancePoints: input.performancePoints,
       rating: input.rating,
       sourceNote: input.sourceNote ?? 'manual admin entry',
@@ -630,15 +631,16 @@ export class PostgresScoringRepository implements ScoringRepository {
       goals: number
       assists: number
       clean_sheet_eligible: boolean
+      lineup_status: 'starter' | 'substitute'
       performance_points: string | null
       rating: string | null
       source_note: string
     }>(
       `
         INSERT INTO admin_match_entries (
-          fixture_id, player_id, in_official_squad, minutes, goals, assists, clean_sheet_eligible, performance_points, rating, source_note
+          fixture_id, player_id, in_official_squad, minutes, goals, assists, clean_sheet_eligible, lineup_status, performance_points, rating, source_note
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 'manual admin entry'))
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, 'manual admin entry'))
         ON CONFLICT (fixture_id, player_id)
         DO UPDATE SET
           in_official_squad = EXCLUDED.in_official_squad,
@@ -646,10 +648,11 @@ export class PostgresScoringRepository implements ScoringRepository {
           goals = EXCLUDED.goals,
           assists = EXCLUDED.assists,
           clean_sheet_eligible = EXCLUDED.clean_sheet_eligible,
+          lineup_status = EXCLUDED.lineup_status,
           performance_points = EXCLUDED.performance_points,
           rating = EXCLUDED.rating,
           source_note = EXCLUDED.source_note
-        RETURNING entry_id, fixture_id, player_id, in_official_squad, minutes, goals, assists, clean_sheet_eligible, performance_points, rating, source_note
+        RETURNING entry_id, fixture_id, player_id, in_official_squad, minutes, goals, assists, clean_sheet_eligible, lineup_status, performance_points, rating, source_note
       `,
       [
         input.fixtureId,
@@ -659,6 +662,7 @@ export class PostgresScoringRepository implements ScoringRepository {
         input.goals,
         input.assists,
         input.cleanSheetEligible,
+        input.lineupStatus ?? 'starter',
         input.performancePoints ?? null,
         input.rating ?? null,
         input.sourceNote ?? null,
@@ -685,12 +689,13 @@ export class PostgresScoringRepository implements ScoringRepository {
       goals: number
       assists: number
       clean_sheet_eligible: boolean
+      lineup_status: 'starter' | 'substitute'
       performance_points: string | null
       rating: string | null
       source_note: string
     }>(
       `
-        SELECT entry_id, fixture_id, player_id, in_official_squad, minutes, goals, assists, clean_sheet_eligible, performance_points, rating, source_note
+        SELECT entry_id, fixture_id, player_id, in_official_squad, minutes, goals, assists, clean_sheet_eligible, lineup_status, performance_points, rating, source_note
         FROM admin_match_entries
         WHERE ($1::text IS NULL OR fixture_id = $1)
         ORDER BY fixture_id, player_id
@@ -946,6 +951,7 @@ function mapEntryRow(row: {
   goals: number
   assists: number
   clean_sheet_eligible: boolean
+  lineup_status: 'starter' | 'substitute'
   performance_points: string | null
   rating: string | null
   source_note: string
@@ -959,6 +965,7 @@ function mapEntryRow(row: {
     goals: row.goals,
     assists: row.assists,
     cleanSheetEligible: row.clean_sheet_eligible,
+    lineupStatus: row.lineup_status,
     performancePoints: row.performance_points === null ? undefined : Number(row.performance_points),
     rating: row.rating === null ? undefined : Number(row.rating),
     sourceNote: row.source_note,

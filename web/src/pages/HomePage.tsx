@@ -573,6 +573,8 @@ function SoccerverseExplainerCard({ copy }: { copy: AppMessages['builder']['boos
       <InfoModal open={open} title={copy.aboutTitle} closeLabel={copy.aboutClose} onClose={() => setOpen(false)}>
         <p>{copy.aboutBody1}</p>
         <p>{copy.aboutBody2}</p>
+        <p>{copy.aboutBody3}</p>
+        <p>{copy.aboutBody4}</p>
       </InfoModal>
     </>
   )

@@ -50,6 +50,7 @@ export async function promoteBatchIfReady(
           goals: row.goals,
           assists: row.assists,
           cleanSheetEligible: row.cleanSheetEligible,
+          lineupStatus: row.lineupStatus,
           rating: row.rating,
           sourceNote: 'imported match data',
         },

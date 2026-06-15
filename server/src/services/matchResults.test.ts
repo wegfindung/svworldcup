@@ -27,6 +27,7 @@ function entry(fixtureId: string, playerId: number, goals: number, assists = 0):
     goals,
     assists,
     cleanSheetEligible: false,
+    lineupStatus: 'starter',
     rating: 7,
     sourceNote: 'test',
   }
@@ -121,6 +122,7 @@ describe('buildPublicFixtureResults', () => {
         goals: 2,
         assists: 1,
         minutes: 90,
+        lineupStatus: 'starter',
         rating: 7,
       }),
       expect.objectContaining({
@@ -172,6 +174,7 @@ function csEntry(playerId: number, cleanSheetEligible: boolean): MatchEntryRecor
     goals: 0,
     assists: 0,
     cleanSheetEligible,
+    lineupStatus: 'starter',
     rating: 6, // performance curve anchor (6.0 -> 0.5)
     sourceNote: 'test',
   }

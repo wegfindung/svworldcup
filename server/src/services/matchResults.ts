@@ -3,6 +3,7 @@ import { cleanSheetPointsForClass, scoreEntryComponents } from '../lib/matchScor
 import type {
   FixtureScoreOverrides,
   FixtureSeed,
+  LineupStatus,
   MatchEntryRecord,
   ScoringConfig,
   SlotClass,
@@ -40,6 +41,7 @@ export interface PublicFixturePlayerResult {
   goals: number
   assists: number
   cleanSheetEligible: boolean
+  lineupStatus: LineupStatus
   rating?: number
   sourceNote?: string
   // Soccerverse position codes + primary, for the player card.
@@ -135,6 +137,7 @@ export function buildPublicFixtureResults(
         goals: entry.goals,
         assists: entry.assists,
         cleanSheetEligible: entry.cleanSheetEligible,
+        lineupStatus: entry.lineupStatus,
         rating: entry.rating,
         sourceNote: entry.sourceNote,
         positions,

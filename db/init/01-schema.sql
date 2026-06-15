@@ -202,6 +202,7 @@ CREATE TABLE IF NOT EXISTS admin_match_entries (
     goals INTEGER NOT NULL CHECK (goals >= 0),
     assists INTEGER NOT NULL CHECK (assists >= 0),
     clean_sheet_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    lineup_status TEXT NOT NULL DEFAULT 'starter' CHECK (lineup_status IN ('starter', 'substitute')),
     performance_points NUMERIC(3,1),
     rating NUMERIC(3,1),
     source_note TEXT NOT NULL DEFAULT 'manual admin entry',
@@ -209,6 +210,7 @@ CREATE TABLE IF NOT EXISTS admin_match_entries (
 );
 
 ALTER TABLE admin_match_entries ADD COLUMN IF NOT EXISTS rating NUMERIC(3,1);
+ALTER TABLE admin_match_entries ADD COLUMN IF NOT EXISTS lineup_status TEXT NOT NULL DEFAULT 'starter' CHECK (lineup_status IN ('starter', 'substitute'));
 
 CREATE TABLE IF NOT EXISTS participant_influence_snapshot (
     participant_id UUID NOT NULL REFERENCES participants(participant_id) ON DELETE CASCADE,

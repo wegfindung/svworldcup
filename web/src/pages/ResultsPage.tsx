@@ -68,6 +68,47 @@ function formatPlayerList(players: PublicFixturePlayerResult[], stat: 'goals' | 
     .join(', ')
 }
 
+const matchDetailPositionOrder = ['GK', 'RB', 'CB', 'LB', 'DML', 'DMC', 'DMR', 'LM', 'CM', 'RM', 'AM', 'AML', 'AMR', 'FL', 'FC', 'FR']
+const matchDetailPositionRank = new Map(matchDetailPositionOrder.map((position, index) => [position, index]))
+const matchDetailPositionAliases: Record<string, string> = {
+  AMC: 'AM',
+  DM: 'DMC',
+  LWB: 'LB',
+  RWB: 'RB',
+  ST: 'FC',
+}
+
+function playerPositionRank(player: PublicFixturePlayerResult) {
+  const positions = [player.positionMain, ...player.positions].filter((position): position is string => Boolean(position))
+  let bestRank = matchDetailPositionOrder.length
+
+  for (const position of positions) {
+    const normalized = position.trim().toUpperCase()
+    const canonical = matchDetailPositionAliases[normalized] ?? normalized
+    const rank = matchDetailPositionRank.get(canonical)
+    if (rank !== undefined && rank < bestRank) {
+      bestRank = rank
+    }
+  }
+
+  return bestRank
+}
+
+function sortMatchDetailPlayers(players: PublicFixturePlayerResult[]) {
+  return [...players].sort((left, right) => {
+    const leftLineupRank = left.lineupStatus === 'starter' ? 0 : 1
+    const rightLineupRank = right.lineupStatus === 'starter' ? 0 : 1
+
+    return (
+      leftLineupRank - rightLineupRank ||
+      playerPositionRank(left) - playerPositionRank(right) ||
+      right.minutes - left.minutes ||
+      (right.rating ?? 0) - (left.rating ?? 0) ||
+      left.displayName.localeCompare(right.displayName)
+    )
+  })
+}
+
 // Goals in the displayed scoreline that no listed player accounts for — an own goal, or a scorer
 // not in any national pool (their row is skipped at import). The scoreline comes from the official
 // override (SOP "Official Scoreline Override"); the player goals are the credited ones. Never negative.
@@ -346,6 +387,8 @@ function PlayerDetailRow({ copy, factorCopy, player }: { copy: ResultsCopy; fact
 }
 
 function TeamPlayerDetails({ copy, factorCopy, title, teamCode, players }: { copy: ResultsCopy; factorCopy: FactorCopy; title: string; teamCode: string; players: PublicFixturePlayerResult[] }) {
+  const sortedPlayers = useMemo(() => sortMatchDetailPlayers(players), [players])
+
   return (
     <div className="min-w-0">
       <div className="mb-3 flex items-center gap-2">
@@ -353,8 +396,8 @@ function TeamPlayerDetails({ copy, factorCopy, title, teamCode, players }: { cop
         <p className="truncate text-sm font-bold text-white">{title}</p>
       </div>
       <div className="grid gap-1.5">
-        {players.length ? (
-          players.map((player) => <PlayerDetailRow key={player.playerId} copy={copy} factorCopy={factorCopy} player={player} />)
+        {sortedPlayers.length ? (
+          sortedPlayers.map((player) => <PlayerDetailRow key={player.playerId} copy={copy} factorCopy={factorCopy} player={player} />)
         ) : (
           <p className="rounded-[0.85rem] border border-white/6 bg-black/20 px-3.5 py-3 text-xs text-[var(--color-muted)]">
             {copy.noStats}

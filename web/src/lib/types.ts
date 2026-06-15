@@ -46,6 +46,7 @@ export interface PublicFixturePlayerResult {
   goals: number
   assists: number
   cleanSheetEligible: boolean
+  lineupStatus: LineupStatus
   rating?: number
   sourceNote?: string
   positions: string[]
