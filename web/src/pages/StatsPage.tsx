@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { BackToTopButton } from '../components/BackToTopButton'
 import { getMessages } from '../i18n/messages'
 import type { LocaleCode } from '../lib/types'
 import { BestXIPanel } from './BestXIPanel'
@@ -69,6 +70,10 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
       ) : (
         <BudgetStatsPanel locale={locale} />
       )}
+
+      {/* One viewport-fixed control covers every tab, sub-tab and paginated page since they all window-scroll.
+          Reuses the shared label already translated under `tables` (same generic "Back to top" string). */}
+      <BackToTopButton label={messages.tables.backToTop} />
     </div>
   )
 }
