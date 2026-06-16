@@ -40,6 +40,36 @@ export function aggregateNationPools(payload: PublicSquadUsagePayload | null): N
     )
 }
 
+export interface NationPoolPlayer {
+  player: PublicSquadUsagePlayer
+  picks: number
+  // Player's picks ÷ the nation's total picks (0..1); summed across the nation's players ≈ 1.
+  shareOfNation: number
+}
+
+export interface NationPoolDetail {
+  totalPicks: number
+  players: NationPoolPlayer[]
+}
+
+// Every player picked from one nation's pool, ranked by pick count, each with its share of that nation's
+// total picks. Feeds the Nation pools drill-down modal.
+export function playersForNationPool(payload: PublicSquadUsagePayload | null, teamCode: string | null): NationPoolDetail {
+  if (!teamCode) {
+    return { totalPicks: 0, players: [] }
+  }
+  const nationPlayers = (payload?.items ?? []).filter((player) => player.teamCode === teamCode)
+  const totalPicks = nationPlayers.reduce((sum, player) => sum + player.usageCount, 0)
+  const players = nationPlayers
+    .map((player) => ({
+      player,
+      picks: player.usageCount,
+      shareOfNation: totalPicks > 0 ? player.usageCount / totalPicks : 0,
+    }))
+    .sort((left, right) => right.picks - left.picks || left.player.displayName.localeCompare(right.player.displayName))
+  return { totalPicks, players }
+}
+
 // --- Tab B: Allegiance (a Nation-League nation's managers → players they picked) ---
 
 export interface ManagerNation {

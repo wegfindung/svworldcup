@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   aggregateNationPools,
   nationByParticipantFromRows,
+  playersForNationPool,
   playersForRepresentedNation,
   representedNationOptions,
 } from './nationUsage'
@@ -100,6 +101,27 @@ describe('aggregateNationPools', () => {
 
   it('returns an empty list for a null payload', () => {
     expect(aggregateNationPools(null)).toEqual([])
+  })
+})
+
+describe('playersForNationPool', () => {
+  it('lists one nation’s players by picks, each as a share of that nation’s total picks', () => {
+    const data = payload([
+      player(1, 'BRA', [manager('a'), manager('b'), manager('c')], { usageCount: 3 }),
+      player(2, 'BRA', [manager('a')], { usageCount: 1 }),
+      player(3, 'ARG', [manager('b'), manager('c')], { usageCount: 2 }),
+    ])
+    const detail = playersForNationPool(data, 'BRA')
+    expect(detail.totalPicks).toBe(4)
+    expect(detail.players.map((entry) => entry.player.playerId)).toEqual([1, 2])
+    expect(detail.players[0].shareOfNation).toBeCloseTo(3 / 4, 5)
+    expect(detail.players[1].shareOfNation).toBeCloseTo(1 / 4, 5)
+    // Shares within a nation sum to 1.
+    expect(detail.players.reduce((sum, entry) => sum + entry.shareOfNation, 0)).toBeCloseTo(1, 5)
+  })
+
+  it('returns nothing when no nation is selected', () => {
+    expect(playersForNationPool(payload([]), null)).toEqual({ totalPicks: 0, players: [] })
   })
 })
 
