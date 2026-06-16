@@ -5,6 +5,7 @@ import { EmptyState } from '../components/EmptyState'
 import { InfoModal } from '../components/InfoModal'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { SquadNudge } from '../components/SquadNudge'
 import { SwapPanel } from '../components/SwapPanel'
@@ -15,6 +16,7 @@ import { getNationName, soccerverseNations } from '../data/soccerverseNations'
 import { useBootstrap } from '../hooks/useBootstrap'
 import { hasRegistrationClosed, resolveRegistrationCloseEpoch } from '../lib/competitionWindow'
 import { resolveSquadNudgeStatus } from '../lib/squadNudgeStatus'
+import { toPlayerSeed, type PlayerStatsSeed } from '../lib/playerStatsSeed'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import {
   ApiError,
@@ -217,6 +219,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
   const [teamPlayers, setTeamPlayers] = useState<TeamPoolPlayer[]>([])
   const [teamPlayersLoading, setTeamPlayersLoading] = useState(false)
   const [selectedSlotKey, setSelectedSlotKey] = useState<string | null>(null)
+  const [modalSeed, setModalSeed] = useState<PlayerStatsSeed | null>(null)
   const [playerSearch, setPlayerSearch] = useState('')
   const [builderError, setBuilderError] = useState<string | null>(null)
   const [publicProfileUrl, setPublicProfileUrl] = useState<string | null>(null)
@@ -800,7 +803,15 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
       <button
         key={slot.key}
         type="button"
-        onClick={() => setSelectedSlotKey(slot.key)}
+        onClick={() => {
+          // While editable, a slot click selects it for drafting. Once locked + the competition has started
+          // (a finished squad, only changed via swap windows), clicking a filled slot opens the player modal.
+          if (canEditSquad) {
+            setSelectedSlotKey(slot.key)
+          } else if (slot.player) {
+            setModalSeed(toPlayerSeed(slot.player))
+          }
+        }}
         style={{ animationDelay: `${index * 45}ms` }}
         className={[
           'pitch-slot-card reveal-in',
@@ -1915,6 +1926,11 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                                 ],
                               }}
                             >
+                              <button
+                                type="button"
+                                onClick={() => setModalSeed(toPlayerSeed(player))}
+                                className="flex min-w-0 items-center gap-3 text-left"
+                              >
                               <PlayerPortrait
                                 src={player.imageUrl}
                                 alt={player.displayName}
@@ -1948,6 +1964,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
                                   ))}
                                 </div>
                               </div>
+                              </button>
                             </PlayerTooltip>
 
                             <div className="flex min-w-0 flex-wrap gap-1.5 xl:justify-end">
@@ -2167,6 +2184,8 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
           </div>
         </section>
       ) : null}
+
+      {modalSeed ? <PlayerStatsModal seed={modalSeed} locale={locale} onClose={() => setModalSeed(null)} /> : null}
     </div>
   )
 }
