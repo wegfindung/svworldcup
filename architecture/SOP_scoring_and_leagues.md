@@ -276,6 +276,65 @@ Budget Multiplier"). One payload feeds two tables — both read the same per-tie
   (`getCachedRows`); `budgetLimit` is carried on each row so the grouping needs no second query or scoring
   pass.
 
+## Stats — Nation Pools
+
+The **Nation pools** tab (`/stats/nation-pools`, first of the two nation tabs) ranks the **tournament
+nations** by how many times their players were picked. Pure client-side off `/squad-usage` — no server or DB
+change (`web/src/lib/nationUsage.ts → aggregateNationPools`).
+
+- **Aggregation.** Group the revealed-squad `items` (`PublicSquadUsagePlayer`) by `teamCode` (the player's
+  Grand-Tournament nation, the 48 WC team codes in `eventConfig`), sum `usageCount` for **Picks**, count the
+  distinct players for **Players**, and compute **Share** = a nation's picks ÷ the total picks across all
+  nations. Sorted by picks descending. Display name resolves via `eventTeams` (`nameEn`), falling back to the
+  code.
+- **Column dividers.** The table draws **vertical divider lines between the columns** (Nation │ Picks │
+  Players │ Share). Without them the right-hand numeric columns read as one boost-style value; the rules
+  are purely a layout aid, no data meaning.
+
+## Stats — By Represented Nation
+
+The **Allegiance** tab (`/stats/by-nation`, second nation tab) answers "which players did the managers from a
+given nation pick most?" Pick a **Nation-League nation** (the registration nation set — Soccerverse ISO
+codes, `data/soccerverseNations.ts`) and the rows rank players by how many of that nation's managers drafted
+them.
+
+- **A manager counts on primary OR secondary nation.** Each manager registered a primary and (optionally) a
+  secondary nation; a manager is "from" a nation if either matches. `share` on a row = the player's distinct
+  pickers from that nation ÷ that nation's total manager count.
+- **Manager→nation join is client-side (zero server).** `/squad-usage` `managers[]` does **not** carry the
+  manager's nation. Rather than add a server field, the panel fetches the rookie + veteran leaderboards
+  (`ParticipantScoreRow` already carries `participantId` + `primaryTeamCode` + `secondaryTeamCode`) and builds
+  a `participantId → { primaryTeamCode, secondaryTeamCode }` map in the browser, then joins it against
+  `managers[].participantId`. No `/squad-usage` payload change, no migration. (Coverage note: usage only shows
+  locked, revealed squads, and every locked squad is on a league board, so the join is effectively complete.)
+- **Default nation derived in render.** The selector is the existing `NationSelect` combobox (searchable,
+  flags), fed the data-derived nations sorted most-represented first (`representedNationOptions`). The active
+  nation is `selected ?? options[0]?.code` computed **during render** — never `useEffect`+`setState` (trips
+  `react-hooks/set-state-in-effect`).
+- **Helpers + display.** `representedNationOptions` and `playersForRepresentedNation` live in
+  `web/src/lib/nationUsage.ts` (pure, unit-tested). Rows reuse the Usage row styling; clicking a player opens
+  the cross-page `PlayerStatsModal`.
+
+## Player Stats Modal (cross-page)
+
+`PlayerStatsModal` (`web/src/components/PlayerStatsModal.tsx`, seeded via `lib/playerStatsSeed.ts →
+toPlayerSeed`) is the reusable player card — Soccerverse rating/value + tournament totals + a profile link —
+opened by **clicking** a player's name/photo.
+
+- **Hover and click coexist.** The hover `PlayerTooltip` stays everywhere (quick peek); the click modal is the
+  deep dive. Precedent: the Usage rows already run both (the tooltip wraps a `<button onClick>` and is
+  `pointer-events:none`, so it never blocks the click).
+- **Surfaces.** Stats Usage / Points / Leaders / Value / Allegiance rows and the landing spotlight (existing),
+  plus the **Builder** scout/pool card and the **Builder pitch slot** and the **Tables** score rows (added
+  with the nation tabs).
+- **Builder pitch gating.** A pitch slot's click is gated on `canEditSquad` (`= !squad.isLocked ||
+  !competitionStarted`). While editable, clicking a slot selects it for drafting (unchanged). Once the squad
+  is locked **and** the competition has started (a finished squad, only changed via swap windows), clicking a
+  filled slot opens the modal instead. `SwapPanel` is independent of the pitch selection and is untouched.
+- **Tables seed is identity-only.** A Tables score row's `rating` is the **per-match** rating, not the
+  Soccerverse rating, so the modal is seeded with identity only (`playerId`, `displayName`, `teamCode`,
+  `imageUrl`) and fetches SV rating/value/totals itself from `/player-points`.
+
 ## Leaderboard Read Cache
 
 Public leaderboard reads (`/leaderboards/rookie|veteran|nations`) and `/profiles/:slug` are served

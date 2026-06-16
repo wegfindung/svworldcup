@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BackToTopButton } from '../components/BackToTopButton'
 import { EmptyState } from '../components/EmptyState'
+import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { SquadPitchModal } from '../components/SquadPitchModal'
 import { TeamFlag } from '../components/TeamFlag'
@@ -9,6 +10,7 @@ import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
 import { computeNationPayouts, type NationPayout } from '../lib/nationPayouts'
+import type { PlayerStatsSeed } from '../lib/playerStatsSeed'
 import { publicProfileSlug } from '../lib/profileSlug'
 import type {
   FixtureSeed,
@@ -220,7 +222,15 @@ function DetailStat({ label, value }: { label: string; value: number }) {
   )
 }
 
-function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: ParticipantScorePlayerDetail }) {
+function PlayerScoreDetail({
+  copy,
+  player,
+  onSelectPlayer,
+}: {
+  copy: TablesCopy
+  player: ParticipantScorePlayerDetail
+  onSelectPlayer: (seed: PlayerStatsSeed) => void
+}) {
   const ratingColor = player.rating !== undefined
     ? player.rating >= 7.0 
       ? 'text-[var(--color-sand)] border-[var(--color-sand)]/20 bg-[var(--color-sand)]/5' 
@@ -246,6 +256,18 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
           ],
         }}
       >
+        <button
+          type="button"
+          onClick={() =>
+            onSelectPlayer({
+              playerId: player.playerId,
+              displayName: player.displayName,
+              teamCode: player.teamCode,
+              imageUrl: player.imageUrl,
+            })
+          }
+          className="flex items-center gap-3 min-w-0 text-left"
+        >
         <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5 relative">
           {player.imageUrl ? (
             <img
@@ -283,8 +305,9 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
             )}
           </p>
         </div>
+        </button>
       </PlayerTooltip>
-      
+
       <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
         <DetailStat label={copy.breakdown.goals} value={player.goalPoints} />
         <DetailStat label={copy.breakdown.assists} value={player.assistPoints} />
@@ -300,7 +323,17 @@ function PlayerScoreDetail({ copy, player }: { copy: TablesCopy; player: Partici
   )
 }
 
-function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy; fixture: ParticipantScoreFixtureDetail; fixtureLookup: Map<string, FixtureSeed> }) {
+function FixtureScoreDetail({
+  copy,
+  fixture,
+  fixtureLookup,
+  onSelectPlayer,
+}: {
+  copy: TablesCopy
+  fixture: ParticipantScoreFixtureDetail
+  fixtureLookup: Map<string, FixtureSeed>
+  onSelectPlayer: (seed: PlayerStatsSeed) => void
+}) {
   const result = fixtureLookup.get(fixture.fixtureId)
   return (
     <div className="rounded-[0.85rem] border border-white/6 bg-black/20 p-3.5 hover:border-white/12 transition duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
@@ -314,7 +347,12 @@ function FixtureScoreDetail({ copy, fixture, fixtureLookup }: { copy: TablesCopy
       </div>
       <div className="grid gap-2">
         {(fixture.players ?? []).map((player) => (
-          <PlayerScoreDetail key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`} copy={copy} player={player} />
+          <PlayerScoreDetail
+            key={`${fixture.fixtureId}-${player.slotKey}-${player.playerId}`}
+            copy={copy}
+            player={player}
+            onSelectPlayer={onSelectPlayer}
+          />
         ))}
       </div>
     </div>
@@ -328,6 +366,7 @@ function ParticipantTable({
   searchTerm,
   fixtureLookup,
   onOpenSquad,
+  onSelectPlayer,
 }: {
   copy: TablesCopy
   title: string
@@ -335,6 +374,7 @@ function ParticipantTable({
   searchTerm: string
   fixtureLookup: Map<string, FixtureSeed>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
+  onSelectPlayer: (seed: PlayerStatsSeed) => void
 }) {
   const [openParticipantIds, setOpenParticipantIds] = useState<Set<string>>(new Set())
   const normalizedSearch = normalizeSearchTerm(searchTerm)
@@ -442,7 +482,7 @@ function ParticipantTable({
                   {isOpen ? (
                     <div className="mt-4 grid gap-3 border-t border-white/8 pt-4">
                       {row.fixtures.map((fixture) => (
-                        <FixtureScoreDetail key={fixture.fixtureId} copy={copy} fixture={fixture} fixtureLookup={fixtureLookup} />
+                        <FixtureScoreDetail key={fixture.fixtureId} copy={copy} fixture={fixture} fixtureLookup={fixtureLookup} onSelectPlayer={onSelectPlayer} />
                       ))}
                     </div>
                   ) : null}
@@ -687,6 +727,7 @@ function ParticipantBoardSection({
   searchTerm,
   fixtureLookup,
   onOpenSquad,
+  onSelectPlayer,
 }: {
   copy: TablesCopy
   title: string
@@ -694,9 +735,20 @@ function ParticipantBoardSection({
   searchTerm: string
   fixtureLookup: Map<string, FixtureSeed>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
+  onSelectPlayer: (seed: PlayerStatsSeed) => void
 }) {
   if (board.rows) {
-    return <ParticipantTable copy={copy} title={title} rows={board.rows} searchTerm={searchTerm} fixtureLookup={fixtureLookup} onOpenSquad={onOpenSquad} />
+    return (
+      <ParticipantTable
+        copy={copy}
+        title={title}
+        rows={board.rows}
+        searchTerm={searchTerm}
+        fixtureLookup={fixtureLookup}
+        onOpenSquad={onOpenSquad}
+        onSelectPlayer={onSelectPlayer}
+      />
+    )
   }
   if (board.error) {
     const error = boardErrorCopy(copy, board.error)
@@ -765,6 +817,7 @@ export function TablesPage({ locale }: TablesPageProps) {
   const [tables, setTables] = useState<TablesPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
+  const [playerSeed, setPlayerSeed] = useState<PlayerStatsSeed | null>(null)
   const [activeTab, setActiveTab] = useState<TablesTab>('nations')
   const [tableSearch, setTableSearch] = useState('')
 
@@ -902,11 +955,11 @@ export function TablesPage({ locale }: TablesPageProps) {
             ) : null}
 
             {activeTab === 'rookie' ? (
-              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} />
             ) : null}
 
             {activeTab === 'veteran' ? (
-              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} />
+              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} />
             ) : null}
 
             {activeTab === 'finder' ? (
@@ -923,6 +976,8 @@ export function TablesPage({ locale }: TablesPageProps) {
       ) : null}
 
       <SquadPitchModal target={squadTarget} onClose={() => setSquadTarget(null)} />
+
+      {playerSeed ? <PlayerStatsModal seed={playerSeed} locale={locale} onClose={() => setPlayerSeed(null)} /> : null}
 
       {tables && activeTab !== 'finder' ? <BackToTopButton label={copy.backToTop} /> : null}
     </div>

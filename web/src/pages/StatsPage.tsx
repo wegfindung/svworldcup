@@ -6,11 +6,13 @@ import { BestXIPanel } from './BestXIPanel'
 import { BoostsPanel } from './BoostsPanel'
 import { BudgetStatsPanel } from './BudgetStatsPanel'
 import { LeadersPanel } from './LeadersPanel'
+import { NationPoolsPanel } from './NationPoolsPanel'
 import { PlayerPointsPanel } from './PlayerPointsPanel'
+import { RepresentedNationPanel } from './RepresentedNationPanel'
 import { UsageStatsPanel } from './SquadUsagePage'
 import { ValueStatsPanel } from './ValueStatsPanel'
 
-type StatsTab = 'usage' | 'points' | 'leaders' | 'value' | 'bestxi' | 'boosts' | 'budgets'
+type StatsTab = 'usage' | 'points' | 'leaders' | 'value' | 'bestxi' | 'boosts' | 'budgets' | 'nationpools' | 'allegiance'
 
 // The public Stats surface. One nav entry, seven tabs: Usage (revealed-squad pick rate), Points (most base
 // points produced per position), Leaders (per-metric rankings), Value (most base points per unit of budget
@@ -29,6 +31,8 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
     { key: 'bestxi', label: copy.tabBestXI, to: '/stats/best-xi' },
     { key: 'boosts', label: copy.tabBoosts, to: '/stats/boosts' },
     { key: 'budgets', label: copy.tabBudgets, to: '/stats/budgets' },
+    { key: 'nationpools', label: copy.tabNationPools, to: '/stats/nation-pools' },
+    { key: 'allegiance', label: copy.tabAllegiance, to: '/stats/by-nation' },
   ]
 
   return (
@@ -67,8 +71,12 @@ export function StatsPage({ locale, active }: { locale: LocaleCode; active: Stat
         <ValueStatsPanel locale={locale} />
       ) : active === 'boosts' ? (
         <BoostsPanel locale={locale} />
-      ) : (
+      ) : active === 'budgets' ? (
         <BudgetStatsPanel locale={locale} />
+      ) : active === 'nationpools' ? (
+        <NationPoolsPanel locale={locale} />
+      ) : (
+        <RepresentedNationPanel locale={locale} />
       )}
 
       {/* One viewport-fixed control covers every tab, sub-tab and paginated page since they all window-scroll.
