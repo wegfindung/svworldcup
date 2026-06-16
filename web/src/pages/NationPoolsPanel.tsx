@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
+import { PlayerTooltip } from '../components/PlayerTooltip'
 import { StatTile } from '../components/StatTile'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
@@ -78,6 +79,20 @@ function NationPoolModal({
         <div className="mt-1 flex-1 divide-y divide-white/6 overflow-y-auto pr-1">
           {detail.players.map((entry) => (
             <div key={entry.player.playerId} className="grid grid-cols-[minmax(0,1fr)_4rem_4rem] items-center py-2.5">
+              <PlayerTooltip
+                as="div"
+                className="min-w-0"
+                info={{
+                  name: entry.player.displayName,
+                  nationCode: entry.player.teamCode || entry.player.nationalityCode,
+                  imageUrl: entry.player.imageUrl,
+                  meta: [
+                    { label: 'Rating', value: String(entry.player.rating) },
+                    { label: 'Cost', value: String(entry.player.capCost) },
+                    { label: 'Pos', value: entry.player.positionMain ?? entry.player.positions.join('/') },
+                  ],
+                }}
+              >
               <a
                 href={`https://play.soccerverse.com/player/${entry.player.playerId}`}
                 target="_blank"
@@ -96,6 +111,7 @@ function NationPoolModal({
                 </span>
                 <span aria-hidden className="shrink-0 text-[10px] text-[var(--color-muted)] transition group-hover:text-[var(--color-accent)]">↗</span>
               </a>
+              </PlayerTooltip>
               <span className="mono border-l border-white/8 pl-3 text-right text-sm font-bold text-[var(--color-accent)]">
                 {formatInt(entry.picks)}
               </span>
