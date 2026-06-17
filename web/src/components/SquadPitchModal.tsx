@@ -33,6 +33,14 @@ function formatPoints(value: number): string {
   })
 }
 
+function formatBudget(value: number): string {
+  return `${value.toLocaleString(undefined)} SVC`
+}
+
+function formatMultiplier(value: number): string {
+  return `x${value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: value % 1 === 0 ? 0 : 2 })}`
+}
+
 type LoadState =
   | { kind: 'idle' }
   | { kind: 'ready'; slug: string; profile: PublicParticipantProfile }
@@ -195,6 +203,14 @@ export function SquadPitchModal({ target, onClose }: SquadPitchModalProps) {
                   <>
                     <span className="text-white/25">·</span>
                     <span className="mono text-[var(--color-accent)]">{formatPoints(profile.score.totalScore)} pts</span>
+                  </>
+                ) : null}
+                {profile.squad ? (
+                  <>
+                    <span className="text-white/25">·</span>
+                    <span>Budget {formatBudget(profile.squad.budgetLimit)}</span>
+                    <span className="text-white/25">·</span>
+                    <span className="mono text-[var(--color-accent)]">{formatMultiplier(profile.squad.scoreMultiplier)}</span>
                   </>
                 ) : null}
               </div>
