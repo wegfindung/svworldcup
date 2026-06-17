@@ -9,9 +9,37 @@ import type { LocaleCode, PublicFixturePlayerResult, PublicFixtureResult } from 
 
 type LoadState = 'loading' | 'ready' | 'error'
 type ResultsCopy = AppMessages['results']
+type ResultsTab = 'matches' | 'standings' | 'playoff'
 type ErrorCopy = {
   title: string
   body: string
+}
+
+interface GroupStanding {
+  teamCode: string
+  groupKey: string
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDifference: number
+  points: number
+}
+
+interface KnockoutTeam {
+  teamCode: string
+  groupKey: string
+  rank: number
+  standing: GroupStanding
+}
+
+interface PlayoffMatch {
+  match: number
+  home: KnockoutTeam | null
+  away: KnockoutTeam | null
+  awaySeedLabel?: string
 }
 
 function teamName(teamCode: string) {
@@ -19,6 +47,26 @@ function teamName(teamCode: string) {
 }
 
 const stageOrder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3P', 'FINAL']
+const groupStageKeys = stageOrder.filter((stage) => /^[A-L]$/.test(stage))
+
+const roundOf32Templates = [
+  { match: 73, home: { rank: 2, group: 'A' }, away: { rank: 2, group: 'B' } },
+  { match: 74, home: { rank: 1, group: 'E' }, thirdAway: ['A', 'B', 'C', 'D', 'F'] },
+  { match: 75, home: { rank: 1, group: 'F' }, away: { rank: 2, group: 'C' } },
+  { match: 76, home: { rank: 1, group: 'C' }, away: { rank: 2, group: 'F' } },
+  { match: 77, home: { rank: 1, group: 'I' }, thirdAway: ['C', 'D', 'F', 'G', 'H'] },
+  { match: 78, home: { rank: 2, group: 'E' }, away: { rank: 2, group: 'I' } },
+  { match: 79, home: { rank: 1, group: 'A' }, thirdAway: ['C', 'E', 'F', 'H', 'I'] },
+  { match: 80, home: { rank: 1, group: 'L' }, thirdAway: ['E', 'H', 'I', 'J', 'K'] },
+  { match: 81, home: { rank: 1, group: 'D' }, thirdAway: ['B', 'E', 'F', 'I', 'J'] },
+  { match: 82, home: { rank: 1, group: 'G' }, thirdAway: ['A', 'E', 'H', 'I', 'J'] },
+  { match: 83, home: { rank: 2, group: 'K' }, away: { rank: 2, group: 'L' } },
+  { match: 84, home: { rank: 1, group: 'H' }, away: { rank: 2, group: 'J' } },
+  { match: 85, home: { rank: 1, group: 'B' }, thirdAway: ['E', 'F', 'G', 'I', 'J'] },
+  { match: 86, home: { rank: 1, group: 'J' }, away: { rank: 2, group: 'H' } },
+  { match: 87, home: { rank: 1, group: 'K' }, thirdAway: ['D', 'E', 'I', 'J', 'L'] },
+  { match: 88, home: { rank: 2, group: 'D' }, away: { rank: 2, group: 'G' } },
+] as const
 
 function stageTitle(groupKey: string, copy: ResultsCopy) {
   if (/^[A-L]$/.test(groupKey)) return `${copy.group} ${groupKey}`
@@ -33,6 +81,143 @@ function stageTitle(groupKey: string, copy: ResultsCopy) {
 
 function stageEyebrow(groupKey: string, copy: ResultsCopy) {
   return /^[A-L]$/.test(groupKey) ? copy.groupStage : copy.knockoutStage
+}
+
+function emptyStanding(teamCode: string, groupKey: string): GroupStanding {
+  return {
+    teamCode,
+    groupKey,
+    played: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    goalsFor: 0,
+    goalsAgainst: 0,
+    goalDifference: 0,
+    points: 0,
+  }
+}
+
+function compareStandings(left: GroupStanding, right: GroupStanding) {
+  return (
+    right.points - left.points ||
+    right.goalDifference - left.goalDifference ||
+    right.goalsFor - left.goalsFor ||
+    left.teamCode.localeCompare(right.teamCode)
+  )
+}
+
+function applyStandingResult(standings: Map<string, GroupStanding>, result: PublicFixtureResult) {
+  if (result.status !== 'final' || result.homeGoals === null || result.awayGoals === null) {
+    return
+  }
+  const home = standings.get(result.homeTeamCode)
+  const away = standings.get(result.awayTeamCode)
+  if (!home || !away) {
+    return
+  }
+
+  home.played += 1
+  away.played += 1
+  home.goalsFor += result.homeGoals
+  home.goalsAgainst += result.awayGoals
+  away.goalsFor += result.awayGoals
+  away.goalsAgainst += result.homeGoals
+  home.goalDifference = home.goalsFor - home.goalsAgainst
+  away.goalDifference = away.goalsFor - away.goalsAgainst
+
+  if (result.homeGoals > result.awayGoals) {
+    home.wins += 1
+    away.losses += 1
+    home.points += 3
+  } else if (result.awayGoals > result.homeGoals) {
+    away.wins += 1
+    home.losses += 1
+    away.points += 3
+  } else {
+    home.draws += 1
+    away.draws += 1
+    home.points += 1
+    away.points += 1
+  }
+}
+
+function buildGroupStandings(results: PublicFixtureResult[]) {
+  const standings = new Map<string, GroupStanding>()
+  for (const team of eventTeams) {
+    standings.set(team.code, emptyStanding(team.code, team.groupKey))
+  }
+  for (const result of results.filter((item) => /^[A-L]$/.test(item.groupKey))) {
+    if (!standings.has(result.homeTeamCode)) {
+      standings.set(result.homeTeamCode, emptyStanding(result.homeTeamCode, result.groupKey))
+    }
+    if (!standings.has(result.awayTeamCode)) {
+      standings.set(result.awayTeamCode, emptyStanding(result.awayTeamCode, result.groupKey))
+    }
+    applyStandingResult(standings, result)
+  }
+
+  const byGroup = new Map<string, GroupStanding[]>()
+  for (const standing of standings.values()) {
+    const current = byGroup.get(standing.groupKey) ?? []
+    current.push(standing)
+    byGroup.set(standing.groupKey, current)
+  }
+  return groupStageKeys.map((groupKey) => [
+    groupKey,
+    [...(byGroup.get(groupKey) ?? [])].sort(compareStandings),
+  ] as const)
+}
+
+function selectThirdPlaceTeam(availableThirds: KnockoutTeam[], allowedGroups: readonly string[]) {
+  const selected = availableThirds.find((team) => allowedGroups.includes(team.groupKey)) ?? availableThirds[0] ?? null
+  if (!selected) {
+    return null
+  }
+  availableThirds.splice(availableThirds.indexOf(selected), 1)
+  return selected
+}
+
+function buildPlayoffPicture(groupStandings: readonly (readonly [string, GroupStanding[]])[]) {
+  const qualifierBySeed = new Map<string, KnockoutTeam>()
+  const thirdPlaceTeams: KnockoutTeam[] = []
+
+  for (const [groupKey, rows] of groupStandings) {
+    rows.forEach((standing, index) => {
+      const team: KnockoutTeam = { teamCode: standing.teamCode, groupKey, rank: index + 1, standing }
+      if (index < 2) {
+        qualifierBySeed.set(`${index + 1}${groupKey}`, team)
+      } else if (index === 2) {
+        thirdPlaceTeams.push(team)
+      }
+    })
+  }
+
+  const availableThirds = [...thirdPlaceTeams].sort((left, right) => compareStandings(left.standing, right.standing)).slice(0, 8)
+  const matches: PlayoffMatch[] = roundOf32Templates.map((template) => {
+    const home = qualifierBySeed.get(`${template.home.rank}${template.home.group}`) ?? null
+    if ('away' in template) {
+      return {
+        match: template.match,
+        home,
+        away: qualifierBySeed.get(`${template.away.rank}${template.away.group}`) ?? null,
+      }
+    }
+    return {
+      match: template.match,
+      home,
+      away: selectThirdPlaceTeam(availableThirds, template.thirdAway),
+      awaySeedLabel: `3rd ${template.thirdAway.join('/')}`,
+    }
+  })
+
+  return {
+    matches,
+    qualified: [
+      ...[...qualifierBySeed.values()].sort((left, right) => left.groupKey.localeCompare(right.groupKey) || left.rank - right.rank),
+      ...thirdPlaceTeams.sort((left, right) => compareStandings(left.standing, right.standing)).slice(0, 8),
+    ],
+  }
 }
 
 // Fixtures are stored as UTC; render in the viewer's browser timezone + locale so a fan in
@@ -155,6 +340,148 @@ function TeamPlayerDetails({ copy, title, teamCode, players }: { copy: ResultsCo
         )}
       </div>
     </div>
+  )
+}
+
+function StandingTeamCell({ standing }: { standing: GroupStanding }) {
+  const name = teamName(standing.teamCode)
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <TeamFlag teamCode={standing.teamCode} label={name} size="sm" />
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold text-white">{name}</p>
+        <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">{standing.teamCode}</p>
+      </div>
+    </div>
+  )
+}
+
+function StandingsView({ copy, groupStandings }: { copy: ResultsCopy; groupStandings: readonly (readonly [string, GroupStanding[]])[] }) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-2">
+      {groupStandings.map(([groupKey, standings]) => (
+        <div key={groupKey} className="glass-panel rounded-[1.15rem] p-4">
+          <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/5 pb-3">
+            <div>
+              <p className="eyebrow text-[10px]">{copy.groupStage}</p>
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">{copy.group} {groupKey}</h3>
+            </div>
+            <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)]">
+              {standings.filter((standing) => standing.played > 0).length}/{standings.length}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[34rem] text-left text-xs">
+              <thead className="mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                <tr className="border-b border-white/6">
+                  <th className="px-2 py-2 font-semibold">{copy.standingsTable.team}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{copy.standingsTable.played}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{copy.standingsTable.wins}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{copy.standingsTable.draws}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{copy.standingsTable.losses}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{copy.standingsTable.goalDifference}</th>
+                  <th className="px-2 py-2 text-center font-semibold">{copy.standingsTable.points}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((standing, index) => (
+                  <tr key={standing.teamCode} className="border-b border-white/5 last:border-0">
+                    <td className="px-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className={[
+                          'mono grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[10px] font-bold',
+                          index < 2
+                            ? 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                            : index === 2
+                              ? 'border-[var(--color-sand)]/25 bg-[var(--color-sand)]/10 text-[var(--color-sand)]'
+                              : 'border-white/10 text-[var(--color-muted)]',
+                        ].join(' ')}>
+                          {index + 1}
+                        </span>
+                        <StandingTeamCell standing={standing} />
+                      </div>
+                    </td>
+                    <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.played}</td>
+                    <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.wins}</td>
+                    <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.draws}</td>
+                    <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.losses}</td>
+                    <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.goalDifference > 0 ? `+${standing.goalDifference}` : standing.goalDifference}</td>
+                    <td className="px-2 py-2.5 text-center text-base font-black text-white">{standing.points}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+function PlayoffTeamSlot({ copy, team, seedLabel }: { copy: ResultsCopy; team: KnockoutTeam | null; seedLabel: string }) {
+  if (!team) {
+    return (
+      <div className="rounded-[0.8rem] border border-dashed border-white/10 bg-black/20 px-3 py-2 text-xs text-[var(--color-muted)]">
+        {seedLabel}
+      </div>
+    )
+  }
+  const name = teamName(team.teamCode)
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-3 rounded-[0.8rem] border border-white/8 bg-black/25 px-3 py-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <TeamFlag teamCode={team.teamCode} label={name} size="sm" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-white">{name}</p>
+          <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+            {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
+          </p>
+        </div>
+      </div>
+      <span className="mono shrink-0 text-xs font-black text-[var(--color-accent)]">{team.standing.points} {copy.standingsTable.points}</span>
+    </div>
+  )
+}
+
+function PlayoffView({ copy, playoff }: { copy: ResultsCopy; playoff: ReturnType<typeof buildPlayoffPicture> }) {
+  return (
+    <section className="space-y-4">
+      <div className="glass-panel rounded-[1.15rem] p-4">
+        <div className="mb-4 border-b border-white/5 pb-3">
+          <p className="eyebrow text-[10px]">{copy.playoff.qualifiedEyebrow}</p>
+          <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">{copy.playoff.qualifiedTitle}</h3>
+          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.playoff.body}</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {playoff.qualified.map((team) => (
+            <div key={`${team.rank}-${team.teamCode}`} className="rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-2">
+              <StandingTeamCell standing={team.standing} />
+              <p className="mono mt-2 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {playoff.matches.map((match) => (
+          <article key={match.match} className="glass-panel rounded-[1.15rem] p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                {copy.playoff.matchLabel} {match.match}
+              </p>
+              <p className="text-xs font-semibold text-[var(--color-accent)]">{copy.stages.round32}</p>
+            </div>
+            <div className="grid gap-2">
+              <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={copy.playoff.pendingSeed} />
+              <div className="mono text-center text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">vs</div>
+              <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel ?? copy.playoff.pendingSeed} />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -293,6 +620,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
   const [results, setResults] = useState<PublicFixtureResult[]>([])
   const [error, setError] = useState<ErrorCopy | null>(null)
   const [openFixtureIds, setOpenFixtureIds] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<ResultsTab>('matches')
 
   function toggleFixtureDetails(fixtureId: string) {
     setOpenFixtureIds((current) => {
@@ -349,7 +677,14 @@ export function ResultsPage({ locale }: ResultsPageProps) {
     })
   }, [results])
 
+  const groupStandings = useMemo(() => buildGroupStandings(results), [results])
+  const playoff = useMemo(() => buildPlayoffPicture(groupStandings), [groupStandings])
   const finalCount = results.filter((result) => result.status === 'final').length
+  const tabs: { key: ResultsTab; label: string }[] = [
+    { key: 'matches', label: copy.tabs.matches },
+    { key: 'standings', label: copy.tabs.standings },
+    { key: 'playoff', label: copy.tabs.playoff },
+  ]
 
   return (
     <div className="space-y-4 pb-10">
@@ -390,33 +725,60 @@ export function ResultsPage({ locale }: ResultsPageProps) {
       ) : null}
 
       {loadState === 'ready' ? (
-        <section className="grid gap-4 xl:grid-cols-2">
-          {groupedResults.map(([groupKey, groupResults]) => (
-            <div key={groupKey} className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12 hover:shadow-[0_12px_40px_-24px_rgba(0,0,0,0.85)]">
-              <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/5 pb-3">
-                <div>
-                  <p className="eyebrow text-[10px]">{stageEyebrow(groupKey, copy)}</p>
-                  <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{stageTitle(groupKey, copy)}</h3>
-                </div>
-                <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                  {groupResults.filter((result) => result.status === 'final').length}/{groupResults.length} {copy.finalSuffix}
-                </span>
-              </div>
-              <div className="grid gap-2">
-                {groupResults.map((result) => (
-                  <ResultCard
-                    key={result.fixtureId}
-                    copy={copy}
-                    locale={locale}
-                    result={result}
-                    isOpen={openFixtureIds.has(result.fixtureId)}
-                    onToggle={() => toggleFixtureDetails(result.fixtureId)}
-                  />
-                ))}
-              </div>
+        <>
+          <section className="glass-panel rounded-[1.15rem] p-2">
+            <div className="grid gap-2 sm:grid-cols-3">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={[
+                    'rounded-[0.85rem] border px-4 py-3 text-sm font-bold transition duration-300',
+                    activeTab === tab.key
+                      ? 'border-[var(--color-accent)]/35 bg-[var(--color-accent)]/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
+                      : 'border-transparent bg-transparent text-[var(--color-muted)] hover:border-white/10 hover:bg-white/4 hover:text-white',
+                  ].join(' ')}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
-          ))}
-        </section>
+          </section>
+
+          {activeTab === 'matches' ? (
+            <section className="grid gap-4 xl:grid-cols-2">
+              {groupedResults.map(([groupKey, groupResults]) => (
+                <div key={groupKey} className="glass-panel rounded-[1.15rem] p-4 transition duration-300 hover:border-white/12 hover:shadow-[0_12px_40px_-24px_rgba(0,0,0,0.85)]">
+                  <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/5 pb-3">
+                    <div>
+                      <p className="eyebrow text-[10px]">{stageEyebrow(groupKey, copy)}</p>
+                      <h3 className="mt-2 text-2xl font-bold text-white tracking-tight">{stageTitle(groupKey, copy)}</h3>
+                    </div>
+                    <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                      {groupResults.filter((result) => result.status === 'final').length}/{groupResults.length} {copy.finalSuffix}
+                    </span>
+                  </div>
+                  <div className="grid gap-2">
+                    {groupResults.map((result) => (
+                      <ResultCard
+                        key={result.fixtureId}
+                        copy={copy}
+                        locale={locale}
+                        result={result}
+                        isOpen={openFixtureIds.has(result.fixtureId)}
+                        onToggle={() => toggleFixtureDetails(result.fixtureId)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+          ) : null}
+
+          {activeTab === 'standings' ? <StandingsView copy={copy} groupStandings={groupStandings} /> : null}
+          {activeTab === 'playoff' ? <PlayoffView copy={copy} playoff={playoff} /> : null}
+        </>
       ) : null}
     </div>
   )

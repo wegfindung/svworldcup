@@ -531,6 +531,11 @@ const englishMessages = {
     final: 'Final',
     fixtures: 'Fixtures',
     group: 'Group',
+    tabs: {
+      matches: 'Matches',
+      standings: 'Group standings',
+      playoff: 'Playoff picture',
+    },
     stages: {
       round32: 'Round of 32',
       round16: 'Round of 16',
@@ -556,6 +561,24 @@ const englishMessages = {
     unavailableBody:
       'Match results will appear here as soon as scoring starts.',
     finalSuffix: 'final',
+    standingsTable: {
+      team: 'Team',
+      played: 'P',
+      wins: 'W',
+      draws: 'D',
+      losses: 'L',
+      goalDifference: 'GD',
+      points: 'Pts',
+    },
+    playoff: {
+      qualifiedEyebrow: 'current qualifiers',
+      qualifiedTitle: 'Qualified if the group stage ended now',
+      body: 'This projection uses the live group tables: group winners and runners-up qualify, plus the eight best third-place teams.',
+      matchLabel: 'Match',
+      seedSuffix: ' seed',
+      thirdPlaceSeed: '3rd-place seed',
+      pendingSeed: 'Seed pending',
+    },
   },
   tables: {
     heroEyebrow: 'public standings',
