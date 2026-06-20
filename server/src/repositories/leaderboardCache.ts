@@ -5,7 +5,13 @@ import type { ParticipantScoreRow } from '../domain/types.js'
 // payload". The board is a pure function of stored rows, so write-triggered invalidation is the
 // correctness mechanism; the TTL is only a backstop. See SOP_scoring_and_leagues.md
 // "Leaderboard Read Cache".
-export type CacheableRow = Omit<ParticipantScoreRow, 'rank'> & { registeredAt: string }
+// `fixtureBonusById` is an internal-only field (per-fixture ownership-boost points) carried on the
+// cached row for the rank-history derivation; it is stripped before any public row. See
+// scoringRepository.ts RankableParticipantRow and SOP_scoring_and_leagues.md "Rank History".
+export type CacheableRow = Omit<ParticipantScoreRow, 'rank'> & {
+  registeredAt: string
+  fixtureBonusById: Record<string, number>
+}
 
 // Backstop only — write-invalidation is the primary correctness mechanism. Kept short so a missed
 // trigger self-heals within seconds. See SOP_scoring_and_leagues.md "Leaderboard Read Cache".

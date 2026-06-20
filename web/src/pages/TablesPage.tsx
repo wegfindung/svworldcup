@@ -3,6 +3,7 @@ import { BackToTopButton } from '../components/BackToTopButton'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
+import { RankHistoryModal, type RankHistoryTarget } from '../components/RankHistoryModal'
 import { SquadPitchModal } from '../components/SquadPitchModal'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
@@ -367,6 +368,7 @@ function ParticipantTable({
   fixtureLookup,
   onOpenSquad,
   onSelectPlayer,
+  onOpenRankHistory,
 }: {
   copy: TablesCopy
   title: string
@@ -375,6 +377,7 @@ function ParticipantTable({
   fixtureLookup: Map<string, FixtureSeed>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
   onSelectPlayer: (seed: PlayerStatsSeed) => void
+  onOpenRankHistory: (target: RankHistoryTarget) => void
 }) {
   const [openParticipantIds, setOpenParticipantIds] = useState<Set<string>>(new Set())
   const normalizedSearch = normalizeSearchTerm(searchTerm)
@@ -419,9 +422,15 @@ function ParticipantTable({
               return (
                 <div key={row.participantId} className="border border-white/6 hover:border-[var(--color-accent)]/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] group hover:shadow-[0_12px_40px_-20px_rgba(34,189,147,0.15)]">
                   <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
-                    <span className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${rankColor}`}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenRankHistory({ board: row.leagueType, id: row.participantId, label: row.displayName })}
+                      title={copy.rankHistory.eyebrow}
+                      aria-label={`${row.displayName} — ${copy.rankHistory.eyebrow}`}
+                      className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/60 hover:text-[var(--color-accent)] active:scale-[0.96] ${rankColor}`}
+                    >
                       #{row.rank}
-                    </span>
+                    </button>
                     <div className="min-w-0">
                       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                         <button
@@ -505,11 +514,13 @@ function NationTable({
   rows,
   searchTerm,
   onOpenSquad,
+  onOpenRankHistory,
 }: {
   copy: TablesCopy
   rows: NationScoreRow[]
   searchTerm: string
   onOpenSquad: (target: { displayName: string; slug: string }) => void
+  onOpenRankHistory: (target: RankHistoryTarget) => void
 }) {
   const [openTeamCodes, setOpenTeamCodes] = useState<Set<string>>(new Set())
   const normalizedSearch = normalizeSearchTerm(searchTerm)
@@ -557,9 +568,15 @@ function NationTable({
               return (
                 <div key={row.teamCode} className="border border-white/6 hover:border-blue-500/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_12px_40px_-20px_rgba(59,130,246,0.15)]">
                   <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
-                    <span className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${rankColor}`}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenRankHistory({ board: 'nations', id: row.teamCode, label: nationName(row.teamCode) })}
+                      title={copy.rankHistory.eyebrow}
+                      aria-label={`${nationName(row.teamCode)} — ${copy.rankHistory.eyebrow}`}
+                      className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition hover:-translate-y-[1px] hover:border-blue-500/60 hover:text-blue-400 active:scale-[0.96] ${rankColor}`}
+                    >
                       #{row.rank}
-                    </span>
+                    </button>
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
@@ -728,6 +745,7 @@ function ParticipantBoardSection({
   fixtureLookup,
   onOpenSquad,
   onSelectPlayer,
+  onOpenRankHistory,
 }: {
   copy: TablesCopy
   title: string
@@ -736,6 +754,7 @@ function ParticipantBoardSection({
   fixtureLookup: Map<string, FixtureSeed>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
   onSelectPlayer: (seed: PlayerStatsSeed) => void
+  onOpenRankHistory: (target: RankHistoryTarget) => void
 }) {
   if (board.rows) {
     return (
@@ -747,6 +766,7 @@ function ParticipantBoardSection({
         fixtureLookup={fixtureLookup}
         onOpenSquad={onOpenSquad}
         onSelectPlayer={onSelectPlayer}
+        onOpenRankHistory={onOpenRankHistory}
       />
     )
   }
@@ -818,6 +838,7 @@ export function TablesPage({ locale }: TablesPageProps) {
   const [loading, setLoading] = useState(true)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
   const [playerSeed, setPlayerSeed] = useState<PlayerStatsSeed | null>(null)
+  const [rankHistoryTarget, setRankHistoryTarget] = useState<RankHistoryTarget | null>(null)
   const [activeTab, setActiveTab] = useState<TablesTab>('nations')
   const [tableSearch, setTableSearch] = useState('')
 
@@ -946,7 +967,7 @@ export function TablesPage({ locale }: TablesPageProps) {
           >
             {activeTab === 'nations' ? (
               tables.nations.rows ? (
-                <NationTable copy={copy} rows={tables.nations.rows} searchTerm={tableSearch} onOpenSquad={setSquadTarget} />
+                <NationTable copy={copy} rows={tables.nations.rows} searchTerm={tableSearch} onOpenSquad={setSquadTarget} onOpenRankHistory={setRankHistoryTarget} />
               ) : tables.nations.error ? (
                 <section className="glass-panel rounded-[1.15rem] p-5">
                   <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
@@ -955,11 +976,11 @@ export function TablesPage({ locale }: TablesPageProps) {
             ) : null}
 
             {activeTab === 'rookie' ? (
-              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} />
+              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
             ) : null}
 
             {activeTab === 'veteran' ? (
-              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} />
+              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
             ) : null}
 
             {activeTab === 'finder' ? (
@@ -976,6 +997,8 @@ export function TablesPage({ locale }: TablesPageProps) {
       ) : null}
 
       <SquadPitchModal target={squadTarget} onClose={() => setSquadTarget(null)} />
+
+      <RankHistoryModal target={rankHistoryTarget} locale={locale} onClose={() => setRankHistoryTarget(null)} />
 
       {playerSeed ? <PlayerStatsModal seed={playerSeed} locale={locale} onClose={() => setPlayerSeed(null)} /> : null}
 

@@ -7,6 +7,7 @@ import { fixtures as seedFixtures } from '../data/worldCupSeed.js'
 import { scoreEntryComponents } from '../lib/matchScoring.js'
 import { buildFixtureRoundMap } from '../lib/tournamentRounds.js'
 import { buildBudgetStats } from '../services/budgetStats.js'
+import { buildRankHistoryForEntity, type RankHistoryBoardKey, type RankHistoryResult } from '../services/rankHistory.js'
 import type {
   BudgetStatsPayload,
   FixtureSeed,
@@ -70,6 +71,12 @@ interface ScoreSlot {
 
 type RankableParticipantRow = Omit<ParticipantScoreRow, 'rank'> & {
   registeredAt: string
+  // Internal only — stripped before the public row (see rankParticipants). Per-fixture ownership-boost
+  // points (summing to bonusScore), keyed by fixtureId. The rank-history derivation needs the boost
+  // attributed to each fixture's UTC day; it must NOT be exposed on the public payload (per-fixture
+  // boost would leak a participant's per-player net influence, which the Boost Leaderboard keeps
+  // anonymous). See SOP_scoring_and_leagues.md "Rank History (display)".
+  fixtureBonusById: Record<string, number>
 }
 
 // C1: a multi-row promotion suppresses the per-row cache invalidation and invalidates ONCE after all
@@ -89,6 +96,9 @@ export interface ScoringRepository {
   getLeagueLeaderboard(leagueType: LeagueType): Promise<ParticipantScoreRow[]>
   getNationLeaderboard(): Promise<NationScoreRow[]>
   getBudgetStats(): Promise<BudgetStatsPayload>
+  // Per-day rank history for one board entity (participantId for rookie/veteran, teamCode for
+  // nations). Null when the entity is not on that board. See services/rankHistory.ts.
+  getRankHistory(board: RankHistoryBoardKey, entityId: string): Promise<RankHistoryResult | null>
   // Force a leaderboard cache invalidation (used after a suppressed multi-row promotion completes).
   invalidateLeaderboard(): void
   // Runs fn while holding a fixture-scoped advisory lock so two concurrent promotions of the same
@@ -254,6 +264,9 @@ function calculateParticipantRows(
     let bonusScore = 0
     const breakdown = createEmptyBreakdown()
     const fixtureDetailsById = new Map<string, ParticipantScoreFixtureDetail>()
+    // Per-fixture boost points (internal; summing to bonusScore) so rank history can attribute the
+    // boost to each fixture's UTC day. Not exposed on the public row — see RankableParticipantRow.
+    const fixtureBonusById: Record<string, number> = {}
 
     // weight is 1 for starters and SUBSTITUTE_POINT_WEIGHT for reserves. It scales every point
     // contribution (event counts stay truthful) so a reserve banks a fraction of what it earned.
@@ -290,8 +303,10 @@ function calculateParticipantRows(
       const totalPoints = components.total * weight + cleanSheetPoints
 
       const entryBonus = bonusByEntry.get(bonusKey(participant.participantId, fixtureId, playerState.entry.playerId)) ?? 0
-      if (entryBonus > 0) {
-        bonusScore += totalPoints * (entryBonus / 100)
+      const bonusPoints = entryBonus > 0 ? totalPoints * (entryBonus / 100) : 0
+      bonusScore += bonusPoints
+      if (bonusPoints !== 0) {
+        fixtureBonusById[fixtureId] = (fixtureBonusById[fixtureId] ?? 0) + bonusPoints
       }
 
       if (totalPoints !== 0 || playerState.entry.minutes > 0 || playerState.entry.goals > 0 || playerState.entry.assists > 0) {
@@ -372,11 +387,12 @@ function calculateParticipantRows(
       breakdown,
       fixtures: sortFixtureDetails([...fixtureDetailsById.values()]),
       registeredAt: participant.registeredAt,
+      fixtureBonusById,
     }
   })
 }
 
-function rankParticipants(rows: RankableParticipantRow[]): ParticipantScoreRow[] {
+export function rankParticipants(rows: RankableParticipantRow[]): ParticipantScoreRow[] {
   return rows
     .sort(
       (left, right) =>
@@ -384,7 +400,7 @@ function rankParticipants(rows: RankableParticipantRow[]): ParticipantScoreRow[]
         toTimestamp(left.registeredAt) - toTimestamp(right.registeredAt) ||
         left.displayName.localeCompare(right.displayName),
     )
-    .map(({ registeredAt: _registeredAt, ...row }, index) => ({ ...row, rank: index + 1 }))
+    .map(({ registeredAt: _registeredAt, fixtureBonusById: _fixtureBonusById, ...row }, index) => ({ ...row, rank: index + 1 }))
 }
 
 function rankNations(rows: Omit<NationScoreRow, 'rank'>[]): NationScoreRow[] {
@@ -393,7 +409,7 @@ function rankNations(rows: Omit<NationScoreRow, 'rank'>[]): NationScoreRow[] {
     .map((row, index) => ({ ...row, rank: index + 1 }))
 }
 
-function buildNationLeaderboard(rows: ParticipantScoreRow[]) {
+export function buildNationLeaderboard(rows: ParticipantScoreRow[]) {
   const contributorsByNation = new Map<string, NationScoreRow['contributors']>()
 
   for (const row of rows) {
@@ -507,6 +523,11 @@ export class MemoryScoringRepository implements ScoringRepository {
   async getBudgetStats() {
     const rows = await this.getCachedRows(() => this.calculateAllRows())
     return buildBudgetStats(rows)
+  }
+
+  async getRankHistory(board: RankHistoryBoardKey, entityId: string) {
+    const rows = await this.getCachedRows(() => this.calculateAllRows())
+    return buildRankHistoryForEntity(rows, seedFixtures, board, entityId)
   }
 
   private async listMemoryParticipants(): Promise<ScoreParticipant[]> {
@@ -750,6 +771,14 @@ export class PostgresScoringRepository implements ScoringRepository {
 
   async getBudgetStats() {
     return buildBudgetStats(await this.getCachedRows(() => this.calculateRows()))
+  }
+
+  async getRankHistory(board: RankHistoryBoardKey, entityId: string) {
+    const [rows, fixtures] = await Promise.all([
+      this.getCachedRows(() => this.calculateRows()),
+      this.listFixtureSeeds(),
+    ])
+    return buildRankHistoryForEntity(rows, fixtures, board, entityId)
   }
 
   private async calculateRows() {

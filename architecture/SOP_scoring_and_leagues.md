@@ -141,6 +141,34 @@ applies their budget multiplier and any ownership boost, and halves for a reserv
 is intentionally not equal to any individual manager's banked total. This is the same per-participant
 divergence the import engine refuses to collapse into one number (`SOP_match_data_import.md` "Rating").
 
+### Nation player pool (Results › Group standings, display)
+
+Clicking a nation row on the Results page **Group standings** tab opens a modal listing **that nation's
+players who have scored points so far**, default-sorted by total points. Pure client-side off the
+**already-cached `/player-points` payload** (`web/src/lib/nationPoolPlayers.ts`,
+`components/NationPlayersModal.tsx`) — no server, service, or DB change. A *display* of existing data,
+not a new rule.
+
+- **Source + filter.** `/player-points` `items` filtered to the nation's `teamCode`, keeping players
+  with `basePoints > 0` (they featured and accumulated points). The same payload the Stats Points tab
+  uses; opening the modal reuses the cached fetch (`fetchPlayerPoints`).
+- **Columns + sort.** Player (name/flag), position, goals, assists, appearances, minutes, clean sheets,
+  average rating, and **total points** (`basePoints`, the headline and default sort, descending). Every
+  data header is **clickable to re-sort**; clicking the active header toggles ascending/descending; ties
+  fall back to points-desc then name (`sortNationPoolPlayers`, unit-tested).
+- **Base points only**, same caveat as the Points tab — `basePoints` excludes the per-position clean
+  sheet and every per-manager term (budget multiplier, ownership boost, reserve half-weight), so it is
+  not any manager's banked total. Clean sheets ride along as a count column, not folded into the points.
+- A player row opens the cross-page `PlayerStatsModal` on click (identity-only seed; the modal
+  self-fetches), matching the app-wide click-to-deep-dive pattern. The nation modal owns that sub-modal,
+  so Escape closes the player card first, then the nation list. The Soccerverse profile link lives inside
+  that `PlayerStatsModal` (no separate per-row link — it would be redundant).
+- **Mobile sheet.** On narrow screens the modal renders as a full-screen drill-down sheet (edge-to-edge,
+  full height, `rounded-none`) with a sticky header (close always reachable) and a scrollable body;
+  it becomes a centred capped-height card at `sm+`. The wide stats table keeps a **sticky player column**
+  so the name stays visible while the numeric columns scroll horizontally. The rank-history modal uses the
+  same sheet shell.
+
 ## Stats — Player Points Leaderboard
 
 The public Stats page (`/stats`) has seven tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
@@ -362,6 +390,44 @@ from an in-memory read-through cache of the computed participant rows.
   server is ever scaled horizontally, each instance caches independently and the TTL bounds staleness.
 - **Tradeoff:** during a snapshot capture the cache is repeatedly invalidated, so reads recompute until
   capture settles — correctness (never stale) over peak performance during that brief window.
+
+## Rank History (display)
+
+The public Tables page lets a visitor click a row's `#rank` number on any of the three boards
+(Rookie / Veteran / Nations) to open a modal showing that entity's **rank over time** — a line graph
+plotting the rank it held **at the end of each UTC day**, within that board. This is a **display** of
+the existing scoring (like the Nations in-money indicator), not a new scoring rule.
+
+- **Derived, not stored.** Rank history is reconstructed from the same match data the leaderboards use
+  — no new table, column, or capture job (`server/src/services/rankHistory.ts → buildRankHistory`,
+  served by `GET /api/public/leaderboards/rank-history/:board/:id`). Because it is derived from stored
+  match entries it is fully reproducible and retroactive to the first matchday, satisfying "all score
+  calculations must be reproducible from stored match input."
+- **`rank at end of day D` = the standings using only fixtures whose UTC kickoff date ≤ D.** Each
+  `admin_match_entries` row belongs to a fixture with a UTC kickoff (`kickoffDate` + `kickoffTimeUtc`;
+  epoch via `competitionWindow.ts → fixtureKickoffEpoch`). The day key is the UTC date of that epoch
+  (`new Date(epoch).toISOString().slice(0, 10)`).
+- **Exact cumulative formula.** A participant's banked total is `(baseScore + ownershipBoost) ×
+  scoreMultiplier` (see "Salary Budget Multiplier"); the multiplier is **constant per participant**, so
+  `cumulativeTotal(D) = scoreMultiplier × Σ over fixtures f with kickoffDate ≤ D of (base_f + boost_f)`.
+  The per-fixture contribution summed here is the engine's **real** per-fixture value — reserve
+  half-weight and the per-fixture ownership boost already applied, pre-multiplier — sourced from inside
+  the scoring repository (where `bonusByEntry` and the reserve weighting are in scope), **not** the
+  display field `ParticipantScoreRow.fixtures[].totalPoints`.
+- **Same population and tiebreaks as the live board, recomputed per day.** Rookie/Veteran days re-rank
+  the league's locked participants with `rankParticipants` (score desc → `registeredAt` → display name).
+  Nation days aggregate each qualified nation's member cumulative totals for that day, then rank with
+  `rankNations` (averageScore desc → topScore → teamCode). Every locked squad is in its board from day 1
+  (0 points → tied at the bottom by tiebreak), so a line is defined across the whole series.
+- **X axis = matchday dates only.** The series points are the distinct UTC dates that have at least one
+  scored (promoted) fixture, ascending — a date with no promoted fixture cannot change any rank, so it
+  is omitted (clean step line, bounded length). A nation appears only if it currently qualifies
+  (`participantCount ≥ 2`); membership is the current locked set, constant across the history.
+- **Server-side + cache reuse.** Required server-side because Nations need per-fixture **member** detail
+  the public `NationScoreRow.contributors[]` does not carry, and the rookie/veteran tiebreak needs
+  `registeredAt` the client lacks. The full per-day rank matrix for all three boards is computed once
+  off the shared cached row set (`getCachedRows`, see "Leaderboard Read Cache"), memoized by cache
+  generation; a single-entity request slices its own series out. No new query, no new cache.
 
 ## Per-Round Lineup Freeze
 
