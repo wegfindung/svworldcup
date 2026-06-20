@@ -1,9 +1,14 @@
-import { useId } from 'react'
-import { buildRankChartGeometry } from '../lib/rankChart'
+import { useId, useState } from 'react'
+import { buildRankChartGeometry, buildRankTooltipLayout } from '../lib/rankChart'
 import type { RankHistoryPoint } from '../lib/types'
 
 const VIEW_W = 560
 const VIEW_H = 240
+// Tooltip box sizing (SVG units). Width is estimated from the label length since SVG text can't be
+// measured cheaply; the mono font at this size is ~7 units/char.
+const TIP_CHAR_W = 7
+const TIP_PAD_X = 9
+const TIP_H = 22
 
 // date is `YYYY-MM-DD`; show MM-DD (culture-neutral, unambiguous, no locale mapping needed).
 function dayLabel(date: string) {
@@ -16,6 +21,9 @@ export function RankHistoryChart({ points, color = 'var(--color-accent)' }: { po
   const gradientId = useId()
   const geo = buildRankChartGeometry(points, { width: VIEW_W, height: VIEW_H })
   const lastIndex = geo.dots.length - 1
+  // Index of the dot whose placement tooltip is showing (mouse hover or keyboard focus); null = none.
+  const [hovered, setHovered] = useState<number | null>(null)
+  const activeDot = hovered !== null ? geo.dots[hovered] : undefined
 
   return (
     <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="h-auto w-full" style={{ color }} role="img" aria-label="rank history">
@@ -53,10 +61,51 @@ export function RankHistoryChart({ points, color = 'var(--color-accent)' }: { po
           fill={index === lastIndex ? 'currentColor' : '#0b1110'}
           stroke="currentColor"
           strokeWidth={1.75}
-        >
-          <title>{`#${dot.rank} · ${dot.date}`}</title>
-        </circle>
+        />
       ))}
+
+      {/* Generous transparent hit targets — comfortable hover, and focusable so the placement is
+          reachable by keyboard and announced to screen readers (replaces the old native <title>). */}
+      {geo.dots.map((dot, index) => (
+        <circle
+          key={`hit-${dot.date}-${index}`}
+          cx={dot.x}
+          cy={dot.y}
+          r={14}
+          fill="transparent"
+          tabIndex={0}
+          role="img"
+          aria-label={`#${dot.rank} · ${dot.date}`}
+          style={{ cursor: 'pointer', outline: 'none' }}
+          onMouseEnter={() => setHovered(index)}
+          onMouseLeave={() => setHovered((current) => (current === index ? null : current))}
+          onFocus={() => setHovered(index)}
+          onBlur={() => setHovered((current) => (current === index ? null : current))}
+        />
+      ))}
+
+      {activeDot ? <RankTooltip dot={activeDot} /> : null}
     </svg>
+  )
+}
+
+// Instant placement tooltip drawn in the chart's own coordinate space (so it scales with the
+// responsive SVG). pointer-events: none so it never steals hover from the hit target beneath it.
+function RankTooltip({ dot }: { dot: { x: number; y: number; rank: number; date: string } }) {
+  const rankLabel = `#${dot.rank}`
+  const dateLabel = ` · ${dayLabel(dot.date)}`
+  const boxW = (rankLabel.length + dateLabel.length) * TIP_CHAR_W + TIP_PAD_X * 2
+  const tip = buildRankTooltipLayout(dot, { width: boxW, height: TIP_H, viewWidth: VIEW_W })
+  return (
+    <g pointerEvents="none">
+      <circle cx={dot.x} cy={dot.y} r={6} fill="none" stroke="currentColor" strokeOpacity={0.4} strokeWidth={1.5} />
+      <rect x={tip.x} y={tip.y} width={boxW} height={TIP_H} rx={6} fill="#0b1110" stroke="rgba(255,255,255,0.16)" />
+      <text x={tip.x + boxW / 2} y={tip.y + TIP_H / 2} textAnchor="middle" dominantBaseline="central" className="mono" fontSize={12}>
+        <tspan fill="currentColor" fontWeight={700}>
+          {rankLabel}
+        </tspan>
+        <tspan fill="rgba(234,225,205,0.55)">{dateLabel}</tspan>
+      </text>
+    </g>
   )
 }

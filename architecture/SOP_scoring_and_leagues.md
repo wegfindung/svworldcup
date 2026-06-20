@@ -141,10 +141,12 @@ applies their budget multiplier and any ownership boost, and halves for a reserv
 is intentionally not equal to any individual manager's banked total. This is the same per-participant
 divergence the import engine refuses to collapse into one number (`SOP_match_data_import.md` "Rating").
 
-### Nation player pool (Results › Group standings, display)
+### Nation player pool (Results › Group standings + Playoff, display)
 
-Clicking a nation row on the Results page **Group standings** tab opens a modal listing **that nation's
-players who have scored points so far**, default-sorted by total points. Pure client-side off the
+Clicking a nation on the Results page opens a modal listing **that nation's players who have scored
+points so far**, default-sorted by total points. Reachable from any nation cell on the **Group
+standings** tab and from the **Playoff** tab (both the qualified-teams grid and each bracket slot —
+same `NationPlayersModal`, the same modal state on `ResultsPage`). Pure client-side off the
 **already-cached `/player-points` payload** (`web/src/lib/nationPoolPlayers.ts`,
 `components/NationPlayersModal.tsx`) — no server, service, or DB change. A *display* of existing data,
 not a new rule.
@@ -423,6 +425,10 @@ the existing scoring (like the Nations in-money indicator), not a new scoring ru
   scored (promoted) fixture, ascending — a date with no promoted fixture cannot change any rank, so it
   is omitted (clean step line, bounded length). A nation appears only if it currently qualifies
   (`participantCount ≥ 2`); membership is the current locked set, constant across the history.
+- **Per-point hover.** Each dot on the line graph exposes its **placement** on hover/focus — an
+  instant in-SVG tooltip showing the rank (`#n`, board-tinted) and that matchday's date — so a visitor
+  can read the exact rank for any day, not just the endpoints shown on the axes. Display affordance
+  only; no data beyond the already-served `{date, rank, score}` series.
 - **Server-side + cache reuse.** Required server-side because Nations need per-fixture **member** detail
   the public `NationScoreRow.contributors[]` does not carry, and the rookie/veteran tiebreak needs
   `registeredAt` the client lacks. The full per-day rank matrix for all three boards is computed once
