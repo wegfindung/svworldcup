@@ -96,3 +96,26 @@ export function buildRankChartGeometry(points: RankHistoryPoint[], options: Rank
 
   return { width, height, plot, linePath, areaPath, dots, yTicks, xTicks, bestRank, worstRank }
 }
+
+export interface RankTooltipLayout {
+  x: number
+  y: number
+  placement: 'above' | 'below'
+}
+
+// Places the hover tooltip box near a dot: above it by default, flipping below when sitting above
+// would clip the top edge, and clamping horizontally so the box stays inside the viewBox. Pure so the
+// edge cases (top dot flips down, left/right clamp) are unit-tested rather than eyeballed in SVG.
+export function buildRankTooltipLayout(
+  dot: { x: number; y: number },
+  box: { width: number; height: number; viewWidth: number; gap?: number; pad?: number },
+): RankTooltipLayout {
+  const gap = box.gap ?? 10
+  const pad = box.pad ?? 2
+  const aboveY = dot.y - gap - box.height
+  const placement: 'above' | 'below' = aboveY < pad ? 'below' : 'above'
+  const y = placement === 'above' ? aboveY : dot.y + gap
+  const maxX = Math.max(pad, box.viewWidth - box.width - pad)
+  const x = Math.min(Math.max(dot.x - box.width / 2, pad), maxX)
+  return { x: round(x), y: round(y), placement }
+}

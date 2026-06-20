@@ -423,6 +423,10 @@ the existing scoring (like the Nations in-money indicator), not a new scoring ru
   scored (promoted) fixture, ascending — a date with no promoted fixture cannot change any rank, so it
   is omitted (clean step line, bounded length). A nation appears only if it currently qualifies
   (`participantCount ≥ 2`); membership is the current locked set, constant across the history.
+- **Per-point hover.** Each dot on the line graph exposes its **placement** on hover/focus — an
+  instant in-SVG tooltip showing the rank (`#n`, board-tinted) and that matchday's date — so a visitor
+  can read the exact rank for any day, not just the endpoints shown on the axes. Display affordance
+  only; no data beyond the already-served `{date, rank, score}` series.
 - **Server-side + cache reuse.** Required server-side because Nations need per-fixture **member** detail
   the public `NationScoreRow.contributors[]` does not carry, and the rookie/veteran tiebreak needs
   `registeredAt` the client lacks. The full per-day rank matrix for all three boards is computed once

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRankChartGeometry } from './rankChart'
+import { buildRankChartGeometry, buildRankTooltipLayout } from './rankChart'
 import type { RankHistoryPoint } from './types'
 
 const dims = { width: 560, height: 240 }
@@ -50,5 +50,29 @@ describe('buildRankChartGeometry', () => {
     const geo = buildRankChartGeometry(points(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), { ...dims, maxXTicks: 4 })
     expect(geo.xTicks.length).toBeLessThanOrEqual(4)
     expect(geo.dots).toHaveLength(10)
+  })
+})
+
+describe('buildRankTooltipLayout', () => {
+  const box = { width: 80, height: 22, viewWidth: 560 }
+
+  it('sits above the dot and centres horizontally when there is room', () => {
+    const tip = buildRankTooltipLayout({ x: 280, y: 120 }, box)
+    expect(tip.placement).toBe('above')
+    expect(tip.y).toBeLessThan(120)
+    expect(tip.x + box.width / 2).toBeCloseTo(280, 5)
+  })
+
+  it('flips below the dot when sitting above would clip the top edge', () => {
+    const tip = buildRankTooltipLayout({ x: 280, y: 6 }, box)
+    expect(tip.placement).toBe('below')
+    expect(tip.y).toBeGreaterThan(6)
+  })
+
+  it('clamps the box inside the viewBox on both edges', () => {
+    const left = buildRankTooltipLayout({ x: 0, y: 120 }, box)
+    expect(left.x).toBeGreaterThanOrEqual(2)
+    const right = buildRankTooltipLayout({ x: 560, y: 120 }, box)
+    expect(right.x + box.width).toBeLessThanOrEqual(560 - 2 + 0.001)
   })
 })
