@@ -594,13 +594,21 @@ function TeamPlayerDetails({ copy, factorCopy, title, teamCode, players }: { cop
   )
 }
 
-function StandingTeamCell({ standing, onOpen }: { standing: GroupStanding; onOpen?: () => void }) {
+function StandingTeamCell({
+  standing,
+  onOpen,
+  openLabel,
+}: {
+  standing: GroupStanding
+  onOpen?: () => void
+  openLabel?: string
+}) {
   const name = teamName(standing.teamCode)
   const flagAndName = (
     <>
       <TeamFlag teamCode={standing.teamCode} label={name} size="sm" />
       <div className="min-w-0">
-        <p className={`truncate text-xs font-bold text-white ${onOpen ? 'underline-offset-2 hover:text-[var(--color-accent)] hover:underline' : ''}`}>{name}</p>
+        <p className="truncate text-xs font-bold text-white transition group-hover/team:text-[var(--color-accent)]">{name}</p>
         <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">{standing.teamCode}</p>
       </div>
     </>
@@ -609,8 +617,17 @@ function StandingTeamCell({ standing, onOpen }: { standing: GroupStanding; onOpe
     return <div className="flex min-w-0 items-center gap-2">{flagAndName}</div>
   }
   return (
-    <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-2 text-left transition hover:opacity-90" title={name}>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group/team -m-1 flex min-w-0 items-center gap-2 rounded-[0.75rem] border border-transparent bg-white/[0.015] px-2 py-1.5 text-left transition hover:border-[var(--color-accent)]/35 hover:bg-[var(--color-accent)]/8 active:scale-[0.99]"
+      title={name}
+      aria-label={openLabel ? `${name}: ${openLabel}` : name}
+    >
       {flagAndName}
+      <span aria-hidden="true" className="mono ml-auto grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/10 text-[13px] leading-none text-[var(--color-muted)] transition group-hover/team:border-[var(--color-accent)]/40 group-hover/team:text-[var(--color-accent)]">
+        ›
+      </span>
     </button>
   )
 }
@@ -665,7 +682,7 @@ function StandingsView({
                         ].join(' ')}>
                           {index + 1}
                         </span>
-                        <StandingTeamCell standing={standing} onOpen={() => onOpenNation({ teamCode: standing.teamCode, name: teamName(standing.teamCode) })} />
+                        <StandingTeamCell standing={standing} onOpen={() => onOpenNation({ teamCode: standing.teamCode, name: teamName(standing.teamCode) })} openLabel={copy.nationPool.eyebrow} />
                       </div>
                     </td>
                     <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.played}</td>
@@ -750,7 +767,7 @@ function PlayoffView({
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {playoff.qualified.map((team) => (
             <div key={`${team.rank}-${team.teamCode}`} className="rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-2">
-              <StandingTeamCell standing={team.standing} onOpen={() => onOpenNation({ teamCode: team.teamCode, name: teamName(team.teamCode) })} />
+              <StandingTeamCell standing={team.standing} onOpen={() => onOpenNation({ teamCode: team.teamCode, name: teamName(team.teamCode) })} openLabel={copy.nationPool.eyebrow} />
               <p className="mono mt-2 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
                 {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
               </p>

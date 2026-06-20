@@ -411,26 +411,17 @@ function ParticipantTable({
             {filteredRows.map((row) => {
               const isOpen = openParticipantIds.has(row.participantId)
               const isPaidRank = row.rank <= PAID_PARTICIPANT_RANK_LIMIT
-              const rankColor = row.rank === 1
-                ? 'text-[var(--color-sand)] font-black text-base shadow-[0_0_8px_rgba(217,173,93,0.2)] border-[var(--color-sand)]/30'
-                : row.rank === 2
-                  ? 'text-slate-300 font-black text-sm border-slate-300/30'
-                  : row.rank === 3
-                    ? 'text-amber-600 font-black text-sm border-amber-600/30'
-                    : 'text-[var(--color-muted)] font-semibold text-xs border-white/6'
 
               return (
                 <div key={row.participantId} className="border border-white/6 hover:border-[var(--color-accent)]/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] group hover:shadow-[0_12px_40px_-20px_rgba(34,189,147,0.15)]">
                   <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
-                    <button
-                      type="button"
-                      onClick={() => onOpenRankHistory({ board: row.leagueType, id: row.participantId, label: row.displayName })}
+                    <RankHistoryButton
+                      rank={row.rank}
+                      tone="accent"
                       title={copy.rankHistory.eyebrow}
-                      aria-label={`${row.displayName} — ${copy.rankHistory.eyebrow}`}
-                      className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition hover:-translate-y-[1px] hover:border-[var(--color-accent)]/60 hover:text-[var(--color-accent)] active:scale-[0.96] ${rankColor}`}
-                    >
-                      #{row.rank}
-                    </button>
+                      ariaLabel={`${row.displayName} - ${copy.rankHistory.eyebrow}`}
+                      onClick={() => onOpenRankHistory({ board: row.leagueType, id: row.participantId, label: row.displayName })}
+                    />
                     <div className="min-w-0">
                       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                         <button
@@ -509,6 +500,60 @@ function ParticipantTable({
   )
 }
 
+function rankToneClass(rank: number) {
+  if (rank === 1) {
+    return 'border-[var(--color-sand)]/35 text-[var(--color-sand)] shadow-[0_0_12px_rgba(217,173,93,0.16)]'
+  }
+  if (rank === 2) {
+    return 'border-slate-300/30 text-slate-200'
+  }
+  if (rank === 3) {
+    return 'border-amber-600/30 text-amber-500'
+  }
+  return 'border-white/8 text-[var(--color-muted)]'
+}
+
+function RankHistoryButton({
+  rank,
+  tone,
+  title,
+  ariaLabel,
+  onClick,
+}: {
+  rank: number
+  tone: 'accent' | 'blue'
+  title: string
+  ariaLabel: string
+  onClick: () => void
+}) {
+  const toneClass =
+    tone === 'blue'
+      ? 'hover:border-blue-400/60 hover:bg-blue-400/10 hover:text-blue-300 focus-visible:outline-blue-300/80'
+      : 'hover:border-[var(--color-accent)]/60 hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)]'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={ariaLabel}
+      className={[
+        'mono group/rank relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[0.85rem] border bg-black/45 text-center transition hover:-translate-y-[1px] active:scale-[0.96]',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+        rankToneClass(rank),
+        toneClass,
+      ].join(' ')}
+    >
+      <span className="translate-y-[-2px] text-[11px] font-black leading-none">#{rank}</span>
+      <span aria-hidden="true" className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 items-end gap-[2px] opacity-55 transition group-hover/rank:opacity-100">
+        <span className="h-1.5 w-[2px] rounded-full bg-current" />
+        <span className="h-2.5 w-[2px] rounded-full bg-current" />
+        <span className="h-1 w-[2px] rounded-full bg-current" />
+      </span>
+    </button>
+  )
+}
+
 function NationTable({
   copy,
   rows,
@@ -557,26 +602,17 @@ function NationTable({
             {filteredRows.map((row) => {
               const isOpen = openTeamCodes.has(row.teamCode)
               const payout = payouts.get(row.teamCode)
-              const rankColor = row.rank === 1
-                ? 'text-[var(--color-sand)] font-black text-base shadow-[0_0_8px_rgba(217,173,93,0.2)] border-[var(--color-sand)]/30'
-                : row.rank === 2
-                  ? 'text-slate-300 font-black text-sm border-slate-300/30'
-                  : row.rank === 3
-                    ? 'text-amber-600 font-black text-sm border-amber-600/30'
-                    : 'text-[var(--color-muted)] font-semibold text-xs border-white/6'
 
               return (
                 <div key={row.teamCode} className="border border-white/6 hover:border-blue-500/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_12px_40px_-20px_rgba(59,130,246,0.15)]">
                   <div className="grid grid-cols-[3rem_1fr] gap-3 sm:grid-cols-[3rem_1fr_auto] sm:items-start">
-                    <button
-                      type="button"
-                      onClick={() => onOpenRankHistory({ board: 'nations', id: row.teamCode, label: nationName(row.teamCode) })}
+                    <RankHistoryButton
+                      rank={row.rank}
+                      tone="blue"
                       title={copy.rankHistory.eyebrow}
-                      aria-label={`${nationName(row.teamCode)} — ${copy.rankHistory.eyebrow}`}
-                      className={`mono text-center flex items-center justify-center shrink-0 w-8 h-8 rounded-lg bg-black/40 border shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition hover:-translate-y-[1px] hover:border-blue-500/60 hover:text-blue-400 active:scale-[0.96] ${rankColor}`}
-                    >
-                      #{row.rank}
-                    </button>
+                      ariaLabel={`${nationName(row.teamCode)} - ${copy.rankHistory.eyebrow}`}
+                      onClick={() => onOpenRankHistory({ board: 'nations', id: row.teamCode, label: nationName(row.teamCode) })}
+                    />
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <TeamFlag teamCode={row.teamCode} label={nationName(row.teamCode)} size="sm" />
