@@ -685,7 +685,17 @@ function StandingsView({
   )
 }
 
-function PlayoffTeamSlot({ copy, team, seedLabel }: { copy: ResultsCopy; team: KnockoutTeam | null; seedLabel: string }) {
+function PlayoffTeamSlot({
+  copy,
+  team,
+  seedLabel,
+  onOpenNation,
+}: {
+  copy: ResultsCopy
+  team: KnockoutTeam | null
+  seedLabel: string
+  onOpenNation?: (target: NationPlayersTarget) => void
+}) {
   if (!team) {
     return (
       <div className="rounded-[0.8rem] border border-dashed border-white/10 bg-black/20 px-3 py-2 text-xs text-[var(--color-muted)]">
@@ -694,23 +704,41 @@ function PlayoffTeamSlot({ copy, team, seedLabel }: { copy: ResultsCopy; team: K
     )
   }
   const name = teamName(team.teamCode)
+  const onOpen = onOpenNation ? () => onOpenNation({ teamCode: team.teamCode, name }) : undefined
+  const identity = (
+    <>
+      <TeamFlag teamCode={team.teamCode} label={name} size="sm" />
+      <div className="min-w-0">
+        <p className={`truncate text-sm font-bold text-white ${onOpen ? 'underline-offset-2 hover:text-[var(--color-accent)] hover:underline' : ''}`}>{name}</p>
+        <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+          {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
+        </p>
+      </div>
+    </>
+  )
   return (
     <div className="flex min-w-0 items-center justify-between gap-3 rounded-[0.8rem] border border-white/8 bg-black/25 px-3 py-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <TeamFlag teamCode={team.teamCode} label={name} size="sm" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-white">{name}</p>
-          <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
-            {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
-          </p>
-        </div>
-      </div>
+      {onOpen ? (
+        <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-2 text-left transition hover:opacity-90" title={name}>
+          {identity}
+        </button>
+      ) : (
+        <div className="flex min-w-0 items-center gap-2">{identity}</div>
+      )}
       <span className="mono shrink-0 text-xs font-black text-[var(--color-accent)]">{team.standing.points} {copy.standingsTable.points}</span>
     </div>
   )
 }
 
-function PlayoffView({ copy, playoff }: { copy: ResultsCopy; playoff: ReturnType<typeof buildPlayoffPicture> }) {
+function PlayoffView({
+  copy,
+  playoff,
+  onOpenNation,
+}: {
+  copy: ResultsCopy
+  playoff: ReturnType<typeof buildPlayoffPicture>
+  onOpenNation: (target: NationPlayersTarget) => void
+}) {
   return (
     <section className="space-y-4">
       <div className="glass-panel rounded-[1.15rem] p-4">
@@ -722,7 +750,7 @@ function PlayoffView({ copy, playoff }: { copy: ResultsCopy; playoff: ReturnType
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {playoff.qualified.map((team) => (
             <div key={`${team.rank}-${team.teamCode}`} className="rounded-[0.85rem] border border-white/8 bg-black/20 px-3 py-2">
-              <StandingTeamCell standing={team.standing} />
+              <StandingTeamCell standing={team.standing} onOpen={() => onOpenNation({ teamCode: team.teamCode, name: teamName(team.teamCode) })} />
               <p className="mono mt-2 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
                 {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
               </p>
@@ -741,9 +769,9 @@ function PlayoffView({ copy, playoff }: { copy: ResultsCopy; playoff: ReturnType
               <p className="text-xs font-semibold text-[var(--color-accent)]">{copy.stages.round32}</p>
             </div>
             <div className="grid gap-2">
-              <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={copy.playoff.pendingSeed} />
+              <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={copy.playoff.pendingSeed} onOpenNation={onOpenNation} />
               <div className="mono text-center text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">vs</div>
-              <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel ?? copy.playoff.pendingSeed} />
+              <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel ?? copy.playoff.pendingSeed} onOpenNation={onOpenNation} />
             </div>
           </article>
         ))}
@@ -1107,7 +1135,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
           ) : null}
 
           {activeTab === 'standings' ? <StandingsView copy={copy} groupStandings={groupStandings} onOpenNation={setNationTarget} /> : null}
-          {activeTab === 'playoff' ? <PlayoffView copy={copy} playoff={playoff} /> : null}
+          {activeTab === 'playoff' ? <PlayoffView copy={copy} playoff={playoff} onOpenNation={setNationTarget} /> : null}
         </>
       ) : null}
 
