@@ -3,7 +3,7 @@ import { buildRankChartGeometry, buildRankTooltipLayout } from '../lib/rankChart
 import type { RankHistoryPoint } from '../lib/types'
 
 const VIEW_W = 560
-const VIEW_H = 240
+const VIEW_H = 260
 // Tooltip box sizing (SVG units). Width is estimated from the label length since SVG text can't be
 // measured cheaply; the mono font at this size is ~7 units/char.
 const TIP_CHAR_W = 7
@@ -21,18 +21,28 @@ export function RankHistoryChart({ points, color = 'var(--color-accent)' }: { po
   const gradientId = useId()
   const geo = buildRankChartGeometry(points, { width: VIEW_W, height: VIEW_H })
   const lastIndex = geo.dots.length - 1
+  const lastDot = geo.dots[lastIndex]
   // Index of the dot whose placement tooltip is showing (mouse hover or keyboard focus); null = none.
   const [hovered, setHovered] = useState<number | null>(null)
   const activeDot = hovered !== null ? geo.dots[hovered] : undefined
 
   return (
-    <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="h-auto w-full" style={{ color }} role="img" aria-label="rank history">
+    <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="h-auto min-h-60 w-full" style={{ color }} role="img" aria-label="rank history">
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="currentColor" stopOpacity={0.26} />
           <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
         </linearGradient>
       </defs>
+
+      <rect
+        x={geo.plot.left}
+        y={geo.plot.top}
+        width={geo.plot.right - geo.plot.left}
+        height={geo.plot.bottom - geo.plot.top}
+        rx={14}
+        fill="rgba(255,255,255,0.025)"
+      />
 
       {geo.yTicks.map((tick) => (
         <g key={`y-${tick.rank}`}>
@@ -49,8 +59,14 @@ export function RankHistoryChart({ points, color = 'var(--color-accent)' }: { po
         </text>
       ))}
 
+      <line x1={geo.plot.left} y1={geo.plot.bottom} x2={geo.plot.right} y2={geo.plot.bottom} stroke="rgba(255,255,255,0.11)" />
+      <line x1={geo.plot.left} y1={geo.plot.top} x2={geo.plot.left} y2={geo.plot.bottom} stroke="rgba(255,255,255,0.09)" />
       {geo.areaPath ? <path d={geo.areaPath} fill={`url(#${gradientId})`} /> : null}
       <path d={geo.linePath} fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinejoin="round" strokeLinecap="round" />
+
+      {activeDot ? (
+        <line x1={activeDot.x} y1={geo.plot.top} x2={activeDot.x} y2={geo.plot.bottom} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="4 5" />
+      ) : null}
 
       {geo.dots.map((dot, index) => (
         <circle
@@ -75,7 +91,7 @@ export function RankHistoryChart({ points, color = 'var(--color-accent)' }: { po
           fill="transparent"
           tabIndex={0}
           role="img"
-          aria-label={`#${dot.rank} · ${dot.date}`}
+          aria-label={`#${dot.rank}, ${dot.date}`}
           style={{ cursor: 'pointer', outline: 'none' }}
           onMouseEnter={() => setHovered(index)}
           onMouseLeave={() => setHovered((current) => (current === index ? null : current))}
@@ -84,8 +100,23 @@ export function RankHistoryChart({ points, color = 'var(--color-accent)' }: { po
         />
       ))}
 
+      {lastDot ? <EndpointLabel dot={lastDot} /> : null}
       {activeDot ? <RankTooltip dot={activeDot} /> : null}
     </svg>
+  )
+}
+
+function EndpointLabel({ dot }: { dot: { x: number; y: number; rank: number } }) {
+  const boxW = 42
+  const boxH = 22
+  const tip = buildRankTooltipLayout(dot, { width: boxW, height: boxH, viewWidth: VIEW_W, gap: 12 })
+  return (
+    <g pointerEvents="none">
+      <rect x={tip.x} y={tip.y} width={boxW} height={boxH} rx={7} fill="rgba(11,17,16,0.94)" stroke="currentColor" strokeOpacity={0.35} />
+      <text x={tip.x + boxW / 2} y={tip.y + boxH / 2} textAnchor="middle" dominantBaseline="central" className="mono" fill="currentColor" fontSize={12} fontWeight={800}>
+        #{dot.rank}
+      </text>
+    </g>
   )
 }
 

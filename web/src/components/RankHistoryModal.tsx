@@ -30,6 +30,28 @@ function targetKeyOf(target: RankHistoryTarget) {
 const NATION_COLOR = 'rgb(96 165 250)'
 const PARTICIPANT_COLOR = 'var(--color-accent)'
 
+function HistoryMetric({
+  label,
+  value,
+  detail,
+  color,
+}: {
+  label: string
+  value: string
+  detail?: string
+  color?: string
+}) {
+  return (
+    <div className="min-w-0 rounded-[0.9rem] border border-white/8 bg-black/18 px-4 py-3">
+      <p className="mono truncate text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">{label}</p>
+      <p className="mono mt-1 text-2xl font-black leading-none text-white" style={color ? { color } : undefined}>
+        {value}
+      </p>
+      {detail ? <p className="mt-1 text-[11px] text-[var(--color-muted)]">{detail}</p> : null}
+    </div>
+  )
+}
+
 export function RankHistoryModal({
   target,
   locale,
@@ -80,6 +102,8 @@ export function RankHistoryModal({
   const payload = settled?.kind === 'ready' ? settled.payload : null
   const current = payload?.points.at(-1)?.rank
   const best = payload?.points.length ? Math.min(...payload.points.map((point) => point.rank)) : undefined
+  const first = payload?.points.at(0)?.rank
+  const movement = first !== undefined && current !== undefined ? first - current : undefined
   const color = target.board === 'nations' ? NATION_COLOR : PARTICIPANT_COLOR
 
   return createPortal(
@@ -127,23 +151,22 @@ export function RankHistoryModal({
 
           {payload ? (
             <>
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+              <div className="mb-4 grid gap-2 sm:grid-cols-3">
                 {current !== undefined ? (
-                  <span className="mono rounded-full border border-white/12 bg-white/4 px-3 py-1 text-white">
-                    {copy.current}{' '}
-                    <span className="font-bold" style={{ color }}>
-                      #{current}
-                    </span>{' '}
-                    {copy.ofTotal.replace('{total}', String(payload.boardSize))}
-                  </span>
+                  <HistoryMetric label={copy.current} value={`#${current}`} detail={copy.ofTotal.replace('{total}', String(payload.boardSize))} color={color} />
                 ) : null}
                 {best !== undefined ? (
-                  <span className="mono rounded-full border border-white/12 bg-white/4 px-3 py-1 text-[var(--color-muted)]">
-                    {copy.best} <span className="font-bold text-white">#{best}</span>
-                  </span>
+                  <HistoryMetric label={copy.best} value={`#${best}`} />
+                ) : null}
+                {movement !== undefined ? (
+                  <HistoryMetric
+                    label={copy.change}
+                    value={movement === 0 ? '0' : `${movement > 0 ? '+' : ''}${movement}`}
+                    color={movement > 0 ? color : undefined}
+                  />
                 ) : null}
               </div>
-              <div className="rounded-[1.1rem] border border-white/8 bg-black/20 p-3">
+              <div className="rounded-[1.1rem] border border-white/8 bg-black/20 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                 <RankHistoryChart points={payload.points} color={color} />
               </div>
             </>
