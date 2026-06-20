@@ -161,7 +161,13 @@ not a new rule.
   not any manager's banked total. Clean sheets ride along as a count column, not folded into the points.
 - A player row opens the cross-page `PlayerStatsModal` on click (identity-only seed; the modal
   self-fetches), matching the app-wide click-to-deep-dive pattern. The nation modal owns that sub-modal,
-  so Escape closes the player card first, then the nation list.
+  so Escape closes the player card first, then the nation list. The Soccerverse profile link lives inside
+  that `PlayerStatsModal` (no separate per-row link — it would be redundant).
+- **Mobile sheet.** On narrow screens the modal renders as a full-screen drill-down sheet (edge-to-edge,
+  full height, `rounded-none`) with a sticky header (close always reachable) and a scrollable body;
+  it becomes a centred capped-height card at `sm+`. The wide stats table keeps a **sticky player column**
+  so the name stays visible while the numeric columns scroll horizontally. The rank-history modal uses the
+  same sheet shell.
 
 ## Stats — Player Points Leaderboard
 

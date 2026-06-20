@@ -84,16 +84,17 @@ export function RankHistoryModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/72 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/72 backdrop-blur-sm sm:items-center sm:overflow-y-auto sm:p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}
-        className="glass-panel my-auto w-full max-w-2xl rounded-[1.25rem] p-5 sm:p-6"
+        className="glass-panel flex h-full w-full flex-col rounded-none sm:my-auto sm:h-auto sm:max-h-[calc(100vh-2rem)] sm:max-w-2xl sm:rounded-[1.25rem]"
       >
-        <div className="flex items-start justify-between gap-4">
+        {/* Sticky header on the full-screen mobile sheet so close stays reachable. */}
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/8 p-4 sm:p-6">
           <div className="min-w-0">
             <p className="eyebrow text-[10px]">{copy.eyebrow}</p>
             <h3 className="mt-2 truncate text-2xl font-semibold text-white">{target.label}</h3>
@@ -109,7 +110,7 @@ export function RankHistoryModal({
           </button>
         </div>
 
-        <div className="mt-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {view === 'loading' ? <div className="skeleton h-60 rounded-[1.1rem]" /> : null}
 
           {view === 'error' ? (

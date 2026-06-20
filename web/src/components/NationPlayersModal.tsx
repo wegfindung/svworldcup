@@ -43,6 +43,7 @@ function SortHeader({
   columnKey,
   label,
   align = 'center',
+  sticky = false,
   activeKey,
   dir,
   onToggle,
@@ -50,13 +51,14 @@ function SortHeader({
   columnKey: NationPoolSortKey
   label: string
   align?: 'left' | 'center'
+  sticky?: boolean
   activeKey: NationPoolSortKey
   dir: SortDir
   onToggle: (key: NationPoolSortKey) => void
 }) {
   const active = activeKey === columnKey
   return (
-    <th className={`px-2 py-2 font-semibold ${align === 'left' ? 'text-left' : 'text-center'}`}>
+    <th className={`px-2 py-2 font-semibold ${align === 'left' ? 'text-left' : 'text-center'} ${sticky ? 'sticky left-0 z-20 bg-[#0e1614]' : ''}`}>
       <button
         type="button"
         onClick={() => onToggle(columnKey)}
@@ -145,16 +147,17 @@ export function NationPlayersModal({
   return createPortal(
     <>
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/72 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/72 backdrop-blur-sm sm:items-center sm:overflow-y-auto sm:p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}
-        className="glass-panel my-auto w-full max-w-3xl rounded-[1.25rem] p-5 sm:p-6"
+        className="glass-panel flex h-full w-full flex-col rounded-none sm:my-auto sm:h-auto sm:max-h-[calc(100vh-2rem)] sm:max-w-3xl sm:rounded-[1.25rem]"
       >
-        <div className="flex items-start justify-between gap-4">
+        {/* Sticky header so the close button stays reachable as the list scrolls (full-screen sheet on mobile). */}
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/8 p-4 sm:p-6">
           <div className="flex min-w-0 items-center gap-3">
             <TeamFlag teamCode={target.teamCode} label={target.name} size="md" />
             <div className="min-w-0">
@@ -173,7 +176,7 @@ export function NationPlayersModal({
           </button>
         </div>
 
-        <div className="mt-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {state.kind === 'error' ? (
             <p className="rounded-[1rem] border border-white/8 bg-black/16 px-4 py-6 text-center text-sm text-[var(--color-muted)]">
               {copy.error}
@@ -190,7 +193,7 @@ export function NationPlayersModal({
                 <table className="w-full min-w-[40rem] text-left text-xs">
                   <thead className="border-b border-white/8 bg-[rgba(8,13,12,0.6)] text-[10px]">
                     <tr>
-                      <SortHeader columnKey="name" label={copy.player} align="left" activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
+                      <SortHeader columnKey="name" label={copy.player} align="left" sticky activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
                       <th className="mono px-2 py-2 text-center font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">{copy.position}</th>
                       {numericColumns.map((column) => (
                         <SortHeader key={column.key} columnKey={column.key} label={column.label} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
@@ -199,8 +202,8 @@ export function NationPlayersModal({
                   </thead>
                   <tbody>
                     {rows.map((player) => (
-                      <tr key={player.playerId} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition">
-                        <td className="px-2 py-2.5">
+                      <tr key={player.playerId} className="group border-b border-white/5 last:border-0 transition hover:bg-white/[0.02]">
+                        <td className="sticky left-0 z-10 bg-[#0b100f] px-2 py-2.5 transition group-hover:bg-[#101614]">
                           <button
                             type="button"
                             onClick={() => setPlayerSeed(seedFor(player))}
