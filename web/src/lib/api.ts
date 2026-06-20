@@ -40,6 +40,8 @@ import type {
   BoostLeaderboardPayload,
   NationParticipationRow,
   NationScoreRow,
+  RankHistoryBoard,
+  RankHistoryPayload,
   ReferralAnalyticsRow,
   SoccerversePlayer,
   TeamPoolPlayer,
@@ -444,6 +446,12 @@ export function fetchNationLeaderboard(signal?: AbortSignal) {
     headers: {},
     signal,
   })
+}
+
+// Per-day rank history for one board entity (participantId for rookie/veteran, teamCode for nations),
+// powering the Tables rank-trend modal. Cached so reopening the same entity is instant.
+export function fetchRankHistory(board: RankHistoryBoard, id: string) {
+  return getCachedJson<RankHistoryPayload>(`/api/public/leaderboards/rank-history/${board}/${encodeURIComponent(id)}`)
 }
 
 export function fetchNationParticipation(signal?: AbortSignal) {

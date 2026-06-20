@@ -363,6 +363,44 @@ from an in-memory read-through cache of the computed participant rows.
 - **Tradeoff:** during a snapshot capture the cache is repeatedly invalidated, so reads recompute until
   capture settles — correctness (never stale) over peak performance during that brief window.
 
+## Rank History (display)
+
+The public Tables page lets a visitor click a row's `#rank` number on any of the three boards
+(Rookie / Veteran / Nations) to open a modal showing that entity's **rank over time** — a line graph
+plotting the rank it held **at the end of each UTC day**, within that board. This is a **display** of
+the existing scoring (like the Nations in-money indicator), not a new scoring rule.
+
+- **Derived, not stored.** Rank history is reconstructed from the same match data the leaderboards use
+  — no new table, column, or capture job (`server/src/services/rankHistory.ts → buildRankHistory`,
+  served by `GET /api/public/leaderboards/rank-history/:board/:id`). Because it is derived from stored
+  match entries it is fully reproducible and retroactive to the first matchday, satisfying "all score
+  calculations must be reproducible from stored match input."
+- **`rank at end of day D` = the standings using only fixtures whose UTC kickoff date ≤ D.** Each
+  `admin_match_entries` row belongs to a fixture with a UTC kickoff (`kickoffDate` + `kickoffTimeUtc`;
+  epoch via `competitionWindow.ts → fixtureKickoffEpoch`). The day key is the UTC date of that epoch
+  (`new Date(epoch).toISOString().slice(0, 10)`).
+- **Exact cumulative formula.** A participant's banked total is `(baseScore + ownershipBoost) ×
+  scoreMultiplier` (see "Salary Budget Multiplier"); the multiplier is **constant per participant**, so
+  `cumulativeTotal(D) = scoreMultiplier × Σ over fixtures f with kickoffDate ≤ D of (base_f + boost_f)`.
+  The per-fixture contribution summed here is the engine's **real** per-fixture value — reserve
+  half-weight and the per-fixture ownership boost already applied, pre-multiplier — sourced from inside
+  the scoring repository (where `bonusByEntry` and the reserve weighting are in scope), **not** the
+  display field `ParticipantScoreRow.fixtures[].totalPoints`.
+- **Same population and tiebreaks as the live board, recomputed per day.** Rookie/Veteran days re-rank
+  the league's locked participants with `rankParticipants` (score desc → `registeredAt` → display name).
+  Nation days aggregate each qualified nation's member cumulative totals for that day, then rank with
+  `rankNations` (averageScore desc → topScore → teamCode). Every locked squad is in its board from day 1
+  (0 points → tied at the bottom by tiebreak), so a line is defined across the whole series.
+- **X axis = matchday dates only.** The series points are the distinct UTC dates that have at least one
+  scored (promoted) fixture, ascending — a date with no promoted fixture cannot change any rank, so it
+  is omitted (clean step line, bounded length). A nation appears only if it currently qualifies
+  (`participantCount ≥ 2`); membership is the current locked set, constant across the history.
+- **Server-side + cache reuse.** Required server-side because Nations need per-fixture **member** detail
+  the public `NationScoreRow.contributors[]` does not carry, and the rookie/veteran tiebreak needs
+  `registeredAt` the client lacks. The full per-day rank matrix for all three boards is computed once
+  off the shared cached row set (`getCachedRows`, see "Leaderboard Read Cache"), memoized by cache
+  generation; a single-entity request slices its own series out. No new query, no new cache.
+
 ## Per-Round Lineup Freeze
 
 The unit of scoring is the **round** (group matchday 1/2/3, then round of 32, round of 16,

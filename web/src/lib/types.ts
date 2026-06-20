@@ -443,6 +443,26 @@ export interface NationParticipationRow {
   veteranCount: number
 }
 
+export type RankHistoryBoard = 'rookie' | 'veteran' | 'nations'
+
+export interface RankHistoryPoint {
+  /** UTC matchday, `YYYY-MM-DD`. */
+  date: string
+  rank: number
+  /** Cumulative score at end of that UTC day — total for a participant, average for a nation. */
+  score: number
+}
+
+export interface RankHistoryPayload {
+  board: RankHistoryBoard
+  /** participantId for rookie/veteran, teamCode for nations. */
+  id: string
+  displayName: string
+  points: RankHistoryPoint[]
+  /** Number of ranked entities on the board. */
+  boardSize: number
+}
+
 export interface PublicParticipantProfile {
   slug: string
   participantId: string

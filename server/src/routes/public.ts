@@ -19,6 +19,7 @@ import { searchCommunityPlayerIds } from '../services/communityPack.js'
 import { buildPublicFixtureResults } from '../services/matchResults.js'
 import { buildPlayerPointsLeaderboard } from '../services/playerPointsLeaderboard.js'
 import { buildBoostLeaderboard } from '../services/boostLeaderboard.js'
+import { isRankHistoryBoard } from '../services/rankHistory.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
 
 const playerSearchSchema = z.object({
@@ -406,6 +407,21 @@ export function createPublicRouter({
 
   router.get('/budget-stats', async (_req, res) => {
     res.json(await scoringRepository.getBudgetStats())
+  })
+
+  // Per-day rank history for one board entity (participantId for rookie/veteran, teamCode for
+  // nations), powering the Tables rank-trend modal. Derived from the cached rows — no stored history.
+  // See SOP_scoring_and_leagues.md "Rank History (display)".
+  router.get('/leaderboards/rank-history/:board/:id', async (req, res) => {
+    const { board, id } = req.params
+    if (!isRankHistoryBoard(board)) {
+      return res.status(400).json({ error: 'Unknown board.' })
+    }
+    const history = await scoringRepository.getRankHistory(board, id)
+    if (!history) {
+      return res.status(404).json({ error: 'No rank history for this entry.' })
+    }
+    res.json(history)
   })
 
   // Stats › Boosts — players ranked by total ownership boost the field has spent, from the frozen per-fixture
