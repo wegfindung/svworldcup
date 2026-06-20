@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { EmptyState } from '../components/EmptyState'
 import { InfoTip } from '../components/InfoTip'
+import { NationPlayersModal, type NationPlayersTarget } from '../components/NationPlayersModal'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { getMessages, type AppMessages } from '../i18n/messages'
@@ -593,20 +594,36 @@ function TeamPlayerDetails({ copy, factorCopy, title, teamCode, players }: { cop
   )
 }
 
-function StandingTeamCell({ standing }: { standing: GroupStanding }) {
+function StandingTeamCell({ standing, onOpen }: { standing: GroupStanding; onOpen?: () => void }) {
   const name = teamName(standing.teamCode)
-  return (
-    <div className="flex min-w-0 items-center gap-2">
+  const flagAndName = (
+    <>
       <TeamFlag teamCode={standing.teamCode} label={name} size="sm" />
       <div className="min-w-0">
-        <p className="truncate text-xs font-bold text-white">{name}</p>
+        <p className={`truncate text-xs font-bold text-white ${onOpen ? 'underline-offset-2 hover:text-[var(--color-accent)] hover:underline' : ''}`}>{name}</p>
         <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">{standing.teamCode}</p>
       </div>
-    </div>
+    </>
+  )
+  if (!onOpen) {
+    return <div className="flex min-w-0 items-center gap-2">{flagAndName}</div>
+  }
+  return (
+    <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-2 text-left transition hover:opacity-90" title={name}>
+      {flagAndName}
+    </button>
   )
 }
 
-function StandingsView({ copy, groupStandings }: { copy: ResultsCopy; groupStandings: readonly (readonly [string, GroupStanding[]])[] }) {
+function StandingsView({
+  copy,
+  groupStandings,
+  onOpenNation,
+}: {
+  copy: ResultsCopy
+  groupStandings: readonly (readonly [string, GroupStanding[]])[]
+  onOpenNation: (target: NationPlayersTarget) => void
+}) {
   return (
     <section className="grid gap-4 xl:grid-cols-2">
       {groupStandings.map(([groupKey, standings]) => (
@@ -648,7 +665,7 @@ function StandingsView({ copy, groupStandings }: { copy: ResultsCopy; groupStand
                         ].join(' ')}>
                           {index + 1}
                         </span>
-                        <StandingTeamCell standing={standing} />
+                        <StandingTeamCell standing={standing} onOpen={() => onOpenNation({ teamCode: standing.teamCode, name: teamName(standing.teamCode) })} />
                       </div>
                     </td>
                     <td className="px-2 py-2.5 text-center text-[var(--color-paper)]">{standing.played}</td>
@@ -896,6 +913,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
   const [openFixtureIds, setOpenFixtureIds] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<ResultsTab>('matches')
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
+  const [nationTarget, setNationTarget] = useState<NationPlayersTarget | null>(null)
 
   function jumpToGroup(groupKey: string) {
     setActiveGroup(groupKey)
@@ -1088,10 +1106,12 @@ export function ResultsPage({ locale }: ResultsPageProps) {
             </section>
           ) : null}
 
-          {activeTab === 'standings' ? <StandingsView copy={copy} groupStandings={groupStandings} /> : null}
+          {activeTab === 'standings' ? <StandingsView copy={copy} groupStandings={groupStandings} onOpenNation={setNationTarget} /> : null}
           {activeTab === 'playoff' ? <PlayoffView copy={copy} playoff={playoff} /> : null}
         </>
       ) : null}
+
+      <NationPlayersModal target={nationTarget} locale={locale} onClose={() => setNationTarget(null)} />
     </div>
   )
 }

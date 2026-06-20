@@ -141,6 +141,28 @@ applies their budget multiplier and any ownership boost, and halves for a reserv
 is intentionally not equal to any individual manager's banked total. This is the same per-participant
 divergence the import engine refuses to collapse into one number (`SOP_match_data_import.md` "Rating").
 
+### Nation player pool (Results › Group standings, display)
+
+Clicking a nation row on the Results page **Group standings** tab opens a modal listing **that nation's
+players who have scored points so far**, default-sorted by total points. Pure client-side off the
+**already-cached `/player-points` payload** (`web/src/lib/nationPoolPlayers.ts`,
+`components/NationPlayersModal.tsx`) — no server, service, or DB change. A *display* of existing data,
+not a new rule.
+
+- **Source + filter.** `/player-points` `items` filtered to the nation's `teamCode`, keeping players
+  with `basePoints > 0` (they featured and accumulated points). The same payload the Stats Points tab
+  uses; opening the modal reuses the cached fetch (`fetchPlayerPoints`).
+- **Columns + sort.** Player (name/flag), position, goals, assists, appearances, minutes, clean sheets,
+  average rating, and **total points** (`basePoints`, the headline and default sort, descending). Every
+  data header is **clickable to re-sort**; clicking the active header toggles ascending/descending; ties
+  fall back to points-desc then name (`sortNationPoolPlayers`, unit-tested).
+- **Base points only**, same caveat as the Points tab — `basePoints` excludes the per-position clean
+  sheet and every per-manager term (budget multiplier, ownership boost, reserve half-weight), so it is
+  not any manager's banked total. Clean sheets ride along as a count column, not folded into the points.
+- A player row opens the cross-page `PlayerStatsModal` on click (identity-only seed; the modal
+  self-fetches), matching the app-wide click-to-deep-dive pattern. The nation modal owns that sub-modal,
+  so Escape closes the player card first, then the nation list.
+
 ## Stats — Player Points Leaderboard
 
 The public Stats page (`/stats`) has seven tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
