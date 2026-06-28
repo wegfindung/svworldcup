@@ -84,6 +84,26 @@ describe('parseMatchImportFeedCsv', () => {
     expect(() => parseMatchImportFeedCsv(text, options)).toThrow(MatchImportValidationError)
   })
 
+  it('accepts provider aliases for a selected fixture team', () => {
+    const congoOptions: CsvMatchOptions = {
+      ...options,
+      homeTeamCode: 'COD',
+      awayTeamCode: 'UZB',
+      homeTeamName: 'Democratic Republic of the Congo',
+      awayTeamName: 'Uzbekistan',
+      homeGoals: 3,
+      awayGoals: 1,
+    }
+    const text = [
+      'team,player,minutes,goals,assists,rating',
+      'Congo DR,Aaron Wan-Bissaka,99,0,0,6.9',
+      'Uzbekistan,Someone,99,0,0,7.1',
+    ].join('\n')
+    const json = parseMatchImportFeedCsv(text, congoOptions)
+    expect(json.players[0].team).toBe('Democratic Republic of the Congo')
+    expect(json.players[1].team).toBe('Uzbekistan')
+  })
+
   it('rejects a header missing a required column', () => {
     const text = ['team,player,minutes,goals,assists', 'Mexico,X,90,0,0'].join('\n')
     expect(() => parseMatchImportFeedCsv(text, options)).toThrow(/missing required column/)

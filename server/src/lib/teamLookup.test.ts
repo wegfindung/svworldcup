@@ -14,6 +14,7 @@ describe('resolveTeamCode', () => {
   it('resolves known source-name aliases', () => {
     expect(resolveTeamCode('Türkiye')).toBe('TUR')
     expect(resolveTeamCode('DR Congo')).toBe('COD')
+    expect(resolveTeamCode('Congo DR')).toBe('COD')
     expect(resolveTeamCode('USA')).toBe('USA')
   })
 

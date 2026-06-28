@@ -39,6 +39,7 @@ const explicitAliases = new Map<string, string>([
   ['turkiye', 'TUR'],
   ['turkey', 'TUR'],
   ['dr congo', 'COD'],
+  ['congo dr', 'COD'],
   ['democratic republic of the congo', 'COD'],
   ['usa', 'USA'],
 ])
