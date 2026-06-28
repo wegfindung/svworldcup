@@ -109,3 +109,22 @@ export function knockoutFixture(matchNumber: number, homeTeamCode: string, awayT
     awayTeamCode,
   }
 }
+
+export const officialRoundOf32Fixtures: FixtureSeed[] = [
+  knockoutFixture(73, 'RSA', 'CAN'),
+  knockoutFixture(74, 'GER', 'PAR'),
+  knockoutFixture(75, 'NED', 'MAR'),
+  knockoutFixture(76, 'BRA', 'JPN'),
+  knockoutFixture(77, 'FRA', 'SWE'),
+  knockoutFixture(78, 'CIV', 'NOR'),
+  knockoutFixture(79, 'MEX', 'ECU'),
+  knockoutFixture(80, 'ENG', 'COD'),
+  knockoutFixture(81, 'USA', 'BIH'),
+  knockoutFixture(82, 'BEL', 'SEN'),
+  knockoutFixture(83, 'POR', 'CRO'),
+  knockoutFixture(84, 'ESP', 'AUT'),
+  knockoutFixture(85, 'SUI', 'ALG'),
+  knockoutFixture(86, 'ARG', 'CPV'),
+  knockoutFixture(87, 'COL', 'GHA'),
+  knockoutFixture(88, 'AUS', 'EGY'),
+]

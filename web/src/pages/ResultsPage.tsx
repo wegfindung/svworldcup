@@ -85,6 +85,25 @@ const roundOf32Templates = [
   { match: 88, home: { rank: 2, group: 'D' }, away: { rank: 2, group: 'G' } },
 ] as const
 
+const officialRoundOf32Fixtures = [
+  { match: 73, homeTeamCode: 'RSA', awayTeamCode: 'CAN' },
+  { match: 74, homeTeamCode: 'GER', awayTeamCode: 'PAR' },
+  { match: 75, homeTeamCode: 'NED', awayTeamCode: 'MAR' },
+  { match: 76, homeTeamCode: 'BRA', awayTeamCode: 'JPN' },
+  { match: 77, homeTeamCode: 'FRA', awayTeamCode: 'SWE' },
+  { match: 78, homeTeamCode: 'CIV', awayTeamCode: 'NOR' },
+  { match: 79, homeTeamCode: 'MEX', awayTeamCode: 'ECU' },
+  { match: 80, homeTeamCode: 'ENG', awayTeamCode: 'COD' },
+  { match: 81, homeTeamCode: 'USA', awayTeamCode: 'BIH' },
+  { match: 82, homeTeamCode: 'BEL', awayTeamCode: 'SEN' },
+  { match: 83, homeTeamCode: 'POR', awayTeamCode: 'CRO' },
+  { match: 84, homeTeamCode: 'ESP', awayTeamCode: 'AUT' },
+  { match: 85, homeTeamCode: 'SUI', awayTeamCode: 'ALG' },
+  { match: 86, homeTeamCode: 'ARG', awayTeamCode: 'CPV' },
+  { match: 87, homeTeamCode: 'COL', awayTeamCode: 'GHA' },
+  { match: 88, homeTeamCode: 'AUS', awayTeamCode: 'EGY' },
+] as const
+
 const winnerBracket = [
   { match: 89, home: 74, away: 77 },
   { match: 90, home: 73, away: 75 },
@@ -287,6 +306,8 @@ function buildPlayoffPicture(groupStandings: readonly (readonly [string, GroupSt
   }
 
   const availableThirds = [...thirdPlaceTeams].sort((left, right) => compareStandings(left.standing, right.standing)).slice(0, 8)
+  const groupResults = results.filter((result) => groupStageKeys.includes(result.groupKey))
+  const groupStageFinal = groupResults.length >= 72 && groupResults.every((result) => result.status === 'final')
   const resultByMatch = new Map<number, PublicFixtureResult>()
   for (const result of results) {
     const matchNumber = playoffMatchNumberFromFixtureId(result.fixtureId)
@@ -332,22 +353,35 @@ function buildPlayoffPicture(groupStandings: readonly (readonly [string, GroupSt
   }
 
   const matchesByNumber = new Map<number, PlayoffMatch>()
-  for (const template of roundOf32Templates) {
-    const home = qualifierBySeed.get(`${template.home.rank}${template.home.group}`) ?? null
-    if ('away' in template) {
-      const away = qualifierBySeed.get(`${template.away.rank}${template.away.group}`) ?? null
-      addMatch(matchesByNumber, template.match, teamFromQualifier(home), teamFromQualifier(away), copy.playoff.pendingSeed, copy.playoff.pendingSeed)
-      continue
+  if (groupStageFinal) {
+    for (const fixture of officialRoundOf32Fixtures) {
+      addMatch(
+        matchesByNumber,
+        fixture.match,
+        teamFromCode(fixture.homeTeamCode, copy.playoff.pendingSeed),
+        teamFromCode(fixture.awayTeamCode, copy.playoff.pendingSeed),
+        copy.playoff.pendingSeed,
+        copy.playoff.pendingSeed,
+      )
     }
-    const awaySeedLabel = `3rd ${template.thirdAway.join('/')}`
-    addMatch(
-      matchesByNumber,
-      template.match,
-      teamFromQualifier(home),
-      teamFromQualifier(selectThirdPlaceTeam(availableThirds, template.thirdAway)),
-      copy.playoff.pendingSeed,
-      awaySeedLabel,
-    )
+  } else {
+    for (const template of roundOf32Templates) {
+      const home = qualifierBySeed.get(`${template.home.rank}${template.home.group}`) ?? null
+      if ('away' in template) {
+        const away = qualifierBySeed.get(`${template.away.rank}${template.away.group}`) ?? null
+        addMatch(matchesByNumber, template.match, teamFromQualifier(home), teamFromQualifier(away), copy.playoff.pendingSeed, copy.playoff.pendingSeed)
+        continue
+      }
+      const awaySeedLabel = `3rd ${template.thirdAway.join('/')}`
+      addMatch(
+        matchesByNumber,
+        template.match,
+        teamFromQualifier(home),
+        teamFromQualifier(selectThirdPlaceTeam(availableThirds, template.thirdAway)),
+        copy.playoff.pendingSeed,
+        awaySeedLabel,
+      )
+    }
   }
 
   for (const template of winnerBracket) {
