@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { fixtures, teams } from '../data/worldCupSeed.js'
+import { teams } from '../data/worldCupSeed.js'
 import { parseMatchImportCsv } from '../lib/matchImportCsv.js'
 import { isFeedCsv, parseMatchImportFeedCsv } from '../lib/matchImportFeedCsv.js'
 import { MatchImportValidationError } from '../lib/matchImportError.js'
@@ -10,9 +10,11 @@ import { normalizeName } from '../lib/normalizeName.js'
 import { promoteBatchIfReady } from '../services/matchPromotion.js'
 import { JsonMatchStatsImporter } from '../services/matchStatsImporter.js'
 import { logger } from '../lib/logger.js'
-import type { MatchImportJson } from '../domain/types.js'
+import { syncDerivedPlayoffFixtures } from '../services/playoffFixtures.js'
+import type { FixtureSeed, MatchImportJson } from '../domain/types.js'
 import type { AuditRepository } from '../repositories/auditRepository.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
+import type { FixtureRepository } from '../repositories/fixtureRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
@@ -20,6 +22,7 @@ import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { SnapshotJobRepository } from '../repositories/snapshotJobRepository.js'
 
 export interface MatchImportRouterDeps {
+  fixtureRepository: FixtureRepository
   matchImportRepository: MatchImportRepository
   matchMappingRepository: MatchMappingRepository
   teamPoolRepository: TeamPoolRepository
@@ -117,7 +120,11 @@ type MatchInput = z.infer<typeof matchInputSchema>
 // Turn a submitted JSON or CSV/TSV payload into the shared MatchImportJson shape, so the
 // rest of the pipeline stays format-agnostic. For CSV/TSV the match-level fields come from
 // the form values and the selected fixture's two teams.
-function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImportJson {
+function findFixture(fixtures: FixtureSeed[], fixtureId: string) {
+  return fixtures.find((candidate) => candidate.fixtureId === fixtureId)
+}
+
+function buildMatchImportJson(fixtureId: string, input: MatchInput, currentFixtures: FixtureSeed[]): MatchImportJson {
   if (input.format === 'json') {
     const json = parseMatchImportJson(input.json)
     // The source URL may come from the JSON's match block or the panel's form field; the
@@ -131,7 +138,7 @@ function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImport
     }
     return { ...json, match: { ...json.match, sourceUrl } }
   }
-  const fixture = fixtures.find((candidate) => candidate.fixtureId === fixtureId)
+  const fixture = findFixture(currentFixtures, fixtureId)
   if (!fixture) {
     throw new MatchImportValidationError('Unknown fixture.')
   }
@@ -158,25 +165,43 @@ function buildMatchImportJson(fixtureId: string, input: MatchInput): MatchImport
 // Mounted under /api/admin/match-import, inheriting admin authentication from the admin router.
 export function createMatchImportRouter(deps: MatchImportRouterDeps) {
   const router = Router()
-  const importer = new JsonMatchStatsImporter(deps.matchMappingRepository, deps.teamPoolRepository, deps.packNameLookup)
+  const importer = new JsonMatchStatsImporter(
+    deps.matchMappingRepository,
+    deps.teamPoolRepository,
+    deps.packNameLookup,
+    async (fixtureId) => findFixture(await syncCurrentFixtures(), fixtureId),
+  )
+
+  async function syncCurrentFixtures() {
+    return syncDerivedPlayoffFixtures({
+      fixtureRepository: deps.fixtureRepository,
+      scoringRepository: deps.scoringRepository,
+      configRepository: deps.configRepository,
+      teamPoolRepository: deps.teamPoolRepository,
+    })
+  }
 
   // Fix 7: parse + auto-resolve without persisting anything. The admin uses the returned
   // resolution to resolve or skip every outstanding row before calling /upload.
   router.post('/parse', async (req, res) => {
     const parsed = parseSchema.parse(req.body)
-    const json = buildMatchImportJson(parsed.fixtureId, parsed.input)
+    const currentFixtures = await syncCurrentFixtures()
+    const fixture = findFixture(currentFixtures, parsed.fixtureId)
+    const json = buildMatchImportJson(parsed.fixtureId, parsed.input, currentFixtures)
     assertMatchImportSemantics(json)
-    const resolution = await importer.resolveMatch({ fixtureId: parsed.fixtureId, json })
+    const resolution = await importer.resolveMatch({ fixtureId: parsed.fixtureId, json, fixture })
     res.json({ resolution })
   })
 
   router.post('/upload', async (req, res) => {
     const adminEmail = res.locals.admin.email as string
     const parsed = uploadSchema.parse(req.body)
-    const json = buildMatchImportJson(parsed.fixtureId, parsed.input)
+    const currentFixtures = await syncCurrentFixtures()
+    const fixture = findFixture(currentFixtures, parsed.fixtureId)
+    const json = buildMatchImportJson(parsed.fixtureId, parsed.input, currentFixtures)
     assertMatchImportSemantics(json)
 
-    const resolution = await importer.resolveMatch({ fixtureId: parsed.fixtureId, json })
+    const resolution = await importer.resolveMatch({ fixtureId: parsed.fixtureId, json, fixture })
     // Fix 7: rejects loudly if any row is still unresolved with no resolve/skip choice.
     const finalized = finalizeSubmission(resolution, parsed.overrides, adminEmail)
     // Fix 8 + Fix A: re-assert the 11-starter cap on the finalized rows. assertMatchImportSemantics
@@ -399,7 +424,7 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
   router.put('/fixtures/:fixtureId/official-score', async (req, res) => {
     const adminEmail = res.locals.admin.email as string
     const fixtureId = String(req.params.fixtureId)
-    if (!fixtures.some((fixture) => fixture.fixtureId === fixtureId)) {
+    if (!findFixture(await syncCurrentFixtures(), fixtureId)) {
       return res.status(404).json({ error: 'Unknown fixture.' })
     }
     const { homeGoals, awayGoals } = officialScoreSchema.parse(req.body)

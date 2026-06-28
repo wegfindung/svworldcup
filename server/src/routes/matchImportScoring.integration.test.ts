@@ -6,6 +6,7 @@ import { REAL_FEED_CSV } from '../lib/matchImportFeedCsv.testdata.js'
 import { errorHandler } from '../middleware/errorHandler.js'
 import { MemoryAuditRepository } from '../repositories/auditRepository.js'
 import { MemoryConfigRepository } from '../repositories/configRepository.js'
+import { MemoryFixtureRepository } from '../repositories/fixtureRepository.js'
 import { MemoryMatchImportRepository } from '../repositories/matchImportRepository.js'
 import { MemoryMatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import { MemoryRegistrationRepository } from '../repositories/registrationRepository.js'
@@ -129,6 +130,7 @@ async function setup() {
   )
 
   const deps = {
+    fixtureRepository: new MemoryFixtureRepository(),
     matchImportRepository: new MemoryMatchImportRepository(),
     matchMappingRepository: new MemoryMatchMappingRepository(),
     teamPoolRepository,

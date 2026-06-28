@@ -221,6 +221,7 @@ export function createApp() {
       adminRepository,
       registrationRepository,
       configRepository,
+      fixtureRepository,
       teamPoolRepository,
       scoringRepository,
       matchImportRepository,
