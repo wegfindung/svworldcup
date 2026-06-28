@@ -3,14 +3,17 @@ import { MatchImportValidationError } from '../lib/matchImportError.js'
 import { normalizeName } from '../lib/normalizeName.js'
 import { resolvePlayer, type PlayerResolutionContext } from '../lib/playerResolution.js'
 import { resolveTeamCode } from '../lib/teamLookup.js'
-import type { MatchImportJson, MatchResolution, ResolvedMatchRow } from '../domain/types.js'
+import type { FixtureSeed, MatchImportJson, MatchResolution, ResolvedMatchRow } from '../domain/types.js'
 import type { MatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 
 export interface MatchImportRequest {
   fixtureId: string
   json: MatchImportJson
+  fixture?: FixtureSeed
 }
+
+type FixtureLookup = (fixtureId: string) => FixtureSeed | undefined | Promise<FixtureSeed | undefined>
 
 // D1: the adapter abstraction. One resolveMatch() implementation per data source, all
 // feeding the same pre-persist resolve -> two-admin confirm -> promote pipeline. The JSON
@@ -31,6 +34,7 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
     private readonly mappingRepository: MatchMappingRepository,
     private readonly teamPoolRepository: TeamPoolRepository,
     private readonly packNameLookup?: (playerId: number) => Promise<string | undefined>,
+    private readonly fixtureLookup: FixtureLookup = (fixtureId) => fixtures.find((candidate) => candidate.fixtureId === fixtureId),
   ) {}
 
   // Best-effort enrichment: a pack failure must never fail an import — resolution just
@@ -61,7 +65,7 @@ export class JsonMatchStatsImporter implements MatchStatsImporter {
   async resolveMatch(request: MatchImportRequest): Promise<MatchResolution> {
     const { fixtureId, json } = request
 
-    const fixture = fixtures.find((candidate) => candidate.fixtureId === fixtureId)
+    const fixture = request.fixture ?? (await this.fixtureLookup(fixtureId))
     if (!fixture) {
       throw new MatchImportValidationError('Unknown fixture.')
     }

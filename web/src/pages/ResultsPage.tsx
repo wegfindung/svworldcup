@@ -38,11 +38,25 @@ interface KnockoutTeam {
   standing: GroupStanding
 }
 
+interface PlayoffTeam {
+  teamCode: string
+  seedLabel: string
+  standing?: GroupStanding
+}
+
 interface PlayoffMatch {
   match: number
-  home: KnockoutTeam | null
-  away: KnockoutTeam | null
-  awaySeedLabel?: string
+  groupKey: string
+  home: PlayoffTeam | null
+  away: PlayoffTeam | null
+  homeSeedLabel: string
+  awaySeedLabel: string
+  result?: PublicFixtureResult
+}
+
+interface PlayoffStage {
+  groupKey: string
+  matches: PlayoffMatch[]
 }
 
 function teamName(teamCode: string) {
@@ -70,6 +84,42 @@ const roundOf32Templates = [
   { match: 87, home: { rank: 1, group: 'K' }, thirdAway: ['D', 'E', 'I', 'J', 'L'] },
   { match: 88, home: { rank: 2, group: 'D' }, away: { rank: 2, group: 'G' } },
 ] as const
+
+const winnerBracket = [
+  { match: 89, home: 74, away: 77 },
+  { match: 90, home: 73, away: 75 },
+  { match: 91, home: 76, away: 78 },
+  { match: 92, home: 79, away: 80 },
+  { match: 93, home: 83, away: 84 },
+  { match: 94, home: 81, away: 82 },
+  { match: 95, home: 86, away: 88 },
+  { match: 96, home: 85, away: 87 },
+  { match: 97, home: 89, away: 90 },
+  { match: 98, home: 93, away: 94 },
+  { match: 99, home: 91, away: 92 },
+  { match: 100, home: 95, away: 96 },
+  { match: 101, home: 97, away: 98 },
+  { match: 102, home: 99, away: 100 },
+] as const
+
+const playoffStageMatches: PlayoffStage[] = [
+  { groupKey: 'R32', matches: [] },
+  { groupKey: 'R16', matches: [] },
+  { groupKey: 'QF', matches: [] },
+  { groupKey: 'SF', matches: [] },
+  { groupKey: '3P', matches: [] },
+  { groupKey: 'FINAL', matches: [] },
+]
+
+function playoffStageForMatch(match: number) {
+  if (match >= 73 && match <= 88) return 'R32'
+  if (match >= 89 && match <= 96) return 'R16'
+  if (match >= 97 && match <= 100) return 'QF'
+  if (match >= 101 && match <= 102) return 'SF'
+  if (match === 103) return '3P'
+  if (match === 104) return 'FINAL'
+  return 'R32'
+}
 
 function stageTitle(groupKey: string, copy: ResultsCopy) {
   if (/^[A-L]$/.test(groupKey)) return `${copy.group} ${groupKey}`
@@ -189,13 +239,45 @@ function selectThirdPlaceTeam(availableThirds: KnockoutTeam[], allowedGroups: re
   return selected
 }
 
-function buildPlayoffPicture(groupStandings: readonly (readonly [string, GroupStanding[]])[]) {
+function playoffMatchNumberFromFixtureId(fixtureId: string) {
+  const match = /-(\d+)$/.exec(fixtureId)
+  if (!match) {
+    return null
+  }
+  const value = Number(match[1])
+  return value >= 73 && value <= 104 ? value : null
+}
+
+function winnerCode(result: PublicFixtureResult | undefined) {
+  if (!result || result.status !== 'final' || result.homeGoals === null || result.awayGoals === null) {
+    return null
+  }
+  if (result.homeGoals > result.awayGoals) return result.homeTeamCode
+  if (result.awayGoals > result.homeGoals) return result.awayTeamCode
+  return null
+}
+
+function loserCode(result: PublicFixtureResult | undefined) {
+  const winner = winnerCode(result)
+  if (!winner || !result) {
+    return null
+  }
+  return winner === result.homeTeamCode ? result.awayTeamCode : result.homeTeamCode
+}
+
+function qualifierSeedLabel(team: KnockoutTeam, copy: ResultsCopy) {
+  return team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix} ${copy.group} ${team.groupKey}`
+}
+
+function buildPlayoffPicture(groupStandings: readonly (readonly [string, GroupStanding[]])[], results: PublicFixtureResult[], copy: ResultsCopy) {
   const qualifierBySeed = new Map<string, KnockoutTeam>()
   const thirdPlaceTeams: KnockoutTeam[] = []
+  const standingByTeam = new Map<string, KnockoutTeam>()
 
   for (const [groupKey, rows] of groupStandings) {
     rows.forEach((standing, index) => {
       const team: KnockoutTeam = { teamCode: standing.teamCode, groupKey, rank: index + 1, standing }
+      standingByTeam.set(team.teamCode, team)
       if (index < 2) {
         qualifierBySeed.set(`${index + 1}${groupKey}`, team)
       } else if (index === 2) {
@@ -205,25 +287,92 @@ function buildPlayoffPicture(groupStandings: readonly (readonly [string, GroupSt
   }
 
   const availableThirds = [...thirdPlaceTeams].sort((left, right) => compareStandings(left.standing, right.standing)).slice(0, 8)
-  const matches: PlayoffMatch[] = roundOf32Templates.map((template) => {
+  const resultByMatch = new Map<number, PublicFixtureResult>()
+  for (const result of results) {
+    const matchNumber = playoffMatchNumberFromFixtureId(result.fixtureId)
+    if (matchNumber !== null) {
+      resultByMatch.set(matchNumber, result)
+    }
+  }
+
+  function teamFromQualifier(team: KnockoutTeam | null): PlayoffTeam | null {
+    return team ? { teamCode: team.teamCode, seedLabel: qualifierSeedLabel(team, copy), standing: team.standing } : null
+  }
+
+  function teamFromCode(teamCode: string, seedLabel: string): PlayoffTeam {
+    const seed = standingByTeam.get(teamCode)
+    return {
+      teamCode,
+      seedLabel: seed ? qualifierSeedLabel(seed, copy) : seedLabel,
+      standing: seed?.standing,
+    }
+  }
+
+  function addMatch(matches: Map<number, PlayoffMatch>, match: number, home: PlayoffTeam | null, away: PlayoffTeam | null, homeSeedLabel: string, awaySeedLabel: string) {
+    const result = resultByMatch.get(match)
+    matches.set(match, {
+      match,
+      groupKey: result?.groupKey ?? playoffStageForMatch(match),
+      home: result ? teamFromCode(result.homeTeamCode, home?.seedLabel ?? homeSeedLabel) : home,
+      away: result ? teamFromCode(result.awayTeamCode, away?.seedLabel ?? awaySeedLabel) : away,
+      homeSeedLabel,
+      awaySeedLabel,
+      result,
+    })
+  }
+
+  function winnerSlot(sourceMatch: number) {
+    const winner = winnerCode(resultByMatch.get(sourceMatch))
+    return winner ? teamFromCode(winner, `W M${sourceMatch}`) : null
+  }
+
+  function loserSlot(sourceMatch: number) {
+    const loser = loserCode(resultByMatch.get(sourceMatch))
+    return loser ? teamFromCode(loser, `L M${sourceMatch}`) : null
+  }
+
+  const matchesByNumber = new Map<number, PlayoffMatch>()
+  for (const template of roundOf32Templates) {
     const home = qualifierBySeed.get(`${template.home.rank}${template.home.group}`) ?? null
     if ('away' in template) {
-      return {
-        match: template.match,
-        home,
-        away: qualifierBySeed.get(`${template.away.rank}${template.away.group}`) ?? null,
-      }
+      const away = qualifierBySeed.get(`${template.away.rank}${template.away.group}`) ?? null
+      addMatch(matchesByNumber, template.match, teamFromQualifier(home), teamFromQualifier(away), copy.playoff.pendingSeed, copy.playoff.pendingSeed)
+      continue
     }
-    return {
-      match: template.match,
-      home,
-      away: selectThirdPlaceTeam(availableThirds, template.thirdAway),
-      awaySeedLabel: `3rd ${template.thirdAway.join('/')}`,
-    }
-  })
+    const awaySeedLabel = `3rd ${template.thirdAway.join('/')}`
+    addMatch(
+      matchesByNumber,
+      template.match,
+      teamFromQualifier(home),
+      teamFromQualifier(selectThirdPlaceTeam(availableThirds, template.thirdAway)),
+      copy.playoff.pendingSeed,
+      awaySeedLabel,
+    )
+  }
+
+  for (const template of winnerBracket) {
+    addMatch(
+      matchesByNumber,
+      template.match,
+      winnerSlot(template.home),
+      winnerSlot(template.away),
+      `W M${template.home}`,
+      `W M${template.away}`,
+    )
+  }
+
+  addMatch(matchesByNumber, 103, loserSlot(101), loserSlot(102), 'L M101', 'L M102')
+  addMatch(matchesByNumber, 104, winnerSlot(101), winnerSlot(102), 'W M101', 'W M102')
+
+  const stages = playoffStageMatches.map((stage) => ({
+    groupKey: stage.groupKey,
+    matches: [...matchesByNumber.values()]
+      .filter((match) => match.groupKey === stage.groupKey)
+      .sort((left, right) => left.match - right.match),
+  }))
 
   return {
-    matches,
+    stages,
     qualified: [
       ...[...qualifierBySeed.values()].sort((left, right) => left.groupKey.localeCompare(right.groupKey) || left.rank - right.rank),
       ...thirdPlaceTeams.sort((left, right) => compareStandings(left.standing, right.standing)).slice(0, 8),
@@ -709,7 +858,7 @@ function PlayoffTeamSlot({
   onOpenNation,
 }: {
   copy: ResultsCopy
-  team: KnockoutTeam | null
+  team: PlayoffTeam | null
   seedLabel: string
   onOpenNation?: (target: NationPlayersTarget) => void
 }) {
@@ -728,7 +877,7 @@ function PlayoffTeamSlot({
       <div className="min-w-0">
         <p className={`truncate text-sm font-bold text-white ${onOpen ? 'underline-offset-2 hover:text-[var(--color-accent)] hover:underline' : ''}`}>{name}</p>
         <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          {team.rank === 3 ? copy.playoff.thirdPlaceSeed : `${team.rank}${copy.playoff.seedSuffix}`} {copy.group} {team.groupKey}
+          {team.seedLabel}
         </p>
       </div>
     </>
@@ -742,17 +891,21 @@ function PlayoffTeamSlot({
       ) : (
         <div className="flex min-w-0 items-center gap-2">{identity}</div>
       )}
-      <span className="mono shrink-0 text-xs font-black text-[var(--color-accent)]">{team.standing.points} {copy.standingsTable.points}</span>
+      <span className="mono shrink-0 text-xs font-black text-[var(--color-accent)]">
+        {team.standing ? `${team.standing.points} ${copy.standingsTable.points}` : team.teamCode}
+      </span>
     </div>
   )
 }
 
 function PlayoffView({
   copy,
+  locale,
   playoff,
   onOpenNation,
 }: {
   copy: ResultsCopy
+  locale: LocaleCode
   playoff: ReturnType<typeof buildPlayoffPicture>
   onOpenNation: (target: NationPlayersTarget) => void
 }) {
@@ -776,23 +929,53 @@ function PlayoffView({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {playoff.matches.map((match) => (
-          <article key={match.match} className="glass-panel rounded-[1.15rem] p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                {copy.playoff.matchLabel} {match.match}
-              </p>
-              <p className="text-xs font-semibold text-[var(--color-accent)]">{copy.stages.round32}</p>
+      {playoff.stages.map((stage) => (
+        <div key={stage.groupKey} className="glass-panel rounded-[1.15rem] p-4">
+          <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/5 pb-3">
+            <div>
+              <p className="eyebrow text-[10px]">{copy.knockoutStage}</p>
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">{stageTitle(stage.groupKey, copy)}</h3>
             </div>
-            <div className="grid gap-2">
-              <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={copy.playoff.pendingSeed} onOpenNation={onOpenNation} />
-              <div className="mono text-center text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">vs</div>
-              <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel ?? copy.playoff.pendingSeed} onOpenNation={onOpenNation} />
-            </div>
-          </article>
-        ))}
-      </div>
+            <span className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs uppercase tracking-wider text-[var(--color-muted)]">
+              {stage.matches.filter((match) => match.result?.status === 'final').length}/{stage.matches.length} {copy.finalSuffix}
+            </span>
+          </div>
+          <div className="grid gap-3 xl:grid-cols-2">
+            {stage.matches.map((match) => {
+              const isFinal = match.result?.status === 'final'
+              return (
+                <article key={match.match} className="rounded-[1rem] border border-white/8 bg-black/18 p-3.5">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="mono rounded-full border border-white/10 bg-white/4 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                      {copy.playoff.matchLabel} {match.match}
+                    </p>
+                    <span
+                      className={[
+                        'mono rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em]',
+                        isFinal
+                          ? 'border-[var(--color-accent)]/24 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                          : 'border-white/10 text-[var(--color-muted)]',
+                      ].join(' ')}
+                    >
+                      {isFinal ? copy.final : copy.pending}
+                    </span>
+                  </div>
+                  <div className="grid gap-2">
+                    <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={match.homeSeedLabel} onOpenNation={onOpenNation} />
+                    <div className="mono rounded-[0.7rem] border border-white/8 bg-black/25 px-3 py-2 text-center text-sm font-black text-white">
+                      {isFinal ? `${match.result?.homeGoals}-${match.result?.awayGoals}` : 'vs'}
+                    </div>
+                    <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel} onOpenNation={onOpenNation} />
+                  </div>
+                  {match.result ? (
+                    <p className="mt-3 text-xs font-medium text-[var(--color-muted)]">{formatKickoff(match.result, locale)}</p>
+                  ) : null}
+                </article>
+              )
+            })}
+          </div>
+        </div>
+      ))}
     </section>
   )
 }
@@ -1021,7 +1204,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
   }, [results])
 
   const groupStandings = useMemo(() => buildGroupStandings(results), [results])
-  const playoff = useMemo(() => buildPlayoffPicture(groupStandings), [groupStandings])
+  const playoff = useMemo(() => buildPlayoffPicture(groupStandings, results, copy), [copy, groupStandings, results])
   const finalCount = results.filter((result) => result.status === 'final').length
   const tabs: { key: ResultsTab; label: string }[] = [
     { key: 'matches', label: copy.tabs.matches },
@@ -1152,7 +1335,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
           ) : null}
 
           {activeTab === 'standings' ? <StandingsView copy={copy} groupStandings={groupStandings} onOpenNation={setNationTarget} /> : null}
-          {activeTab === 'playoff' ? <PlayoffView copy={copy} playoff={playoff} onOpenNation={setNationTarget} /> : null}
+          {activeTab === 'playoff' ? <PlayoffView copy={copy} locale={locale} playoff={playoff} onOpenNation={setNationTarget} /> : null}
         </>
       ) : null}
 

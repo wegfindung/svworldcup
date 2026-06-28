@@ -9,6 +9,7 @@ import type { AdminRepository } from '../repositories/adminRepository.js'
 import { MemoryAuditRepository } from '../repositories/auditRepository.js'
 import { MemoryConfigRepository } from '../repositories/configRepository.js'
 import { MemoryEmailMarketingRepository } from '../repositories/emailMarketingRepository.js'
+import { MemoryFixtureRepository } from '../repositories/fixtureRepository.js'
 import { MemoryLandingAnalyticsRepository } from '../repositories/landingAnalyticsRepository.js'
 import { MemoryMatchImportRepository } from '../repositories/matchImportRepository.js'
 import { MemoryMatchMappingRepository } from '../repositories/matchMappingRepository.js'
@@ -69,6 +70,7 @@ function setup() {
       createTestAdminRepository(),
       registrations,
       config,
+      new MemoryFixtureRepository(),
       teamPool,
       scoring,
       new MemoryMatchImportRepository(),

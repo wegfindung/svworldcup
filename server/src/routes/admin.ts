@@ -12,6 +12,7 @@ import { createRequireAdmin } from '../middleware/adminAuth.js'
 import type { ConfigRepository } from '../repositories/configRepository.js'
 import type { RegistrationRepository } from '../repositories/registrationRepository.js'
 import type { AdminRepository } from '../repositories/adminRepository.js'
+import type { FixtureRepository } from '../repositories/fixtureRepository.js'
 import type { TeamPoolRepository } from '../repositories/teamPoolRepository.js'
 import type { ScoringRepository } from '../repositories/scoringRepository.js'
 import type { MatchImportRepository } from '../repositories/matchImportRepository.js'
@@ -170,6 +171,7 @@ export function createAdminRouter(
   adminRepository: AdminRepository,
   registrationRepository: RegistrationRepository,
   configRepository: ConfigRepository,
+  fixtureRepository: FixtureRepository,
   teamPoolRepository: TeamPoolRepository,
   scoringRepository: ScoringRepository,
   matchImportRepository: MatchImportRepository,
@@ -262,6 +264,7 @@ export function createAdminRouter(
   router.use(
     '/match-import',
     createMatchImportRouter({
+      fixtureRepository,
       matchImportRepository,
       matchMappingRepository,
       teamPoolRepository,

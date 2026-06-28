@@ -21,6 +21,7 @@ import { buildPlayerPointsLeaderboard } from '../services/playerPointsLeaderboar
 import { buildBoostLeaderboard } from '../services/boostLeaderboard.js'
 import { isRankHistoryBoard } from '../services/rankHistory.js'
 import { fetchPlayersByIds, withImageUrl } from '../services/soccerverse.js'
+import { syncDerivedPlayoffFixtures } from '../services/playoffFixtures.js'
 
 const playerSearchSchema = z.object({
   name: z.string().trim().min(1).optional(),
@@ -169,7 +170,10 @@ export function createPublicRouter({
   })
 
   router.get('/bootstrap', async (_req, res) => {
-    const [scoring, currentFixtures] = await Promise.all([configRepository.getScoringConfig(), fixtureRepository.listFixtures()])
+    const [scoring, currentFixtures] = await Promise.all([
+      configRepository.getScoringConfig(),
+      syncDerivedPlayoffFixtures({ fixtureRepository, scoringRepository, configRepository, teamPoolRepository }),
+    ])
     res.json({
       supportedLocales,
       defaultLocale,
@@ -194,11 +198,13 @@ export function createPublicRouter({
   })
 
   router.get('/fixtures', async (_req, res) => {
-    res.json({ items: await fixtureRepository.listFixtures() })
+    res.json({
+      items: await syncDerivedPlayoffFixtures({ fixtureRepository, scoringRepository, configRepository, teamPoolRepository }),
+    })
   })
 
   router.get('/match-results', async (_req, res) => {
-    const currentFixtures = await fixtureRepository.listFixtures()
+    const currentFixtures = await syncDerivedPlayoffFixtures({ fixtureRepository, scoringRepository, configRepository, teamPoolRepository })
     const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
     const playersByTeam = new Map<string, Awaited<ReturnType<typeof teamPoolRepository.listByTeam>>>()
     const [entries, scoring, scoreOverrides] = await Promise.all([

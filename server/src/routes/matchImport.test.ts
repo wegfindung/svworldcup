@@ -5,6 +5,7 @@ import type { SoccerversePlayerRecord } from '../domain/types.js'
 import { errorHandler } from '../middleware/errorHandler.js'
 import { MemoryAuditRepository } from '../repositories/auditRepository.js'
 import { MemoryConfigRepository } from '../repositories/configRepository.js'
+import { MemoryFixtureRepository } from '../repositories/fixtureRepository.js'
 import { MemoryMatchImportRepository } from '../repositories/matchImportRepository.js'
 import { MemoryMatchMappingRepository } from '../repositories/matchMappingRepository.js'
 import { MemoryRegistrationRepository } from '../repositories/registrationRepository.js'
@@ -47,6 +48,7 @@ async function setup() {
   const participantInfluenceSnapshotRepository = new MemoryParticipantInfluenceSnapshotRepository()
   const configRepository = new MemoryConfigRepository()
   const deps = {
+    fixtureRepository: new MemoryFixtureRepository(),
     matchImportRepository: new MemoryMatchImportRepository(),
     matchMappingRepository: new MemoryMatchMappingRepository(),
     teamPoolRepository,
