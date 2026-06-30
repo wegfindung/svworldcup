@@ -30,6 +30,8 @@ export interface PublicFixtureResult extends FixtureSeed {
   entryCount: number
   homePlayers: PublicFixturePlayerResult[]
   awayPlayers: PublicFixturePlayerResult[]
+  // Team code that won a penalty shootout; meaningful only when the score is level (see results page).
+  penaltyWinnerTeamCode?: string
 }
 
 export interface CleanSheetByPosition {

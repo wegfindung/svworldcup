@@ -109,6 +109,25 @@ describe('buildPublicFixtureResults', () => {
     expect(pending[1]).toMatchObject({ fixtureId: 'fixture-2', homeGoals: null, awayGoals: null, status: 'pending' })
   })
 
+  it('surfaces the penalty-shootout winner on a final fixture only', () => {
+    const playersByTeam = new Map([
+      ['FRA', [player(10, 'FRA')]],
+      ['SEN', [player(20, 'SEN')]],
+    ])
+    // Level 1-1; the shootout winner rides on the payload independently of the scoreline.
+    const entries = [entry('fixture-1', 10, 1), entry('fixture-1', 20, 1)]
+    const results = buildPublicFixtureResults(fixtures, playersByTeam, entries, undefined, {}, {
+      'fixture-1': 'FRA',
+    })
+    expect(results[0]).toMatchObject({ fixtureId: 'fixture-1', homeGoals: 1, awayGoals: 1, penaltyWinnerTeamCode: 'FRA' })
+
+    // Ignored for a pending fixture (no entries promoted yet).
+    const pending = buildPublicFixtureResults(fixtures, playersByTeam, entries, undefined, {}, {
+      'fixture-2': 'BRA',
+    })
+    expect((pending[1] as { penaltyWinnerTeamCode?: string }).penaltyWinnerTeamCode).toBeUndefined()
+  })
+
   it('includes player-level match details for scorers and assists', () => {
     const results = buildPublicFixtureResults(
       fixtures,

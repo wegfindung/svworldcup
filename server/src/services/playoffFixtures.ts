@@ -49,6 +49,10 @@ function winnerOf(result: PublicFixtureResult | undefined) {
   if (result.awayGoals > result.homeGoals) {
     return result.awayTeamCode
   }
+  // Level after extra time: the penalty winner advances, if one of the two sides is recorded.
+  if (result.penaltyWinnerTeamCode === result.homeTeamCode || result.penaltyWinnerTeamCode === result.awayTeamCode) {
+    return result.penaltyWinnerTeamCode
+  }
   return null
 }
 
@@ -113,14 +117,15 @@ export async function syncDerivedPlayoffFixtures({
   const currentFixtures = await fixtureRepository.listFixtures()
   const teamCodes = [...new Set(currentFixtures.flatMap((fixture) => [fixture.homeTeamCode, fixture.awayTeamCode]))]
   const playersByTeam = new Map<string, Awaited<ReturnType<TeamPoolRepository['listByTeam']>>>()
-  const [entries, scoring, scoreOverrides] = await Promise.all([
+  const [entries, scoring, scoreOverrides, penaltyWinners] = await Promise.all([
     scoringRepository.listMatchEntries(),
     configRepository.getScoringConfig(),
     configRepository.getFixtureScoreOverrides(),
+    configRepository.getFixturePenaltyWinners(),
     Promise.all(teamCodes.map(async (teamCode) => playersByTeam.set(teamCode, await teamPoolRepository.listByTeam(teamCode)))),
   ])
 
-  const results = buildPublicFixtureResults(currentFixtures, playersByTeam, entries, scoring, scoreOverrides)
+  const results = buildPublicFixtureResults(currentFixtures, playersByTeam, entries, scoring, scoreOverrides, penaltyWinners)
   const derived = buildDerivedPlayoffFixtures(results)
   if (derived.length === 0) {
     return currentFixtures

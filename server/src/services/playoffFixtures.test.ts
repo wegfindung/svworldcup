@@ -53,4 +53,35 @@ describe('playoff fixture derivation', () => {
     expect(derived.filter((fixture) => fixture.groupKey === 'R16')).toHaveLength(8)
     expect(derived.map((fixture) => fixture.fixtureId)).toContain('2026-07-04-r16-89')
   })
+
+  it('advances the penalty-shootout winner from a knockout fixture that finished level', () => {
+    const roundOf32 = buildDerivedPlayoffFixtures(groupFixtures.map((fixture) => resultFor(fixture)))
+    // R16 match 89's home comes from the winner of R32 match 74 (GER v PAR). Make that match end
+    // level (1-1) and award the shootout to the away side (PAR).
+    const r32WithShootout = roundOf32.map((fixture) => {
+      if (playoffMatchNumberFromFixtureId(fixture.fixtureId) === 74) {
+        return { ...resultFor(fixture, 1, 1), penaltyWinnerTeamCode: fixture.awayTeamCode }
+      }
+      return resultFor(fixture)
+    })
+    const derived = buildDerivedPlayoffFixtures([
+      ...groupFixtures.map((fixture) => resultFor(fixture)),
+      ...r32WithShootout,
+    ])
+    const match89 = derived.find((fixture) => playoffMatchNumberFromFixtureId(fixture.fixtureId) === 89)
+    expect(match89?.homeTeamCode).toBe('PAR')
+  })
+
+  it('does not advance a level knockout fixture with no penalty winner recorded', () => {
+    const roundOf32 = buildDerivedPlayoffFixtures(groupFixtures.map((fixture) => resultFor(fixture)))
+    const r32WithDraw = roundOf32.map((fixture) =>
+      playoffMatchNumberFromFixtureId(fixture.fixtureId) === 74 ? resultFor(fixture, 1, 1) : resultFor(fixture),
+    )
+    const derived = buildDerivedPlayoffFixtures([
+      ...groupFixtures.map((fixture) => resultFor(fixture)),
+      ...r32WithDraw,
+    ])
+    // Match 89 needs both its source winners; an undecided 74 leaves it unmaterialized.
+    expect(derived.find((fixture) => playoffMatchNumberFromFixtureId(fixture.fixtureId) === 89)).toBeUndefined()
+  })
 })

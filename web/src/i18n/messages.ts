@@ -570,6 +570,8 @@ const englishMessages = {
     uncreditedGoalHint:
       'An own goal, or a goal not credited to a listed player. It counts in the score but earns no fantasy points.',
     uncreditedGoalAria: 'About uncredited goals',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} won on penalties',
     playerEntries: 'player entries',
     hideDetails: 'Hide details',
     matchDetails: 'Match details',
@@ -1377,6 +1379,8 @@ const spanishMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       'Un gol en propia puerta, u otro gol no atribuido a ningún jugador listado. Cuenta en el marcador pero no otorga puntos de fantasy.',
     uncreditedGoalAria: 'Sobre los goles no atribuidos',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} ganó en los penaltis',
     playerEntries: 'entradas de jugadores',
     hideDetails: 'Ocultar detalles',
     matchDetails: 'Detalles',
@@ -1941,6 +1945,8 @@ const italianMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       'Un autogol, o un altro gol non attribuito a nessun giocatore in elenco. Conta nel punteggio ma non assegna punti fantasy.',
     uncreditedGoalAria: 'Informazioni sui gol non attribuiti',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} ha vinto ai rigori',
     playerEntries: 'entry giocatori',
     hideDetails: 'Nascondi dettagli',
     matchDetails: 'Dettagli partita',
@@ -2504,6 +2510,8 @@ const germanMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       'Ein Eigentor oder ein anderes Tor, das keinem gelisteten Spieler zugeordnet ist. Es zählt zum Ergebnis, bringt aber keine Fantasy-Punkte.',
     uncreditedGoalAria: 'Über nicht zugeordnete Tore',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} gewann im Elfmeterschießen',
     playerEntries: 'Spieler-Einträge',
     hideDetails: 'Details ausblenden',
     matchDetails: 'Spieldetails',
@@ -3065,6 +3073,8 @@ const frenchMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       "Un but contre son camp, ou un autre but non attribué à un joueur listé. Il compte au score mais ne rapporte aucun point fantasy.",
     uncreditedGoalAria: 'À propos des buts non attribués',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} a gagné aux tirs au but',
     playerEntries: 'entrées joueurs',
     hideDetails: 'Masquer détails',
     matchDetails: 'Détails match',
@@ -3626,6 +3636,8 @@ const portugueseMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       'Um golo na própria baliza, ou outro golo não atribuído a nenhum jogador listado. Conta no resultado mas não dá pontos de fantasy.',
     uncreditedGoalAria: 'Sobre os golos não atribuídos',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} venceu nas grandes penalidades',
     playerEntries: 'entradas de jogadores',
     hideDetails: 'Ocultar detalhes',
     matchDetails: 'Detalhes do jogo',
@@ -4188,6 +4200,8 @@ const russianMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       'Автогол или другой гол, не засчитанный игроку из списка. Он учитывается в счёте, но не приносит фэнтези-очков.',
     uncreditedGoalAria: 'О неучтённых голах',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: 'Победа {team} по пенальти',
     playerEntries: 'записей игроков',
     hideDetails: 'Скрыть детали',
     matchDetails: 'Детали матча',
@@ -4752,6 +4766,8 @@ const chineseMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       '乌龙球，或其他未归属于任何列出球员的进球。它计入比分，但不产生 fantasy 积分。',
     uncreditedGoalAria: '关于未归属的进球',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} 通过点球大战获胜',
     playerEntries: '球员记录',
     hideDetails: '隐藏详情',
     matchDetails: '比赛详情',
@@ -5174,6 +5190,8 @@ const japaneseMessages: DeepPartial<AppMessages> = {
     uncreditedGoalHint:
       'オウンゴール、または記載選手に計上されないその他の得点です。スコアには加算されますが、ファンタジーのポイントにはなりません。',
     uncreditedGoalAria: '計上されない得点について',
+    penaltyWinShort: '(p)',
+    penaltyWinNote: '{team} がPK戦で勝利',
     playerEntries: '選手入力',
     hideDetails: '詳細を隠す',
     matchDetails: '詳細',

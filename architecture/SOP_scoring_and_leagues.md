@@ -136,6 +136,18 @@ correction only** — it does not award points and does not substitute for resol
 scorer must still be resolved so they bank their own goal points, even though the override already makes the
 scoreline read correctly.
 
+**Penalty-shootout winner.** A knockout fixture that finishes level is decided on penalties. The shootout
+outcome is not in the match data, so it is stored as a per-fixture **penalty winner** (the winning team
+code) in `tournament_config` under the `fixture_penalty_winners` key (a `{ fixtureId: teamCode }` map — no
+schema change, separate from the scoreline override). `buildPublicFixtureResults` takes it as an argument
+and sets `penaltyWinnerTeamCode` on a `final` fixture. It is honoured **only when the score is level**
+(`homeGoals === awayGoals`): the results page keeps the real `1–1` scoreline but tags the winning team with
+a `(p)` marker plus a "won on penalties" note, and the **bracket advancement**
+(`services/playoffFixtures.ts → winnerOf`, and its client mirror `winnerCode`) returns the penalty winner
+instead of `null` so the next-round fixture materialises for the right team — the third-place pairing
+(`loserOf`) follows automatically. It awards no points and is set manually by an admin
+(`SOP_match_data_import.md` "Penalty Shootout Winner").
+
 These figures are **base points only**. The page makes clear that a participant's own score additionally
 applies their budget multiplier and any ownership boost, and halves for a reserve — so the public number
 is intentionally not equal to any individual manager's banked total. This is the same per-participant

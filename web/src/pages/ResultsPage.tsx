@@ -273,6 +273,10 @@ function winnerCode(result: PublicFixtureResult | undefined) {
   }
   if (result.homeGoals > result.awayGoals) return result.homeTeamCode
   if (result.awayGoals > result.homeGoals) return result.awayTeamCode
+  // Level after extra time: the recorded penalty-shootout winner advances (mirrors the server's winnerOf).
+  if (result.penaltyWinnerTeamCode === result.homeTeamCode || result.penaltyWinnerTeamCode === result.awayTeamCode) {
+    return result.penaltyWinnerTeamCode
+  }
   return null
 }
 
@@ -282,6 +286,31 @@ function loserCode(result: PublicFixtureResult | undefined) {
     return null
   }
   return winner === result.homeTeamCode ? result.awayTeamCode : result.homeTeamCode
+}
+
+// The side (home/away) that won a penalty shootout — only when the fixture finished level. Drives the
+// (p) marker and the winner highlight; the scoreline itself stays the real level score (e.g. 1–1).
+function penaltyWinnerSide(result: PublicFixtureResult | undefined): 'home' | 'away' | null {
+  if (!result || result.status !== 'final' || result.homeGoals === null || result.awayGoals === null) {
+    return null
+  }
+  if (result.homeGoals !== result.awayGoals) return null
+  if (result.penaltyWinnerTeamCode === result.homeTeamCode) return 'home'
+  if (result.penaltyWinnerTeamCode === result.awayTeamCode) return 'away'
+  return null
+}
+
+// Small "(p)" badge naming the team that won on penalties, with a tooltip. Shared by the Matches-tab
+// result card and the bracket slots.
+function PenaltyMark({ copy, teamName: name }: { copy: ResultsCopy; teamName: string }) {
+  return (
+    <span
+      className="ml-1 align-middle text-[var(--color-accent)] font-bold"
+      title={copy.penaltyWinNote.replace('{team}', name)}
+    >
+      {copy.penaltyWinShort}
+    </span>
+  )
 }
 
 function qualifierSeedLabel(team: KnockoutTeam, copy: ResultsCopy) {
@@ -890,11 +919,13 @@ function PlayoffTeamSlot({
   team,
   seedLabel,
   onOpenNation,
+  penaltyWin = false,
 }: {
   copy: ResultsCopy
   team: PlayoffTeam | null
   seedLabel: string
   onOpenNation?: (target: NationPlayersTarget) => void
+  penaltyWin?: boolean
 }) {
   if (!team) {
     return (
@@ -909,7 +940,10 @@ function PlayoffTeamSlot({
     <>
       <TeamFlag teamCode={team.teamCode} label={name} size="sm" />
       <div className="min-w-0">
-        <p className={`truncate text-sm font-bold text-white ${onOpen ? 'underline-offset-2 hover:text-[var(--color-accent)] hover:underline' : ''}`}>{name}</p>
+        <p className={`truncate text-sm font-bold text-white ${onOpen ? 'underline-offset-2 hover:text-[var(--color-accent)] hover:underline' : ''}`}>
+          {name}
+          {penaltyWin ? <PenaltyMark copy={copy} teamName={name} /> : null}
+        </p>
         <p className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
           {team.seedLabel}
         </p>
@@ -934,15 +968,31 @@ function PlayoffTeamSlot({
 
 function PlayoffView({
   copy,
+  factorCopy,
   locale,
   playoff,
   onOpenNation,
 }: {
   copy: ResultsCopy
+  factorCopy: FactorCopy
   locale: LocaleCode
   playoff: ReturnType<typeof buildPlayoffPicture>
   onOpenNation: (target: NationPlayersTarget) => void
 }) {
+  // Per-bracket-card expand, keyed by fixtureId — same player-by-player detail as the Matches tab.
+  const [openMatches, setOpenMatches] = useState<Set<string>>(new Set())
+  function toggleMatch(fixtureId: string) {
+    setOpenMatches((current) => {
+      const next = new Set(current)
+      if (next.has(fixtureId)) {
+        next.delete(fixtureId)
+      } else {
+        next.add(fixtureId)
+      }
+      return next
+    })
+  }
+
   return (
     <section className="space-y-4">
       <div className="glass-panel rounded-[1.15rem] p-4">
@@ -977,6 +1027,8 @@ function PlayoffView({
           <div className="grid gap-3 xl:grid-cols-2">
             {stage.matches.map((match) => {
               const isFinal = match.result?.status === 'final'
+              const penaltySide = penaltyWinnerSide(match.result)
+              const isOpen = match.result ? openMatches.has(match.result.fixtureId) : false
               return (
                 <article key={match.match} className="rounded-[1rem] border border-white/8 bg-black/18 p-3.5">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -995,14 +1047,34 @@ function PlayoffView({
                     </span>
                   </div>
                   <div className="grid gap-2">
-                    <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={match.homeSeedLabel} onOpenNation={onOpenNation} />
+                    <PlayoffTeamSlot copy={copy} team={match.home} seedLabel={match.homeSeedLabel} onOpenNation={onOpenNation} penaltyWin={penaltySide === 'home'} />
                     <div className="mono rounded-[0.7rem] border border-white/8 bg-black/25 px-3 py-2 text-center text-sm font-black text-white">
                       {isFinal ? `${match.result?.homeGoals}-${match.result?.awayGoals}` : 'vs'}
+                      {penaltySide ? (
+                        <span className="ml-1.5 align-middle text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-accent)]">{copy.penaltyWinShort}</span>
+                      ) : null}
                     </div>
-                    <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel} onOpenNation={onOpenNation} />
+                    <PlayoffTeamSlot copy={copy} team={match.away} seedLabel={match.awaySeedLabel} onOpenNation={onOpenNation} penaltyWin={penaltySide === 'away'} />
                   </div>
                   {match.result ? (
-                    <p className="mt-3 text-xs font-medium text-[var(--color-muted)]">{formatKickoff(match.result, locale)}</p>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-[var(--color-muted)]">{formatKickoff(match.result, locale)}</p>
+                      {isFinal ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleMatch(match.result!.fixtureId)}
+                          className="rounded-full border border-white/10 bg-black/20 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] hover:bg-black/40 hover:-translate-y-[1px] active:scale-[0.98]"
+                        >
+                          {isOpen ? copy.hideDetails : copy.matchDetails}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isOpen && match.result ? (
+                    <div className="mt-4 grid gap-4 border-t border-white/8 pt-4 lg:grid-cols-2">
+                      <TeamPlayerDetails copy={copy} factorCopy={factorCopy} title={teamName(match.result.homeTeamCode)} teamCode={match.result.homeTeamCode} players={match.result.homePlayers} />
+                      <TeamPlayerDetails copy={copy} factorCopy={factorCopy} title={teamName(match.result.awayTeamCode)} teamCode={match.result.awayTeamCode} players={match.result.awayPlayers} />
+                    </div>
                   ) : null}
                 </article>
               )
@@ -1030,8 +1102,9 @@ function ResultCard({
   onToggle: () => void
 }) {
   const isFinal = result.status === 'final'
-  const homeWon = isFinal && (result.homeGoals ?? 0) > (result.awayGoals ?? 0)
-  const awayWon = isFinal && (result.awayGoals ?? 0) > (result.homeGoals ?? 0)
+  const penaltySide = penaltyWinnerSide(result)
+  const homeWon = isFinal && ((result.homeGoals ?? 0) > (result.awayGoals ?? 0) || penaltySide === 'home')
+  const awayWon = isFinal && ((result.awayGoals ?? 0) > (result.homeGoals ?? 0) || penaltySide === 'away')
   const homeName = teamName(result.homeTeamCode)
   const awayName = teamName(result.awayTeamCode)
   const homeUncredited = isFinal ? uncreditedGoals(result.homeGoals, result.homePlayers) : 0
@@ -1066,6 +1139,7 @@ function ResultCard({
           <div className="min-w-0">
             <p className={['truncate text-sm font-semibold transition', homeWon ? 'text-white font-bold' : 'text-[var(--color-paper)]/85'].join(' ')}>
               {homeName}
+              {penaltySide === 'home' ? <PenaltyMark copy={copy} teamName={homeName} /> : null}
             </p>
             <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{result.homeTeamCode}</p>
           </div>
@@ -1086,6 +1160,7 @@ function ResultCard({
           <div className="min-w-0">
             <p className={['truncate text-sm font-semibold transition', awayWon ? 'text-white font-bold' : 'text-[var(--color-paper)]/85'].join(' ')}>
               {awayName}
+              {penaltySide === 'away' ? <PenaltyMark copy={copy} teamName={awayName} /> : null}
             </p>
             <p className="mono mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{result.awayTeamCode}</p>
           </div>
@@ -1369,7 +1444,7 @@ export function ResultsPage({ locale }: ResultsPageProps) {
           ) : null}
 
           {activeTab === 'standings' ? <StandingsView copy={copy} groupStandings={groupStandings} onOpenNation={setNationTarget} /> : null}
-          {activeTab === 'playoff' ? <PlayoffView copy={copy} locale={locale} playoff={playoff} onOpenNation={setNationTarget} /> : null}
+          {activeTab === 'playoff' ? <PlayoffView copy={copy} factorCopy={factorCopy} locale={locale} playoff={playoff} onOpenNation={setNationTarget} /> : null}
         </>
       ) : null}
 

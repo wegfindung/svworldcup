@@ -6,11 +6,14 @@ import { MatchImportReview } from './MatchImportReview'
 import { TeamFlag } from './TeamFlag'
 import {
   clearOfficialScore,
+  clearPenaltyWinner,
   fetchMatchImportBatches,
   fetchMatchResults,
   fetchOfficialScores,
+  fetchPenaltyWinners,
   parseMatchImport,
   setOfficialScore,
+  setPenaltyWinner,
   uploadMatchImport,
 } from '../lib/api'
 import type {
@@ -83,6 +86,8 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
   const [scoreHome, setScoreHome] = useState('')
   const [scoreAway, setScoreAway] = useState('')
   const [scoreBusy, setScoreBusy] = useState(false)
+  // Penalty-shootout winners (fixtureId -> winning team code) for knockout fixtures that finished level.
+  const [penaltyWinners, setPenaltyWinners] = useState<Record<string, string>>({})
 
   const teamByCode = useMemo(() => {
     const map = new Map<string, TeamSeed>()
@@ -123,6 +128,15 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
       })
       .catch(() => {
         // Non-blocking: the per-fixture editor still works; it just won't preload current values.
+      })
+    void fetchPenaltyWinners()
+      .then((response) => {
+        if (active) {
+          setPenaltyWinners(response.winners)
+        }
+      })
+      .catch(() => {
+        // Non-blocking: the penalty-winner control still works; it just won't preload current values.
       })
     void loadAccepted(() => active)
     return () => {
@@ -201,6 +215,42 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
       setMessage('Official score cleared. The results page reverts to the summed scorers.')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not clear the official score.')
+    } finally {
+      setScoreBusy(false)
+    }
+  }
+
+  // Penalty-shootout winner: for a knockout fixture that finished level, record which team advanced.
+  // The scoreline stays as-is; the results page tags the winner with (p) and the bracket advances them.
+  async function handleSetPenaltyWinner(fixtureId: string, teamCode: string) {
+    setScoreBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await setPenaltyWinner(fixtureId, teamCode)
+      setPenaltyWinners((current) => ({ ...current, [fixtureId]: teamCode }))
+      setMessage(`Penalty winner set to ${teamCode}. The bracket advances ${teamCode}; the score is unchanged.`)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not set the penalty winner.')
+    } finally {
+      setScoreBusy(false)
+    }
+  }
+
+  async function handleClearPenaltyWinner(fixtureId: string) {
+    setScoreBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await clearPenaltyWinner(fixtureId)
+      setPenaltyWinners((current) => {
+        const next = { ...current }
+        delete next[fixtureId]
+        return next
+      })
+      setMessage('Penalty winner cleared.')
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not clear the penalty winner.')
     } finally {
       setScoreBusy(false)
     }
@@ -667,6 +717,9 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
             const editing = scoreEditorFixtureId === fixture.fixtureId
             const acceptedCount = acceptedByFixture.get(fixture.fixtureId)
             const isAccepted = acceptedCount !== undefined
+            // Knockout fixtures (R32/R16/QF/SF/3P/FINAL) can be decided on penalties; group fixtures (A–L) can't.
+            const isKnockout = !/^[A-L]$/.test(fixture.groupKey)
+            const penaltyWinner = penaltyWinners[fixture.fixtureId]
             return (
               <div
                 key={fixture.fixtureId}
@@ -693,6 +746,11 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
                     {override ? (
                       <span className="mono rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-emerald-200">
                         score {override.home}–{override.away}
+                      </span>
+                    ) : null}
+                    {penaltyWinner ? (
+                      <span className="mono rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                        pen: {penaltyWinner}
                       </span>
                     ) : null}
                   </div>
@@ -741,55 +799,97 @@ export function MatchImportPanel({ fixtures, teams, adminEmail }: MatchImportPan
                 </div>
 
                 {editing ? (
-                  <div className="flex flex-wrap items-center gap-3 rounded-[1.1rem] border border-white/8 bg-black/20 px-3 py-3">
-                    <span className="max-w-[42ch] text-xs leading-relaxed text-[var(--color-muted)]">
-                      Public results-page score. Set this when an own goal or skipped scorer makes the
-                      auto-summed score read low. Leave it to auto-capture the imported score on promote.
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        value={scoreHome}
-                        onChange={(event) => setScoreHome(event.target.value)}
-                        aria-label={`${home.nameEn} goals`}
-                        className="h-10 w-16 rounded-[0.8rem] border border-white/10 bg-black/15 px-2 text-center text-sm text-white outline-none focus:border-[var(--color-accent)]"
-                      />
-                      <span className="text-sm text-[var(--color-muted)]">–</span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={scoreAway}
-                        onChange={(event) => setScoreAway(event.target.value)}
-                        aria-label={`${away.nameEn} goals`}
-                        className="h-10 w-16 rounded-[0.8rem] border border-white/10 bg-black/15 px-2 text-center text-sm text-white outline-none focus:border-[var(--color-accent)]"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      disabled={scoreBusy}
-                      onClick={() => void handleSaveScore(fixture.fixtureId)}
-                      className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                    >
-                      {scoreBusy ? 'Saving…' : 'Save'}
-                    </button>
-                    {override ? (
+                  <div className="flex flex-col gap-3 rounded-[1.1rem] border border-white/8 bg-black/20 px-3 py-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="max-w-[42ch] text-xs leading-relaxed text-[var(--color-muted)]">
+                        Public results-page score. Set this when an own goal or skipped scorer makes the
+                        auto-summed score read low. Leave it to auto-capture the imported score on promote.
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={scoreHome}
+                          onChange={(event) => setScoreHome(event.target.value)}
+                          aria-label={`${home.nameEn} goals`}
+                          className="h-10 w-16 rounded-[0.8rem] border border-white/10 bg-black/15 px-2 text-center text-sm text-white outline-none focus:border-[var(--color-accent)]"
+                        />
+                        <span className="text-sm text-[var(--color-muted)]">–</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={scoreAway}
+                          onChange={(event) => setScoreAway(event.target.value)}
+                          aria-label={`${away.nameEn} goals`}
+                          className="h-10 w-16 rounded-[0.8rem] border border-white/10 bg-black/15 px-2 text-center text-sm text-white outline-none focus:border-[var(--color-accent)]"
+                        />
+                      </div>
                       <button
                         type="button"
                         disabled={scoreBusy}
-                        onClick={() => void handleClearScore(fixture.fixtureId)}
-                        className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                        onClick={() => void handleSaveScore(fixture.fixtureId)}
+                        className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink)] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                       >
-                        Clear
+                        {scoreBusy ? 'Saving…' : 'Save'}
                       </button>
+                      {override ? (
+                        <button
+                          type="button"
+                          disabled={scoreBusy}
+                          onClick={() => void handleClearScore(fixture.fixtureId)}
+                          className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                        >
+                          Clear
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setScoreEditorFixtureId(null)}
+                        className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {isKnockout ? (
+                      <div className="flex flex-wrap items-center gap-3 border-t border-white/8 pt-3">
+                        <span className="max-w-[42ch] text-xs leading-relaxed text-[var(--color-muted)]">
+                          Penalty winner. For a knockout match that finished level (e.g. 1–1), pick who won the
+                          shootout — the score stays as it is, the results page tags them with (p), and the
+                          bracket advances them. No fake goal needed.
+                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {[home, away].map((side) => {
+                            const selected = penaltyWinner === side.code
+                            return (
+                              <button
+                                key={side.code}
+                                type="button"
+                                disabled={scoreBusy}
+                                onClick={() => void handleSetPenaltyWinner(fixture.fixtureId, side.code)}
+                                className={[
+                                  'rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]',
+                                  selected
+                                    ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/15 text-[var(--color-accent)]'
+                                    : 'border-white/12 text-white hover:bg-white/6',
+                                ].join(' ')}
+                              >
+                                {selected ? '✓ ' : ''}{side.code}
+                              </button>
+                            )
+                          })}
+                          {penaltyWinner ? (
+                            <button
+                              type="button"
+                              disabled={scoreBusy}
+                              onClick={() => void handleClearPenaltyWinner(fixture.fixtureId)}
+                              className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                            >
+                              None
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={() => setScoreEditorFixtureId(null)}
-                      className="rounded-full border border-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                    >
-                      Cancel
-                    </button>
                   </div>
                 ) : null}
               </div>
