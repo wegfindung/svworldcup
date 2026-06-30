@@ -495,4 +495,50 @@ describe('match import routes — edit, resolve, skip-list, re-submission, disca
       .send({ homeGoals: 4, awayGoals: 1 })
     expect(set.status).toBe(404)
   })
+
+  it('sets, lists, and clears a manual penalty-shootout winner (audited)', async () => {
+    const { app, deps } = await setup()
+    const fixtureId = '2026-06-13-d-usa-par'
+
+    const set = await request(app)
+      .put(`/match-import/fixtures/${fixtureId}/penalty-winner`)
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({ teamCode: 'USA' })
+    expect(set.status).toBe(200)
+    expect(set.body).toEqual({ fixtureId, teamCode: 'USA' })
+    expect(await deps.configRepository.getFixturePenaltyWinners()).toEqual({ [fixtureId]: 'USA' })
+
+    const list = await request(app).get('/match-import/penalty-winners').set('x-test-admin-email', 'importer@example.com')
+    expect(list.body.winners).toEqual({ [fixtureId]: 'USA' })
+
+    const clear = await request(app)
+      .delete(`/match-import/fixtures/${fixtureId}/penalty-winner`)
+      .set('x-test-admin-email', 'importer@example.com')
+    expect(clear.status).toBe(204)
+    expect(await deps.configRepository.getFixturePenaltyWinners()).toEqual({})
+
+    const auditActions = (await deps.auditRepository.list()).map((entry) => entry.actionKey)
+    expect(auditActions).toContain('match_import.penalty_winner_set')
+    expect(auditActions).toContain('match_import.penalty_winner_clear')
+  })
+
+  it('rejects a penalty winner that is not one of the fixture\'s two teams', async () => {
+    const { app, deps } = await setup()
+    const fixtureId = '2026-06-13-d-usa-par'
+    const set = await request(app)
+      .put(`/match-import/fixtures/${fixtureId}/penalty-winner`)
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({ teamCode: 'BRA' })
+    expect(set.status).toBe(400)
+    expect(await deps.configRepository.getFixturePenaltyWinners()).toEqual({})
+  })
+
+  it('rejects a penalty winner for an unknown fixture', async () => {
+    const { app } = await setup()
+    const set = await request(app)
+      .put('/match-import/fixtures/not-a-real-fixture/penalty-winner')
+      .set('x-test-admin-email', 'importer@example.com')
+      .send({ teamCode: 'USA' })
+    expect(set.status).toBe(404)
+  })
 })

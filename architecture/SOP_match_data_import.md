@@ -249,6 +249,31 @@ Common to both:
     corrects a wrong score. Setting validates the fixture exists and non-negative goal counts;
     clearing reverts the fixture to the derived sum. Both are audited.
 
+## Penalty Shootout Winner
+
+- A knockout fixture that finishes level after extra time is decided by a penalty shootout. The
+  shootout result is **not** part of the match-stat data (no player banks a shootout goal — only the
+  bracket cares who advanced). Without a way to record it, the only way to make the bracket populate
+  was to type a fake extra goal, which then displayed a wrong scoreline (e.g. `2–1` for a match that
+  ended `1–1`).
+- The fix is a per-fixture **penalty winner**: the team code that won the shootout, stored as a
+  display-and-advancement marker that is independent of the scoreline. The real score stays `1–1`;
+  the public results page tags the winning team with a `(p)` marker, and the bracket derivation
+  advances the penalty winner when the goals are level. It awards **no points** — it is purely the
+  shootout outcome.
+- Storage reuses the existing `tournament_config` key-value table — no schema change. A single
+  `fixture_penalty_winners` key holds a `{ fixtureId: winningTeamCode }` JSONB map, written/cleared
+  one fixture at a time atomically (`value_json || …` / `value_json - key`), exactly like the
+  scoreline override. It is a **separate** key from `fixture_score_overrides`: a penalty winner can be
+  recorded without setting any scoreline, and the two never collide.
+- The penalty winner is set **manually only** — match imports carry no shootout data. An admin
+  set/clear control (knockout fixtures only) writes the winning side or removes it; setting validates
+  the fixture exists and that the team code is one of the fixture's two sides. Both are audited.
+- It only takes effect when the score is **level** (`homeGoals === awayGoals`). A non-level knockout
+  score already has a winner on goals, so a stray penalty winner is ignored for both display and
+  advancement. For a fixture whose own-goal/skip undercount made the level score read wrong, set the
+  scoreline override to the true (level) score AND the penalty winner — the two controls are independent.
+
 ## Confirmation Rules
 
 - Promotion requires two distinct admin confirmations on the fixture's current data state.
@@ -326,6 +351,7 @@ Every import-path admin write produces an audit log entry in the same operation:
 - pending batch discard
 - official-scoreline override set / clear (the auto-capture on promotion is covered by the
   `match_import.promote` audit row; a manual set or clear is audited separately)
+- penalty-shootout winner set / clear (manual only; see "Penalty Shootout Winner")
 
 Retrofitting audit coverage onto pre-existing un-audited admin writes is out of scope for
 this work.

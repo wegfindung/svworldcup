@@ -115,6 +115,12 @@ const officialScoreSchema = z.object({
   awayGoals: z.coerce.number().int().min(0).max(99),
 })
 
+// Manual penalty-shootout winner for a knockout fixture (see SOP "Penalty Shootout Winner"). The
+// team code must be one of the fixture's two sides — validated against the fixture in the route.
+const penaltyWinnerSchema = z.object({
+  teamCode: z.string().trim().min(2).max(8),
+})
+
 type MatchInput = z.infer<typeof matchInputSchema>
 
 // Turn a submitted JSON or CSV/TSV payload into the shared MatchImportJson shape, so the
@@ -449,6 +455,53 @@ export function createMatchImportRouter(deps: MatchImportRouterDeps) {
     await deps.auditRepository.record({
       actorEmail: adminEmail,
       actionKey: 'match_import.official_score_clear',
+      entityType: 'fixture',
+      entityId: fixtureId,
+      detail: {},
+    })
+
+    res.status(204).end()
+  })
+
+  // Current set of knockout fixtures with a recorded penalty-shootout winner (see SOP "Penalty
+  // Shootout Winner"). The map is fixtureId -> winning team code.
+  router.get('/penalty-winners', async (_req, res) => {
+    const winners = await deps.configRepository.getFixturePenaltyWinners()
+    res.json({ winners })
+  })
+
+  router.put('/fixtures/:fixtureId/penalty-winner', async (req, res) => {
+    const adminEmail = res.locals.admin.email as string
+    const fixtureId = String(req.params.fixtureId)
+    const fixture = findFixture(await syncCurrentFixtures(), fixtureId)
+    if (!fixture) {
+      return res.status(404).json({ error: 'Unknown fixture.' })
+    }
+    const { teamCode } = penaltyWinnerSchema.parse(req.body)
+    if (teamCode !== fixture.homeTeamCode && teamCode !== fixture.awayTeamCode) {
+      return res.status(400).json({ error: 'The penalty winner must be one of the fixture\'s two teams.' })
+    }
+    await deps.configRepository.setFixturePenaltyWinner(fixtureId, teamCode)
+
+    await deps.auditRepository.record({
+      actorEmail: adminEmail,
+      actionKey: 'match_import.penalty_winner_set',
+      entityType: 'fixture',
+      entityId: fixtureId,
+      detail: { teamCode },
+    })
+
+    res.json({ fixtureId, teamCode })
+  })
+
+  router.delete('/fixtures/:fixtureId/penalty-winner', async (req, res) => {
+    const adminEmail = res.locals.admin.email as string
+    const fixtureId = String(req.params.fixtureId)
+    await deps.configRepository.clearFixturePenaltyWinner(fixtureId)
+
+    await deps.auditRepository.record({
+      actorEmail: adminEmail,
+      actionKey: 'match_import.penalty_winner_clear',
       entityType: 'fixture',
       entityId: fixtureId,
       detail: {},

@@ -996,3 +996,26 @@ export function clearOfficialScore(fixtureId: string) {
     { method: 'DELETE', headers: {} },
   )
 }
+
+// Penalty-shootout winners: the team that advanced from a knockout fixture that finished level. Keyed
+// by fixtureId. Display-and-advancement marker; awards no points. See SOP "Penalty Shootout Winner".
+export function fetchPenaltyWinners() {
+  return getJson<{ winners: Record<string, string> }>(
+    '/api/admin/match-import/penalty-winners',
+    { method: 'GET', headers: {} },
+  )
+}
+
+export function setPenaltyWinner(fixtureId: string, teamCode: string) {
+  return getJson<{ fixtureId: string; teamCode: string }>(
+    `/api/admin/match-import/fixtures/${encodeURIComponent(fixtureId)}/penalty-winner`,
+    { method: 'PUT', body: JSON.stringify({ teamCode }) },
+  )
+}
+
+export function clearPenaltyWinner(fixtureId: string) {
+  return getJson<void>(
+    `/api/admin/match-import/fixtures/${encodeURIComponent(fixtureId)}/penalty-winner`,
+    { method: 'DELETE', headers: {} },
+  )
+}

@@ -255,6 +255,13 @@ export interface FixtureScoreOverride {
 // `fixture_score_overrides` key — no schema change.
 export type FixtureScoreOverrides = Record<string, FixtureScoreOverride>
 
+// The team code that won a knockout fixture's penalty shootout. Independent of the scoreline: a
+// fixture that finished level (e.g. 1–1) keeps that score but advances the penalty winner and tags
+// it with a (p) marker. Set manually by an admin; awards no points. See SOP_match_data_import.md
+// "Penalty Shootout Winner". Map keyed by fixtureId, persisted under the tournament_config
+// `fixture_penalty_winners` key — no schema change.
+export type FixturePenaltyWinners = Record<string, string>
+
 export interface PublicBootstrapPayload {
   supportedLocales: SupportedLocale[]
   defaultLocale: SupportedLocale

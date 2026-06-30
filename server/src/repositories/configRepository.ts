@@ -1,6 +1,6 @@
 import { Pool } from 'pg'
 import { scoringDefaults } from '../data/scoringDefaults.js'
-import type { EventControls, FixtureScoreOverride, FixtureScoreOverrides, ScoringConfig } from '../domain/types.js'
+import type { EventControls, FixturePenaltyWinners, FixtureScoreOverride, FixtureScoreOverrides, ScoringConfig } from '../domain/types.js'
 import type { LeaderboardCache } from './leaderboardCache.js'
 
 const defaultEventControls: EventControls = {
@@ -10,6 +10,9 @@ const defaultEventControls: EventControls = {
 
 // tournament_config key holding the per-fixture public-scoreline overrides map.
 const FIXTURE_SCORE_OVERRIDES_KEY = 'fixture_score_overrides'
+
+// tournament_config key holding the per-fixture penalty-shootout winner map ({ fixtureId: teamCode }).
+const FIXTURE_PENALTY_WINNERS_KEY = 'fixture_penalty_winners'
 
 export interface ConfigRepository {
   storageKind: 'memory' | 'postgres'
@@ -21,6 +24,10 @@ export interface ConfigRepository {
   getFixtureScoreOverrides(): Promise<FixtureScoreOverrides>
   setFixtureScoreOverride(fixtureId: string, score: FixtureScoreOverride): Promise<void>
   clearFixtureScoreOverride(fixtureId: string): Promise<void>
+  // Knockout penalty-shootout winners (display + bracket advancement; see SOP "Penalty Shootout Winner").
+  getFixturePenaltyWinners(): Promise<FixturePenaltyWinners>
+  setFixturePenaltyWinner(fixtureId: string, teamCode: string): Promise<void>
+  clearFixturePenaltyWinner(fixtureId: string): Promise<void>
 }
 
 export class MemoryConfigRepository implements ConfigRepository {
@@ -28,6 +35,7 @@ export class MemoryConfigRepository implements ConfigRepository {
   private scoringConfig = scoringDefaults
   private eventControls = defaultEventControls
   private fixtureScoreOverrides: FixtureScoreOverrides = {}
+  private fixturePenaltyWinners: FixturePenaltyWinners = {}
 
   constructor(private readonly leaderboardCache?: LeaderboardCache) {}
 
@@ -60,6 +68,18 @@ export class MemoryConfigRepository implements ConfigRepository {
 
   async clearFixtureScoreOverride(fixtureId: string): Promise<void> {
     delete this.fixtureScoreOverrides[fixtureId]
+  }
+
+  async getFixturePenaltyWinners(): Promise<FixturePenaltyWinners> {
+    return { ...this.fixturePenaltyWinners }
+  }
+
+  async setFixturePenaltyWinner(fixtureId: string, teamCode: string): Promise<void> {
+    this.fixturePenaltyWinners[fixtureId] = teamCode
+  }
+
+  async clearFixturePenaltyWinner(fixtureId: string): Promise<void> {
+    delete this.fixturePenaltyWinners[fixtureId]
   }
 }
 
@@ -148,6 +168,40 @@ export class PostgresConfigRepository implements ConfigRepository {
         WHERE key = $1
       `,
       [FIXTURE_SCORE_OVERRIDES_KEY, fixtureId],
+    )
+  }
+
+  async getFixturePenaltyWinners(): Promise<FixturePenaltyWinners> {
+    const result = await this.pool.query<{ value_json: FixturePenaltyWinners }>(
+      'SELECT value_json FROM tournament_config WHERE key = $1',
+      [FIXTURE_PENALTY_WINNERS_KEY],
+    )
+    return result.rows[0]?.value_json ?? {}
+  }
+
+  async setFixturePenaltyWinner(fixtureId: string, teamCode: string): Promise<void> {
+    // Merge this one fixture's winner into the JSONB map atomically (`||` replaces the key if it
+    // already exists), so two fixtures written concurrently can't clobber each other.
+    await this.pool.query(
+      `
+        INSERT INTO tournament_config (key, value_json, updated_at)
+        VALUES ($1, $2::jsonb, NOW())
+        ON CONFLICT (key)
+        DO UPDATE SET value_json = tournament_config.value_json || EXCLUDED.value_json, updated_at = NOW()
+      `,
+      [FIXTURE_PENALTY_WINNERS_KEY, JSON.stringify({ [fixtureId]: teamCode })],
+    )
+  }
+
+  async clearFixturePenaltyWinner(fixtureId: string): Promise<void> {
+    // `value_json - key` drops just this fixture's entry; a no-op when the map or key is absent.
+    await this.pool.query(
+      `
+        UPDATE tournament_config
+        SET value_json = value_json - $2, updated_at = NOW()
+        WHERE key = $1
+      `,
+      [FIXTURE_PENALTY_WINNERS_KEY, fixtureId],
     )
   }
 }

@@ -1,6 +1,7 @@
 import { scoringDefaults } from '../data/scoringDefaults.js'
 import { cleanSheetPointsForClass, scoreEntryComponents } from '../lib/matchScoring.js'
 import type {
+  FixturePenaltyWinners,
   FixtureScoreOverrides,
   FixtureSeed,
   LineupStatus,
@@ -23,6 +24,9 @@ export interface PublicFixtureResult {
   entryCount: number
   homePlayers: PublicFixturePlayerResult[]
   awayPlayers: PublicFixturePlayerResult[]
+  // Team code that won a penalty shootout, when the fixture finished level. Drives the (p) marker and
+  // bracket advancement; only meaningful when homeGoals === awayGoals. See SOP "Penalty Shootout Winner".
+  penaltyWinnerTeamCode?: string
 }
 
 // Clean-sheet points the player would earn if placed in this slot class (the only position-dependent
@@ -126,6 +130,9 @@ export function buildPublicFixtureResults(
   // the derived per-player goal sum for display (own-goal / skipped-scorer correction); scoring is
   // untouched. Defaults to none so existing callers keep working. See SOP "Official Scoreline Override".
   scoreOverrides: FixtureScoreOverrides = {},
+  // Per-fixture penalty-shootout winners, keyed by fixtureId. Surfaced on the final fixture as
+  // penaltyWinnerTeamCode; consumers honour it only when the score is level. See SOP "Penalty Shootout Winner".
+  penaltyWinners: FixturePenaltyWinners = {},
 ): PublicFixtureResult[] {
   const playerTeamCodes = new Map<number, string>()
   const playersById = new Map<number, TeamPoolPlayer>()
@@ -222,6 +229,7 @@ export function buildPublicFixtureResults(
       entryCount: fixtureEntries.length,
       homePlayers: sortPlayerResults(homePlayers),
       awayPlayers: sortPlayerResults(awayPlayers),
+      penaltyWinnerTeamCode: status === 'final' ? penaltyWinners[fixture.fixtureId] : undefined,
     }
   })
 }

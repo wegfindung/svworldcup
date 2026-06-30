@@ -5,6 +5,7 @@ import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { ScoringCalculator } from '../components/ScoringCalculator'
 import { TeamFlag } from '../components/TeamFlag'
+import { TournamentLeadersCard } from '../components/TournamentLeadersCard'
 import { InfoModal } from '../components/InfoModal'
 import { getMessages, type AppMessages } from '../i18n/messages'
 import { budgetLimit as defaultBudgetLimit, budgetOptions as defaultBudgetOptions, defaultScoring, eventTeams } from '../data/eventConfig'
@@ -881,6 +882,8 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
 
         <NextMatchSpotlightCard copy={homeCopy.spotlight} match={nextSlot.matches[0]} referrerSoccerverseUsername={referrerSoccerverseUsername} locale={locale} />
       </section>
+
+      <TournamentLeadersCard copy={homeCopy.leaders} locale={locale} />
 
       <LandingPrizeSection copy={copy.prizes} referrerSoccerverseUsername={referrerSoccerverseUsername} />
 
