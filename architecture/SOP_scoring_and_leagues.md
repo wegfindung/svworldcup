@@ -185,8 +185,9 @@ not a new rule.
 
 ## Stats — Player Points Leaderboard
 
-The public Stats page (`/stats`) has seven tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
-**Value**, **Best XI**, **Boosts**, and **Budgets** (each described below). The **Points** tab
+The public Stats page (`/stats`) has ten tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
+**Value**, **Best XI**, **Boosts**, **Budgets**, **Nation pools**, **Allegiance**, and **Survivors** (each
+described below). The **Points** tab
 (`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
 `/api/public/player-points`) ranks every player who has a promoted match entry by the base
 points they have produced **in a chosen position**:
@@ -469,11 +470,14 @@ alive** — computed in `web/src/lib/tournamentSurvival.ts` (pure, unit-tested) 
   global reveal is on by kickoff, so it is effectively complete. A manager not present in usage (squad
   not revealed) shows no badge. Counts all 15 (starters + reserves) — a reserve on a surviving team can
   still score.
-- **Eliminated player marker (hover + modal).** The reusable `PlayerTooltip` and `PlayerStatsModal`
-  show a small "Eliminated" chip when the player's tournament team is eliminated (via
+- **Eliminated player marker (hover, modal + Stats list rows).** The reusable `PlayerTooltip` and
+  `PlayerStatsModal` show a small "Eliminated" chip when the player's tournament team is eliminated (via
   `useTournamentSurvival()`, a module-cached one-time `/match-results` read shared app-wide). The
   tooltip guards on real tournament team codes so a Soccerverse-nationality flag code is never
-  mis-marked.
+  mis-marked. The same chip is rendered **inline on every Stats player row** — Usage, Points, Leaders,
+  Value, Best XI, Boosts, Nation pools (drill-down) and Allegiance — via the shared self-contained
+  `components/EliminatedBadge.tsx` (renders null when the player is still in), so an eliminated player is
+  visible in the list without opening the modal.
 - **Survivors tab (Stats).** The Stats page has a **Survivors** tab (`/stats/survivors`, after
   Allegiance, `pages/SurvivorsPanel.tsx`) ranking revealed managers by how many of their 15 players'
   teams are still alive — a toggle flips between **Most still in** (surviving desc) and **Most knocked
