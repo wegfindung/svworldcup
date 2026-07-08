@@ -1,5 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../lib/api', async () => {
   const actual = await vi.importActual<typeof import('../lib/api')>('../lib/api')
@@ -10,10 +10,12 @@ vi.mock('../lib/api', async () => {
     fetchNationLeaderboard: vi.fn(),
     fetchNationParticipation: vi.fn(),
     fetchFixtures: vi.fn(),
+    fetchMatchResults: vi.fn(),
+    fetchSquadUsage: vi.fn(),
   }
 })
 
-import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { ApiError, fetchFixtures, fetchMatchResults, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchSquadUsage, fetchVeteranLeaderboard } from '../lib/api'
 import type { ParticipantScoreRow } from '../lib/types'
 import { TablesPage } from './TablesPage'
 
@@ -22,6 +24,18 @@ const veteran = vi.mocked(fetchVeteranLeaderboard)
 const nation = vi.mocked(fetchNationLeaderboard)
 const participation = vi.mocked(fetchNationParticipation)
 const fixtures = vi.mocked(fetchFixtures)
+const matchResults = vi.mocked(fetchMatchResults)
+const squadUsage = vi.mocked(fetchSquadUsage)
+
+// The squad-survival badge fetches match results + squad usage; default them to empty so the badge is
+// simply absent and the existing board/search assertions are unaffected.
+beforeEach(() => {
+  matchResults.mockResolvedValue({ items: [], summary: { totalFixtures: 0, finalFixtures: 0, pendingFixtures: 0 } })
+  squadUsage.mockResolvedValue({
+    summary: { visibleSquadCount: 0, visibleManagerCount: 0, totalSelections: 0, uniquePlayerCount: 0, averageSelectionsPerPlayer: 0 },
+    items: [],
+  })
+})
 
 function participantRow(input: { participantId: string; displayName: string; primaryTeamCode: string }): ParticipantScoreRow {
   return {

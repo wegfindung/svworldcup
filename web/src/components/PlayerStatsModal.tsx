@@ -6,6 +6,7 @@ import { eventTeams } from '../data/eventConfig'
 import { getMessages } from '../i18n/messages'
 import { fetchPlayerPoints } from '../lib/api'
 import { earnsCleanSheetPosition, goalkeeperFoldedBase } from '../lib/playerStats'
+import { isTeamEliminated, useTournamentSurvival } from '../lib/tournamentSurvival'
 import type { LocaleCode, PlayerPointsPlayer } from '../lib/types'
 import type { PlayerStatsSeed } from '../lib/playerStatsSeed'
 
@@ -30,6 +31,8 @@ export function PlayerStatsModal({ seed, locale, onClose }: { seed: PlayerStatsS
   const leadersCopy = messages.leaders
   const [totals, setTotals] = useState<PlayerPointsPlayer | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const survival = useTournamentSurvival()
+  const eliminated = isTeamEliminated(survival, seed.teamCode)
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -107,6 +110,12 @@ export function PlayerStatsModal({ seed, locale, onClose }: { seed: PlayerStatsS
             <div className="mt-1.5 flex items-center gap-2">
               <TeamFlag teamCode={seed.teamCode} label={nationName} size="sm" />
               <span className="truncate text-xs text-[var(--color-muted)]">{nationName}</span>
+              {eliminated ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-red-300">
+                  <span aria-hidden="true">●</span>
+                  {messages.survival.eliminated}
+                </span>
+              ) : null}
             </div>
             {positionsText ? (
               <p className="mono mt-1.5 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">

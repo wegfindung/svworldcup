@@ -975,6 +975,10 @@ const englishMessages = {
     errorTitle: 'Allegiance unavailable',
     errorBody: 'The represented-nation table could not be loaded.',
   },
+  survival: {
+    eliminated: 'Eliminated',
+    tallyTitle: '{remaining} of {total} players still in the tournament',
+  },
 }
 
 export type AppMessages = typeof englishMessages

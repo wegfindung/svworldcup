@@ -447,6 +447,38 @@ the existing scoring (like the Nations in-money indicator), not a new scoring ru
   off the shared cached row set (`getCachedRows`, see "Leaderboard Read Cache"), memoized by cache
   generation; a single-entity request slices its own series out. No new query, no new cache.
 
+## Squad survival indicator + eliminated player marker (display)
+
+Two linked **display** affordances (no scoring change, no server/DB change) surfaced once the knockout
+stage has started. Both derive from one client-side primitive — **which tournament teams are still
+alive** — computed in `web/src/lib/tournamentSurvival.ts` (pure, unit-tested) from the already-served
+`/match-results` payload:
+
+- **Alive teams.** `aliveTeams` = the set of team codes appearing in any **knockout** fixture
+  (`groupKey ∈ {R32, R16, QF, SF, 3P, FINAL}`) **minus** the loser of every **final** knockout fixture
+  (winner via goals, or the recorded penalty-shootout winner when level — mirrors the results page
+  `winnerCode`/`loserCode`). A team that never reached the knockout stage (didn't qualify from its
+  group) is not in any knockout fixture, so it is correctly not alive. A team is **eliminated** iff the
+  knockout stage has started **and** it is a real tournament team (`eventTeams`) not in `aliveTeams`.
+  Before the knockout stage exists the indicator is dormant (everyone counts as in).
+- **Squad survival badge (Tables).** On each manager row (Rookie/Veteran), a pill after the performance
+  breakdown pill shows `remaining/total` of that manager's **15 drafted players whose team is still
+  alive** (e.g. `13/15`) — green at full, amber when some are out. The manager's 15 team codes are
+  inverted **client-side** from the revealed `/squad-usage` payload (`items[].managers[].participantId`
+  → `items[].teamCode`), the same join the Allegiance tab uses. Coverage is the revealed locked squads;
+  global reveal is on by kickoff, so it is effectively complete. A manager not present in usage (squad
+  not revealed) shows no badge. Counts all 15 (starters + reserves) — a reserve on a surviving team can
+  still score.
+- **Eliminated player marker (hover + modal).** The reusable `PlayerTooltip` and `PlayerStatsModal`
+  show a small "Eliminated" chip when the player's tournament team is eliminated (via
+  `useTournamentSurvival()`, a module-cached one-time `/match-results` read shared app-wide). The
+  tooltip guards on real tournament team codes so a Soccerverse-nationality flag code is never
+  mis-marked.
+
+This is a display of existing bracket/results data (like the Nations in-money indicator), not a new
+rule. The client survival read is cached for the app session; it refreshes on reload, acceptable for a
+slowly-changing bracket.
+
 ## Per-Round Lineup Freeze
 
 The unit of scoring is the **round** (group matchday 1/2/3, then round of 32, round of 16,
