@@ -185,8 +185,9 @@ not a new rule.
 
 ## Stats — Player Points Leaderboard
 
-The public Stats page (`/stats`) has seven tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
-**Value**, **Best XI**, **Boosts**, and **Budgets** (each described below). The **Points** tab
+The public Stats page (`/stats`) has ten tabs — **Usage** (revealed-squad pick rate), **Points**, **Leaders**,
+**Value**, **Best XI**, **Boosts**, **Budgets**, **Nation pools**, **Allegiance**, and **Survivors** (each
+described below). The **Points** tab
 (`/stats/points`, `services/playerPointsLeaderboard.ts → buildPlayerPointsLeaderboard`, served by
 `/api/public/player-points`) ranks every player who has a promoted match entry by the base
 points they have produced **in a chosen position**:
@@ -446,6 +447,49 @@ the existing scoring (like the Nations in-money indicator), not a new scoring ru
   `registeredAt` the client lacks. The full per-day rank matrix for all three boards is computed once
   off the shared cached row set (`getCachedRows`, see "Leaderboard Read Cache"), memoized by cache
   generation; a single-entity request slices its own series out. No new query, no new cache.
+
+## Squad survival indicator + eliminated player marker (display)
+
+Two linked **display** affordances (no scoring change, no server/DB change) surfaced once the knockout
+stage has started. Both derive from one client-side primitive — **which tournament teams are still
+alive** — computed in `web/src/lib/tournamentSurvival.ts` (pure, unit-tested) from the already-served
+`/match-results` payload:
+
+- **Alive teams.** `aliveTeams` = the set of team codes appearing in any **knockout** fixture
+  (`groupKey ∈ {R32, R16, QF, SF, 3P, FINAL}`) **minus** the loser of every **final** knockout fixture
+  (winner via goals, or the recorded penalty-shootout winner when level — mirrors the results page
+  `winnerCode`/`loserCode`). A team that never reached the knockout stage (didn't qualify from its
+  group) is not in any knockout fixture, so it is correctly not alive. A team is **eliminated** iff the
+  knockout stage has started **and** it is a real tournament team (`eventTeams`) not in `aliveTeams`.
+  Before the knockout stage exists the indicator is dormant (everyone counts as in).
+- **Squad survival badge (Tables).** On each manager row (Rookie/Veteran), a pill after the performance
+  breakdown pill shows `remaining/total` of that manager's **15 drafted players whose team is still
+  alive** (e.g. `13/15`) — green at full, amber when some are out. The manager's 15 team codes are
+  inverted **client-side** from the revealed `/squad-usage` payload (`items[].managers[].participantId`
+  → `items[].teamCode`), the same join the Allegiance tab uses. Coverage is the revealed locked squads;
+  global reveal is on by kickoff, so it is effectively complete. A manager not present in usage (squad
+  not revealed) shows no badge. Counts all 15 (starters + reserves) — a reserve on a surviving team can
+  still score.
+- **Eliminated player marker (hover, modal + Stats list rows).** The reusable `PlayerTooltip` and
+  `PlayerStatsModal` show a small "Eliminated" chip when the player's tournament team is eliminated (via
+  `useTournamentSurvival()`, a module-cached one-time `/match-results` read shared app-wide). The
+  tooltip guards on real tournament team codes so a Soccerverse-nationality flag code is never
+  mis-marked. The same chip is rendered **inline on every Stats player row** — Usage, Points, Leaders,
+  Value, Best XI, Boosts, Nation pools (drill-down) and Allegiance — via the shared self-contained
+  `components/EliminatedBadge.tsx` (renders null when the player is still in), so an eliminated player is
+  visible in the list without opening the modal.
+- **Survivors tab (Stats).** The Stats page has a **Survivors** tab (`/stats/survivors`, after
+  Allegiance, `pages/SurvivorsPanel.tsx`) ranking revealed managers by how many of their 15 players'
+  teams are still alive — a toggle flips between **Most still in** (surviving desc) and **Most knocked
+  out** (eliminated desc; exact inverses since every squad has 15). Each row links to the manager's
+  profile, shows the `X/15` pill (shared `components/SurvivalPill.tsx`) and the dimmed flags of the
+  knocked-out teams. Client-side off the same `/squad-usage` inversion (`rankManagerSurvival` in
+  `lib/tournamentSurvival.ts`) + the survival set; paginated 50/manager, name search. Same
+  revealed-squad coverage caveat.
+
+This is a display of existing bracket/results data (like the Nations in-money indicator), not a new
+rule. The client survival read is cached for the app session; it refreshes on reload, acceptable for a
+slowly-changing bracket.
 
 ## Per-Round Lineup Freeze
 

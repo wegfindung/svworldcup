@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
@@ -38,11 +39,13 @@ function RepresentedPlayerRow({
   entry,
   rank,
   pickersLabel,
+  locale,
   onSelect,
 }: {
   entry: RepresentedNationPlayer
   rank: number
   pickersLabel: string
+  locale: LocaleCode
   onSelect: () => void
 }) {
   const { player, pickers, share } = entry
@@ -78,6 +81,7 @@ function RepresentedPlayerRow({
               <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
                 <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+                <EliminatedBadge teamCode={player.teamCode} locale={locale} />
                 <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
                 <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
               </div>
@@ -207,6 +211,7 @@ export function RepresentedNationPanel({ locale }: { locale: LocaleCode }) {
               entry={entry}
               rank={index + 1}
               pickersLabel={copy.pickersLabel}
+              locale={locale}
               onSelect={() => setModalSeed(toPlayerSeed(entry.player))}
             />
           ))}

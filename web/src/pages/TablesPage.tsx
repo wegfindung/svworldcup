@@ -5,12 +5,14 @@ import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { RankHistoryModal, type RankHistoryTarget } from '../components/RankHistoryModal'
 import { SquadPitchModal } from '../components/SquadPitchModal'
+import { SurvivalPill } from '../components/SurvivalPill'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
 import { getMessages, type AppMessages } from '../i18n/messages'
-import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchVeteranLeaderboard } from '../lib/api'
+import { ApiError, fetchFixtures, fetchNationLeaderboard, fetchNationParticipation, fetchRookieLeaderboard, fetchSquadUsage, fetchVeteranLeaderboard } from '../lib/api'
 import { computeNationPayouts, type NationPayout } from '../lib/nationPayouts'
+import { loadTournamentSurvival, survivingCount, teamCodesByParticipant, type TournamentSurvival } from '../lib/tournamentSurvival'
 import type { PlayerStatsSeed } from '../lib/playerStatsSeed'
 import { publicProfileSlug } from '../lib/profileSlug'
 import type {
@@ -41,6 +43,9 @@ interface TablesPayload {
   nations: BoardState<NationScoreRow[]>
   nationParticipation: BoardState<NationParticipationRow[]>
   fixtureLookup: Map<string, FixtureSeed>
+  // Squad-survival inputs (best-effort; null/empty degrade the badge to hidden, never break the page).
+  survival: TournamentSurvival | null
+  teamCodesByParticipant: Map<string, string[]>
 }
 
 // A 404 means "being prepared" (PR #37 semantics); anything else is a generic load failure.
@@ -56,13 +61,16 @@ function settleBoard<T>(result: PromiseSettledResult<{ items: T }>): BoardState<
 // Never rejects: allSettled means a failed board degrades to its own error state while the others
 // still render. Fixtures failing only drops match labels (matchLabel already falls back to the id).
 async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
-  const [rookieResult, veteranResult, nationResult, nationParticipationResult, fixtureResult] = await Promise.allSettled([
-    fetchRookieLeaderboard(signal),
-    fetchVeteranLeaderboard(signal),
-    fetchNationLeaderboard(signal),
-    fetchNationParticipation(signal),
-    fetchFixtures(signal),
-  ])
+  const [rookieResult, veteranResult, nationResult, nationParticipationResult, fixtureResult, survivalResult, usageResult] =
+    await Promise.allSettled([
+      fetchRookieLeaderboard(signal),
+      fetchVeteranLeaderboard(signal),
+      fetchNationLeaderboard(signal),
+      fetchNationParticipation(signal),
+      fetchFixtures(signal),
+      loadTournamentSurvival(),
+      fetchSquadUsage(),
+    ])
   const fixtures = fixtureResult.status === 'fulfilled' ? fixtureResult.value.items : []
   return {
     rookies: settleBoard(rookieResult),
@@ -70,6 +78,9 @@ async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
     nations: settleBoard(nationResult),
     nationParticipation: settleBoard(nationParticipationResult),
     fixtureLookup: new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture])),
+    survival: survivalResult.status === 'fulfilled' ? survivalResult.value : null,
+    teamCodesByParticipant:
+      usageResult.status === 'fulfilled' ? teamCodesByParticipant(usageResult.value) : new Map<string, string[]>(),
   }
 }
 
@@ -362,19 +373,25 @@ function FixtureScoreDetail({
 
 function ParticipantTable({
   copy,
+  survivalCopy,
   title,
   rows,
   searchTerm,
   fixtureLookup,
+  survival,
+  participantTeamCodes,
   onOpenSquad,
   onSelectPlayer,
   onOpenRankHistory,
 }: {
   copy: TablesCopy
+  survivalCopy: AppMessages['survival']
   title: string
   rows: ParticipantScoreRow[]
   searchTerm: string
   fixtureLookup: Map<string, FixtureSeed>
+  survival: TournamentSurvival | null
+  participantTeamCodes: Map<string, string[]>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
   onSelectPlayer: (seed: PlayerStatsSeed) => void
   onOpenRankHistory: (target: RankHistoryTarget) => void
@@ -411,6 +428,7 @@ function ParticipantTable({
             {filteredRows.map((row) => {
               const isOpen = openParticipantIds.has(row.participantId)
               const isPaidRank = row.rank <= PAID_PARTICIPANT_RANK_LIMIT
+              const survivalCount = survivingCount(participantTeamCodes, survival, row.participantId)
 
               return (
                 <div key={row.participantId} className="border border-white/6 hover:border-[var(--color-accent)]/28 bg-gradient-to-br from-black/20 via-black/30 to-black/10 transition duration-300 rounded-[1rem] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] group hover:shadow-[0_12px_40px_-20px_rgba(34,189,147,0.15)]">
@@ -457,6 +475,15 @@ function ParticipantTable({
                         <BreakdownPill label={copy.breakdown.minutes} count={row.breakdown.minutes.count} points={row.breakdown.minutes.points} />
                         <BreakdownPill label={copy.breakdown.cleanSheets} count={row.breakdown.cleanSheets.count} points={row.breakdown.cleanSheets.points} />
                         <BreakdownPill label={copy.breakdown.performance} points={row.breakdown.performance.points} />
+                        {survivalCount ? (
+                          <SurvivalPill
+                            remaining={survivalCount.remaining}
+                            total={survivalCount.total}
+                            title={survivalCopy.tallyTitle
+                              .replace('{remaining}', String(survivalCount.remaining))
+                              .replace('{total}', String(survivalCount.total))}
+                          />
+                        ) : null}
                       </div>
                     </div>
 
@@ -775,19 +802,25 @@ function NationParticipationTable({ copy, rows, searchTerm }: { copy: TablesCopy
 // in place instead of dropping the whole standings page (B3).
 function ParticipantBoardSection({
   copy,
+  survivalCopy,
   title,
   board,
   searchTerm,
   fixtureLookup,
+  survival,
+  participantTeamCodes,
   onOpenSquad,
   onSelectPlayer,
   onOpenRankHistory,
 }: {
   copy: TablesCopy
+  survivalCopy: AppMessages['survival']
   title: string
   board: BoardState<ParticipantScoreRow[]>
   searchTerm: string
   fixtureLookup: Map<string, FixtureSeed>
+  survival: TournamentSurvival | null
+  participantTeamCodes: Map<string, string[]>
   onOpenSquad: (target: { displayName: string; slug: string }) => void
   onSelectPlayer: (seed: PlayerStatsSeed) => void
   onOpenRankHistory: (target: RankHistoryTarget) => void
@@ -796,10 +829,13 @@ function ParticipantBoardSection({
     return (
       <ParticipantTable
         copy={copy}
+        survivalCopy={survivalCopy}
         title={title}
         rows={board.rows}
         searchTerm={searchTerm}
         fixtureLookup={fixtureLookup}
+        survival={survival}
+        participantTeamCodes={participantTeamCodes}
         onOpenSquad={onOpenSquad}
         onSelectPlayer={onSelectPlayer}
         onOpenRankHistory={onOpenRankHistory}
@@ -870,6 +906,7 @@ interface TablesPageProps {
 
 export function TablesPage({ locale }: TablesPageProps) {
   const copy = getMessages(locale).tables
+  const survivalCopy = getMessages(locale).survival
   const [tables, setTables] = useState<TablesPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
@@ -1012,11 +1049,11 @@ export function TablesPage({ locale }: TablesPageProps) {
             ) : null}
 
             {activeTab === 'rookie' ? (
-              <ParticipantBoardSection copy={copy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
+              <ParticipantBoardSection copy={copy} survivalCopy={survivalCopy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} survival={tables.survival} participantTeamCodes={tables.teamCodesByParticipant} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
             ) : null}
 
             {activeTab === 'veteran' ? (
-              <ParticipantBoardSection copy={copy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
+              <ParticipantBoardSection copy={copy} survivalCopy={survivalCopy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} survival={tables.survival} participantTeamCodes={tables.teamCodesByParticipant} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
             ) : null}
 
             {activeTab === 'finder' ? (

@@ -1,8 +1,11 @@
 import { createElement, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, FocusEvent, MouseEvent, ReactNode } from 'react'
-import { eventTeams } from '../data/eventConfig'
+import { eventTeams, supportedLocales } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
+import { getMessages } from '../i18n/messages'
+import { isTeamEliminated, useTournamentSurvival } from '../lib/tournamentSurvival'
+import type { LocaleCode } from '../lib/types'
 import { PlayerPortrait } from './PlayerPortrait'
 
 // One extra fact row, e.g. { label: 'Rating', value: '88' }.
@@ -28,6 +31,9 @@ interface PlayerTooltipProps {
   as?: 'span' | 'div'
   className?: string
   style?: CSSProperties
+  // Optional — localizes the "Eliminated" marker. Falls back to the persisted UI locale when omitted,
+  // so the marker is localized even from callers that don't thread a locale through.
+  locale?: LocaleCode
 }
 
 type Anchor = { x: number; y: number; placement: 'top' | 'bottom' }
@@ -37,7 +43,22 @@ function resolveNationName(code: string): string {
   return eventTeams.find((team) => team.code === code)?.nameEn ?? getNationName(code)
 }
 
-export function PlayerTooltip({ info, children, as = 'span', className, style }: PlayerTooltipProps) {
+// The tooltip is locale-agnostic by design; when a caller doesn't pass one, read the persisted UI
+// locale (the same key App writes) so the marker still localizes. Falls back to the default locale.
+function resolveLocale(locale?: LocaleCode): LocaleCode {
+  if (locale) {
+    return locale
+  }
+  if (typeof window !== 'undefined') {
+    const stored = window.localStorage.getItem('svworldcup-locale')
+    if (stored && supportedLocales.includes(stored as LocaleCode)) {
+      return stored as LocaleCode
+    }
+  }
+  return supportedLocales[0]
+}
+
+export function PlayerTooltip({ info, children, as = 'span', className, style, locale }: PlayerTooltipProps) {
   const [anchor, setAnchor] = useState<Anchor | null>(null)
   const id = useId()
 
@@ -66,11 +87,14 @@ export function PlayerTooltip({ info, children, as = 'span', className, style }:
       'aria-describedby': anchor ? id : undefined,
     },
     children,
-    anchor ? createPortal(<TooltipCard id={id} info={info} anchor={anchor} />, document.body) : null,
+    anchor ? createPortal(<TooltipCard id={id} info={info} anchor={anchor} locale={locale} />, document.body) : null,
   )
 }
 
-function TooltipCard({ id, info, anchor }: { id: string; info: PlayerTooltipInfo; anchor: Anchor }) {
+function TooltipCard({ id, info, anchor, locale }: { id: string; info: PlayerTooltipInfo; anchor: Anchor; locale?: LocaleCode }) {
+  const survival = useTournamentSurvival()
+  const eliminated = info.nationCode ? isTeamEliminated(survival, info.nationCode) : false
+  const survivalCopy = getMessages(resolveLocale(locale)).survival
   const style: CSSProperties = {
     position: 'fixed',
     left: anchor.x,
@@ -113,6 +137,12 @@ function TooltipCard({ id, info, anchor }: { id: string; info: PlayerTooltipInfo
                 />
               ) : null}
               <span className="text-[11px] text-[var(--color-muted)]">{nationName}</span>
+            </span>
+          ) : null}
+          {eliminated ? (
+            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-red-300">
+              <span aria-hidden="true">●</span>
+              {survivalCopy.eliminated}
             </span>
           ) : null}
         </span>

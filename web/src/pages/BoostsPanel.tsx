@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
@@ -23,7 +24,7 @@ function roleLabel(player: BoostLeaderboardRow) {
   return player.positionMain ?? player.positions.slice(0, 2).join('/') ?? player.positionClasses.join('/')
 }
 
-function BoostRow({ player, rank, copy, onSelect }: { player: BoostLeaderboardRow; rank: number; copy: BoostsCopy; onSelect: () => void }) {
+function BoostRow({ player, rank, copy, locale, onSelect }: { player: BoostLeaderboardRow; rank: number; copy: BoostsCopy; locale: LocaleCode; onSelect: () => void }) {
   const previewManagers = player.managers.slice(0, 4)
   const hiddenManagerCount = Math.max(0, player.managerCount - previewManagers.length)
 
@@ -45,6 +46,7 @@ function BoostRow({ player, rank, copy, onSelect }: { player: BoostLeaderboardRo
             <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
               <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+              <EliminatedBadge teamCode={player.teamCode} locale={locale} />
               <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
               <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
             </div>
@@ -187,6 +189,7 @@ export function BoostsPanel({ locale }: { locale: LocaleCode }) {
                 player={player}
                 rank={(currentPage - 1) * PAGE_SIZE + index + 1}
                 copy={copy}
+                locale={locale}
                 onSelect={() => setModalSeed(toPlayerSeed(player))}
               />
             ))}

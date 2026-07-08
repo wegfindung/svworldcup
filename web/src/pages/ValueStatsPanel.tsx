@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
@@ -45,7 +46,7 @@ function roleLabel(player: PlayerPointsPlayer) {
   return player.positionMain ?? player.positions.slice(0, 2).join('/') ?? player.positionClasses.join('/')
 }
 
-function ValueRow({ player, rank, position, mode, copy, onSelect }: { player: PlayerPointsPlayer; rank: number; position: SlotClass; mode: ValueMode; copy: ValueCopy; onSelect: () => void }) {
+function ValueRow({ player, rank, position, mode, copy, locale, onSelect }: { player: PlayerPointsPlayer; rank: number; position: SlotClass; mode: ValueMode; copy: ValueCopy; locale: LocaleCode; onSelect: () => void }) {
   const value = valueForMode(player, position, mode)
   const points = pointsForMode(player, position, mode)
   const ptsLabel = mode === 'perGame' ? copy.perGamePtsLabel : copy.ptsLabel
@@ -68,6 +69,7 @@ function ValueRow({ player, rank, position, mode, copy, onSelect }: { player: Pl
             <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
               <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+              <EliminatedBadge teamCode={player.teamCode} locale={locale} />
               <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
               <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
             </div>
@@ -261,6 +263,7 @@ export function ValueStatsPanel({ locale }: { locale: LocaleCode }) {
                 position={position}
                 mode={mode}
                 copy={copy}
+                locale={locale}
                 onSelect={() => setModalSeed(toPlayerSeed(player))}
               />
             ))}
