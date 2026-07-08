@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
@@ -41,6 +42,7 @@ function SquadCard({
   primary,
   secondary,
   badge,
+  locale,
   onClick,
 }: {
   imageUrl?: string
@@ -49,6 +51,7 @@ function SquadCard({
   primary: string
   secondary: string
   badge?: string
+  locale: LocaleCode
   onClick?: () => void
 }) {
   return (
@@ -68,6 +71,7 @@ function SquadCard({
         <p className="truncate text-sm font-semibold text-white">{name}</p>
         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--color-muted)]">
           <TeamFlag teamCode={teamCode} label={teamCode} size="sm" />
+          <EliminatedBadge teamCode={teamCode} locale={locale} />
           {badge ? (
             <span className="mono rounded-full border border-white/12 px-1.5 text-[9px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
               {badge}
@@ -99,6 +103,7 @@ function SquadBoardView({
   copy,
   emptyTitle,
   emptyBody,
+  locale,
   onSelect,
 }: {
   board: SquadBoard
@@ -107,6 +112,7 @@ function SquadBoardView({
   copy: BestXICopy
   emptyTitle: string
   emptyBody: string
+  locale: LocaleCode
   onSelect: (seed: PlayerStatsSeed) => void
 }) {
   const [budget, setBudget] = useState(DEFAULT_BUDGET)
@@ -228,6 +234,7 @@ function SquadBoardView({
                   primary={kind === 'best' ? formatPoints(slot.player.effectivePoints ?? 0) : formatNumber(slot.player.usageCount ?? 0)}
                   secondary={kind === 'best' ? formatCost(slot.player.capCost) : `${formatCost(slot.player.capCost)} · ${slot.player.usageCount ?? 0} ${copy.squadsLabel}`}
                   badge={slot.slotGroup === 'sub' ? copy.benchLabel : undefined}
+                  locale={locale}
                   onClick={() => onSelect(toPlayerSeed(slot.player!))}
                 />
               ) : (
@@ -321,6 +328,7 @@ export function BestXIPanel({ locale }: { locale: LocaleCode }) {
             copy={copy}
             emptyTitle={copy.peoplesEmptyTitle}
             emptyBody={copy.peoplesEmptyBody}
+            locale={locale}
             onSelect={setModalSeed}
           />
         ) : (
@@ -331,6 +339,7 @@ export function BestXIPanel({ locale }: { locale: LocaleCode }) {
             copy={copy}
             emptyTitle={copy.bestTitle}
             emptyBody={copy.partialNote}
+            locale={locale}
             onSelect={setModalSeed}
           />
         )}

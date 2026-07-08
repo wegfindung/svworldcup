@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerTooltip } from '../components/PlayerTooltip'
@@ -33,12 +34,14 @@ function NationPoolModal({
   detail,
   copy,
   closeLabel,
+  locale,
   onClose,
 }: {
   teamCode: string
   detail: NationPoolDetail
   copy: AppMessages['nationPools']
   closeLabel: string
+  locale: LocaleCode
   onClose: () => void
 }) {
   useEffect(() => {
@@ -109,6 +112,7 @@ function NationPoolModal({
                 <span className="truncate text-sm font-semibold text-white transition group-hover:text-[var(--color-accent)]">
                   {entry.player.displayName}
                 </span>
+                <EliminatedBadge teamCode={entry.player.teamCode} locale={locale} />
                 <span aria-hidden className="shrink-0 text-[10px] text-[var(--color-muted)] transition group-hover:text-[var(--color-accent)]">↗</span>
               </a>
               </PlayerTooltip>
@@ -241,6 +245,7 @@ export function NationPoolsPanel({ locale }: { locale: LocaleCode }) {
           detail={nationDetail}
           copy={copy}
           closeLabel={messages.results.close}
+          locale={locale}
           onClose={() => setSelectedNation(null)}
         />
       ) : null}

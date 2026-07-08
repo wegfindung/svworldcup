@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
@@ -63,7 +64,7 @@ function UsageBar({ value }: { value: number }) {
   )
 }
 
-function PlayerUsageRow({ player, rank, onSelect }: { player: PublicSquadUsagePlayer; rank: number; onSelect: () => void }) {
+function PlayerUsageRow({ player, rank, locale, onSelect }: { player: PublicSquadUsagePlayer; rank: number; locale: LocaleCode; onSelect: () => void }) {
   const previewManagers = player.managers.slice(0, 4)
   const hiddenManagerCount = Math.max(0, player.managers.length - previewManagers.length)
 
@@ -99,6 +100,7 @@ function PlayerUsageRow({ player, rank, onSelect }: { player: PublicSquadUsagePl
               <p className="truncate text-base font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
                 <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+                <EliminatedBadge teamCode={player.teamCode} locale={locale} />
                 <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
                 <span className="mono uppercase tracking-[0.14em]">ID {player.playerId}</span>
               </div>
@@ -303,7 +305,7 @@ export function UsageStatsPanel({ locale }: { locale: LocaleCode }) {
       {loadState === 'ready' && filteredPlayers.length > 0 ? (
         <section className="grid gap-3">
           {filteredPlayers.map((player, index) => (
-            <PlayerUsageRow key={player.playerId} player={player} rank={index + 1} onSelect={() => setModalSeed(toPlayerSeed(player))} />
+            <PlayerUsageRow key={player.playerId} player={player} rank={index + 1} locale={locale} onSelect={() => setModalSeed(toPlayerSeed(player))} />
           ))}
         </section>
       ) : null}

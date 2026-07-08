@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EliminatedBadge } from '../components/EliminatedBadge'
 import { EmptyState } from '../components/EmptyState'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
@@ -196,6 +197,7 @@ export function LeadersPanel({ locale }: { locale: LocaleCode }) {
                       <p className="truncate text-sm font-semibold text-white transition hover:text-[var(--color-accent)]">{player.displayName}</p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-muted)]">
                         <TeamFlag teamCode={player.teamCode} label={player.teamCode} size="sm" />
+                        <EliminatedBadge teamCode={player.teamCode} locale={locale} />
                         <span className="mono uppercase tracking-[0.14em]">{roleLabel(player)}</span>
                       </div>
                     </div>
