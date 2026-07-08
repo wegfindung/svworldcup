@@ -81,6 +81,43 @@ export function teamCodesByParticipant(usage: PublicSquadUsagePayload): Map<stri
   return byParticipant
 }
 
+export interface ManagerSurvival {
+  participantId: string
+  displayName: string
+  profilePath: string
+  total: number
+  remaining: number
+  eliminated: number
+  // Distinct knocked-out team codes in the manager's squad (for dimmed flags). Empty before knockout.
+  eliminatedTeamCodes: string[]
+}
+
+// One row per revealed manager: how many of their 15 players' teams are still alive vs knocked out.
+// Powers the Stats "Survivors" tab. Unsorted — the panel sorts by whichever end it is showing.
+export function rankManagerSurvival(
+  usage: PublicSquadUsagePayload,
+  survival: TournamentSurvival | null,
+): ManagerSurvival[] {
+  const byParticipant = new Map<string, { displayName: string; profilePath: string; teamCodes: string[] }>()
+  for (const player of usage.items) {
+    for (const manager of player.managers) {
+      const entry =
+        byParticipant.get(manager.participantId) ?? { displayName: manager.displayName, profilePath: manager.profilePath, teamCodes: [] }
+      entry.teamCodes.push(player.teamCode)
+      byParticipant.set(manager.participantId, entry)
+    }
+  }
+  const alive = survival?.hasKnockoutStarted ? survival.aliveTeams : null
+  const rows: ManagerSurvival[] = []
+  for (const [participantId, entry] of byParticipant) {
+    const total = entry.teamCodes.length
+    const remaining = alive ? entry.teamCodes.filter((code) => alive.has(code)).length : total
+    const eliminatedTeamCodes = alive ? [...new Set(entry.teamCodes.filter((code) => !alive.has(code)))] : []
+    rows.push({ participantId, displayName: entry.displayName, profilePath: entry.profilePath, total, remaining, eliminated: total - remaining, eliminatedTeamCodes })
+  }
+  return rows
+}
+
 // { remaining, total } surviving players for a manager, or null when their squad isn't covered by the
 // usage payload (not revealed). Before the knockout stage everyone counts as in.
 export function survivingCount(

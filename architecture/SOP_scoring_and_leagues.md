@@ -474,6 +474,14 @@ alive** — computed in `web/src/lib/tournamentSurvival.ts` (pure, unit-tested) 
   `useTournamentSurvival()`, a module-cached one-time `/match-results` read shared app-wide). The
   tooltip guards on real tournament team codes so a Soccerverse-nationality flag code is never
   mis-marked.
+- **Survivors tab (Stats).** The Stats page has a **Survivors** tab (`/stats/survivors`, after
+  Allegiance, `pages/SurvivorsPanel.tsx`) ranking revealed managers by how many of their 15 players'
+  teams are still alive — a toggle flips between **Most still in** (surviving desc) and **Most knocked
+  out** (eliminated desc; exact inverses since every squad has 15). Each row links to the manager's
+  profile, shows the `X/15` pill (shared `components/SurvivalPill.tsx`) and the dimmed flags of the
+  knocked-out teams. Client-side off the same `/squad-usage` inversion (`rankManagerSurvival` in
+  `lib/tournamentSurvival.ts`) + the survival set; paginated 50/manager, name search. Same
+  revealed-squad coverage caveat.
 
 This is a display of existing bracket/results data (like the Nations in-money indicator), not a new
 rule. The client survival read is cached for the app session; it refreshes on reload, acceptable for a

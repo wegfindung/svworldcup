@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeSurvival,
   isTeamEliminated,
+  rankManagerSurvival,
   survivingCount,
   teamCodesByParticipant,
 } from './tournamentSurvival'
@@ -120,5 +121,24 @@ describe('teamCodesByParticipant + survivingCount', () => {
   it('counts everyone as in before the knockout stage', () => {
     const map = teamCodesByParticipant(usage)
     expect(survivingCount(map, null, 'p1')).toEqual({ remaining: 2, total: 2 })
+  })
+
+  it('ranks managers with survivor/eliminated counts and distinct eliminated flags', () => {
+    const survival = computeSurvival([fixture('R16', 'BRA', 'JPN', { homeGoals: 2, awayGoals: 0, status: 'final' })])
+    const rows = rankManagerSurvival(usage, survival)
+    expect(rows.find((row) => row.participantId === 'p1')).toMatchObject({
+      displayName: 'P1',
+      profilePath: '/p/1',
+      total: 2,
+      remaining: 1,
+      eliminated: 1,
+      eliminatedTeamCodes: ['JPN'],
+    })
+    expect(rows.find((row) => row.participantId === 'p2')).toMatchObject({
+      total: 1,
+      remaining: 1,
+      eliminated: 0,
+      eliminatedTeamCodes: [],
+    })
   })
 })

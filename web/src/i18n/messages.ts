@@ -824,6 +824,7 @@ const englishMessages = {
     tabBudgets: 'Budgets',
     tabNationPools: 'Nation pools',
     tabAllegiance: 'Allegiance',
+    tabSurvivors: 'Survivors',
   },
   budgets: {
     popularTitle: 'Most popular budgets',
@@ -978,6 +979,24 @@ const englishMessages = {
   survival: {
     eliminated: 'Eliminated',
     tallyTitle: '{remaining} of {total} players still in the tournament',
+  },
+  survivors: {
+    intro:
+      "How many of each manager's 15 players are still alive in the tournament — and who has lost the most to knockouts. Based on revealed squads.",
+    statManagers: 'managers ranked',
+    statFullyIntact: 'still have all 15',
+    toggleSurvivors: 'Most still in',
+    toggleEliminated: 'Most knocked out',
+    outLabel: 'out',
+    searchPlaceholder: 'Search managers',
+    pageInfo: 'Showing {from}–{to} of {total}',
+    prev: 'Prev',
+    next: 'Next',
+    dormantNote: 'The knockout stage has not started yet — everyone still has all 15 players in play.',
+    emptyTitle: 'No squads yet',
+    emptyBody: 'Once managers reveal their squads, their survival counts appear here.',
+    errorTitle: 'Survivors unavailable',
+    errorBody: 'The survivors table could not be loaded.',
   },
 }
 

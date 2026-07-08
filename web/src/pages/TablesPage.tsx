@@ -5,6 +5,7 @@ import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
 import { RankHistoryModal, type RankHistoryTarget } from '../components/RankHistoryModal'
 import { SquadPitchModal } from '../components/SquadPitchModal'
+import { SurvivalPill } from '../components/SurvivalPill'
 import { TeamFlag } from '../components/TeamFlag'
 import { eventTeams } from '../data/eventConfig'
 import { getNationName } from '../data/soccerverseNations'
@@ -124,27 +125,6 @@ function BreakdownPill({ label, count, points }: { label: string; count?: number
       {count !== undefined ? <span className={isPositive ? 'text-white/60' : 'text-white/30'}>{count} · </span> : null}
       <span className={`mono ${isPositive ? 'text-[var(--color-accent)] font-bold' : 'text-white/30'}`}>
         {formatScore(points)}
-      </span>
-    </span>
-  )
-}
-
-// "still in the tournament" tally — reads like a breakdown pill, sits after the performance pill.
-// Green while all 15 survive, amber once a player's team is knocked out.
-function SurvivalPill({ remaining, total, title }: { remaining: number; total: number; title: string }) {
-  const allIn = remaining >= total
-  return (
-    <span
-      title={title}
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition duration-300 ${
-        allIn
-          ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 text-[var(--color-accent)]'
-          : 'border-[var(--color-sand)]/30 bg-[var(--color-sand)]/8 text-[var(--color-sand)]'
-      }`}
-    >
-      <span aria-hidden="true">⚽</span>
-      <span className="mono font-bold">
-        {remaining}/{total}
       </span>
     </span>
   )
