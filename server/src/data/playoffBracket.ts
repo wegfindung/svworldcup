@@ -4,6 +4,11 @@ export interface KnockoutScheduleSlot {
   groupKey: string
   kickoffDate: string
   kickoffTimeUtc: string
+  // Optional override for the date baked into the fixtureId (see playoffFixtureId). Set ONLY when a
+  // kickoff correction moves a match across a UTC day boundary AFTER the fixture was already
+  // materialized, so the id stays stable and the existing DB row is UPDATEd in place rather than
+  // orphaned as a duplicate. kickoffDate/kickoffTimeUtc still carry the true (corrected) kickoff.
+  idDate?: string
 }
 
 export const knockoutSchedule: Record<number, KnockoutScheduleSlot> = {
@@ -29,15 +34,23 @@ export const knockoutSchedule: Record<number, KnockoutScheduleSlot> = {
   92: { groupKey: 'R16', kickoffDate: '2026-07-06', kickoffTimeUtc: '00:00:00' },
   93: { groupKey: 'R16', kickoffDate: '2026-07-06', kickoffTimeUtc: '19:00:00' },
   94: { groupKey: 'R16', kickoffDate: '2026-07-07', kickoffTimeUtc: '00:00:00' },
-  95: { groupKey: 'R16', kickoffDate: '2026-07-07', kickoffTimeUtc: '22:00:00' },
-  96: { groupKey: 'R16', kickoffDate: '2026-07-08', kickoffTimeUtc: '01:00:00' },
-  97: { groupKey: 'QF', kickoffDate: '2026-07-10', kickoffTimeUtc: '01:00:00' },
+  95: { groupKey: 'R16', kickoffDate: '2026-07-07', kickoffTimeUtc: '16:00:00' },
+  // Corrected 2026-07-08: real kickoff is 2026-07-07 20:00 UTC (was mis-scheduled as 07-08 01:00).
+  // idDate pins the fixtureId to 2026-07-08-r16-96 (the already-materialized row) so it updates in place.
+  96: { groupKey: 'R16', kickoffDate: '2026-07-07', kickoffTimeUtc: '20:00:00', idDate: '2026-07-08' },
+  // Corrected 2026-07-08: real kickoff 2026-07-09 20:00 UTC. idDate pins the id to the already-
+  // materialized 2026-07-10-qf-97 (date moved back a UTC day) so the row updates in place.
+  97: { groupKey: 'QF', kickoffDate: '2026-07-09', kickoffTimeUtc: '20:00:00', idDate: '2026-07-10' },
   98: { groupKey: 'QF', kickoffDate: '2026-07-10', kickoffTimeUtc: '19:00:00' },
-  99: { groupKey: 'QF', kickoffDate: '2026-07-11', kickoffTimeUtc: '22:00:00' },
-  100: { groupKey: 'QF', kickoffDate: '2026-07-11', kickoffTimeUtc: '19:00:00' },
-  101: { groupKey: 'SF', kickoffDate: '2026-07-15', kickoffTimeUtc: '01:00:00' },
-  102: { groupKey: 'SF', kickoffDate: '2026-07-15', kickoffTimeUtc: '22:00:00' },
-  103: { groupKey: '3P', kickoffDate: '2026-07-18', kickoffTimeUtc: '22:00:00' },
+  99: { groupKey: 'QF', kickoffDate: '2026-07-11', kickoffTimeUtc: '21:00:00' },
+  // Corrected 2026-07-08: real kickoff 2026-07-12 01:00 UTC. idDate pins the id to the already-
+  // materialized 2026-07-11-qf-100 (date moved forward a UTC day) so the row updates in place.
+  100: { groupKey: 'QF', kickoffDate: '2026-07-12', kickoffTimeUtc: '01:00:00', idDate: '2026-07-11' },
+  // Corrected 2026-07-08: real kickoff 2026-07-14 19:00 UTC (was 07-15 01:00). No idDate: the SF is
+  // not materialized yet (its QF feeders are unplayed), so it takes the corrected date cleanly.
+  101: { groupKey: 'SF', kickoffDate: '2026-07-14', kickoffTimeUtc: '19:00:00' },
+  102: { groupKey: 'SF', kickoffDate: '2026-07-15', kickoffTimeUtc: '19:00:00' },
+  103: { groupKey: '3P', kickoffDate: '2026-07-18', kickoffTimeUtc: '21:00:00' },
   104: { groupKey: 'FINAL', kickoffDate: '2026-07-19', kickoffTimeUtc: '19:00:00' },
 }
 
@@ -82,7 +95,7 @@ export function playoffFixtureId(matchNumber: number) {
   if (!schedule) {
     throw new Error(`Missing knockout schedule for match ${matchNumber}`)
   }
-  return `${schedule.kickoffDate}-${schedule.groupKey.toLowerCase()}-${matchNumber}`
+  return `${schedule.idDate ?? schedule.kickoffDate}-${schedule.groupKey.toLowerCase()}-${matchNumber}`
 }
 
 export function playoffMatchNumberFromFixtureId(fixtureId: string): number | null {
