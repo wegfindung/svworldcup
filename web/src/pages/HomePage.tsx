@@ -20,14 +20,13 @@ import type { FixtureSeed, LocaleCode, PlayerPointsPayload, PublicSquadUsagePayl
 type HomeCopy = AppMessages['home']
 
 const superstarPlayers = [
-  { playerId: 133609, name: 'Pedri', nationCode: 'ESP', imageUrl: 'https://elrincondeldt.com/sv/photos/players/133609.png', rating: 86, position: 'MID' },
-  { playerId: 278, name: 'Kylian Mbappe', nationCode: 'FRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/278.png', rating: 94, position: 'FWD' },
-  { playerId: 181812, name: 'Jamal Musiala', nationCode: 'GER', imageUrl: 'https://elrincondeldt.com/sv/photos/players/181812.png', rating: 89, position: 'MID' },
-  { playerId: 9, name: 'Achraf Hakimi', nationCode: 'MAR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/9.png', rating: 85, position: 'DEF' },
-  { playerId: 927, name: 'Kang-In Lee', nationCode: 'KOR', imageUrl: 'https://elrincondeldt.com/sv/photos/players/927.png', rating: 81, position: 'MID' },
-  { playerId: 129718, name: 'Jude Bellingham', nationCode: 'ENG', imageUrl: 'https://elrincondeldt.com/sv/photos/players/129718.png', rating: 91, position: 'MID' },
-  { playerId: 762, name: 'Vinicius Paixao', nationCode: 'BRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players/762.png', rating: 93, position: 'FWD' },
-  { playerId: 162511, name: 'Senne Lammens', nationCode: 'BEL', imageUrl: 'https://elrincondeldt.com/sv/photos/players/162511.png', rating: 78, position: 'GK' },
+  { playerId: 133609, name: 'Pedri', nationCode: 'ESP', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/133609.webp', rating: 86, position: 'MID' },
+  { playerId: 278, name: 'Kylian Mbappé', nationCode: 'FRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/278.webp', rating: 94, position: 'FWD' },
+  { playerId: 762, name: 'Vinícius Paixão', nationCode: 'BRA', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/762.webp', rating: 93, position: 'FWD' },
+  { playerId: 9, name: 'Achraf Hakimi', nationCode: 'MAR', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/9.webp', rating: 85, position: 'DEF' },
+  { playerId: 927, name: 'Kang-In Lee', nationCode: 'KOR', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/927.webp', rating: 81, position: 'MID' },
+  { playerId: 129718, name: 'Jude Bellingham', nationCode: 'ENG', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/129718.webp', rating: 91, position: 'MID' },
+  { playerId: 162511, name: 'Senne Lammens', nationCode: 'BEL', imageUrl: 'https://elrincondeldt.com/sv/photos/players_webp/162511.webp', rating: 78, position: 'GK' },
 ] as const
 
 const footballNations = [
@@ -54,6 +53,21 @@ const squadShape = [
 ] as const
 
 const DEFAULT_COMPETITION_START_MS = Date.UTC(2026, 5, 11, 19, 0, 0)
+
+const winnerBannerCopy = {
+  en: {
+    eyebrow: 'Final results',
+    title: 'The winners are confirmed.',
+    body: 'Explore all Veteran, Rookie, and Nations League rewards.',
+    cta: 'View all winners',
+  },
+  de: {
+    eyebrow: 'Finale Resultate',
+    title: 'Die Gewinner stehen fest.',
+    body: 'Entdecke alle Preise der Veteran, Rookie und Nations League.',
+    cta: 'Alle Gewinner ansehen',
+  },
+} as const
 
 function getCompetitionStartMs(fixtures: FixtureSeed[]) {
   const kickoffEpochs = fixtures
@@ -672,6 +686,7 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
   const fixtureCount = bootstrap?.fixtures.length ?? 104
   const competitionStartMs = useMemo(() => getCompetitionStartMs(fixtures), [fixtures])
   const nextSlot = useMemo(() => getNextKickoffSlot(fixtures, teams), [fixtures, teams])
+  const winnersCopy = locale === 'de' ? winnerBannerCopy.de : winnerBannerCopy.en
 
   useEffect(() => {
     const landingPath = `${location.pathname}${location.search}`
@@ -685,6 +700,22 @@ export function HomePage({ locale, referrerSoccerverseUsername = '' }: HomePageP
 
   return (
     <div className="space-y-4 pb-10">
+      <Link
+        to={withReferral('/winners', referrerSoccerverseUsername)}
+        className="group grid gap-3 rounded-[1.1rem] border border-[var(--color-sand)]/25 bg-[linear-gradient(105deg,rgba(227,177,71,0.16),rgba(16,190,151,0.08)_55%,rgba(255,255,255,0.025))] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition duration-300 hover:-translate-y-[1px] hover:border-[var(--color-sand)]/45 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-5"
+      >
+        <span className="mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-sand)]">{winnersCopy.eyebrow}</span>
+        <span>
+          <span className="block text-base font-semibold text-white">{winnersCopy.title}</span>
+          <span className="mt-0.5 block text-sm text-[var(--color-muted)]">{winnersCopy.body}</span>
+        </span>
+        <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-accent)]">
+          {winnersCopy.cta}
+          <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none">
+            <path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </Link>
       <section className="landing-hero">
         <div className="landing-main-stack">
           <div className="hero-card rounded-[1.35rem] p-4 sm:p-6 lg:p-7">

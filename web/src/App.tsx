@@ -38,6 +38,8 @@ const TournamentClosedPage = lazy(() =>
   import('./pages/TournamentClosedPage').then((module) => ({ default: module.TournamentClosedPage })),
 )
 const VerifyPage = lazy(() => import('./pages/VerifyPage').then((module) => ({ default: module.VerifyPage })))
+const WinnersPage = lazy(() => import('./pages/WinnersPage').then((module) => ({ default: module.WinnersPage })))
+const LiveRedirectPage = lazy(() => import('./pages/LiveRedirectPage').then((module) => ({ default: module.LiveRedirectPage })))
 
 function RouteFallback() {
   return (
@@ -417,6 +419,8 @@ function App() {
               <Route path="/stats/survivors" element={<StatsPage locale={locale} active="survivors" />} />
               <Route path="/squad-usage" element={<Navigate to="/stats" replace />} />
               <Route path="/prizes" element={<PrizesPage locale={locale} />} />
+              <Route path="/winners" element={<WinnersPage locale={locale} />} />
+              <Route path="/live" element={<LiveRedirectPage locale={locale} />} />
               <Route path="/rules" element={<RulesPage locale={locale} />} />
               <Route path="/help" element={<HelpPage locale={locale} />} />
               <Route path="/how-to-play" element={<HowToPlayPage locale={locale} />} />

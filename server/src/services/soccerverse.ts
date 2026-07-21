@@ -73,7 +73,7 @@ export async function svFetch(url: string, init?: RequestInit, attempt = 0): Pro
 }
 
 function createPlayerImageUrl(playerId: number) {
-  return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
+  return `https://elrincondeldt.com/sv/photos/players_webp/${playerId}.webp`
 }
 
 function mapSoccerverseRecord(item: Record<string, unknown>, fallbackName?: string): SoccerversePlayerRecord {

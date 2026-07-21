@@ -69,6 +69,21 @@ describe('bootstrapDefaultEmailCampaigns', () => {
       es: 'Rookies, aquí es donde Soccerverse empieza de verdad',
       ja: 'Rookies、Soccerverse はここから本当に始まります',
     })
+
+    const livestream = campaigns.find(
+      (candidate) => candidate.subject === 'Livestream: Soccerverse Grand Tournament 🔥',
+    )
+    expect(livestream).toMatchObject({
+      kind: 'newsletter',
+      status: 'draft',
+      triggerKey: 'manual',
+      requiresMarketingOptIn: true,
+    })
+    expect(Object.keys(livestream?.subjectByLocale ?? {}).sort()).toEqual([...supportedLocales].sort())
+    expect(Object.keys(livestream?.bodyHtmlByLocale ?? {}).sort()).toEqual([...supportedLocales].sort())
+    expect(livestream?.subjectByLocale?.de).toBe('Livestream: Soccerverse Grand Tournament 🔥')
+    expect(livestream?.bodyHtmlByLocale?.en).toContain('https://event.svtool.info/live')
+    expect(livestream?.bodyHtmlByLocale?.en).toContain('6:30 PM UTC')
   })
 
   it('seeds the localized swap-window newsletter series', async () => {

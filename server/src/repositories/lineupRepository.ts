@@ -7,7 +7,7 @@ import type { AssignPlayerInput, ParticipantLineup, TeamPoolPlayer, SlotClass } 
 import type { TeamPoolRepository } from './teamPoolRepository.js'
 
 function defaultPlayerImageUrl(playerId: number) {
-  return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
+  return `https://elrincondeldt.com/sv/photos/players_webp/${playerId}.webp`
 }
 
 function buildSlotState(assignedPlayers: Map<string, TeamPoolPlayer | null>): ParticipantLineup['slots'] {

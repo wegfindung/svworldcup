@@ -38,6 +38,7 @@ import {
   createParticipantRiskRepository,
   createSnapshotJobRepository,
   createLandingAnalyticsRepository,
+  createPrizeClaimRepository,
 } from './services/repos.js'
 
 export function createApp() {
@@ -58,6 +59,7 @@ export function createApp() {
   const participantRiskRepository = createParticipantRiskRepository()
   const snapshotJobRepository = createSnapshotJobRepository()
   const landingAnalyticsRepository = createLandingAnalyticsRepository()
+  const prizeClaimRepository = createPrizeClaimRepository()
   const cwd = process.cwd()
   const publicDirCandidates = [
     resolve(cwd, 'public'),
@@ -212,7 +214,7 @@ export function createApp() {
   app.use(
     '/api/participant',
     participantApiLimiter,
-    createParticipantRouter(participantSessionRepository, squadRepository, fixtureRepository, registrationRepository, auditRepository, participantRiskRepository),
+    createParticipantRouter(participantSessionRepository, squadRepository, fixtureRepository, registrationRepository, auditRepository, participantRiskRepository, prizeClaimRepository),
   )
   app.use(
     '/api/admin',

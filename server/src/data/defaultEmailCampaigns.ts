@@ -1,5 +1,6 @@
 import type { EmailCampaignInput, SupportedLocale } from '../domain/types.js'
 import { rookieMainGameEmailCampaign } from './rookieMainGameEmailCampaign.js'
+import { livestreamResultsEmailCampaign } from './livestreamResultsEmailCampaign.js'
 import { squadSubmissionReminderEmailCampaign } from './squadSubmissionReminderEmailCampaign.js'
 import { swapWindowEmailCampaigns } from './swapWindowEmailCampaigns.js'
 
@@ -623,6 +624,7 @@ export const defaultEmailCampaigns: EmailCampaignInput[] = [
     requiresMarketingOptIn: false,
   },
   rookieMainGameEmailCampaign,
+  livestreamResultsEmailCampaign,
   squadSubmissionReminderEmailCampaign,
   ...swapWindowEmailCampaigns,
 ]

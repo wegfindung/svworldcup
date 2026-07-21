@@ -58,6 +58,7 @@ import {
   type LandingAnalyticsRepository,
 } from '../repositories/landingAnalyticsRepository.js'
 import { LeaderboardCache } from '../repositories/leaderboardCache.js'
+import { MemoryPrizeClaimRepository, PostgresPrizeClaimRepository, type PrizeClaimRepository } from '../repositories/prizeClaimRepository.js'
 import { instrumentSlowQueries } from '../lib/dbInstrumentation.js'
 
 let pool: Pool | null = null
@@ -79,6 +80,7 @@ let participantInfluenceSnapshotRepository: ParticipantInfluenceSnapshotReposito
 let participantRiskRepository: ParticipantRiskRepository | null = null
 let snapshotJobRepository: SnapshotJobRepository | null = null
 let landingAnalyticsRepository: LandingAnalyticsRepository | null = null
+let prizeClaimRepository: PrizeClaimRepository | null = null
 
 function resolveConnectionString(): string | null {
   if (env.DATABASE_URL) {
@@ -296,4 +298,14 @@ export function createLandingAnalyticsRepository(): LandingAnalyticsRepository {
       : new MemoryLandingAnalyticsRepository()
   }
   return landingAnalyticsRepository
+}
+
+export function createPrizeClaimRepository(): PrizeClaimRepository {
+  if (!prizeClaimRepository) {
+    const existingPool = getPool()
+    prizeClaimRepository = existingPool
+      ? new PostgresPrizeClaimRepository(existingPool)
+      : new MemoryPrizeClaimRepository()
+  }
+  return prizeClaimRepository
 }

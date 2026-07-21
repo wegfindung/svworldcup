@@ -29,7 +29,7 @@ const soccerversePlayUrl = 'https://play.soccerverse.com/'
 const englishCopy: PrivacyCopy = {
   eyebrow: 'privacy notice',
   title: 'Privacy Policy',
-  updated: 'Last updated: June 1, 2026',
+  updated: 'Last updated: July 21, 2026',
   intro:
     'This notice explains how The Grant Tournament processes personal data for registration, squad building, scoring, support, anti-abuse checks, and event communication.',
   controllerEyebrow: 'controller',
@@ -52,6 +52,7 @@ const englishCopy: PrivacyCopy = {
         'Account access data such as verification tokens, password-reset tokens, session cookies, CSRF tokens, and password hashes. We do not store plain-text passwords.',
         'Squad and competition data such as budget cap, selected players, lineups, swap history, points, rankings, public profile slug, and reveal settings.',
         'Communication data such as marketing consent, unsubscribe status, support context you send us, and email delivery metadata needed to operate event mails.',
+        'For eligible physical-prize winners only, delivery data such as recipient name and postal address. We use it solely to arrange prize delivery and do not display it publicly.',
         'Security and fairness data such as IP-derived request context, user agent, basic browser/device fingerprint fields, timestamps, referral parameters, and audit logs used to detect multi-accounting, abuse, or technical issues.',
       ],
     },
@@ -120,7 +121,7 @@ const englishCopy: PrivacyCopy = {
 const germanCopy: PrivacyCopy = {
   eyebrow: 'datenschutz',
   title: 'Datenschutzerklärung',
-  updated: 'Stand: 1. Juni 2026',
+  updated: 'Stand: 21. Juli 2026',
   intro:
     'Diese Datenschutzerklärung erklärt, wie The Grant Tournament personenbezogene Daten für Registrierung, Squad Builder, Scoring, Support, Missbrauchsschutz und Event-Kommunikation verarbeitet.',
   controllerEyebrow: 'verantwortlicher',
@@ -143,6 +144,7 @@ const germanCopy: PrivacyCopy = {
         'Zugangsdaten wie Bestätigungs-Tokens, Passwort-Reset-Tokens, Session-Cookies, CSRF-Tokens und Passwort-Hashes. Klartext-Passwörter speichern wir nicht.',
         'Squad- und Wettbewerbsdaten wie Budget-Cap, ausgewählte Spieler, Lineups, Wechselhistorie, Punkte, Ranglisten, öffentlicher Profil-Slug und Reveal-Einstellungen.',
         'Kommunikationsdaten wie Marketing-Einwilligung, Abmeldestatus, Support-Inhalte, die du uns sendest, und technische E-Mail-Metadaten, die für Event-Mails nötig sind.',
+        'Nur bei berechtigten Gewinnern physischer Preise: Versanddaten wie Empfängername und Postadresse. Wir verwenden sie ausschließlich für den Preisversand und zeigen sie nicht öffentlich an.',
         'Sicherheits- und Fairness-Daten wie anfragebezogener IP-Kontext, User Agent, einfache Browser-/Geräte-Fingerprint-Felder, Zeitstempel, Referral-Parameter und Audit-Logs zur Erkennung von Multi-Accounting, Missbrauch oder technischen Problemen.',
       ],
     },

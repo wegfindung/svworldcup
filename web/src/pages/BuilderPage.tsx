@@ -7,6 +7,7 @@ import { NationSelect } from '../components/NationSelect'
 import { PlayerPortrait } from '../components/PlayerPortrait'
 import { PlayerStatsModal } from '../components/PlayerStatsModal'
 import { PlayerTooltip } from '../components/PlayerTooltip'
+import { PrizeClaimPanel } from '../components/PrizeClaimPanel'
 import { SquadNudge } from '../components/SquadNudge'
 import { SwapPanel } from '../components/SwapPanel'
 import { TeamFlag } from '../components/TeamFlag'
@@ -1458,6 +1459,7 @@ export function BuilderPage({ locale, referrerSoccerverseUsername = '', mode = '
 
       {accessState === 'active' && participant && squad ? (
         <section className="space-y-4">
+          <PrizeClaimPanel locale={locale} participant={participant} onParticipantUpdate={setParticipant} />
           {builderNudgeStatus === 'complete' || builderNudgeStatus === 'startedUnlocked' ? (
             <SquadNudge
               draftedCount={draftedCount}

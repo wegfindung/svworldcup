@@ -6,6 +6,22 @@ export type SlotClass = 'GK' | 'DEF' | 'MID' | 'FWD'
 
 export type SlotGroup = 'starter' | 'sub'
 
+export interface ShippingAddressInput {
+  recipientName: string
+  addressLine1: string
+  addressLine2?: string
+  postalCode: string
+  city: string
+  region?: string
+  countryCode: string
+}
+
+export interface PrizeClaimStatus {
+  physicalPrizeEligible: boolean
+  shippingAddress?: ShippingAddressInput
+  shippingUpdatedAt?: string
+}
+
 export interface TeamSeed {
   code: string
   slug: string
