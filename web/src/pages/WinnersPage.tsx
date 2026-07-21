@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { LocaleCode } from '../lib/types'
+import { PrizeClaimPanel } from '../components/PrizeClaimPanel'
+import { fetchParticipantSession } from '../lib/api'
+import type { LocaleCode, ParticipantProfile } from '../lib/types'
 
 type Winner = {
   displayName: string
@@ -111,11 +113,36 @@ function categoryAmount(winner: Winner, category: Category) {
   return winner.totalSvv
 }
 
+function normalizedDisplayName(displayName: string) {
+  return displayName.trim().toLocaleLowerCase()
+}
+
+function participantHasReward(participant: ParticipantProfile, winners: Winner[]) {
+  const participantName = normalizedDisplayName(participant.displayName)
+  return winners.some((winner) => winner.totalSvv > 0 && normalizedDisplayName(winner.displayName) === participantName)
+}
+
 export function WinnersPage({ locale }: { locale: LocaleCode }) {
   const copy = locale === 'de' ? germanCopy : englishCopy
   const [winners, setWinners] = useState<Winner[] | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [category, setCategory] = useState<Category>('all')
+  const [participant, setParticipant] = useState<ParticipantProfile | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void fetchParticipantSession()
+      .then((session) => {
+        if (active) setParticipant(session.participant)
+      })
+      .catch(() => {
+        // The winners page stays public. A missing or expired participant session simply means
+        // that no private prize-claim controls are rendered.
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -156,6 +183,8 @@ export function WinnersPage({ locale }: { locale: LocaleCode }) {
     nations: copy.nations,
   }
 
+  const showPrizeClaim = participant && winners ? participantHasReward(participant, winners) : false
+
   return (
     <div className="space-y-5 pb-12">
       <section className="glass-panel overflow-hidden rounded-[1.35rem] border border-[var(--color-sand)]/15 p-5 sm:p-7 lg:p-9">
@@ -179,6 +208,10 @@ export function WinnersPage({ locale }: { locale: LocaleCode }) {
           </div>
         </div>
       </section>
+
+      {showPrizeClaim && participant ? (
+        <PrizeClaimPanel locale={locale} participant={participant} onParticipantUpdate={setParticipant} />
+      ) : null}
 
       <section aria-label={copy.galleryLabel} className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-12">
         {posters.map((poster, index) => {
