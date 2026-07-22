@@ -48,40 +48,24 @@ interface TablesPayload {
   teamCodesByParticipant: Map<string, string[]>
 }
 
-// A 404 means "being prepared" (PR #37 semantics); anything else is a generic load failure.
-function settleBoard<T>(result: PromiseSettledResult<{ items: T }>): BoardState<T> {
-  if (result.status === 'fulfilled') {
-    return { rows: result.value.items, error: null }
+type BoardKey = 'rookies' | 'veterans' | 'nations' | 'nationParticipation'
+
+function emptyTablesPayload(): TablesPayload {
+  return {
+    rookies: { rows: null, error: null },
+    veterans: { rows: null, error: null },
+    nations: { rows: null, error: null },
+    nationParticipation: { rows: null, error: null },
+    fixtureLookup: new Map(),
+    survival: null,
+    teamCodesByParticipant: new Map(),
   }
-  const reason = result.reason
-  const kind: BoardErrorKind = reason instanceof ApiError && reason.status === 404 ? 'unavailable' : 'failed'
-  return { rows: null, error: kind }
 }
 
-// Never rejects: allSettled means a failed board degrades to its own error state while the others
-// still render. Fixtures failing only drops match labels (matchLabel already falls back to the id).
-async function loadTablesPayload(signal?: AbortSignal): Promise<TablesPayload> {
-  const [rookieResult, veteranResult, nationResult, nationParticipationResult, fixtureResult, survivalResult, usageResult] =
-    await Promise.allSettled([
-      fetchRookieLeaderboard(signal),
-      fetchVeteranLeaderboard(signal),
-      fetchNationLeaderboard(signal),
-      fetchNationParticipation(signal),
-      fetchFixtures(signal),
-      loadTournamentSurvival(),
-      fetchSquadUsage(),
-    ])
-  const fixtures = fixtureResult.status === 'fulfilled' ? fixtureResult.value.items : []
-  return {
-    rookies: settleBoard(rookieResult),
-    veterans: settleBoard(veteranResult),
-    nations: settleBoard(nationResult),
-    nationParticipation: settleBoard(nationParticipationResult),
-    fixtureLookup: new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture])),
-    survival: survivalResult.status === 'fulfilled' ? survivalResult.value : null,
-    teamCodesByParticipant:
-      usageResult.status === 'fulfilled' ? teamCodesByParticipant(usageResult.value) : new Map<string, string[]>(),
-  }
+// A 404 means "being prepared" (PR #37 semantics); anything else is a generic load failure.
+function failedBoard<T>(reason: unknown): BoardState<T> {
+  const kind: BoardErrorKind = reason instanceof ApiError && reason.status === 404 ? 'unavailable' : 'failed'
+  return { rows: null, error: kind }
 }
 
 type TablesCopy = AppMessages['tables']
@@ -90,7 +74,7 @@ type TablesTab = 'nations' | 'rookie' | 'veteran' | 'finder'
 interface TablesTabItem {
   key: TablesTab
   label: string
-  count: number
+  count: number | string
   countLabel: string
 }
 
@@ -850,10 +834,10 @@ function ParticipantBoardSection({
       </section>
     )
   }
-  return null
+  return <div className="skeleton h-40 rounded-[1.15rem]" />
 }
 
-function SummaryMetric({ label, value, colorClass }: { label: string; value: number; colorClass?: string }) {
+function SummaryMetric({ label, value, colorClass }: { label: string; value: number | string; colorClass?: string }) {
   return (
     <div className="min-w-0 px-4 py-3.5 transition duration-300 hover:bg-white/[0.02] group">
       <p className="mono truncate text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)] group-hover:text-white transition duration-300">{label}</p>
@@ -907,8 +891,7 @@ interface TablesPageProps {
 export function TablesPage({ locale }: TablesPageProps) {
   const copy = getMessages(locale).tables
   const survivalCopy = getMessages(locale).survival
-  const [tables, setTables] = useState<TablesPayload | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [tables, setTables] = useState<TablesPayload>(emptyTablesPayload)
   const [squadTarget, setSquadTarget] = useState<{ displayName: string; slug: string } | null>(null)
   const [playerSeed, setPlayerSeed] = useState<PlayerStatsSeed | null>(null)
   const [rankHistoryTarget, setRankHistoryTarget] = useState<RankHistoryTarget | null>(null)
@@ -918,18 +901,43 @@ export function TablesPage({ locale }: TablesPageProps) {
   useEffect(() => {
     const controller = new AbortController()
     let active = true
-    loadTablesPayload(controller.signal)
-      .then((payload) => {
-        if (active) {
-          setTables(payload)
-          setLoading(false)
-        }
+
+    // Settle each board independently. The leaderboard payloads are intentionally detailed and can
+    // differ by several megabytes, so waiting for every board and both optional survival requests
+    // would keep the whole page in its initial skeleton whenever just one request is slow or stuck.
+    function loadBoard<T>(key: BoardKey, request: Promise<{ items: T }>) {
+      void request
+        .then(({ items }) => {
+          if (!active) return
+          setTables((current) => ({ ...current, [key]: { rows: items, error: null } }) as TablesPayload)
+        })
+        .catch((reason: unknown) => {
+          if (!active) return
+          setTables((current) => ({ ...current, [key]: failedBoard<T>(reason) }) as TablesPayload)
+        })
+    }
+
+    loadBoard('rookies', fetchRookieLeaderboard(controller.signal))
+    loadBoard('veterans', fetchVeteranLeaderboard(controller.signal))
+    loadBoard('nations', fetchNationLeaderboard(controller.signal))
+    loadBoard('nationParticipation', fetchNationParticipation(controller.signal))
+
+    // These enrich already visible rows and must never hold up a leaderboard.
+    void fetchFixtures(controller.signal)
+      .then(({ items }) => {
+        if (active) setTables((current) => ({ ...current, fixtureLookup: new Map(items.map((fixture) => [fixture.fixtureId, fixture])) }))
       })
-      .catch(() => {
-        if (active) {
-          setLoading(false)
-        }
+      .catch(() => undefined)
+    void loadTournamentSurvival()
+      .then((survival) => {
+        if (active) setTables((current) => ({ ...current, survival }))
       })
+      .catch(() => undefined)
+    void fetchSquadUsage()
+      .then((usage) => {
+        if (active) setTables((current) => ({ ...current, teamCodesByParticipant: teamCodesByParticipant(usage) }))
+      })
+      .catch(() => undefined)
 
     return () => {
       active = false
@@ -937,14 +945,12 @@ export function TablesPage({ locale }: TablesPageProps) {
     }
   }, [])
 
-  const tabItems: TablesTabItem[] = tables
-    ? [
-        { key: 'nations', label: copy.tabNations, count: tables.nations.rows?.length ?? 0, countLabel: copy.nationsSuffix },
-        { key: 'rookie', label: copy.tabRookie, count: tables.rookies.rows?.length ?? 0, countLabel: copy.entriesSuffix },
-        { key: 'veteran', label: copy.tabVeteran, count: tables.veterans.rows?.length ?? 0, countLabel: copy.entriesSuffix },
-        { key: 'finder', label: copy.tabFinder, count: tables.nationParticipation.rows?.length ?? 0, countLabel: copy.nationsSuffix },
-      ]
-    : []
+  const tabItems: TablesTabItem[] = [
+    { key: 'nations', label: copy.tabNations, count: tables.nations.rows?.length ?? (tables.nations.error ? 0 : '…'), countLabel: copy.nationsSuffix },
+    { key: 'rookie', label: copy.tabRookie, count: tables.rookies.rows?.length ?? (tables.rookies.error ? 0 : '…'), countLabel: copy.entriesSuffix },
+    { key: 'veteran', label: copy.tabVeteran, count: tables.veterans.rows?.length ?? (tables.veterans.error ? 0 : '…'), countLabel: copy.entriesSuffix },
+    { key: 'finder', label: copy.tabFinder, count: tables.nationParticipation.rows?.length ?? (tables.nationParticipation.error ? 0 : '…'), countLabel: copy.nationsSuffix },
+  ]
   const normalizedTableSearch = normalizeSearchTerm(tableSearch)
   const searchResultCount = useMemo(() => {
     if (!tables || !normalizedTableSearch) {
@@ -973,101 +979,95 @@ export function TablesPage({ locale }: TablesPageProps) {
             <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[var(--color-muted)]">{copy.compactBody}</p>
           </div>
 
-          {tables ? (
-            <div className="overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition duration-300 hover:border-white/12">
-              <div className="grid grid-cols-2 divide-x divide-y divide-white/8 sm:grid-cols-4 sm:divide-y-0">
-                <SummaryMetric label={copy.summaryNations} value={tables.nations.rows?.length ?? 0} colorClass="text-blue-400 group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
-                <SummaryMetric label={copy.summaryRookies} value={tables.rookies.rows?.length ?? 0} colorClass="text-emerald-400 group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
-                <SummaryMetric label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? 0} colorClass="text-[var(--color-sand)] group-hover:drop-shadow-[0_0_6px_rgba(217,173,93,0.4)]" />
-                <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? 0} colorClass="text-[var(--color-paper)] group-hover:drop-shadow-[0_0_6px_rgba(234,225,205,0.24)]" />
-              </div>
+          <div className="overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition duration-300 hover:border-white/12">
+            <div className="grid grid-cols-2 divide-x divide-y divide-white/8 sm:grid-cols-4 sm:divide-y-0">
+              <SummaryMetric label={copy.summaryNations} value={tables.nations.rows?.length ?? (tables.nations.error ? 0 : '…')} colorClass="text-blue-400 group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
+              <SummaryMetric label={copy.summaryRookies} value={tables.rookies.rows?.length ?? (tables.rookies.error ? 0 : '…')} colorClass="text-emerald-400 group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+              <SummaryMetric label={copy.summaryVeterans} value={tables.veterans.rows?.length ?? (tables.veterans.error ? 0 : '…')} colorClass="text-[var(--color-sand)] group-hover:drop-shadow-[0_0_6px_rgba(217,173,93,0.4)]" />
+              <SummaryMetric label={copy.summaryFinder} value={tables.nationParticipation.rows?.length ?? (tables.nationParticipation.error ? 0 : '…')} colorClass="text-[var(--color-paper)] group-hover:drop-shadow-[0_0_6px_rgba(234,225,205,0.24)]" />
             </div>
-          ) : null}
+          </div>
         </div>
 
-        {tables ? (
-          <div className="mt-4 grid gap-3">
-            <div className="rounded-[0.9rem] border border-white/8 bg-black/20 p-1" role="tablist" aria-label={copy.tabsLabel}>
-              <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-4">
-                {tabItems.map((tab) => (
-                  <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
-                ))}
-              </div>
+        <div className="mt-4 grid gap-3">
+          <div className="rounded-[0.9rem] border border-white/8 bg-black/20 p-1" role="tablist" aria-label={copy.tabsLabel}>
+            <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-4">
+              {tabItems.map((tab) => (
+                <TablesTabButton key={tab.key} tab={tab} active={tab.key === activeTab} onSelect={setActiveTab} />
+              ))}
             </div>
-
-            <label className="grid gap-2 rounded-[0.9rem] border border-white/8 bg-black/20 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-              <span className="grid gap-1">
-                <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.searchLabel}</span>
-                <input
-                  type="search"
-                  value={tableSearch}
-                  onChange={(event) => setTableSearch(event.target.value)}
-                  placeholder={copy.searchPlaceholder}
-                  className="min-w-0 rounded-[0.8rem] border border-white/10 bg-black/24 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]"
-                />
-              </span>
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                {searchResultCount !== null ? (
-                  <span className="mono rounded-full border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
-                    {searchResultCount} {activeTab === 'rookie' || activeTab === 'veteran' ? copy.entriesSuffix : copy.nationsSuffix}
-                  </span>
-                ) : null}
-                {tableSearch ? (
-                  <button
-                    type="button"
-                    onClick={() => setTableSearch('')}
-                    className="rounded-full border border-white/12 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
-                  >
-                    {copy.clearSearch}
-                  </button>
-                ) : null}
-              </div>
-            </label>
           </div>
-        ) : null}
+
+          <label className="grid gap-2 rounded-[0.9rem] border border-white/8 bg-black/20 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <span className="grid gap-1">
+              <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.searchLabel}</span>
+              <input
+                type="search"
+                value={tableSearch}
+                onChange={(event) => setTableSearch(event.target.value)}
+                placeholder={copy.searchPlaceholder}
+                className="min-w-0 rounded-[0.8rem] border border-white/10 bg-black/24 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]"
+              />
+            </span>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {searchResultCount !== null ? (
+                <span className="mono rounded-full border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                  {searchResultCount} {activeTab === 'rookie' || activeTab === 'veteran' ? copy.entriesSuffix : copy.nationsSuffix}
+                </span>
+              ) : null}
+              {tableSearch ? (
+                <button
+                  type="button"
+                  onClick={() => setTableSearch('')}
+                  className="rounded-full border border-white/12 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:-translate-y-[1px] hover:bg-white/6 active:scale-[0.98]"
+                >
+                  {copy.clearSearch}
+                </button>
+              ) : null}
+            </div>
+          </label>
+        </div>
       </section>
 
-      {loading && !tables ? <div className="skeleton h-40 rounded-[1.15rem]" /> : null}
+      <div
+        key={activeTab}
+        id={`tables-panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`tables-tab-${activeTab}`}
+        className="reveal-in"
+      >
+        {activeTab === 'nations' ? (
+          tables.nations.rows ? (
+            <NationTable copy={copy} rows={tables.nations.rows} searchTerm={tableSearch} onOpenSquad={setSquadTarget} onOpenRankHistory={setRankHistoryTarget} />
+          ) : tables.nations.error ? (
+            <section className="glass-panel rounded-[1.15rem] p-5">
+              <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
+            </section>
+          ) : (
+            <div className="skeleton h-40 rounded-[1.15rem]" />
+          )
+        ) : null}
 
-      {tables ? (
-        <>
-          <div
-            key={activeTab}
-            id={`tables-panel-${activeTab}`}
-            role="tabpanel"
-            aria-labelledby={`tables-tab-${activeTab}`}
-            className="reveal-in"
-          >
-            {activeTab === 'nations' ? (
-              tables.nations.rows ? (
-                <NationTable copy={copy} rows={tables.nations.rows} searchTerm={tableSearch} onOpenSquad={setSquadTarget} onOpenRankHistory={setRankHistoryTarget} />
-              ) : tables.nations.error ? (
-                <section className="glass-panel rounded-[1.15rem] p-5">
-                  <EmptyState {...boardErrorCopy(copy, tables.nations.error)} />
-                </section>
-              ) : null
-            ) : null}
+        {activeTab === 'rookie' ? (
+          <ParticipantBoardSection copy={copy} survivalCopy={survivalCopy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} survival={tables.survival} participantTeamCodes={tables.teamCodesByParticipant} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
+        ) : null}
 
-            {activeTab === 'rookie' ? (
-              <ParticipantBoardSection copy={copy} survivalCopy={survivalCopy} title="Rookie" board={tables.rookies} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} survival={tables.survival} participantTeamCodes={tables.teamCodesByParticipant} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
-            ) : null}
+        {activeTab === 'veteran' ? (
+          <ParticipantBoardSection copy={copy} survivalCopy={survivalCopy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} survival={tables.survival} participantTeamCodes={tables.teamCodesByParticipant} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
+        ) : null}
 
-            {activeTab === 'veteran' ? (
-              <ParticipantBoardSection copy={copy} survivalCopy={survivalCopy} title="Veteran" board={tables.veterans} searchTerm={tableSearch} fixtureLookup={tables.fixtureLookup} survival={tables.survival} participantTeamCodes={tables.teamCodesByParticipant} onOpenSquad={setSquadTarget} onSelectPlayer={setPlayerSeed} onOpenRankHistory={setRankHistoryTarget} />
-            ) : null}
-
-            {activeTab === 'finder' ? (
-              tables.nationParticipation.rows ? (
-                <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} searchTerm={tableSearch} />
-              ) : tables.nationParticipation.error ? (
-                <section className="glass-panel rounded-[1.15rem] p-5">
-                  <EmptyState {...boardErrorCopy(copy, tables.nationParticipation.error)} />
-                </section>
-              ) : null
-            ) : null}
-          </div>
-        </>
-      ) : null}
+        {activeTab === 'finder' ? (
+          tables.nationParticipation.rows ? (
+            <NationParticipationTable copy={copy} rows={tables.nationParticipation.rows} searchTerm={tableSearch} />
+          ) : tables.nationParticipation.error ? (
+            <section className="glass-panel rounded-[1.15rem] p-5">
+              <EmptyState {...boardErrorCopy(copy, tables.nationParticipation.error)} />
+            </section>
+          ) : (
+            <div className="skeleton h-40 rounded-[1.15rem]" />
+          )
+        ) : null}
+      </div>
 
       <SquadPitchModal target={squadTarget} onClose={() => setSquadTarget(null)} />
 
@@ -1075,7 +1075,7 @@ export function TablesPage({ locale }: TablesPageProps) {
 
       {playerSeed ? <PlayerStatsModal seed={playerSeed} locale={locale} onClose={() => setPlayerSeed(null)} /> : null}
 
-      {tables && activeTab !== 'finder' ? <BackToTopButton label={copy.backToTop} /> : null}
+      {activeTab !== 'finder' ? <BackToTopButton label={copy.backToTop} /> : null}
     </div>
   )
 }
