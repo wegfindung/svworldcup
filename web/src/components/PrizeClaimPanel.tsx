@@ -1,5 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { fetchPrizeClaimStatus, linkSoccerverseAccount, savePrizeShippingAddress } from '../lib/api'
+import {
+  fetchPrizeClaimStatus,
+  linkSoccerverseAccount,
+  savePrizeShippingAddress,
+  updatePrizeSoccerverseUsername,
+} from '../lib/api'
 import { getDefaultShareReferrerSoccerverseUsername } from '../lib/referral'
 import type { LocaleCode, ParticipantProfile, PrizeClaimStatus, ShippingAddressInput } from '../lib/types'
 
@@ -21,8 +26,15 @@ const english = {
   username: 'Soccerverse username',
   usernamePlaceholder: 'Your exact account name',
   saveUsername: 'Save username',
+  updateUsername: 'Update username',
   saving: 'Saving',
   usernameSaved: 'Your Soccerverse username has been saved for the payout.',
+  usernameUpdated: 'Your registered Soccerverse username has been updated for the payout.',
+  correctionEyebrow: 'Prize payout account check',
+  correctionTitle: 'Register or correct your Soccerverse username.',
+  correctionBody: 'The username currently saved for your prize was not found in the original game. Register that name at play.soccerverse.com. If you choose a different name there, replace the saved name below with the exact registered username.',
+  openSoccerverse: 'Open Soccerverse',
+  discordHelp: 'Need help? Ask in the Soccerverse Discord',
   shippingEyebrow: 'Physical prize',
   shippingTitle: 'Where should we send your prize?',
   shippingBody: 'Your address is stored privately and is only used to deliver your Grand Tournament prize.',
@@ -47,8 +59,15 @@ const german: typeof english = {
   username: 'Soccerverse-Name',
   usernamePlaceholder: 'Dein exakter Accountname',
   saveUsername: 'Namen speichern',
+  updateUsername: 'Namen aktualisieren',
   saving: 'Wird gespeichert',
   usernameSaved: 'Dein Soccerverse-Name wurde für die Auszahlung gespeichert.',
+  usernameUpdated: 'Dein registrierter Soccerverse-Name wurde für die Auszahlung aktualisiert.',
+  correctionEyebrow: 'Accountprüfung für die Preisauszahlung',
+  correctionTitle: 'Registriere oder korrigiere deinen Soccerverse-Namen.',
+  correctionBody: 'Der aktuell für deinen Preis gespeicherte Name wurde im Originalspiel nicht gefunden. Registriere diesen Namen auf play.soccerverse.com. Falls du dort einen anderen Namen wählst, ersetze den gespeicherten Namen unten durch den exakten registrierten Namen.',
+  openSoccerverse: 'Soccerverse öffnen',
+  discordHelp: 'Du brauchst Hilfe? Frage im Soccerverse-Discord',
   shippingEyebrow: 'Physischer Preis',
   shippingTitle: 'Wohin dürfen wir deinen Preis senden?',
   shippingBody: 'Deine Adresse wird vertraulich gespeichert und ausschließlich für den Versand deines Grand-Tournament-Preises verwendet.',
@@ -65,6 +84,39 @@ const german: typeof english = {
   loadError: 'Die Preisinformationen konnten nicht geladen werden. Bitte lade die Seite neu.',
 }
 
+const spanish: typeof english = {
+  accountEyebrow: 'Acción necesaria para recibir el premio',
+  accountTitle: 'Conecta tu cuenta de Soccerverse para recibir tu premio.',
+  accountBody: 'Crea una cuenta gratuita de Soccerverse mediante el enlace y guarda aquí el nombre de usuario exacto. No podemos pagar tu premio hasta que el nombre esté guardado en tu cuenta del torneo.',
+  createAccount: 'Crear una cuenta de Soccerverse',
+  username: 'Nombre de usuario de Soccerverse',
+  usernamePlaceholder: 'Tu nombre de cuenta exacto',
+  saveUsername: 'Guardar nombre',
+  updateUsername: 'Actualizar nombre',
+  saving: 'Guardando',
+  usernameSaved: 'Tu nombre de usuario de Soccerverse se ha guardado para el pago.',
+  usernameUpdated: 'Tu nombre de usuario registrado de Soccerverse se ha actualizado para el pago.',
+  correctionEyebrow: 'Comprobación de cuenta para el premio',
+  correctionTitle: 'Registra o corrige tu nombre de usuario de Soccerverse.',
+  correctionBody: 'El nombre guardado actualmente para tu premio no se encontró en el juego original. Registra ese nombre en play.soccerverse.com. Si eliges un nombre diferente allí, sustituye abajo el nombre guardado por el nombre registrado exacto.',
+  openSoccerverse: 'Abrir Soccerverse',
+  discordHelp: '¿Necesitas ayuda? Pregunta en el Discord de Soccerverse',
+  shippingEyebrow: 'Premio físico',
+  shippingTitle: '¿Dónde debemos enviar tu premio?',
+  shippingBody: 'Tu dirección se guarda de forma privada y solo se utiliza para entregar tu premio de The Grand Tournament.',
+  recipientName: 'Nombre completo del destinatario',
+  addressLine1: 'Calle y número',
+  addressLine2: 'Línea de dirección 2 (opcional)',
+  postalCode: 'Código postal',
+  city: 'Ciudad',
+  region: 'Estado o región (opcional)',
+  countryCode: 'Código de país',
+  countryHint: 'Dos letras, por ejemplo ES, AR, MX',
+  saveAddress: 'Guardar dirección de envío',
+  addressSaved: 'Tu dirección de envío se ha guardado de forma segura.',
+  loadError: 'No se pudieron cargar los datos del premio. Actualiza la página.',
+}
+
 export function PrizeClaimPanel({
   locale,
   participant,
@@ -74,11 +126,11 @@ export function PrizeClaimPanel({
   participant: ParticipantProfile
   onParticipantUpdate: (participant: ParticipantProfile) => void
 }) {
-  const copy = locale === 'de' ? german : english
+  const copy = locale === 'de' ? german : locale === 'es' ? spanish : english
   const [affiliateReferrer] = useState(() => getDefaultShareReferrerSoccerverseUsername())
   const [claim, setClaim] = useState<PrizeClaimStatus | null>(null)
   const [loadError, setLoadError] = useState(false)
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState(participant.soccerverseUsername ?? '')
   const [usernameBusy, setUsernameBusy] = useState(false)
   const [usernameMessage, setUsernameMessage] = useState('')
   const [usernameError, setUsernameError] = useState('')
@@ -109,9 +161,13 @@ export function PrizeClaimPanel({
     setUsernameError('')
     setUsernameMessage('')
     try {
-      const response = await linkSoccerverseAccount(username)
+      const response = claim?.soccerverseUsernameCorrectionEligible
+        ? await updatePrizeSoccerverseUsername(username)
+        : await linkSoccerverseAccount(username)
       onParticipantUpdate(response.participant)
-      setUsernameMessage(copy.usernameSaved)
+      setUsernameMessage(
+        claim?.soccerverseUsernameCorrectionEligible ? copy.usernameUpdated : copy.usernameSaved,
+      )
     } catch (error) {
       setUsernameError(error instanceof Error ? error.message : copy.loadError)
     } finally {
@@ -136,25 +192,48 @@ export function PrizeClaimPanel({
   }
 
   const needsSoccerverseAccount = participant.leagueType === 'rookie' && !participant.soccerverseUsername
-  if (!needsSoccerverseAccount && !claim?.physicalPrizeEligible && !loadError) return null
+  const canCorrectSoccerverseUsername =
+    Boolean(claim?.soccerverseUsernameCorrectionEligible) && Boolean(participant.soccerverseUsername)
+  const showSoccerverseForm = needsSoccerverseAccount || canCorrectSoccerverseUsername
+  if (!showSoccerverseForm && !claim?.physicalPrizeEligible && !loadError) return null
 
   const inputClass = 'min-w-0 rounded-[0.9rem] border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-[var(--color-accent)]'
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {needsSoccerverseAccount ? (
+      {showSoccerverseForm ? (
         <section className="hero-card rounded-[1.15rem] border border-[var(--color-sand)]/25 p-5 sm:p-6">
-          <p className="eyebrow text-[var(--color-sand)]">{copy.accountEyebrow}</p>
-          <h2 className="mt-3 max-w-[24ch] text-2xl font-semibold tracking-tight text-white">{copy.accountTitle}</h2>
-          <p className="mt-3 max-w-[62ch] text-sm leading-6 text-[var(--color-muted)]">{copy.accountBody}</p>
+          <p className="eyebrow text-[var(--color-sand)]">
+            {canCorrectSoccerverseUsername ? copy.correctionEyebrow : copy.accountEyebrow}
+          </p>
+          <h2 className="mt-3 max-w-[28ch] text-2xl font-semibold tracking-tight text-white">
+            {canCorrectSoccerverseUsername ? copy.correctionTitle : copy.accountTitle}
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-sm leading-6 text-[var(--color-muted)]">
+            {canCorrectSoccerverseUsername ? copy.correctionBody : copy.accountBody}
+          </p>
           <a
-            href={`https://play.soccerverse.com/?ref=${encodeURIComponent(affiliateReferrer)}`}
+            href={
+              canCorrectSoccerverseUsername
+                ? 'https://play.soccerverse.com/'
+                : `https://play.soccerverse.com/?ref=${encodeURIComponent(affiliateReferrer)}`
+            }
             target="_blank"
             rel="noreferrer"
             className="mt-5 inline-flex items-center rounded-full border border-[var(--color-sand)]/35 bg-[var(--color-sand)]/10 px-5 py-3 text-sm font-semibold text-[var(--color-sand)] transition hover:-translate-y-[1px] hover:bg-[var(--color-sand)]/15"
           >
-            {copy.createAccount}
+            {canCorrectSoccerverseUsername ? copy.openSoccerverse : copy.createAccount}
           </a>
+          {canCorrectSoccerverseUsername ? (
+            <a
+              href="https://discord.com/invite/ze5xJgg7AM"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 block w-fit text-sm font-semibold text-[var(--color-accent)] underline decoration-white/20 underline-offset-4 transition hover:text-white"
+            >
+              {copy.discordHelp}
+            </a>
+          ) : null}
           <form onSubmit={handleUsername} className="mt-5 grid gap-3">
             <label className="grid gap-2">
               <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{copy.username}</span>
@@ -163,7 +242,11 @@ export function PrizeClaimPanel({
             {usernameError ? <p className="text-sm text-amber-200">{usernameError}</p> : null}
             {usernameMessage ? <p className="text-sm text-[var(--color-accent)]">{usernameMessage}</p> : null}
             <button disabled={usernameBusy} className="w-fit rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] disabled:opacity-60">
-              {usernameBusy ? copy.saving : copy.saveUsername}
+              {usernameBusy
+                ? copy.saving
+                : canCorrectSoccerverseUsername
+                  ? copy.updateUsername
+                  : copy.saveUsername}
             </button>
           </form>
         </section>

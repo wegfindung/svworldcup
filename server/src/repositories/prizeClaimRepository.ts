@@ -1,5 +1,6 @@
 import type { Pool } from 'pg'
 import { isPhysicalPrizeWinner } from '../data/physicalPrizeWinners.js'
+import { canCorrectPrizeSoccerverseUsername } from '../data/prizeUsernameCorrections.js'
 import type { PrizeClaimStatus, ShippingAddressInput } from '../domain/types.js'
 
 export class PrizeClaimEligibilityError extends Error {}
@@ -20,14 +21,34 @@ export class MemoryPrizeClaimRepository implements PrizeClaimRepository {
   storageKind: 'memory' = 'memory'
   private readonly addresses = new Map<string, PrizeClaimStatus>()
 
+  constructor(private readonly correctionEligibleIds?: ReadonlySet<string>) {}
+
+  private canCorrectUsername(participantId: string) {
+    return this.correctionEligibleIds?.has(participantId) ?? canCorrectPrizeSoccerverseUsername(participantId)
+  }
+
   async getStatus(participantId: string): Promise<PrizeClaimStatus> {
-    if (!isPhysicalPrizeWinner(participantId)) return { physicalPrizeEligible: false }
-    return this.addresses.get(participantId) ?? { physicalPrizeEligible: true }
+    const usernameCorrectionEligible = this.canCorrectUsername(participantId)
+    if (!isPhysicalPrizeWinner(participantId)) {
+      return {
+        physicalPrizeEligible: false,
+        soccerverseUsernameCorrectionEligible: usernameCorrectionEligible,
+      }
+    }
+    return this.addresses.get(participantId) ?? {
+      physicalPrizeEligible: true,
+      soccerverseUsernameCorrectionEligible: usernameCorrectionEligible,
+    }
   }
 
   async saveShippingAddress(participantId: string, input: ShippingAddressInput): Promise<PrizeClaimStatus> {
     assertEligible(participantId)
-    const status = { physicalPrizeEligible: true, shippingAddress: input, shippingUpdatedAt: new Date().toISOString() }
+    const status = {
+      physicalPrizeEligible: true,
+      soccerverseUsernameCorrectionEligible: this.canCorrectUsername(participantId),
+      shippingAddress: input,
+      shippingUpdatedAt: new Date().toISOString(),
+    }
     this.addresses.set(participantId, status)
     return status
   }
@@ -38,7 +59,10 @@ export class PostgresPrizeClaimRepository implements PrizeClaimRepository {
   constructor(private readonly pool: Pool) {}
 
   async getStatus(participantId: string): Promise<PrizeClaimStatus> {
-    if (!isPhysicalPrizeWinner(participantId)) return { physicalPrizeEligible: false }
+    const soccerverseUsernameCorrectionEligible = canCorrectPrizeSoccerverseUsername(participantId)
+    if (!isPhysicalPrizeWinner(participantId)) {
+      return { physicalPrizeEligible: false, soccerverseUsernameCorrectionEligible }
+    }
     const result = await this.pool.query<{
       recipient_name: string
       address_line1: string
@@ -54,9 +78,10 @@ export class PostgresPrizeClaimRepository implements PrizeClaimRepository {
       [participantId],
     )
     const row = result.rows[0]
-    if (!row) return { physicalPrizeEligible: true }
+    if (!row) return { physicalPrizeEligible: true, soccerverseUsernameCorrectionEligible }
     return {
       physicalPrizeEligible: true,
+      soccerverseUsernameCorrectionEligible,
       shippingAddress: {
         recipientName: row.recipient_name,
         addressLine1: row.address_line1,

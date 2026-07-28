@@ -18,7 +18,7 @@ import type { ParticipantRiskRepository } from '../repositories/participantRiskR
 import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 import { SwapValidationError } from '../lib/swapGate.js'
 import { buildSwapWindows, getOpenSwapWindow, hasSwapHardStopPassed, swapHardStopEpoch } from '../data/swapWindows.js'
-import { getParticipantBoost, type BoostDraftedPlayer } from '../services/participantBoost.js'
+import { clearParticipantBoostCache, getParticipantBoost, type BoostDraftedPlayer } from '../services/participantBoost.js'
 import { isEmailLikeUsername, SOCCERVERSE_USERNAME_EMAIL_MESSAGE } from '../lib/soccerverseUsername.js'
 import {
   MemoryPrizeClaimRepository,
@@ -96,6 +96,42 @@ export function createParticipantRouter(
     } catch (error) {
       if (error instanceof PrizeClaimEligibilityError) {
         return res.status(403).json({ error: error.message })
+      }
+      throw error
+    }
+  })
+
+  router.put('/prize-claim/soccerverse-username', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const claim = await prizeClaimRepository.getStatus(participantId)
+    if (!claim.soccerverseUsernameCorrectionEligible) {
+      return res.status(403).json({ error: 'This participant is not eligible to correct a prize payout username.' })
+    }
+
+    const parsed = linkSoccerverseSchema.parse(req.body)
+    const before = await registrationRepository.getByParticipantId(participantId)
+    if (!before) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+
+    try {
+      const profile = await registrationRepository.correctSoccerverseUsername(
+        participantId,
+        parsed.soccerverseUsername,
+      )
+      clearParticipantBoostCache(participantId)
+      await auditRepository.record({
+        actorEmail: profile.email,
+        actionKey: 'participant.prize_soccerverse_username_correction',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: { from: before.soccerverseUsername, to: profile.soccerverseUsername },
+      })
+      res.json({ participant: profile })
+    } catch (error) {
+      if (error instanceof SoccerverseLinkError) {
+        const status = error.reason === 'invalid_username' ? 422 : error.reason === 'not_found' ? 404 : 409
+        return res.status(status).json({ error: error.message, reason: error.reason })
       }
       throw error
     }

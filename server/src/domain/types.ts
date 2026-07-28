@@ -71,6 +71,7 @@ export interface ShippingAddressInput {
 
 export interface PrizeClaimStatus {
   physicalPrizeEligible: boolean
+  soccerverseUsernameCorrectionEligible: boolean
   shippingAddress?: ShippingAddressInput
   shippingUpdatedAt?: string
 }

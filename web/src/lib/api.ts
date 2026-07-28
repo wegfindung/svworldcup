@@ -620,6 +620,13 @@ export function savePrizeShippingAddress(input: ShippingAddressInput) {
   })
 }
 
+export function updatePrizeSoccerverseUsername(soccerverseUsername: string) {
+  return getJson<{ participant: ParticipantProfile }>('/api/participant/prize-claim/soccerverse-username', {
+    method: 'PUT',
+    body: JSON.stringify({ soccerverseUsername }),
+  })
+}
+
 export function adminSetParticipantLeague(participantId: string, leagueType: 'rookie' | 'veteran') {
   return getJson<{ participant: ParticipantProfile }>(
     `/api/admin/participants/${encodeURIComponent(participantId)}/league`,
