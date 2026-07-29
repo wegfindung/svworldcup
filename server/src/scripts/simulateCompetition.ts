@@ -66,7 +66,7 @@ function fakeTeamPlayers(teamCode: string) {
     clubId: 0,
     positions: [item.position],
     positionMain: item.position,
-    imageUrl: `https://elrincondeldt.com/sv/photos/players/${baseId + item.offset}.png`,
+    imageUrl: `https://elrincondeldt.com/sv/photos/players_webp/${baseId + item.offset}.webp`,
   }))
 }
 

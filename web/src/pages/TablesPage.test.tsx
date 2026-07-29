@@ -87,8 +87,22 @@ describe('TablesPage partial loading', () => {
 
     render(<TablesPage locale="en" />)
 
-    expect(await screen.findByRole('tab', { name: /Rookie/i })).toBeInTheDocument()
-    expect(screen.getByText('No standings yet')).toBeInTheDocument()
+    expect(await screen.findByText('No standings yet')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Rookie/i })).toBeInTheDocument()
+  })
+
+  it('renders standings without waiting for an optional survival request', async () => {
+    rookie.mockResolvedValue({ items: [] })
+    veteran.mockResolvedValue({ items: [] })
+    nation.mockResolvedValue({ items: [] })
+    participation.mockResolvedValue({ items: [] })
+    fixtures.mockResolvedValue({ items: [] })
+    squadUsage.mockReturnValue(new Promise(() => {}))
+
+    render(<TablesPage locale="en" />)
+
+    expect(await screen.findByText('Nation ranking')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Rookie/i })).toBeInTheDocument()
   })
 
   it('filters participant rows by manager search', async () => {

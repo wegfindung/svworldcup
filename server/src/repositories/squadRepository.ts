@@ -47,7 +47,7 @@ function lineupFromSquad(squad: ParticipantSquad): LineupSlot[] {
 }
 
 function defaultPlayerImageUrl(playerId: number) {
-  return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
+  return `https://elrincondeldt.com/sv/photos/players_webp/${playerId}.webp`
 }
 
 export class SquadValidationError extends Error {

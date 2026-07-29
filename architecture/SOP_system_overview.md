@@ -117,6 +117,7 @@ the site nav under the **Guide** menu.
 - verification resend actions
 - multi-accounting review status changes
 - admin Soccerverse username correction
+- participant prize-payout Soccerverse username correction
 - admin participant nation correction
 - match-data import
 - pending match-stat edits

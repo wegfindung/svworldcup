@@ -7,7 +7,7 @@ import { compareTeamPoolPlayersForBuilder } from '../lib/teamPoolSort.js'
 import type { LeaderboardCache } from './leaderboardCache.js'
 
 function defaultPlayerImageUrl(playerId: number) {
-  return `https://elrincondeldt.com/sv/photos/players/${playerId}.png`
+  return `https://elrincondeldt.com/sv/photos/players_webp/${playerId}.webp`
 }
 
 function toTeamPoolPlayer(teamCode: string, player: SoccerversePlayerRecord): TeamPoolPlayer {

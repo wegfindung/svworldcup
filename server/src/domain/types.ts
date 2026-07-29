@@ -59,6 +59,23 @@ export interface ParticipantProfile {
   revealSquad?: boolean
 }
 
+export interface ShippingAddressInput {
+  recipientName: string
+  addressLine1: string
+  addressLine2?: string
+  postalCode: string
+  city: string
+  region?: string
+  countryCode: string
+}
+
+export interface PrizeClaimStatus {
+  physicalPrizeEligible: boolean
+  soccerverseUsernameCorrectionEligible: boolean
+  shippingAddress?: ShippingAddressInput
+  shippingUpdatedAt?: string
+}
+
 export interface AdminParticipantRecord extends ParticipantProfile {
   createdAt?: string
   updatedAt?: string

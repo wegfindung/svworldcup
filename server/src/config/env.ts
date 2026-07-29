@@ -64,7 +64,7 @@ const envSchema = z.object({
   SSMTP_PASSWORD: optionalString,
   SSMTP_FROM: optionalString,
   SV_SERVICES_API_URL: z.string().url().default('https://services.soccerverse.com/api'),
-  COMMUNITY_PACK_URL: z.string().url().default('https://elrincondeldt.com/sv/rincon_v2.json'),
+  COMMUNITY_PACK_URL: z.string().url().default('https://elrincondeldt.com/sv/rincon_s4.json'),
   ADMIN_BOOTSTRAP_EMAILS: z.string().default(''),
   ADMIN_BOOTSTRAP_PASSWORD: optionalString,
   ADMIN_API_TOKEN: optionalString,

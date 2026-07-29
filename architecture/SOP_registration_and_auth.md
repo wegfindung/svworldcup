@@ -171,6 +171,22 @@ earn a `0%` ownership boost despite owning influence. Admins can correct it.
   recomputes against the corrected username.
 - The write is audited as `admin.participant_soccerverse_correction` with `detail: { from, to }`.
 
+### Correcting a prize-payout Soccerverse username (participant-initiated)
+
+Some event winners stored a username that was later found not to exist in the original Soccerverse
+game. Only the explicitly configured affected participants may replace that stored value themselves
+from the authenticated prize-claim panel.
+
+- The correction uses `PUT /api/participant/prize-claim/soccerverse-username` with
+  `{ soccerverseUsername }`.
+- Eligibility is an explicit participant-ID allowlist in
+  `server/src/data/prizeUsernameCorrections.ts`; the endpoint returns `403` for everyone else.
+- The same validation and uniqueness rules as the admin correction apply.
+- The write updates only `soccerverse_username`, preserves `league_type` and
+  `soccerverse_linked_at`, and clears the participant boost cache.
+- The write is audited as `participant.prize_soccerverse_username_correction` with
+  `detail: { from, to }`.
+
 ### Correcting nation selections (admin-initiated)
 
 Some participants finish registration having picked only a primary nation (the secondary is optional and

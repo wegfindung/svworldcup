@@ -18,8 +18,13 @@ import type { ParticipantRiskRepository } from '../repositories/participantRiskR
 import { recordParticipantRiskEventAsync } from '../services/participantRisk.js'
 import { SwapValidationError } from '../lib/swapGate.js'
 import { buildSwapWindows, getOpenSwapWindow, hasSwapHardStopPassed, swapHardStopEpoch } from '../data/swapWindows.js'
-import { getParticipantBoost, type BoostDraftedPlayer } from '../services/participantBoost.js'
+import { clearParticipantBoostCache, getParticipantBoost, type BoostDraftedPlayer } from '../services/participantBoost.js'
 import { isEmailLikeUsername, SOCCERVERSE_USERNAME_EMAIL_MESSAGE } from '../lib/soccerverseUsername.js'
+import {
+  MemoryPrizeClaimRepository,
+  PrizeClaimEligibilityError,
+  type PrizeClaimRepository,
+} from '../repositories/prizeClaimRepository.js'
 
 const assignPlayerSchema = z.object({
   slotKey: z.string().trim().min(1),
@@ -39,6 +44,16 @@ const linkSoccerverseSchema = z.object({
     .refine((value) => !isEmailLikeUsername(value), { message: SOCCERVERSE_USERNAME_EMAIL_MESSAGE }),
 })
 
+const shippingAddressSchema = z.object({
+  recipientName: z.string().trim().min(2).max(120),
+  addressLine1: z.string().trim().min(3).max(160),
+  addressLine2: z.string().trim().max(160).optional().default(''),
+  postalCode: z.string().trim().min(2).max(24),
+  city: z.string().trim().min(2).max(100),
+  region: z.string().trim().max(100).optional().default(''),
+  countryCode: z.string().trim().length(2).transform((value) => value.toUpperCase()),
+})
+
 const swapSchema = z.object({
   playerInId: z.coerce.number().int().positive(),
   playerOutId: z.coerce.number().int().positive(),
@@ -51,6 +66,7 @@ export function createParticipantRouter(
   registrationRepository: RegistrationRepository,
   auditRepository: AuditRepository,
   participantRiskRepository: ParticipantRiskRepository,
+  prizeClaimRepository: PrizeClaimRepository = new MemoryPrizeClaimRepository(),
 ) {
   const router = Router()
   const requireParticipant = createRequireParticipant(participantSessionRepository)
@@ -58,6 +74,68 @@ export function createParticipantRouter(
 
   router.use(requireParticipant)
   router.use(requireParticipantCsrf)
+
+  router.get('/prize-claim', async (_req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    res.json({ claim: await prizeClaimRepository.getStatus(participantId) })
+  })
+
+  router.put('/prize-claim/shipping-address', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const input = shippingAddressSchema.parse(req.body)
+    try {
+      const claim = await prizeClaimRepository.saveShippingAddress(participantId, input)
+      await auditRepository.record({
+        actorEmail: res.locals.participant.email,
+        actionKey: 'participant.prize_shipping_address_update',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: { countryCode: input.countryCode },
+      })
+      res.json({ claim })
+    } catch (error) {
+      if (error instanceof PrizeClaimEligibilityError) {
+        return res.status(403).json({ error: error.message })
+      }
+      throw error
+    }
+  })
+
+  router.put('/prize-claim/soccerverse-username', async (req, res) => {
+    const participantId = res.locals.participant.participantId as string
+    const claim = await prizeClaimRepository.getStatus(participantId)
+    if (!claim.soccerverseUsernameCorrectionEligible) {
+      return res.status(403).json({ error: 'This participant is not eligible to correct a prize payout username.' })
+    }
+
+    const parsed = linkSoccerverseSchema.parse(req.body)
+    const before = await registrationRepository.getByParticipantId(participantId)
+    if (!before) {
+      return res.status(404).json({ error: 'Participant not found.', reason: 'not_found' })
+    }
+
+    try {
+      const profile = await registrationRepository.correctSoccerverseUsername(
+        participantId,
+        parsed.soccerverseUsername,
+      )
+      clearParticipantBoostCache(participantId)
+      await auditRepository.record({
+        actorEmail: profile.email,
+        actionKey: 'participant.prize_soccerverse_username_correction',
+        entityType: 'participant',
+        entityId: participantId,
+        detail: { from: before.soccerverseUsername, to: profile.soccerverseUsername },
+      })
+      res.json({ participant: profile })
+    } catch (error) {
+      if (error instanceof SoccerverseLinkError) {
+        const status = error.reason === 'invalid_username' ? 422 : error.reason === 'not_found' ? 404 : 409
+        return res.status(status).json({ error: error.message, reason: error.reason })
+      }
+      throw error
+    }
+  })
 
   router.get('/squad', async (_req, res) => {
     const participantId = res.locals.participant.participantId as string

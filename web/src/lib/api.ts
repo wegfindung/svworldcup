@@ -46,6 +46,8 @@ import type {
   SoccerversePlayer,
   TeamPoolPlayer,
   TeamSeed,
+  PrizeClaimStatus,
+  ShippingAddressInput,
 } from './types'
 import type { ShareSnapshotPayload } from './sharePayload'
 import { detectBrowserLocale } from './browserLocale'
@@ -600,6 +602,27 @@ export function loginAdmin(email: string, password: string) {
 export function linkSoccerverseAccount(soccerverseUsername: string) {
   return getJson<{ participant: ParticipantProfile }>('/api/participant/link-soccerverse', {
     method: 'POST',
+    body: JSON.stringify({ soccerverseUsername }),
+  })
+}
+
+export function fetchPrizeClaimStatus() {
+  return getJson<{ claim: PrizeClaimStatus }>('/api/participant/prize-claim', {
+    method: 'GET',
+    headers: {},
+  })
+}
+
+export function savePrizeShippingAddress(input: ShippingAddressInput) {
+  return getJson<{ claim: PrizeClaimStatus }>('/api/participant/prize-claim/shipping-address', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updatePrizeSoccerverseUsername(soccerverseUsername: string) {
+  return getJson<{ participant: ParticipantProfile }>('/api/participant/prize-claim/soccerverse-username', {
+    method: 'PUT',
     body: JSON.stringify({ soccerverseUsername }),
   })
 }
